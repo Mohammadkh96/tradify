@@ -1,16 +1,17 @@
-import { pgTable, text, serial, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, numeric, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const tradeJournal = pgTable("trade_journal", {
   id: serial("id").primaryKey(),
-  pair: text("pair").notNull(), // e.g., EURUSD
+  pair: text("pair").notNull(),
   direction: text("direction").notNull(), // "Long" | "Short"
+  timeframe: text("timeframe").notNull(),
   
-  // Market Foundations (Manual Confirmations)
-  htfBias: text("htf_bias").notNull(), // "Bullish" | "Bearish" | "Neutral"
+  // Detection Rules (Manual Inputs)
+  htfBias: text("htf_bias").notNull(), // "Bullish" | "Bearish" | "Range"
   structureState: text("structure_state").notNull(), // "BOS" | "CHOCH" | "None"
-  liquidityStatus: text("liquidity_status").notNull(), // "Taken" | "Pending"
+  liquidityStatus: text("liquidity_status").notNull(), // "Taken" | "Pending" | "None"
   zoneValidity: text("zone_validity").notNull(), // "Valid" | "Invalid"
   
   // Execution Checklist (Non-negotiables)
@@ -23,6 +24,7 @@ export const tradeJournal = pgTable("trade_journal", {
   // Rule Engine Results
   isRuleCompliant: boolean("is_rule_compliant").default(false).notNull(),
   violationReason: text("violation_reason"),
+  matchedSetup: text("matched_setup"), // e.g. "Bullish Continuation"
   
   // Trade Details
   entryPrice: numeric("entry_price"),
@@ -47,3 +49,13 @@ export type InsertTrade = z.infer<typeof insertTradeSchema>;
 
 export type CreateTradeRequest = InsertTrade;
 export type UpdateTradeRequest = Partial<InsertTrade>;
+
+// Rule Engine Types
+export const validationResultSchema = z.object({
+  valid: z.boolean(),
+  reason: z.string().optional(),
+  matchedSetup: z.string().optional(),
+  violations: z.array(z.string()).optional()
+});
+
+export type ValidationResult = z.infer<typeof validationResultSchema>;

@@ -1,0 +1,463 @@
+1️⃣ Core Principle (Very Important)
+
+You do NOT store Market Knowledge as text or explanations.
+
+You store it as structured rule systems that the app can:
+
+Validate
+
+Fail
+
+Pass
+
+Explain
+
+Think like this:
+
+❌ “Bullish flag is continuation”
+✅ “IF structure = bullish AND consolidation = valid AND breakout = BOS → continuation allowed”
+
+2️⃣ How Market Knowledge Must Be Represented
+
+You split Market Knowledge into 5 layers, not one big document.
+
+Market Knowledge
+│
+├── Definitions (what things are)
+├── Detection Rules (how to recognize them)
+├── Validation Rules (when they are valid)
+├── Execution Rules (when to trade)
+└── Invalidation Rules (when to reject)
+
+
+This is how professional trading engines are built.
+
+3️⃣ Layer 1: DEFINITIONS (Static Knowledge)
+
+This is your Knowledge Base page.
+
+Example structure (human-readable):
+
+Market Structure
+
+HH = higher high
+
+HL = higher low
+
+BOS = break of structure
+
+CHOCH = change of character
+
+Liquidity
+
+Equal highs
+
+Equal lows
+
+Trendline liquidity
+
+Range liquidity
+
+Zones
+
+Supply
+
+Demand
+
+Order blocks
+
+⚠️ These are reference only, not executable.
+
+4️⃣ Layer 2: DETECTION RULES (Inputs)
+
+Since you are not using AI, detection is done via:
+
+User inputs
+
+Checkboxes
+
+Dropdowns
+
+Toggles
+
+Numeric fields
+
+Example (New Entry form):
+
+HTF Trend:
+[ ] Bullish
+[ ] Bearish
+[ ] Range
+
+Structure:
+[ ] BOS
+[ ] CHOCH
+[ ] None
+
+Liquidity Taken:
+[ ] Equal Highs
+[ ] Equal Lows
+[ ] Trendline
+[ ] None
+
+
+The app does NOT guess.
+The trader declares facts.
+The engine judges them.
+
+5️⃣ Layer 3: VALIDATION RULES (The Brain)
+
+This is where Market Knowledge becomes logic.
+
+Each strategy, pattern, or setup is expressed as a rule set.
+
+Example: Bullish Continuation Setup
+setup_name: Bullish Continuation
+
+requirements:
+  htf_trend: bullish
+  structure: BOS
+  liquidity_taken: true
+  zone_type: demand
+  zone_status: valid
+
+forbidden:
+  inside_htf_supply: true
+  zone_invalidated: true
+
+execution:
+  entry: demand_retest
+  sl: below_demand
+  min_rr: 1.5
+
+
+If any requirement fails → NO TRADE.
+
+6️⃣ Layer 4: STRATEGIES (Composed Logic)
+
+A strategy is just a collection of rule sets.
+
+Strategy = Collection of Valid Setups
+
+Example:
+
+Strategy: Trend Continuation
+
+Bullish Flag
+
+Bearish Flag
+
+Pullback to Demand
+
+Breakout–Retest
+
+Each setup has:
+
+Conditions
+
+Allowed context
+
+Forbidden context
+
+7️⃣ Layer 5: PATTERNS (Secondary Filters)
+
+Patterns are never standalone.
+
+They act as confidence enhancers.
+
+Example: Bullish Flag
+pattern_name: Bullish Flag
+
+valid_if:
+  trend: bullish
+  impulse_present: true
+  consolidation_depth: shallow
+  volume: decreasing
+
+invalid_if:
+  structure: CHOCH
+  liquidity_against_trend: true
+
+
+Pattern alone = ❌
+Pattern + structure + liquidity = ✅
+
+8️⃣ Invalidation Rules (Most Important)
+
+Every Market Knowledge item must have an invalidation condition.
+
+Examples:
+
+Demand invalid → candle closes below
+
+Supply invalid → candle closes above
+
+Continuation invalid → CHOCH appears
+
+Reversal invalid → no liquidity sweep
+
+These rules are checked continuously.
+
+9️⃣ Rule Evaluation Engine (How App Thinks)
+
+When user submits a trade:
+
+1. Load HTF rules
+2. Validate forbidden conditions
+3. Validate required conditions
+4. Match against known setups
+5. Calculate RR
+6. Return:
+   - VALID SETUP
+   - or NO TRADE + reasons
+
+
+Important:
+
+The app must list which rule failed
+
+No vague rejections
+
+🔟 How You Store ALL Market Knowledge
+
+You store it as:
+
+Structured configs (JSON / YAML)
+
+Modular rule files
+
+Versioned strategies
+
+Example structure:
+
+market_knowledge/
+├── definitions/
+├── structure_rules/
+├── liquidity_rules/
+├── zone_rules/
+├── patterns/
+├── strategies/
+└── invalidation_rules/
+
+
+This makes the app:
+
+Maintainable
+
+Expandable
+
+Auditable
+
+11️⃣ Why This Solves Your Problem
+
+You can encode everything you know
+
+Nothing is forgotten
+
+No interpretation errors
+
+No AI hallucinations
+
+Exact same logic every time
+
+This is how institutional-grade systems are built.
+
+12️⃣ Next Logical Step (Choose One)
+
+1️⃣ Convert your entire Market Knowledge into rule tables
+2️⃣ Design the New Entry form → rule mapping
+3️⃣ Build a strategy–pattern–rule matrix
+4️⃣ Create ready-to-import JSON/YAML files
+5️⃣ Write the backend rule evaluation engine
+
+Tell me which one you want next, and I’ll do it cleanly.
+
+Convert your entire Market Knowledge into rule tables with strategies patterns info a tought this project
+
+Below is a full conversion of the entire Market Knowledge you taught in this project into clear, deterministic RULE TABLES.
+
+This is engine-ready knowledge — not theory, not explanation, not AI language.
+
+You can store this as database tables, JSON/YAML, or backend configs.
+
+MARKET KNOWLEDGE – MASTER RULE TABLES
+
+(Authoritative Version – From This Project)
+
+1️⃣ GLOBAL HARD RULES (APPLY TO ALL STRATEGIES)
+Rule ID	Rule
+GR-01	HTF (H4/H1/M15) structure overrides LTF
+GR-02	No trade allowed inside opposing HTF supply/demand
+GR-03	Zone invalidation must be checked before any setup
+GR-04	If RR < 1 : 1.5 → NO TRADE
+GR-05	No confirmation → NO TRADE
+GR-06	Demand invalid if candle closes below
+GR-07	Supply invalid if candle closes above
+GR-08	Liquidity must be taken before reversal entries
+GR-09	After strong impulse → wait for pullback
+GR-10	One clean strategy is enough to trigger a trade
+2️⃣ MARKET STRUCTURE RULE TABLE
+Structure Detection
+Condition	Structure State
+HH + HL sequence	Bullish
+LL + LH sequence	Bearish
+Range highs/lows intact	Range
+Break Logic
+Break Type	Meaning	Trade Permission
+BOS	Continuation	Allowed
+CHOCH	Trend shift	Reversal allowed only
+No break	Unclear	NO TRADE
+3️⃣ SUPPLY & DEMAND ZONE RULES
+Zone Types
+Zone Type	Definition
+RBR	Rally → Base → Rally
+DBD	Drop → Base → Drop
+RBD	Rally → Base → Drop
+DBR	Drop → Base → Rally
+Zone Validity
+Condition	Result
+Fresh + untested	Valid
+Candle close beyond	Invalid
+Retested multiple times	Weak
+4️⃣ LIQUIDITY RULE TABLE
+Liquidity Sources
+Type
+Equal highs
+Equal lows
+Trendline stops
+Previous highs/lows
+Session highs/lows
+Range boundaries
+Liquidity Rules
+Rule
+Liquidity grab ≠ entry
+Sweep must occur before reversal
+No sweep → no reversal
+Continuation does NOT require sweep
+5️⃣ ORDER BLOCK RULES
+OB Identification
+Condition	Valid OB
+Last opposite candle before impulse	Yes
+Leads to BOS/CHOCH	Yes
+No structure impact	No
+OB Trading Rules
+Rule
+Prefer HTF OB
+LTF OB for execution
+SL beyond OB extreme
+6️⃣ FIBONACCI RULE TABLE (FROM YOUR PROJECT)
+Fib 1 – Pullback Strategy
+Step	Rule
+1	Trendline break
+2	Fib impulse
+3	Price must reach 38–50
+4	If reaches 61.8 → CANCEL
+5	Limit at 23.6
+6	SL at 0
+7	TP1 61.8
+8	TP2 79
+7️⃣ PATTERN RULE TABLE (SECONDARY CONFIRMATION)
+Continuation Patterns
+Pattern	Required Context
+Bullish Flag	HTF bullish + BOS
+Bearish Flag	HTF bearish + BOS
+Rectangle	Trend intact
+Pennant	Impulse before
+Reversal Patterns
+Pattern	Required Context
+Double Top	Liquidity taken
+Double Bottom	Liquidity taken
+H&S	HTF exhaustion
+Wedges	Momentum loss
+
+⚠️ Patterns alone NEVER trigger trades
+
+8️⃣ STRATEGY TABLE (CORE SETUPS)
+Strategy 1: Trend Continuation
+Requirement	Value
+HTF Trend	Bullish/Bearish
+Structure	BOS
+Zone	Continuation zone
+Liquidity	Optional
+Entry	Pullback
+SL	Beyond zone
+RR	≥ 1 : 1.5
+Strategy 2: Supply → Demand Flip
+Requirement	Value
+HTF Zone	Broken
+Retest	Yes
+Confirmation	Required
+Entry	Retest
+SL	Below flip
+TP	Next liquidity
+Strategy 3: Liquidity Sweep Reversal
+Requirement	Value
+Liquidity	Swept
+CHOCH	Required
+Zone	Fresh
+Entry	LTF confirmation
+SL	Beyond sweep
+RR	≥ 1 : 2
+Strategy 4: Order Block Entry
+Requirement	Value
+OB	HTF or LTF
+Structure	BOS/CHOCH
+Zone	Untested
+Entry	OB retest
+SL	OB extreme
+Strategy 5: Breakout → Retest
+Requirement	Value
+Break	Valid
+Retest	Holds
+Volume	Expansion
+Entry	Retest
+SL	Below structure
+9️⃣ ENTRY CONFIRMATION RULES
+Confirmation Type	Valid
+Engulfing at zone	Yes
+Pin bar at liquidity	Yes
+Micro BOS	Yes
+No confirmation	NO TRADE
+🔟 STOP LOSS RULES (STRICT)
+Trade Type	SL Placement
+Buy	Below last valid swing low
+Sell	Above last valid swing high
+Liquidity trade	Outside sweep
+OB trade	Beyond OB
+1️⃣1️⃣ FORBIDDEN CONDITIONS TABLE
+Condition
+Inside HTF supply (buy)
+Inside HTF demand (sell)
+No structure
+No confirmation
+Zone invalid
+RR too small
+News volatility (optional)
+1️⃣2️⃣ DECISION OUTPUT TABLE
+Result	Meaning
+VALID SETUP	All rules passed
+WAIT	Conditions incomplete
+NO TRADE	Rule violated
+1️⃣3️⃣ ENGINE EVALUATION FLOW (FINAL)
+1. Check global rules
+2. Validate HTF context
+3. Validate zones
+4. Check liquidity
+5. Match strategy
+6. Validate entry
+7. Calculate RR
+8. Output decision
+
+✅ WHAT YOU HAVE NOW
+
+You now have:
+
+✔ Full Market Knowledge converted into rule tables
+
+✔ Every strategy formalized
+
+✔ Every pattern controlled
+
+✔ Zero ambiguity
+
+✔ Engine-ready logic

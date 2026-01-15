@@ -13,6 +13,7 @@ export interface IStorage {
   createTrade(trade: InsertTrade): Promise<Trade>;
   updateTrade(id: number, updates: UpdateTradeRequest): Promise<Trade>;
   deleteTrade(id: number): Promise<void>;
+  validateTradeRules(trade: InsertTrade): { valid: boolean; reason?: string; matchedSetup?: string; violations?: string[] };
 }
 
 export class DatabaseStorage implements IStorage {
@@ -26,12 +27,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTrade(insertTrade: InsertTrade): Promise<Trade> {
-    // Implement server-side rule validation as a secondary check
-    const { isValid, reason } = this.validateRules(insertTrade);
+    const validation = this.validateTradeRules(insertTrade);
     const finalTrade = {
       ...insertTrade,
-      isRuleCompliant: isValid,
-      violationReason: reason || null,
+      isRuleCompliant: validation.valid,
+      violationReason: validation.reason || null,
+      matchedSetup: validation.matchedSetup || null,
     };
     const [trade] = await db.insert(tradeJournal).values(finalTrade).returning();
     return trade;
@@ -49,23 +50,48 @@ export class DatabaseStorage implements IStorage {
     await db.delete(tradeJournal).where(eq(tradeJournal.id, id));
   }
 
-  private validateRules(trade: any): { isValid: boolean; reason?: string } {
-    if (!trade.htfBiasClear) return { isValid: false, reason: "HTF bias not clear" };
-    if (!trade.zoneValid) return { isValid: false, reason: "Zone not valid" };
-    if (!trade.liquidityTaken) return { isValid: false, reason: "Liquidity not taken" };
-    if (!trade.structureConfirmed) return { isValid: false, reason: "Structure not confirmed" };
-    if (!trade.entryConfirmed) return { isValid: false, reason: "Entry not confirmed" };
+  validateTradeRules(trade: InsertTrade) {
+    const violations: string[] = [];
+
+    // Global Hard Rules
+    if (!trade.htfBiasClear) violations.push("HTF bias not clear");
+    if (!trade.zoneValid) violations.push("Zone not valid");
+    if (!trade.liquidityTaken) violations.push("Liquidity not taken");
+    if (!trade.structureConfirmed) violations.push("Structure not confirmed");
+    if (!trade.entryConfirmed) violations.push("Entry not confirmed");
     
-    // Additional logic-based checks
+    // Logic-based checks
     if (trade.direction === "Long" && trade.htfBias === "Bearish") {
-      return { isValid: false, reason: "Against HTF structure (Bearish bias on Long trade)" };
+      violations.push("Against HTF structure (Bearish bias on Long trade)");
     }
     if (trade.direction === "Short" && trade.htfBias === "Bullish") {
-      return { isValid: false, reason: "Against HTF structure (Bullish bias on Short trade)" };
+      violations.push("Against HTF structure (Bullish bias on Short trade)");
     }
-    if (trade.zoneValidity === "Invalid") return { isValid: false, reason: "Zone invalidated" };
-    
-    return { isValid: true };
+    if (trade.zoneValidity === "Invalid") {
+      violations.push("Zone invalidated");
+    }
+
+    // RR Check
+    if (trade.riskReward && parseFloat(trade.riskReward) < 1.5) {
+      violations.push("RR too small (Minimum 1:1.5)");
+    }
+
+    // Setup Matching
+    let matchedSetup: string | undefined;
+    if (violations.length === 0) {
+      if (trade.structureState === "BOS") {
+        matchedSetup = trade.direction === "Long" ? "Bullish Continuation" : "Bearish Continuation";
+      } else if (trade.structureState === "CHOCH") {
+        matchedSetup = "Liquidity Sweep Reversal";
+      }
+    }
+
+    return {
+      valid: violations.length === 0,
+      reason: violations.join(", "),
+      violations,
+      matchedSetup
+    };
   }
 }
 

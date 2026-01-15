@@ -9,7 +9,6 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  // Trades API
   app.get(api.trades.list.path, async (req, res) => {
     const trades = await storage.getTrades();
     res.json(trades);
@@ -42,32 +41,8 @@ export async function registerRoutes(
   app.post(api.trades.validate.path, (req, res) => {
     try {
       const input = api.trades.validate.input.parse(req.body);
-      
-      // Validation Logic
-      let valid = true;
-      let reason = "";
-
-      if (!input.htfBiasClear) {
-        valid = false;
-        reason = "HTF bias not clear";
-      } else if (!input.zoneValid) {
-        valid = false;
-        reason = "Zone not valid";
-      } else if (!input.liquidityTaken) {
-        valid = false;
-        reason = "Liquidity not taken";
-      } else if (!input.structureConfirmed) {
-        valid = false;
-        reason = "Structure not confirmed";
-      } else if (!input.entryConfirmed) {
-        valid = false;
-        reason = "Entry not confirmed";
-      } else if (input.zoneValidity === "Invalid") {
-        valid = false;
-        reason = "Zone invalidated";
-      }
-
-      res.json({ valid, reason });
+      const result = storage.validateTradeRules(input);
+      res.json(result);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -109,13 +84,13 @@ export async function registerRoutes(
   return httpServer;
 }
 
-// Seed function to add some example data
 async function seedDatabase() {
   const existingTrades = await storage.getTrades();
   if (existingTrades.length === 0) {
     await storage.createTrade({
       pair: "EURUSD",
       direction: "Short",
+      timeframe: "M15",
       htfBias: "Bearish",
       structureState: "BOS",
       liquidityStatus: "Taken",
@@ -131,22 +106,6 @@ async function seedDatabase() {
       riskReward: "2.5",
       outcome: "Win",
       notes: "Perfect textbook setup. Liquidity sweep of Asian high, displacement down, entered on FVG retest."
-    });
-    
-    await storage.createTrade({
-      pair: "GBPUSD",
-      direction: "Long",
-      htfBias: "Bullish",
-      structureState: "None",
-      liquidityStatus: "Pending",
-      zoneValidity: "Valid",
-      htfBiasClear: true,
-      zoneValid: true,
-      liquidityTaken: true,
-      structureConfirmed: false,
-      entryConfirmed: false,
-      outcome: "Pending",
-      notes: "Watching for accumulation at H4 demand."
     });
   }
 }
