@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCreateTrade } from "@/hooks/use-trades";
 import { Navigation, MobileNav } from "@/components/Navigation";
 import { useForm } from "react-hook-form";
@@ -15,7 +15,9 @@ import {
   Image as ImageIcon,
   Loader2,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Upload,
+  X
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { api, buildUrl } from "@shared/routes";
@@ -34,6 +36,8 @@ export default function NewEntry() {
   const createTrade = useCreateTrade();
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -76,6 +80,22 @@ export default function NewEntry() {
     const timeout = setTimeout(validate, 500);
     return () => clearTimeout(timeout);
   }, [formValues]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      // In a real app, we'd upload the file here and set the URL in the form
+      // form.setValue("chartImageUrl", uploadedUrl);
+    }
+  };
+
+  const clearImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const onSubmit = (data: FormValues) => {
     if (validation?.valid || confirm("Trade violates rules. Log anyway for review?")) {
@@ -332,12 +352,52 @@ export default function NewEntry() {
               </div>
             </div>
 
+            {/* Screenshot Upload */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
               <label className="text-sm font-bold text-slate-100 uppercase tracking-widest mb-4 block">Screenshot Reference</label>
-              <div className="border-2 border-dashed border-slate-800 rounded-xl p-8 text-center hover:border-emerald-500/50 transition-colors cursor-pointer group">
-                <ImageIcon className="mx-auto text-slate-600 group-hover:text-emerald-500 transition-colors mb-4" size={32} />
-                <p className="text-sm text-slate-400">Drop chart screenshot here or click to upload</p>
-                <p className="text-[10px] text-slate-600 mt-2 uppercase tracking-widest font-bold">(Reference only, no AI analysis)</p>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+                accept="image/*"
+              />
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer group relative overflow-hidden",
+                  previewUrl 
+                    ? "border-emerald-500/50 bg-emerald-500/5" 
+                    : "border-slate-800 bg-slate-950/50 hover:border-emerald-500/50 hover:bg-emerald-500/5"
+                )}
+              >
+                {previewUrl ? (
+                  <div className="relative aspect-video w-full max-w-md mx-auto rounded-lg overflow-hidden border border-emerald-500/20">
+                    <img src={previewUrl} alt="Chart preview" className="w-full h-full object-cover" />
+                    <button 
+                      onClick={clearImage}
+                      className="absolute top-2 right-2 bg-rose-500 text-white p-1 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <p className="text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                        <Upload size={14} /> Change Image
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <ImageIcon className="mx-auto text-slate-600 group-hover:text-emerald-500 transition-colors mb-4" size={48} />
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-200 font-bold">Click to upload chart screenshot</p>
+                      <p className="text-xs text-slate-500">Supports JPG, PNG, WEBP (Max 5MB)</p>
+                    </div>
+                    <p className="text-[10px] text-slate-600 mt-6 uppercase tracking-widest font-bold border-t border-slate-800/50 pt-4">
+                      Internal reference only • No AI analysis
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
