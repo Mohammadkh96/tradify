@@ -53,34 +53,41 @@ export class DatabaseStorage implements IStorage {
   validateTradeRules(trade: InsertTrade) {
     const violations: string[] = [];
 
-    // Global Hard Rules
+    // GR-02: No trade allowed inside opposing HTF supply/demand
+    // (This is captured by manual user confirmation 'htfBiasClear')
     if (!trade.htfBiasClear) violations.push("HTF bias not clear");
-    if (!trade.zoneValid) violations.push("Zone not valid");
-    if (!trade.liquidityTaken) violations.push("Liquidity not taken");
-    if (!trade.structureConfirmed) violations.push("Structure not confirmed");
-    if (!trade.entryConfirmed) violations.push("Entry not confirmed");
     
-    // Logic-based checks
+    // GR-03 & GR-06/07: Zone validation
+    if (!trade.zoneValid || trade.zoneValidity === "Invalid") {
+      violations.push("Zone invalidated or not valid");
+    }
+
+    // GR-05: No confirmation → NO TRADE
+    if (!trade.entryConfirmed) violations.push("Entry confirmation missing");
+    
+    // GR-08: Liquidity must be taken before reversal entries
+    if (trade.structureState === "CHOCH" && trade.liquidityStatus !== "Taken") {
+      violations.push("Liquidity must be taken before reversal (CHOCH)");
+    }
+
+    // Directional Alignment
     if (trade.direction === "Long" && trade.htfBias === "Bearish") {
       violations.push("Against HTF structure (Bearish bias on Long trade)");
     }
     if (trade.direction === "Short" && trade.htfBias === "Bullish") {
       violations.push("Against HTF structure (Bullish bias on Short trade)");
     }
-    if (trade.zoneValidity === "Invalid") {
-      violations.push("Zone invalidated");
-    }
 
-    // RR Check
+    // RR Check (GR-04)
     if (trade.riskReward && parseFloat(trade.riskReward) < 1.5) {
       violations.push("RR too small (Minimum 1:1.5)");
     }
 
-    // Setup Matching
+    // Setup Matching (Strategy Table)
     let matchedSetup: string | undefined;
     if (violations.length === 0) {
       if (trade.structureState === "BOS") {
-        matchedSetup = trade.direction === "Long" ? "Bullish Continuation" : "Bearish Continuation";
+        matchedSetup = "Trend Continuation";
       } else if (trade.structureState === "CHOCH") {
         matchedSetup = "Liquidity Sweep Reversal";
       }
@@ -88,7 +95,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       valid: violations.length === 0,
-      reason: violations.join(", "),
+      reason: violations.join(" | "),
       violations,
       matchedSetup
     };

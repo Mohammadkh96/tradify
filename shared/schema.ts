@@ -1,11 +1,11 @@
-import { pgTable, text, serial, boolean, timestamp, numeric, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const tradeJournal = pgTable("trade_journal", {
   id: serial("id").primaryKey(),
   pair: text("pair").notNull(),
-  direction: text("direction").notNull(), // "Long" | "Short"
+  direction: text("direction").notNull(),
   timeframe: text("timeframe").notNull(),
   
   // Detection Rules (Manual Inputs)
@@ -24,7 +24,7 @@ export const tradeJournal = pgTable("trade_journal", {
   // Rule Engine Results
   isRuleCompliant: boolean("is_rule_compliant").default(false).notNull(),
   violationReason: text("violation_reason"),
-  matchedSetup: text("matched_setup"), // e.g. "Bullish Continuation"
+  matchedSetup: text("matched_setup"),
   
   // Trade Details
   entryPrice: numeric("entry_price"),
@@ -50,7 +50,7 @@ export type InsertTrade = z.infer<typeof insertTradeSchema>;
 export type CreateTradeRequest = InsertTrade;
 export type UpdateTradeRequest = Partial<InsertTrade>;
 
-// Rule Engine Types
+// Rule Engine Result Schema for UI
 export const validationResultSchema = z.object({
   valid: z.boolean(),
   reason: z.string().optional(),
