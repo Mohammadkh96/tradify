@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, numeric, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -23,6 +23,10 @@ export const tradeJournal = pgTable("trade_journal", {
   outcome: text("outcome"), // "Pending", "Win", "Loss", "BE"
   notes: text("notes"),
   
+  // Chart Analysis Data
+  analysisData: jsonb("analysis_data"), // Stores structured vision output
+  chartImageUrl: text("chart_image_url"),
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -36,3 +40,20 @@ export type InsertTrade = z.infer<typeof insertTradeSchema>;
 
 export type CreateTradeRequest = InsertTrade;
 export type UpdateTradeRequest = Partial<InsertTrade>;
+
+// Vision Analysis Types
+export const analysisResultSchema = z.object({
+  timeframe: z.string(),
+  trend: z.string(),
+  last_structure: z.string(),
+  liquidity_taken: z.string(),
+  zones_detected: z.array(z.object({
+    type: z.string(),
+    status: z.string()
+  })),
+  bias: z.string(),
+  verdict: z.string(),
+  reasoning: z.string()
+});
+
+export type AnalysisResult = z.infer<typeof analysisResultSchema>;

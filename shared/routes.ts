@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertTradeSchema, tradeJournal } from './schema';
+import { insertTradeSchema, tradeJournal, analysisResultSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -58,6 +58,17 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    analyze: {
+      method: 'POST' as const,
+      path: '/api/trades/analyze',
+      input: z.object({
+        image: z.string(), // base64
+      }),
+      responses: {
+        200: analysisResultSchema,
+        400: errorSchemas.validation,
+      },
+    },
   },
 };
 
@@ -75,3 +86,5 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
 
 export type TradeInput = z.infer<typeof api.trades.create.input>;
 export type TradeResponse = z.infer<typeof api.trades.create.responses[201]>;
+export type AnalysisInput = z.infer<typeof api.trades.analyze.input>;
+export type AnalysisResultResponse = z.infer<typeof api.trades.analyze.responses[200]>;
