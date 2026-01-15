@@ -1,0 +1,266 @@
+✅ FINAL REPLIT PROMPT (NO AI, RULE-BASED)
+
+Role:
+You are a senior full-stack engineer and trading-system architect.
+Build a professional rule-based trading analysis web app called MarketFoundations.
+
+1️⃣ CORE PRINCIPLE (NON-NEGOTIABLE)
+
+❌ No AI decision making
+❌ No indicators
+❌ No guessing
+
+✅ All analysis is done using predefined Market Knowledge rules
+✅ The system evaluates conditions like a trading engine, not an AI model
+
+2️⃣ APP PURPOSE
+
+The app must:
+
+Accept manual user inputs + chart screenshots
+
+Apply hard-coded trading rules
+
+Output:
+
+Market bias
+
+Structure state
+
+Liquidity status
+
+Valid / invalid trade setups
+
+Return NO TRADE if rules are not fully met
+
+3️⃣ SYSTEM ARCHITECTURE (IMPORTANT)
+UI (Dashboard / Journal / Upload)
+        ↓
+Chart Annotation Layer (manual or visual hints)
+        ↓
+Market Knowledge Rule Engine
+        ↓
+Decision Validator
+        ↓
+Structured Output (Trade / No Trade)
+
+
+There is NO probabilistic AI anywhere.
+
+4️⃣ MARKET KNOWLEDGE RULE ENGINE
+
+Implement the following explicit modules:
+
+A. Bias Engine (HTF)
+
+Rules:
+
+HH/HL → Bullish
+
+LL/LH → Bearish
+
+Inside HTF opposing zone → FORBIDDEN
+
+B. Structure Engine
+
+Detect:
+
+BOS (continuation allowed)
+
+CHOCH (reversal allowed only after confirmation)
+
+Rules:
+
+No BOS → No continuation trade
+
+No CHOCH → No reversal trade
+
+C. Liquidity Engine
+
+Detect:
+
+Equal highs / lows
+
+Trendline liquidity
+
+Range high / low sweeps
+
+Rules:
+
+Liquidity must be taken before entry
+
+Sweep without confirmation = WAIT
+
+D. Zone Validator
+
+Zones:
+
+Supply
+
+Demand
+
+Rules:
+
+Candle close beyond zone = INVALID
+
+Invalid zone = NO TRADE
+
+E. Entry Validator (LTF)
+
+Required:
+
+Structure alignment
+
+Rejection or engulfing
+
+RR ≥ 1 : 1.5
+
+5️⃣ SCREENSHOT HANDLING (IMPORTANT CLARITY)
+
+Screenshots are used ONLY for:
+
+Visual reference
+
+Manual marking (zones, trendlines, swings)
+
+Audit & review
+
+❌ The system does NOT “interpret images”
+✅ The trader marks structure/zones OR inputs confirmations via UI toggles
+
+Example inputs:
+
+HTF trend: Bullish
+
+Liquidity taken: Yes
+
+Zone valid: Yes
+
+BOS confirmed: Yes
+
+The engine validates logic — not the image itself.
+
+6️⃣ UI SECTIONS (MATCH DESIGN)
+Sidebar
+
+Dashboard
+
+Journal
+
+New Entry
+
+Knowledge Base
+
+Risk Calculator
+
+Dashboard
+
+Win Rate
+
+Total Trades
+
+Profitable Trades
+
+Avg R:R
+
+Performance donut chart
+
+Recent journal table
+
+Pre-session reminder card
+
+New Entry Page (CRITICAL)
+
+User must input:
+
+Pair
+
+Timeframe
+
+Trade type (Buy / Sell)
+
+HTF bias
+
+Structure state
+
+Liquidity status
+
+Zone validity
+
+Entry / SL / TP
+
+Screenshot upload
+
+The system then:
+
+Validates all rules
+
+Either:
+
+Accepts the trade
+
+Rejects with exact rule violation
+
+7️⃣ OUTPUT LOGIC (STRICT)
+
+If ANY rule fails, return:
+
+NO TRADE
+
+Reason:
+– HTF supply active
+– No liquidity sweep
+– Zone invalidated
+
+
+If all pass:
+
+VALID SETUP
+
+Entry logic: Pullback to demand
+Risk: 1R
+Target: 2.5R
+
+8️⃣ KNOWLEDGE BASE PAGE
+
+Static, structured documentation:
+
+Market Structure
+
+Liquidity
+
+Supply & Demand
+
+Execution Rules
+
+Forbidden Trades
+
+Used as reference only, not AI prompts.
+
+9️⃣ DATA MODEL (REQUIRED)
+
+Store:
+
+Trades
+
+Rule outcomes
+
+Violations
+
+Screenshots
+
+Journal history
+
+Every trade must be auditable.
+
+🔒 FINAL RULE
+
+This app behaves like a disciplined senior trader:
+
+No emotions
+
+No assumptions
+
+No forced trades
+
+Rules first, always

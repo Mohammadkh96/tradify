@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp, numeric, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,12 +7,22 @@ export const tradeJournal = pgTable("trade_journal", {
   pair: text("pair").notNull(), // e.g., EURUSD
   direction: text("direction").notNull(), // "Long" | "Short"
   
+  // Market Foundations (Manual Confirmations)
+  htfBias: text("htf_bias").notNull(), // "Bullish" | "Bearish" | "Neutral"
+  structureState: text("structure_state").notNull(), // "BOS" | "CHOCH" | "None"
+  liquidityStatus: text("liquidity_status").notNull(), // "Taken" | "Pending"
+  zoneValidity: text("zone_validity").notNull(), // "Valid" | "Invalid"
+  
   // Execution Checklist (Non-negotiables)
   htfBiasClear: boolean("htf_bias_clear").default(false).notNull(),
   zoneValid: boolean("zone_valid").default(false).notNull(),
   liquidityTaken: boolean("liquidity_taken").default(false).notNull(),
   structureConfirmed: boolean("structure_confirmed").default(false).notNull(),
   entryConfirmed: boolean("entry_confirmed").default(false).notNull(),
+  
+  // Rule Engine Results
+  isRuleCompliant: boolean("is_rule_compliant").default(false).notNull(),
+  violationReason: text("violation_reason"),
   
   // Trade Details
   entryPrice: numeric("entry_price"),
@@ -22,9 +32,6 @@ export const tradeJournal = pgTable("trade_journal", {
   
   outcome: text("outcome"), // "Pending", "Win", "Loss", "BE"
   notes: text("notes"),
-  
-  // Chart Analysis Data
-  analysisData: jsonb("analysis_data"), // Stores structured vision output
   chartImageUrl: text("chart_image_url"),
   
   createdAt: timestamp("created_at").defaultNow(),
@@ -40,20 +47,3 @@ export type InsertTrade = z.infer<typeof insertTradeSchema>;
 
 export type CreateTradeRequest = InsertTrade;
 export type UpdateTradeRequest = Partial<InsertTrade>;
-
-// Vision Analysis Types
-export const analysisResultSchema = z.object({
-  timeframe: z.string(),
-  trend: z.string(),
-  last_structure: z.string(),
-  liquidity_taken: z.string(),
-  zones_detected: z.array(z.object({
-    type: z.string(),
-    status: z.string()
-  })),
-  bias: z.string(),
-  verdict: z.string(),
-  reasoning: z.string()
-});
-
-export type AnalysisResult = z.infer<typeof analysisResultSchema>;

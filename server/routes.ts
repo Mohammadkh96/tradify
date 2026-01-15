@@ -39,6 +39,46 @@ export async function registerRoutes(
     }
   });
 
+  app.post(api.trades.validate.path, (req, res) => {
+    try {
+      const input = api.trades.validate.input.parse(req.body);
+      
+      // Validation Logic
+      let valid = true;
+      let reason = "";
+
+      if (!input.htfBiasClear) {
+        valid = false;
+        reason = "HTF bias not clear";
+      } else if (!input.zoneValid) {
+        valid = false;
+        reason = "Zone not valid";
+      } else if (!input.liquidityTaken) {
+        valid = false;
+        reason = "Liquidity not taken";
+      } else if (!input.structureConfirmed) {
+        valid = false;
+        reason = "Structure not confirmed";
+      } else if (!input.entryConfirmed) {
+        valid = false;
+        reason = "Entry not confirmed";
+      } else if (input.zoneValidity === "Invalid") {
+        valid = false;
+        reason = "Zone invalidated";
+      }
+
+      res.json({ valid, reason });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   app.put(api.trades.update.path, async (req, res) => {
     try {
       const input = api.trades.update.input.parse(req.body);
@@ -76,6 +116,10 @@ async function seedDatabase() {
     await storage.createTrade({
       pair: "EURUSD",
       direction: "Short",
+      htfBias: "Bearish",
+      structureState: "BOS",
+      liquidityStatus: "Taken",
+      zoneValidity: "Valid",
       htfBiasClear: true,
       zoneValid: true,
       liquidityTaken: true,
@@ -92,6 +136,10 @@ async function seedDatabase() {
     await storage.createTrade({
       pair: "GBPUSD",
       direction: "Long",
+      htfBias: "Bullish",
+      structureState: "None",
+      liquidityStatus: "Pending",
+      zoneValidity: "Valid",
       htfBiasClear: true,
       zoneValid: true,
       liquidityTaken: true,

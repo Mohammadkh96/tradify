@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertTradeSchema, tradeJournal, analysisResultSchema } from './schema';
+import { insertTradeSchema, tradeJournal } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -58,15 +58,25 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
-    analyze: {
+    validate: {
       method: 'POST' as const,
-      path: '/api/trades/analyze',
-      input: z.object({
-        image: z.string(), // base64
+      path: '/api/trades/validate',
+      input: insertTradeSchema.pick({
+        htfBias: true,
+        structureState: true,
+        liquidityStatus: true,
+        zoneValidity: true,
+        htfBiasClear: true,
+        zoneValid: true,
+        liquidityTaken: true,
+        structureConfirmed: true,
+        entryConfirmed: true,
       }),
       responses: {
-        200: analysisResultSchema,
-        400: errorSchemas.validation,
+        200: z.object({
+          valid: z.boolean(),
+          reason: z.string().optional(),
+        }),
       },
     },
   },
@@ -86,5 +96,4 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
 
 export type TradeInput = z.infer<typeof api.trades.create.input>;
 export type TradeResponse = z.infer<typeof api.trades.create.responses[201]>;
-export type AnalysisInput = z.infer<typeof api.trades.analyze.input>;
-export type AnalysisResultResponse = z.infer<typeof api.trades.analyze.responses[200]>;
+export type ValidationInput = z.infer<typeof api.trades.validate.input>;
