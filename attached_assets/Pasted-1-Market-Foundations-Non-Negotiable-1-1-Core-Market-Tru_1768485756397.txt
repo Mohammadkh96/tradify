@@ -1,0 +1,329 @@
+1. Market Foundations (Non-Negotiable)
+1.1 Core Market Truths
+
+Price moves because of liquidity and order flow
+
+Institutions accumulate → manipulate → distribute
+
+Indicators lag; price is the source
+
+Every trade must answer:
+
+Who is trapped?
+
+Where is liquidity?
+
+Where is value?
+
+2. Market Structure (The Backbone)
+2.1 Structure Definitions
+
+HH / HL → Uptrend
+
+LL / LH → Downtrend
+
+Range → Liquidity building
+
+2.2 Break Types
+
+BOS (Break of Structure)
+→ Continuation signal
+
+CHOCH (Change of Character)
+→ Reversal warning
+
+2.3 Structure Rules
+
+HTF structure overrides everything
+
+Never trade against HTF structure
+
+LTF is for execution only
+
+3. Supply & Demand (Institutional Zones)
+3.1 Zone Types
+
+RBR – Rally → Base → Rally (Demand)
+
+DBD – Drop → Base → Drop (Supply)
+
+RBD / DBR – Continuation zones
+
+3.2 Valid Zone Criteria
+
+Strong impulsive exit
+
+Minimal basing
+
+Fresh / untested
+
+Breaks structure or creates imbalance
+
+3.3 Zone Invalidation
+
+Demand invalid → candle closes below
+
+Supply invalid → candle closes above
+
+Invalid zone = NO TRADE
+
+4. Liquidity Theory (Smart Money Logic)
+4.1 Liquidity Pools
+
+Equal highs / equal lows
+
+Trendline stops
+
+Range highs & lows
+
+Previous day high/low
+
+Session highs/lows
+
+4.2 Liquidity Rules
+
+Price must take liquidity before real move
+
+Liquidity grab ≠ reversal (needs confirmation)
+
+Entries are taken after the sweep
+
+5. Order Blocks (Institutional Footprints)
+5.1 Definition
+
+The last opposite candle before an impulsive move that breaks structure.
+
+5.2 Valid OB Conditions
+
+Leads to BOS / CHOCH
+
+Clear imbalance
+
+Untested
+
+Located at premium/discount
+
+5.3 Entry Logic
+
+HTF OB → bias
+
+LTF OB → execution
+
+SL beyond OB extreme
+
+6. Fair Value Gap (Imbalance)
+6.1 Definition
+
+A 3-candle imbalance where price moves too fast.
+
+6.2 Rules
+
+Price tends to rebalance
+
+Best used with:
+
+OB
+
+Structure
+
+Liquidity sweep
+
+7. Fibonacci (Precision Tool)
+7.1 Retracement Levels
+
+23.6% → aggressive
+
+38.2% – 50% → optimal
+
+61.8% → last valid
+
+61.8% → setup invalid (for continuation)
+
+7.2 Fib Rules
+
+Draw only after impulse
+
+Confluence required (zone, OB, structure)
+
+Never fib random swings
+
+8. Price Action (Execution Confirmation)
+8.1 Candle Psychology
+
+Long wick → rejection
+
+Large body → momentum
+
+Small candles → absorption
+
+8.2 Confirmation Types
+
+Pin bar at level
+
+Engulfing after sweep
+
+Micro BOS on LTF
+
+Failed breakdown / breakout
+
+9. Chart Patterns (Secondary Confirmation)
+7
+9.1 Continuation
+
+Bullish / Bearish Flag
+
+Pennant
+
+Rectangle
+
+Ascending / Descending Triangle
+
+9.2 Reversal
+
+Double Top / Bottom
+
+Head & Shoulders
+
+Wedges
+
+Rounding Top / Bottom
+
+Patterns NEVER traded alone
+
+10. Trade Types (When to Trade)
+10.1 Continuation Trades
+
+Requirements:
+
+HTF trend intact
+
+BOS printed
+
+Pullback into demand/supply
+
+LTF confirmation
+
+10.2 Reversal Trades
+
+Requirements:
+
+HTF exhaustion
+
+Liquidity sweep
+
+CHOCH
+
+New zone formed
+
+11. Multi-Timeframe Model
+Timeframe	Purpose
+H4 / H1	Bias & zones
+M15	Structure alignment
+M5	Entry logic
+M1	Precision execution
+
+Rules:
+
+Never skip a timeframe
+
+LTF must agree with HTF
+
+12. Risk Management (Survival Rules)
+12.1 Risk
+
+Fixed % per trade
+
+SL always defined first
+
+No SL movement without logic
+
+12.2 R-Multiples
+
+Minimum RR: 1:1.5
+
+Partial at TP1
+
+Trail after structure confirms
+
+13. Trade Management
+13.1 After Entry
+
+Monitor structure
+
+Watch invalidation
+
+Respect session behavior
+
+13.2 Exit Conditions
+
+Zone invalidation
+
+Structure break against trade
+
+Target hit
+
+Momentum failure
+
+14. Forbidden Trades (Hard Rules)
+
+Inside HTF opposing zone
+
+Against HTF structure
+
+Before liquidity sweep
+
+Without confirmation
+
+News volatility (optional filter)
+
+15. Execution Checklist (Final Gate)
+
+Before ANY trade:
+
+HTF bias clear
+
+Zone valid
+
+Liquidity taken
+
+Structure confirmed
+
+Entry confirmed
+
+RR acceptable
+
+SL logical
+
+If one fails → NO TRADE
+
+16. Mindset Rules
+
+No FOMO
+
+No revenge trades
+
+No over-trading
+
+Process > outcome
+
+Losses are data
+
+17. Engine-Ready Logic (For Automation)
+
+This knowledge translates directly into:
+
+Bias Engine
+
+Zone Validator
+
+Liquidity Detector
+
+Structure Engine
+
+Entry Sensor
+
+Trade Tracer
+
+Invalidation Monitor
+
+If you want next:
