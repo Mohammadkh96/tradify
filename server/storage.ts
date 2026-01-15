@@ -28,8 +28,14 @@ export class DatabaseStorage implements IStorage {
 
   async createTrade(insertTrade: InsertTrade): Promise<Trade> {
     const validation = this.validateTradeRules(insertTrade);
+    
+    // Ensure numeric strings are handled safely
     const finalTrade = {
       ...insertTrade,
+      entryPrice: insertTrade.entryPrice || null,
+      stopLoss: insertTrade.stopLoss || null,
+      takeProfit: insertTrade.takeProfit || null,
+      riskReward: insertTrade.riskReward || null,
       isRuleCompliant: validation.valid,
       violationReason: validation.reason || null,
       matchedSetup: validation.matchedSetup || null,
