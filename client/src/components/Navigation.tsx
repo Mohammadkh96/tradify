@@ -26,7 +26,7 @@ export function Navigation() {
         <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white shadow-lg shadow-emerald-900/50">
           <TrendingUp size={20} />
         </div>
-        <span className="font-bold text-lg tracking-tight text-white">Market<span className="text-emerald-500">Foundations</span></span>
+        <span className="font-bold text-lg tracking-tight text-white">TRADIFY</span>
       </div>
 
       <nav className="flex-1 space-y-1 p-4">

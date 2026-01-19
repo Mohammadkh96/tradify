@@ -1,0 +1,61 @@
+Based on the documentation, here's what TRADIFY is and what it does:
+
+📊 TRADIFY - Trading Journal Application
+TRADIFY is a complete, production-ready trading journal application designed to enforce disciplined, rule-based trading through real-time validation. It's built with a "Stealth Terminal" dark aesthetic.
+
+🎯 Core Purpose
+The app helps traders:
+
+Record and track all trades with detailed information
+Enforce trading discipline through 4 hard-coded global rules
+Prevent emotional trading by requiring validation before trade entry
+Analyze performance with metrics like win rate, profit factor, R:R ratios
+Learn trading concepts through an integrated knowledge base
+Calculate position sizing based on risk parameters
+🔑 Key Features
+1. Dashboard Tab
+
+Performance metrics: Win Rate, Profit Factor, Avg R:R, Total P&L, Compliance Rate
+Visual charts showing trade distribution
+Recent closed trades overview
+2. Trade Journal Tab
+
+Chronological feed of all trades
+Color-coded by direction (LONG/SHORT) and outcome (WIN/LOSS)
+Rule compliance badges for each trade
+Notes and chart screenshots
+3. New Entry Tab (The Rule Engine)
+
+Form to create new trades with entry, stop-loss, and take-profit prices
+Real-time HUD validation that turns green when all rules pass, red when violated
+Enforces 4 Global Hard Rules:
+GR-02: HTF Bias Alignment (Longs only in bullish markets)
+GR-03: Valid Supply/Demand Zone (Entry must be in a valid zone)
+GR-05: Entry Confirmation (Must have OB/FVG or liquidity sweep)
+GR-08: Risk/Reward Ratio (Minimum R:R ratio requirement)
+4. Knowledge Base Tab
+
+10 educational modules on trading concepts
+Market structure, zones, order blocks, entry types, etc.
+5. Risk Calculator Tab
+
+Calculate position size based on account capital and risk percentage
+Determine risk amount for each trade
+🔌 MT5 Integration
+The app includes a MetaTrader 5 bridge:
+
+Expert Advisor (EA) that exports real-time data from MT5
+Tracks account balance, equity, margin, leverage
+Monitors open positions with live P&L
+Exports data as JSON every 2 seconds
+Allows importing live trading data into TRADIFY
+💻 Technical Stack
+Frontend: React 18 + TypeScript + Vite + Tailwind CSS
+Backend: Node.js + Express + TypeScript
+Database: PostgreSQL with Drizzle ORM
+Validation: Zod schemas for type-safe data validation
+State Management: React Query for server state
+🎨 Design Philosophy
+Zero AI Policy: No probabilistic AI—traders declare observations, app enforces rules
+Deterministic: Same input always produces same validation result
+Dark "Stealth Terminal" theme: Professional trading aesthetic with emerald green for bullish/valid, ros
