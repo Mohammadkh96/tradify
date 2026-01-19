@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, numeric, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -27,7 +27,7 @@ export const tradeJournal = pgTable("trade_journal", {
   matchedSetup: text("matched_setup"),
   
   // Trade Parameters
-  entryPrice: text("entry_price"), // Using text to avoid numeric precision issues in SQLite/Postgres mismatch or empty strings
+  entryPrice: text("entry_price"), 
   stopLoss: text("stop_loss"),
   takeProfit: text("take_profit"),
   riskReward: text("risk_reward"),
@@ -38,6 +38,13 @@ export const tradeJournal = pgTable("trade_journal", {
   chartImageUrl: text("chart_image_url"),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const mt5Data = pgTable("mt5_data", {
+  id: serial("id").primaryKey(),
+  accountInfo: jsonb("account_info").notNull(),
+  positions: jsonb("positions").notNull(),
+  lastUpdate: timestamp("last_update").defaultNow().notNull(),
 });
 
 export const insertTradeSchema = createInsertSchema(tradeJournal, {
@@ -52,6 +59,7 @@ export const insertTradeSchema = createInsertSchema(tradeJournal, {
 
 export type InsertTrade = z.infer<typeof insertTradeSchema>;
 export type Trade = typeof tradeJournal.$inferSelect;
+export type MT5Data = typeof mt5Data.$inferSelect;
 
 export const updateTradeSchema = createInsertSchema(tradeJournal).partial();
 export type UpdateTradeRequest = z.infer<typeof updateTradeSchema>;

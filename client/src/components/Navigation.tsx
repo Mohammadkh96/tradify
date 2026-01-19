@@ -5,7 +5,8 @@ import {
   PenTool, 
   History, 
   Calculator,
-  TrendingUp 
+  TrendingUp,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/journal", label: "Journal", icon: History },
   { href: "/new-entry", label: "New Entry", icon: PenTool },
+  { href: "/mt5", label: "MT5 Bridge", icon: Zap },
   { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
   { href: "/risk", label: "Risk Calculator", icon: Calculator },
 ];

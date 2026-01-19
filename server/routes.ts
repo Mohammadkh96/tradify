@@ -78,6 +78,26 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // MT5 Bridge Endpoints
+  app.post("/api/mt5/update", async (req, res) => {
+    try {
+      const { account, positions } = req.body;
+      const data = await storage.updateMT5Data({ account, positions });
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/mt5/status", async (_req, res) => {
+    try {
+      const data = await storage.getMT5Data();
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Seed data on startup
   await seedDatabase();
 

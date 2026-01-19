@@ -14,9 +14,30 @@ export interface IStorage {
   updateTrade(id: number, updates: UpdateTradeRequest): Promise<Trade>;
   deleteTrade(id: number): Promise<void>;
   validateTradeRules(trade: InsertTrade): { valid: boolean; reason?: string; matchedSetup?: string; violations?: string[] };
+  updateMT5Data(data: { account: any; positions: any }): Promise<MT5Data>;
+  getMT5Data(): Promise<MT5Data | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
+  async updateMT5Data(data: { account: any; positions: any }): Promise<MT5Data> {
+    const [existing] = await db.select().from(mt5Data).limit(1);
+    if (existing) {
+      const [updated] = await db.update(mt5Data)
+        .set({ accountInfo: data.account, positions: data.positions, lastUpdate: new Date() })
+        .where(eq(mt5Data.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [inserted] = await db.insert(mt5Data)
+      .values({ accountInfo: data.account, positions: data.positions })
+      .returning();
+    return inserted;
+  }
+
+  async getMT5Data(): Promise<MT5Data | undefined> {
+    const [data] = await db.select().from(mt5Data).limit(1);
+    return data;
+  }
   async getTrades(): Promise<Trade[]> {
     return await db.select().from(tradeJournal).orderBy(desc(tradeJournal.createdAt));
   }
