@@ -1,9 +1,11 @@
 import { db } from "./db";
 import {
   tradeJournal,
+  mt5Data,
   type InsertTrade,
   type UpdateTradeRequest,
-  type Trade
+  type Trade,
+  type MT5Data
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
