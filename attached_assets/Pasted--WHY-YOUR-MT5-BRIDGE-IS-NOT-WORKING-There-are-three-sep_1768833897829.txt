@@ -1,0 +1,210 @@
+🔴 WHY YOUR MT5 BRIDGE IS NOT WORKING
+
+There are three separate problems in your current setup.
+Any one of them is enough to break the bridge.
+
+You currently have all three.
+
+❌ PROBLEM 1 — You Switched Architectures Without Finishing the First One
+
+Originally, we correctly built:
+
+MT5 EA → LOCAL FILE → Tradify App
+
+
+That was working.
+
+You have now switched to:
+
+MT5 EA → REMOTE HTTPS SERVER (Replit) → Tradify App
+
+
+That is a completely different architecture, with much stricter rules.
+
+Your UI error confirms this:
+
+“Could not establish connection to the MT5 export bridge”
+
+That message expects a local bridge, not a cloud endpoint.
+
+❌ PROBLEM 2 — MT5 WebRequest Is EXTREMELY RESTRICTIVE
+
+Even though you “allowed” the URL, MT5 has these constraints:
+
+MT5 WebRequest limitations:
+
+TLS / SSL support is limited
+
+Some certificates are rejected
+
+Long Replit subdomains frequently fail
+
+Redirects break requests
+
+Sleeping Replit servers break requests
+
+MT5 does not retry
+
+Replit is NOT a reliable MT5 WebRequest target.
+
+This is not opinion — this is a known MT5 limitation.
+
+❌ PROBLEM 3 — Your EA Code Has a Fatal WebRequest Bug
+
+This line is wrong:
+
+ArrayResize(data, StringLen(json));
+StringToCharArray(json, data);
+
+Why this breaks:
+
+StringToCharArray needs +1 byte for null terminator
+
+Without it, MT5 sends corrupted payload
+
+Server may silently drop the request
+
+Correct version:
+ArrayResize(data, StringLen(json) + 1);
+StringToCharArray(json, data);
+
+
+This alone can cause 100% request failure.
+
+✅ THE CORRECT PATH FOR YOU (DO THIS NOW)
+
+You need to step back one level, stabilize, then move forward.
+
+✅ STEP 1 — ABANDON REMOTE HTTPS FOR NOW (MANDATORY)
+
+Do NOT use Replit / HTTPS / cloud yet.
+
+MT5 → cloud is:
+
+Fragile
+
+Hard to debug
+
+Not needed for your product
+
+Your product goal is:
+
+“Detect MT5 running on the same device”
+
+That means LOCAL bridge.
+
+✅ STEP 2 — RETURN TO LOCAL FILE BRIDGE (WORKING BASELINE)
+
+Replace your EA logic with file export only.
+
+This is non-negotiable at this stage.
+
+Minimal, correct EA export (STABLE):
+void OnTimer()
+{
+   string json = "{";
+   json += "\"connected\":true,";
+   json += "\"last_update\":" + IntegerToString(TimeCurrent()) + ",";
+   json += "\"account\":{";
+   json += "\"balance\":" + DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE), 2) + ",";
+   json += "\"equity\":" + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2);
+   json += "},\"positions\":[]}";
+   
+   int handle = FileOpen("TRADIFY_bridge_data.json",
+                         FILE_WRITE | FILE_COMMON);
+   if(handle == INVALID_HANDLE)
+   {
+      Print("TRADIFY ERROR: Cannot write file");
+      return;
+   }
+   
+   FileWriteString(handle, json);
+   FileClose(handle);
+}
+
+
+Compile. Attach. Verify file updates.
+
+✅ STEP 3 — FIX YOUR TRADIFY UI EXPECTATION
+
+Your UI currently expects:
+
+A local bridge
+
+Not a remote API
+
+Not credentials
+
+Not WebRequest
+
+That’s why it shows Bridge Connection Error.
+
+Your UI should:
+
+Read local JSON
+
+Check last_update
+
+Mark connected / disconnected
+
+✅ STEP 4 — ONLY AFTER THIS WORKS: MOVE TO LOCAL HTTP
+
+When you are ready (later):
+
+MT5 EA → localhost HTTP service → Tradify
+
+
+NOT:
+
+MT5 EA → Replit → Tradify
+
+
+That intermediate local service can be:
+
+Node
+
+Python
+
+Tauri backend
+
+This avoids every MT5 WebRequest problem.
+
+🔧 IF YOU INSIST ON KEEPING WebRequest (NOT RECOMMENDED)
+
+You must fix all of this:
+
+Use HTTP, not HTTPS
+
+Use localhost, not cloud
+
+Fix StringToCharArray size
+
+Log GetLastError() numbers
+
+Disable Replit sleep
+
+Remove redirects
+
+Shorten URL
+
+Increase timeout
+
+Even then — it will be fragile.
+
+🧠 THE REAL LESSON (IMPORTANT)
+
+You did nothing wrong.
+
+What happened is classic:
+
+EA bridge was correct
+
+You jumped too early to cloud
+
+MT5 punished you for it
+
+Professional MT5 tools never send directly to cloud from EA.
+
+They always go:
+
+EA → Local → Cloud (optional)
