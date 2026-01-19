@@ -81,10 +81,15 @@ export async function registerRoutes(
   // MT5 Bridge Endpoints
   app.post("/api/mt5/update", async (req, res) => {
     try {
+      // Direct integration for MT5 on same device via WebRequest
       const { account, positions } = req.body;
+      if (!account || !positions) {
+        return res.status(400).json({ message: "Invalid MT5 data payload" });
+      }
       const data = await storage.updateMT5Data({ account, positions });
       res.json(data);
     } catch (error: any) {
+      console.error("MT5 Sync Error:", error);
       res.status(500).json({ message: error.message });
     }
   });
