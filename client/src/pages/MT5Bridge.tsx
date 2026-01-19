@@ -70,7 +70,6 @@ void OnTimer() {
    json += "]}";
 
    char data[];
-   // FIX: Added +1 for null terminator as per MT5 requirements
    ArrayResize(data, StringLen(json) + 1);
    StringToCharArray(json, data);
    
@@ -84,7 +83,7 @@ void OnTimer() {
    if(res == -1) {
       Print("TRADIFY ERROR: WebRequest failed (", GetLastError(), "). Ensure URL is allowed in MT5 Options.");
    } else if(res >= 400) {
-      Print("TRADIFY ERROR: Server returned status ", res);
+      Print("TRADIFY ERROR: Server returned status ", res, ". Check App logs.");
    }
 }`;
 
