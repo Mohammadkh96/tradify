@@ -9,7 +9,6 @@ import {
   ExternalLink,
   ShieldCheck,
   Zap,
-  Download,
   Terminal,
   Copy,
   Check
@@ -32,12 +31,16 @@ export default function MT5Bridge() {
 #property version   "1.00"
 #property strict
 
-input string ServerURL = "https://your-app.replit.app/api/mt5/update";
+input string ServerURL = "https://${window.location.host}/api/mt5/update";
 input int UpdateInterval = 2; // seconds
 
 int OnInit() {
    EventSetTimer(UpdateInterval);
    return(INIT_SUCCEEDED);
+}
+
+void OnDeinit(const int reason) {
+   EventKillTimer();
 }
 
 void OnTimer() {
@@ -49,10 +52,11 @@ void OnTimer() {
    json += "\\"margin_level\\":" + DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL), 2);
    json += "},\\"positions\\":[";
    
+   int pos_count = 0;
    for(int i=0; i<PositionsTotal(); i++) {
       ulong ticket = PositionGetTicket(i);
       if(PositionSelectByTicket(ticket)) {
-         if(i > 0) json += ",";
+         if(pos_count > 0) json += ",";
          json += "{";
          json += "\\"symbol\\":\\"" + PositionGetString(POSITION_SYMBOL) + "\\",";
          json += "\\"type\\":\\"" + (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY ? "Buy" : "Sell") + "\\",";
@@ -60,6 +64,7 @@ void OnTimer() {
          json += "\\"price_open\\":" + DoubleToString(PositionGetDouble(POSITION_PRICE_OPEN), 5) + ",";
          json += "\\"profit\\":" + DoubleToString(PositionGetDouble(POSITION_PROFIT), 2);
          json += "}";
+         pos_count++;
       }
    }
    json += "]}";
@@ -73,7 +78,8 @@ void OnTimer() {
    string result_headers;
    
    int res = WebRequest("POST", ServerURL, headers, 1000, data, result, result_headers);
-   if(res == -1) Print("Error in WebRequest: ", GetLastError());
+   if(res == -1) Print("TRADIFY ERROR: WebRequest failed (", GetLastError(), "). Make sure URL is allowed in Options.");
+   else if(res >= 400) Print("TRADIFY ERROR: Server returned status ", res);
 }`;
 
   const copyToClipboard = () => {
