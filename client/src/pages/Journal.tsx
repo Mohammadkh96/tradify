@@ -81,9 +81,7 @@ export default function Journal() {
   const statsDerivedLabel = "🟡 Derived from history";
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-50 pb-20 md:pb-0">
-      <Navigation />
-      <MobileNav />
+    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
       
       <main className="md:ml-64 p-6 lg:p-10 max-w-7xl mx-auto">
         <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">

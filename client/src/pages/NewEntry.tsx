@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useCreateTrade } from "@/hooks/use-trades";
-import { Navigation, MobileNav } from "@/components/Navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -106,10 +105,7 @@ export default function NewEntry() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 pb-20 md:pb-0">
-      <Navigation />
-      <MobileNav />
-      
+    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
       <main className="md:ml-64 p-6 lg:p-10 max-w-6xl mx-auto">
         <header className="mb-8 flex justify-between items-end">
           <div>

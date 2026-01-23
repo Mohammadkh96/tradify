@@ -33,11 +33,14 @@ export function Navigation() {
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-800 bg-slate-950 text-slate-300 hidden md:flex flex-col">
-      <div className="flex items-center gap-3 px-6 h-16 border-b border-slate-800">
-        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white shadow-lg shadow-emerald-900/50">
-          <TrendingUp size={20} />
+      <div className="flex items-center gap-3 px-6 h-20 border-b border-slate-800">
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+          <TrendingUp size={24} strokeWidth={3} />
         </div>
-        <span className="font-bold text-lg tracking-tight text-white uppercase italic">Tradify</span>
+        <div className="flex flex-col">
+          <span className="font-black text-xl tracking-tighter text-white uppercase italic leading-none">Tradify</span>
+          <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">Terminal</span>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-1 p-4">

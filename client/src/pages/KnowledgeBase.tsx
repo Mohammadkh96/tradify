@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navigation, MobileNav } from "@/components/Navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight, BookOpen, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -240,10 +239,7 @@ export default function KnowledgeBase() {
   const currentModule = modules.find(m => m.id === activeModule);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 pb-20 md:pb-0">
-      <Navigation />
-      <MobileNav />
-      
+    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
       <main className="md:ml-64 p-6 lg:p-10 max-w-7xl mx-auto">
         <header className="mb-8">
           <div className="flex items-center gap-3 mb-2">

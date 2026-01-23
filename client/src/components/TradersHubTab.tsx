@@ -33,7 +33,8 @@ export default function TradersHubTab() {
   ])
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 p-6 lg:p-10">
+    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
+      <main className="md:ml-64 p-6 lg:p-10 max-w-6xl mx-auto space-y-8">
       <div className="flex items-center gap-3 mb-4">
         <Zap className="w-8 h-8 text-yellow-500" />
         <h1 className="text-3xl font-bold text-white tracking-tight">Traders Hub Marketplace</h1>
@@ -101,8 +102,9 @@ export default function TradersHubTab() {
           </div>
         </CardContent>
       </Card>
+      </main>
     </div>
-  )
+  );
 }
 
 function Metric({ label, value, color }: { label: string; value: string; color: string }) {
@@ -111,7 +113,7 @@ function Metric({ label, value, color }: { label: string; value: string; color: 
       <p className="text-slate-500 text-[10px] font-bold tracking-widest mb-1">{label}</p>
       <p className={cn("text-2xl font-bold", color)}>{value}</p>
     </div>
-  )
+  );
 }
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
