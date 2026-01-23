@@ -1,0 +1,296 @@
+1️⃣ EXACT PRO-ONLY FEATURES (TRADIFY)
+🎯 Core Philosophy
+
+Free = visibility & trust
+
+Pro = depth, analysis, and efficiency
+
+Users never lose access to their data
+
+They pay to understand it better and faster
+
+🆓 FREE PLAN — “Trader Essentials”
+
+This is what everyone gets after signup.
+
+MT5 & Core
+
+✅ MT5 connection (1 account)
+
+✅ Live Balance, Equity, Floating P&L, Margin Level
+
+✅ Open Positions (live)
+
+✅ Leverage & account health
+
+✅ Manual trade entries
+
+✅ Risk calculator
+
+✅ Knowledge base
+
+Journal (Limited but Useful)
+
+✅ Trade journal (MT5 + manual)
+
+✅ Last 30 days of trade history
+
+✅ Basic win/loss count
+
+❌ Date range filtering beyond 30 days
+
+❌ Export
+
+Dashboard (Basic)
+
+✅ Live account cards
+
+✅ Equity snapshot (last 30 days)
+
+❌ Full equity curve history
+
+❌ Advanced analytics
+
+Assistant
+
+✅ Limited chat assistance
+
+❌ Advanced explanations & insights
+
+💡 Free users should feel:
+
+“This is already better than most tools.”
+
+⭐ PRO PLAN — “Trader Pro”
+
+This is where users happily pay.
+
+📊 Advanced Dashboard & Analytics (PRO)
+
+🔒 Full Equity Curve (all-time)
+
+🔒 Equity vs Balance comparison
+
+🔒 Daily / Weekly / Monthly P&L
+
+🔒 Max drawdown (real, historical)
+
+🔒 Profit Factor
+
+🔒 Expectancy
+
+🔒 Avg Win vs Avg Loss
+
+🔒 Performance by:
+
+Symbol
+
+Day of week
+
+Session (later)
+
+📘 Journal Power Tools (PRO)
+
+🔒 Unlimited trade history
+
+🔒 Advanced date range filtering
+
+🔒 Trade tagging & notes
+
+🔒 Screenshot attachments
+
+🔒 Export to CSV / PDF
+
+🔒 Strategy-level breakdowns
+
+🤖 Assistant (Expanded – PRO)
+
+🔒 Unlimited chat usage
+
+🔒 Metric explanations
+
+🔒 Journal analysis help
+
+🔒 Platform usage guidance
+
+❌ Still no trading advice
+❌ Still no signals
+
+This keeps you legally safe and brand-consistent.
+
+🔗 MT5 Enhancements (PRO)
+
+🔒 Priority MT5 sync
+
+🔒 Faster refresh intervals
+
+🔒 Historical backfill
+
+🔒 Sync health diagnostics
+
+🧠 Quality-of-Life (PRO)
+
+🔒 Saved dashboard layouts (later)
+
+🔒 Dark/light theme toggle (optional)
+
+🔒 Early access to new features
+
+🏆 FUTURE (NOT NOW – BUT RESERVED)
+
+Keep architecture ready for:
+
+Multiple MT5 accounts
+
+Prop firm reporting
+
+Traders Hub monetization
+
+Strategy analytics
+
+Do not sell these yet.
+
+💰 PRICING RECOMMENDATION
+
+Keep it simple. Traders hate complicated pricing.
+
+Trader Pro
+
+$19 / month
+
+$190 / year (2 months free)
+
+This is:
+
+Affordable
+
+Non-threatening
+
+Very competitive
+
+2️⃣ CLEAN PRICING PAGE DESIGN
+
+This page should feel:
+
+Calm
+
+Transparent
+
+Confident
+
+Not salesy
+
+🧱 PAGE STRUCTURE
+Header (Top)
+
+Simple, strong headline:
+
+Simple pricing. No hype. No lock-in.
+
+Subtitle:
+“Start free. Upgrade only when you need deeper insights.”
+
+📦 PLAN CARDS (2 CARDS ONLY)
+🆓 Trader Essentials (Free)
+
+$0
+
+✔ Live MT5 data
+✔ Open positions
+✔ 30-day journal history
+✔ Basic dashboard
+✔ Risk calculator
+✔ Knowledge base
+
+Button:
+
+Start Free
+
+Muted, calm style.
+
+⭐ Trader Pro (Recommended)
+
+$19 / month
+or $190 / year
+
+✔ Everything in Free
+✔ Full equity curve
+✔ Advanced analytics
+✔ Unlimited journal history
+✔ Exports (CSV / PDF)
+✔ Unlimited assistant
+✔ Priority MT5 sync
+
+Button:
+
+Upgrade to Pro
+
+Highlighted but not aggressive.
+
+🔍 COMPARISON SECTION (OPTIONAL BUT GOOD)
+
+A simple checklist table:
+
+Feature	Free	Pro
+Live MT5 Data	✔	✔
+Equity Curve (All-Time)	✖	✔
+Trade History Limit	30 days	Unlimited
+Advanced Metrics	✖	✔
+Export	✖	✔
+Assistant Usage	Limited	Unlimited
+🛡 TRUST & SAFETY SECTION
+
+Very important for trading products.
+
+Add a small section:
+
+“We never access your broker credentials”
+
+“MT5 runs locally on your device”
+
+“Cancel anytime”
+
+This reduces friction.
+
+🎯 CTA (BOTTOM)
+
+“Start free. Upgrade when you’re ready.”
+
+No urgency. No fake discounts.
+
+3️⃣ HOW TO CONNECT PRICING TO THE APP (CRITICAL)
+
+Inside the app:
+
+🔒 Lock icons on Pro features
+
+Tooltip:
+
+“Available in Trader Pro”
+
+Clicking → Pricing page or upgrade modal
+
+Never block:
+
+Balance
+
+Equity
+
+User’s own trades
+
+4️⃣ FINAL PRODUCT VERDICT
+
+With this setup, TRADIFY becomes:
+
+Ethical
+
+Trustworthy
+
+Subscription-ready
+
+Scalable
+
+You’re not selling signals.
+You’re selling clarity and discipline.
+
+That’s exactly what serious traders pay for.

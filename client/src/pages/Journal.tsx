@@ -103,9 +103,11 @@ export default function Journal() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {!isPro && (
-              <Button variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
-                Upgrade to PRO
-              </Button>
+              <Link href="/pricing">
+                <Button variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
+                  Upgrade to PRO
+                </Button>
+              </Link>
             )}
             <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-800">
               {['all', 'today', 'week', 'month'].map((filter) => (

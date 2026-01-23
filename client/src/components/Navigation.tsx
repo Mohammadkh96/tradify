@@ -21,6 +21,7 @@ const navItems = [
   { href: "/traders-hub", label: "Traders Hub", icon: Users },
   { href: "/knowledge-base", label: "Education", icon: BookOpen },
   { href: "/risk", label: "Calculator", icon: Calculator },
+  { href: "/pricing", label: "Plans", icon: Zap },
 ];
 
 export function Navigation() {
