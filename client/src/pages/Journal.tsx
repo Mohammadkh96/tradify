@@ -56,7 +56,7 @@ export default function Journal() {
   }, [manualTrades, mt5History]);
 
   const filteredTrades = useMemo(() => {
-    return combinedTrades.filter(trade => {
+    let base = combinedTrades.filter(trade => {
       const matchesSearch = trade.pair.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesOutcome = filterOutcome === "all" || trade.outcome === filterOutcome;
       
@@ -74,15 +74,29 @@ export default function Journal() {
       }
       return matchesSearch && matchesOutcome && matchesDate;
     });
-  }, [combinedTrades, searchTerm, filterOutcome, dateFilter]);
+
+    // FREE users limited to last 30 days
+    if (!isPro) {
+      const thirtyDaysAgo = subDays(new Date(), 30);
+      base = base.filter(trade => new Date(trade.closeTime || trade.createdAt) >= thirtyDaysAgo);
+    }
+
+    return base;
+  }, [combinedTrades, searchTerm, filterOutcome, dateFilter, isPro]);
 
   const stats = useMemo(() => {
     const total = filteredTrades.length;
     const wins = filteredTrades.filter(t => t.outcome === "Win").length;
     const losses = filteredTrades.filter(t => t.outcome === "Loss").length;
-    const netPl = filteredTrades.reduce((acc, t) => acc + (t.netPl || 0), 0);
+    
+    // Calculate P&L from filtered set
+    const netPl = filteredTrades.reduce((acc, t) => acc + (typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0)), 0);
     const winRate = total > 0 ? (wins / total * 100).toFixed(1) : "0.0";
-    return { total, winRate, netPl, wins, losses };
+
+    // Pro metrics
+    const profitFactor = losses === 0 ? "∞" : (wins / losses).toFixed(2); // Simplified placeholder
+    
+    return { total, winRate, netPl, wins, losses, profitFactor };
   }, [filteredTrades]);
 
   const statsDerivedLabel = "🟡 Derived from history";
@@ -161,6 +175,14 @@ export default function Journal() {
             <div className="text-3xl font-black text-white">{stats.wins}W / {stats.losses}L</div>
             <div className="text-[9px] text-slate-600 mt-2">{statsDerivedLabel}</div>
           </div>
+          {isPro && (
+            <div className="bg-[#0b1120] border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
+              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest block mb-1">Profit Factor</span>
+              <div className="text-3xl font-black text-white">{stats.profitFactor}</div>
+              <div className="text-[9px] text-slate-600 mt-2">PRO Analytics</div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-3">

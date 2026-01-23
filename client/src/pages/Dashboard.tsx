@@ -181,7 +181,7 @@ export default function Dashboard() {
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-sm rounded-xl">
                   <Lock className="text-emerald-500 mb-2" size={24} />
                   <p className="text-sm font-bold text-white uppercase tracking-widest">30-Day Limit (FREE)</p>
-                  <Button variant="link" asChild className="text-emerald-500 text-xs h-auto p-0 mt-1">
+                  <Button variant="ghost" asChild className="text-emerald-500 text-xs h-auto p-0 mt-1 hover:bg-transparent">
                     <Link href="/pricing">Upgrade to PRO for full history</Link>
                   </Button>
                 </div>
