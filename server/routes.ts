@@ -183,6 +183,34 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/mt5/status/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const data = await storage.getMT5Data(userId);
+      if (!data) {
+        return res.json({ status: "DISCONNECTED" });
+      }
+      
+      // Check if last update was within 1 minute
+      const lastUpdate = new Date(data.lastUpdate || 0);
+      const now = new Date();
+      const isLive = (now.getTime() - lastUpdate.getTime()) < 60000;
+      
+      res.json({
+        status: isLive ? "CONNECTED" : "DISCONNECTED",
+        metrics: {
+          balance: data.balance,
+          equity: data.equity,
+          floatingPl: data.floatingPl,
+          marginLevel: data.marginLevel,
+          positions: data.positions
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch status" });
+    }
+  });
+
   app.get("/api/mt5/snapshots/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
