@@ -20,22 +20,22 @@ export default function MT5Bridge() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const { data: mt5, isLoading, error, refetch } = useQuery<{
-    isConnected: boolean;
-    accountInfo?: {
-      balance: number;
-      equity: number;
-      profit: number;
-      margin_level: number;
+    status: string;
+    metrics?: {
+      balance: string;
+      equity: string;
+      floatingPl: string;
+      marginLevel: string;
+      positions: Array<{
+        symbol: string;
+        type: string;
+        volume: number;
+        price_open: number;
+        profit: number;
+      }>;
     };
-    positions?: Array<{
-      symbol: string;
-      type: string;
-      volume: number;
-      price_open: number;
-      profit: number;
-    }>;
   }>({
-    queryKey: ["/api/mt5/status"],
+    queryKey: ["/api/mt5/status/demo_user"],
     refetchInterval: 2000, 
   });
 
@@ -46,6 +46,8 @@ import json
 
 # Configuration
 SERVER_URL = "https://${window.location.host}/api/mt5/sync"
+USER_ID = "demo_user"  # Your Tradify User ID
+TOKEN = "your_secure_token_here"  # Generated in Tradify Settings
 INTERVAL = 2  # Seconds between syncs
 
 def collect_mt5_data():
@@ -61,12 +63,14 @@ def collect_mt5_data():
     positions = mt5.positions_get()
     
     payload = {
-        "account": {
-            "balance": account_info.balance,
-            "equity": account_info.equity,
-            "profit": account_info.profit,
-            "margin_level": account_info.margin_level
-        },
+        "userId": USER_ID,
+        "token": TOKEN,
+        "balance": account_info.balance,
+        "equity": account_info.equity,
+        "margin": account_info.margin,
+        "freeMargin": account_info.margin_free,
+        "marginLevel": account_info.margin_level,
+        "floatingPl": account_info.profit,
         "positions": [
             {
                 "symbol": p.symbol,
@@ -79,16 +83,16 @@ def collect_mt5_data():
     }
     return payload
 
-print("TRADIFY Python Connector Started")
+print(f"TRADIFY Python Connector Started for {USER_ID}")
 while True:
     data = collect_mt5_data()
     if data:
         try:
             response = requests.post(SERVER_URL, json=data)
             if response.status_code == 200:
-                print(f"Synced: Balance \${data['account']['balance']}")
+                print(f"Synced: Balance \${data['balance']} | Status: {response.json().get('success')}")
             else:
-                print(f"Error: Server returned {response.status_code}")
+                print(f"Error: Server returned {response.status_code} - {response.text}")
         except Exception as e:
             print(f"Connection Error: {e}")
             
@@ -115,7 +119,7 @@ while True:
             <div className="flex items-center gap-2 mb-1">
               <div className={cn(
                 "w-2 h-2 rounded-full",
-                mt5?.isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                mt5?.status === "CONNECTED" ? "bg-emerald-500 animate-pulse" : (mt5?.status === "SYNCING" ? "bg-amber-500 animate-pulse" : "bg-rose-500")
               )} />
               <h1 className="text-3xl font-bold text-white tracking-tight">MT5 Standalone Connector</h1>
             </div>
@@ -143,7 +147,7 @@ while True:
               </p>
             </div>
 
-            {mt5?.isConnected ? (
+            {mt5?.status === "CONNECTED" || mt5?.status === "SYNCING" ? (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
@@ -152,7 +156,7 @@ while True:
                       <Wallet className="text-emerald-500" size={18} />
                     </div>
                     <div className="text-2xl font-mono font-bold text-white">
-                      ${mt5.accountInfo?.balance?.toLocaleString()}
+                      ${parseFloat(mt5.metrics?.balance || "0").toLocaleString()}
                     </div>
                   </div>
                   <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
@@ -161,7 +165,7 @@ while True:
                       <Activity className="text-emerald-500" size={18} />
                     </div>
                     <div className="text-2xl font-mono font-bold text-white">
-                      ${mt5.accountInfo?.equity?.toLocaleString()}
+                      ${parseFloat(mt5.metrics?.equity || "0").toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -170,7 +174,7 @@ while True:
                   <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
                     <h3 className="font-bold flex items-center gap-2 text-sm uppercase tracking-widest">
                       <BarChart3 size={16} className="text-slate-500" />
-                      Live Positions ({mt5.positions?.length || 0})
+                      Live Positions ({mt5.metrics?.positions?.length || 0})
                     </h3>
                   </div>
                   <div className="overflow-x-auto">
@@ -183,7 +187,7 @@ while True:
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800">
-                        {mt5.positions?.map((pos: any, idx: number) => (
+                        {mt5.metrics?.positions?.map((pos: any, idx: number) => (
                           <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
                             <td className="px-6 py-4 font-mono text-sm text-white">{pos.symbol}</td>
                             <td className="px-6 py-4">
@@ -217,7 +221,7 @@ while True:
                   Your MT5 terminal is not sending data. The dashboard is currently locked to prevent inaccurate data display.
                 </p>
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-950 border border-slate-800 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Status: Waiting for Python Bridge...
+                  Status: {mt5?.status === "DISCONNECTED" ? "Waiting for Python Bridge..." : mt5?.status}
                 </div>
               </div>
             )}

@@ -19,16 +19,16 @@ import { useQuery } from "@tanstack/react-query";
 export default function Dashboard() {
   const { data: trades, isLoading } = useTrades();
   const { data: mt5 } = useQuery<{
-    isConnected: boolean;
-    accountInfo?: {
-      balance: number;
-      equity: number;
-      profit: number;
-      margin_level: number;
+    status: string;
+    metrics?: {
+      balance: string;
+      equity: string;
+      floatingPl: string;
+      marginLevel: string;
     };
   }>({
-    queryKey: ["/api/mt5/status"],
-    refetchInterval: 5000,
+    queryKey: ["/api/mt5/status/demo_user"], // In real app, use current userId
+    refetchInterval: 2000,
   });
 
   if (isLoading) {
@@ -50,31 +50,31 @@ export default function Dashboard() {
   const stats = [
     { 
       label: "Balance", 
-      value: mt5?.isConnected && mt5.accountInfo ? `$${mt5.accountInfo.balance.toLocaleString()}` : "$0", 
+      value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.balance).toLocaleString()}` : "$0", 
       icon: <Wallet size={18} />, 
-      subtext: mt5?.isConnected ? "Live from MT5" : "Sync Offline",
-      trend: mt5?.isConnected ? "up" : "down" as "up" | "down"
+      subtext: mt5?.status === "CONNECTED" ? "Live from MT5" : (mt5?.status === "SYNCING" ? "Syncing..." : "MT5 Disconnected"),
+      trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
       label: "Equity", 
-      value: mt5?.isConnected && mt5.accountInfo ? `$${mt5.accountInfo.equity.toLocaleString()}` : "$0", 
+      value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.equity).toLocaleString()}` : "$0", 
       icon: <Activity size={18} />, 
-      subtext: mt5?.isConnected ? "Live from MT5" : "Sync Offline",
-      trend: mt5?.isConnected ? "up" : "down" as "up" | "down"
+      subtext: mt5?.status === "CONNECTED" ? "Live from MT5" : "Accuracy First",
+      trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Win Rate", 
-      value: `${winRate}%`, 
-      icon: <Target size={18} />, 
-      subtext: "Last 30 days",
-      trend: parseFloat(winRate) > 50 ? "up" : "down" as "up" | "down"
+      label: "Floating P&L", 
+      value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.floatingPl).toLocaleString()}` : "$0", 
+      icon: <TrendingUp size={18} />, 
+      subtext: "Current Open Risk",
+      trend: mt5?.status === "CONNECTED" && parseFloat(mt5.metrics?.floatingPl || "0") >= 0 ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Total Trades", 
-      value: total, 
+      label: "Margin Level", 
+      value: mt5?.status === "CONNECTED" && mt5.metrics ? `${parseFloat(mt5.metrics.marginLevel).toFixed(2)}%` : "0%", 
       icon: <BarChart3 size={18} />, 
-      subtext: "Journaled entries",
-      trend: "up" as "up" | "down"
+      subtext: "Account Health",
+      trend: mt5?.status === "CONNECTED" && parseFloat(mt5.metrics?.marginLevel || "0") > 100 ? "up" : "down" as "up" | "down"
     },
   ];
 
@@ -228,17 +228,30 @@ export default function Dashboard() {
 
         {/* Quick Tips Section */}
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-700 text-amber-500">
-              <Activity size={24} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-slate-950 rounded-lg border border-slate-700 text-amber-500">
+                <Activity size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">Pre-Session Reminder</h3>
+                <p className="text-slate-300 text-sm leading-relaxed max-w-3xl">
+                  Before entering any trade today, verify HTF structure. Don't force trades in the middle of the range.
+                  Wait for price to reach premium/discount zones and show displacement. Remember: <span className="text-emerald-400 font-medium">Patience pays.</span>
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Pre-Session Reminder</h3>
-              <p className="text-slate-300 text-sm leading-relaxed max-w-3xl">
-                Before entering any trade today, verify HTF structure. Don't force trades in the middle of the range.
-                Wait for price to reach premium/discount zones and show displacement. Remember: <span className="text-emerald-400 font-medium">Patience pays.</span>
-              </p>
-            </div>
+            {mt5?.status === "CONNECTED" && (
+              <div className="hidden lg:block text-right">
+                <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 flex items-center justify-end gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live MT5 Link Verified
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">
+                  Last Sync: {mt5.lastUpdate ? new Date(mt5.lastUpdate).toLocaleTimeString() : 'N/A'}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
