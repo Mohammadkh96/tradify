@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Lock
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Link } from "wouter";
 import { format } from "date-fns";

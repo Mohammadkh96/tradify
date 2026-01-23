@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
 export default function MT5Bridge() {
