@@ -57,10 +57,10 @@ export default function Dashboard() {
   const allTrades = trades || [];
   const wins = allTrades.filter(t => t.outcome === "Win").length;
   const losses = allTrades.filter(t => t.outcome === "Loss").length;
-  const be = allTrades.filter(t => t.outcome === "BE").length;
   const total = allTrades.length;
   
-  const winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : "0.0";
+  const winRate = total >= 20 ? ((wins / total) * 100).toFixed(1) : "N/A";
+  const winRateStatus = total >= 20 ? "🟡 DERIVED" : "⚪ WAITING (min 20)";
   
   const chartData = snapshots?.map(s => ({
     date: format(new Date(s.date), 'MMM d'),
@@ -103,10 +103,11 @@ export default function Dashboard() {
     new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
   ).slice(0, 5);
 
-  const pieData = [
+  const pieData = total >= 20 ? [
     { name: 'Wins', value: wins, color: '#10b981' },
     { name: 'Losses', value: losses, color: '#f43f5e' },
-    { name: 'Break Even', value: be, color: '#64748b' },
+  ] : [
+    { name: 'Placeholder', value: 1, color: '#1e293b' }
   ];
 
   return (
@@ -161,7 +162,14 @@ export default function Dashboard() {
                 <p className="text-xs text-slate-500">Growth performance over time</p>
               </div>
             </div>
-            <div className="h-[300px] w-full">
+            <div className="h-[300px] w-full relative">
+              {chartData.length < 2 && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/20 backdrop-blur-[1px] rounded-xl border border-dashed border-slate-800/50">
+                  <Activity className="text-slate-700 mb-2 animate-pulse" size={32} />
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-tighter">Awaiting historical equity snapshots</p>
+                  <span className="text-[9px] text-slate-600 mt-1 italic">Curve populates after periodic sync intervals</span>
+                </div>
+              )}
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
@@ -207,11 +215,20 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-6">Win Rate</h3>
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center justify-between">
+              Win Rate
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                {winRateStatus}
+              </span>
+            </h3>
             <div className="h-64 w-full relative">
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-4xl font-black text-white">{winRate}%</span>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">🟡 Derived</span>
+                <span className={cn("text-4xl font-black text-white", winRate === "N/A" && "text-slate-600")}>
+                  {winRate === "N/A" ? "N/A" : `${winRate}%`}
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                  {total} Trades Logged
+                </span>
               </div>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -224,6 +241,7 @@ export default function Dashboard() {
                     paddingAngle={8}
                     dataKey="value"
                     stroke="none"
+                    opacity={winRate === "N/A" ? 0.2 : 1}
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -235,6 +253,11 @@ export default function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
+            {winRate === "N/A" && (
+              <p className="text-[10px] text-center text-slate-500 mt-4 leading-relaxed italic">
+                Statistically valid win rate requires at least 20 trades.
+              </p>
+            )}
           </div>
         </div>
 

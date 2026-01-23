@@ -71,9 +71,10 @@ export default function Journal() {
   const stats = useMemo(() => {
     const total = filteredTrades.length;
     const wins = filteredTrades.filter(t => t.outcome === "Win").length;
+    const losses = filteredTrades.filter(t => t.outcome === "Loss").length;
     const netPl = filteredTrades.reduce((acc, t) => acc + (t.netPl || 0), 0);
     const winRate = total > 0 ? (wins / total * 100).toFixed(1) : "0.0";
-    return { total, winRate, netPl };
+    return { total, winRate, netPl, wins, losses };
   }, [filteredTrades]);
 
   const statsDerivedLabel = "🟡 Derived from history";
@@ -111,7 +112,7 @@ export default function Journal() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1 h-full bg-slate-700" />
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Total Trades</span>
@@ -130,6 +131,12 @@ export default function Journal() {
             <div className={cn("text-3xl font-black", stats.netPl >= 0 ? "text-emerald-500" : "text-rose-500")}>
               ${stats.netPl.toLocaleString()}
             </div>
+            <div className="text-[9px] text-slate-600 mt-2">{statsDerivedLabel}</div>
+          </div>
+          <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Wins / Losses</span>
+            <div className="text-3xl font-black text-white">{stats.wins}W / {stats.losses}L</div>
             <div className="text-[9px] text-slate-600 mt-2">{statsDerivedLabel}</div>
           </div>
         </div>
