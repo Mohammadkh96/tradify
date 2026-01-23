@@ -9,18 +9,23 @@ import {
   Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/journal", label: "Journal", icon: History },
   { href: "/new-entry", label: "New Entry", icon: PenTool },
-  { href: "/mt5", label: "MT5 Bridge", icon: Zap },
-  { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
+  { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
+  { href: "/knowledge-base", label: "Knowledge Base", icon: BookOpen },
   { href: "/risk", label: "Risk Calculator", icon: Calculator },
 ];
 
 export function Navigation() {
   const [location] = useLocation();
+  const { data: mt5 } = useQuery<{ isConnected: boolean }>({
+    queryKey: ["/api/mt5/status"],
+    refetchInterval: 5000,
+  });
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-800 bg-slate-950 text-slate-300 hidden md:flex flex-col">
@@ -62,8 +67,16 @@ export function Navigation() {
 
       <div className="p-4 border-t border-slate-800">
         <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
-          <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">Daily Reminder</h4>
-          <p className="text-xs text-slate-300 italic">"Don't trade what you think, trade what you see."</p>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-semibold text-slate-500 uppercase">MT5 Status</h4>
+            <div className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              mt5?.isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+            )} />
+          </div>
+          <p className="text-[11px] text-slate-300">
+            {mt5?.isConnected ? "Terminal Connected" : "Terminal Offline"}
+          </p>
         </div>
       </div>
     </aside>

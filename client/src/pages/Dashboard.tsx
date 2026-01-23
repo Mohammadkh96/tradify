@@ -3,18 +3,33 @@ import { StatCard } from "@/components/StatCard";
 import { Navigation, MobileNav } from "@/components/Navigation";
 import { 
   TrendingUp, 
-  TrendingDown, 
   Activity, 
   DollarSign,
-  ArrowRight
+  ArrowRight,
+  Wallet,
+  Target,
+  BarChart3
 } from "lucide-react";
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
   const { data: trades, isLoading } = useTrades();
+  const { data: mt5 } = useQuery<{
+    isConnected: boolean;
+    accountInfo?: {
+      balance: number;
+      equity: number;
+      profit: number;
+      margin_level: number;
+    };
+  }>({
+    queryKey: ["/api/mt5/status"],
+    refetchInterval: 5000,
+  });
 
   if (isLoading) {
     return (
@@ -32,16 +47,45 @@ export default function Dashboard() {
   
   const winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : "0.0";
   
-  // Recent trades
+  const stats = [
+    { 
+      label: "Balance", 
+      value: mt5?.isConnected && mt5.accountInfo ? `$${mt5.accountInfo.balance.toLocaleString()}` : "$0", 
+      icon: <Wallet size={18} />, 
+      subtext: mt5?.isConnected ? "Live from MT5" : "Sync Offline",
+      trend: mt5?.isConnected ? "up" : "down" as "up" | "down"
+    },
+    { 
+      label: "Equity", 
+      value: mt5?.isConnected && mt5.accountInfo ? `$${mt5.accountInfo.equity.toLocaleString()}` : "$0", 
+      icon: <Activity size={18} />, 
+      subtext: mt5?.isConnected ? "Live from MT5" : "Sync Offline",
+      trend: mt5?.isConnected ? "up" : "down" as "up" | "down"
+    },
+    { 
+      label: "Win Rate", 
+      value: `${winRate}%`, 
+      icon: <Target size={18} />, 
+      subtext: "Last 30 days",
+      trend: parseFloat(winRate) > 50 ? "up" : "down" as "up" | "down"
+    },
+    { 
+      label: "Total Trades", 
+      value: total, 
+      icon: <BarChart3 size={18} />, 
+      subtext: "Journaled entries",
+      trend: "up" as "up" | "down"
+    },
+  ];
+
   const recentTrades = [...allTrades].sort((a, b) => 
     new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
   ).slice(0, 5);
 
-  // Chart data
   const pieData = [
-    { name: 'Wins', value: wins, color: '#10b981' }, // emerald-500
-    { name: 'Losses', value: losses, color: '#f43f5e' }, // rose-500
-    { name: 'Break Even', value: be, color: '#64748b' }, // slate-500
+    { name: 'Wins', value: wins, color: '#10b981' },
+    { name: 'Losses', value: losses, color: '#f43f5e' },
+    { name: 'Break Even', value: be, color: '#64748b' },
   ];
 
   return (
@@ -57,32 +101,16 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard 
-            label="Win Rate" 
-            value={`${winRate}%`}
-            subtext="Last 30 days"
-            icon={<Activity size={18} />}
-            trend={parseFloat(winRate) > 50 ? "up" : "down"}
-          />
-          <StatCard 
-            label="Total Trades" 
-            value={total} 
-            subtext="Lifetime journal entries"
-            icon={<TrendingUp size={18} />}
-          />
-          <StatCard 
-            label="Profitable Trades" 
-            value={wins} 
-            subtext={`vs ${losses} losses`}
-            className="border-l-4 border-l-emerald-500"
-            icon={<DollarSign size={18} />}
-          />
-          <StatCard 
-            label="Avg R:R" 
-            value="1:2.4" 
-            subtext="Target: 1:3.0"
-            icon={<TrendingUp size={18} />}
-          />
+          {stats.map((stat, i) => (
+            <StatCard 
+              key={i}
+              label={stat.label} 
+              value={stat.value}
+              subtext={stat.subtext}
+              icon={stat.icon}
+              trend={stat.trend}
+            />
+          ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

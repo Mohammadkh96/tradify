@@ -19,7 +19,22 @@ import { useToast } from "@/hooks/use-toast";
 export default function MT5Bridge() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const { data: mt5, isLoading, error, refetch } = useQuery({
+  const { data: mt5, isLoading, error, refetch } = useQuery<{
+    isConnected: boolean;
+    accountInfo?: {
+      balance: number;
+      equity: number;
+      profit: number;
+      margin_level: number;
+    };
+    positions?: Array<{
+      symbol: string;
+      type: string;
+      volume: number;
+      price_open: number;
+      profit: number;
+    }>;
+  }>({
     queryKey: ["/api/mt5/status"],
     refetchInterval: 2000, 
   });
@@ -30,7 +45,7 @@ import time
 import json
 
 # Configuration
-SERVER_URL = "https://\${window.location.host}/api/mt5/sync"
+SERVER_URL = "https://${window.location.host}/api/mt5/sync"
 INTERVAL = 2  # Seconds between syncs
 
 def collect_mt5_data():
