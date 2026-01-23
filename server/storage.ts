@@ -24,9 +24,14 @@ export interface IStorage {
     freeMargin: string;
     marginLevel: string;
     floatingPl: string;
+    leverage?: number;
+    currency?: string;
     positions: any[];
     syncToken: string;
   }): Promise<MT5Data>;
+  syncMT5History(userId: string, trades: any[]): Promise<void>;
+  getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]>;
+  getDailySnapshots(userId: string): Promise<any[]>;
   getMT5Data(userId: string): Promise<MT5Data | undefined>;
 }
 
@@ -39,6 +44,8 @@ export class DatabaseStorage implements IStorage {
     freeMargin: string;
     marginLevel: string;
     floatingPl: string;
+    leverage?: number;
+    currency?: string;
     positions: any[];
     syncToken: string;
   }): Promise<MT5Data> {
@@ -52,10 +59,33 @@ export class DatabaseStorage implements IStorage {
       freeMargin: data.freeMargin.toString(),
       marginLevel: data.marginLevel.toString(),
       floatingPl: data.floatingPl.toString(),
+      leverage: data.leverage || 100,
+      currency: data.currency || "USD",
       positions: data.positions,
       syncToken: data.syncToken,
       lastUpdate: new Date(),
     };
+
+    // Update Daily Snapshot
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [existingSnapshot] = await db.select().from(dailyEquitySnapshots)
+      .where(eq(dailyEquitySnapshots.userId, data.userId))
+      .where(eq(dailyEquitySnapshots.date, today))
+      .limit(1);
+
+    if (existingSnapshot) {
+      await db.update(dailyEquitySnapshots)
+        .set({ equity: values.equity, balance: values.balance })
+        .where(eq(dailyEquitySnapshots.id, existingSnapshot.id));
+    } else {
+      await db.insert(dailyEquitySnapshots).values({
+        userId: data.userId,
+        date: today,
+        equity: values.equity,
+        balance: values.balance,
+      });
+    }
 
     if (existing) {
       const [updated] = await db.update(mt5Data)
@@ -69,6 +99,46 @@ export class DatabaseStorage implements IStorage {
       .values(values)
       .returning();
     return inserted;
+  }
+
+  async syncMT5History(userId: string, trades: any[]): Promise<void> {
+    for (const trade of trades) {
+      const [existing] = await db.select().from(mt5History).where(eq(mt5History.ticket, trade.ticket.toString())).limit(1);
+      if (!existing) {
+        await db.insert(mt5History).values({
+          userId,
+          ticket: trade.ticket.toString(),
+          symbol: trade.symbol,
+          direction: trade.type,
+          volume: trade.volume.toString(),
+          entryPrice: trade.price_open.toString(),
+          exitPrice: trade.price_close.toString(),
+          sl: trade.sl?.toString(),
+          tp: trade.tp?.toString(),
+          openTime: new Date(trade.open_time * 1000),
+          closeTime: new Date(trade.close_time * 1000),
+          duration: trade.close_time - trade.open_time,
+          grossPl: trade.profit.toString(),
+          commission: trade.commission?.toString() || "0",
+          swap: trade.swap?.toString() || "0",
+          netPl: (trade.profit + (trade.commission || 0) + (trade.swap || 0)).toString(),
+        });
+      }
+    }
+  }
+
+  async getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]> {
+    let query = db.select().from(mt5History).where(eq(mt5History.userId, userId));
+    return await query.orderBy(desc(mt5History.closeTime));
+  }
+
+  async getDailySnapshots(userId: string): Promise<any[]> {
+    return await db.select().from(dailyEquitySnapshots).where(eq(dailyEquitySnapshots.userId, userId)).orderBy(dailyEquitySnapshots.date);
+  }
+
+  async getMT5Data(userId: string): Promise<MT5Data | undefined> {
+    const [data] = await db.select().from(mt5Data).where(eq(mt5Data.userId, userId)).limit(1);
+    return data;
   }
 
   async getMT5Data(userId: string): Promise<MT5Data | undefined> {

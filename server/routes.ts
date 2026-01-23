@@ -100,7 +100,10 @@ export async function registerRoutes(
         freeMargin, 
         marginLevel, 
         floatingPl, 
-        positions 
+        leverage,
+        currency,
+        positions,
+        history
       } = req.body;
 
       if (!userId || !token) {
@@ -121,9 +124,16 @@ export async function registerRoutes(
         freeMargin: String(freeMargin || 0),
         marginLevel: String(marginLevel || 0),
         floatingPl: String(floatingPl || 0),
+        leverage: leverage,
+        currency: currency,
         positions: positions || [],
         syncToken: token
       });
+
+      // Sync History if provided
+      if (history && history.length > 0) {
+        await storage.syncMT5History(userId, history);
+      }
 
       // Sync positions into manual trade journal if they match ticket IDs
       if (positions && positions.length > 0) {
@@ -163,38 +173,23 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/mt5/status/:userId", async (req, res) => {
+  app.get("/api/mt5/history/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
-      const data = await storage.getMT5Data(userId);
-      
-      if (!data) {
-        return res.json({ status: "DISCONNECTED", metrics: null });
-      }
-      
-      const lastUpdate = new Date(data.lastUpdate).getTime();
-      const now = new Date().getTime();
-      const diff = now - lastUpdate;
-      
-      let status = "CONNECTED";
-      if (diff > 10000) status = "DISCONNECTED";
-      else if (diff > 3000) status = "SYNCING";
-      
-      res.json({ 
-        status, 
-        lastUpdate: data.lastUpdate,
-        metrics: status === "CONNECTED" || status === "SYNCING" ? {
-          balance: data.balance,
-          equity: data.equity,
-          margin: data.margin,
-          freeMargin: data.freeMargin,
-          marginLevel: data.marginLevel,
-          floatingPl: data.floatingPl,
-          positions: data.positions
-        } : null
-      });
+      const history = await storage.getMT5History(userId);
+      res.json(history);
     } catch (error) {
-      res.status(500).json({ message: "Status check failed" });
+      res.status(500).json({ message: "Failed to fetch history" });
+    }
+  });
+
+  app.get("/api/mt5/snapshots/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const snapshots = await storage.getDailySnapshots(userId);
+      res.json(snapshots);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch snapshots" });
     }
   });
 

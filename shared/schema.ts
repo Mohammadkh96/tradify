@@ -49,9 +49,40 @@ export const mt5Data = pgTable("mt5_data", {
   freeMargin: text("free_margin").notNull().default("0"),
   marginLevel: text("margin_level").notNull().default("0"),
   floatingPl: text("floating_pl").notNull().default("0"),
+  leverage: integer("leverage").notNull().default(100),
+  currency: text("currency").notNull().default("USD"),
   positions: jsonb("positions").notNull().default([]),
   lastUpdate: timestamp("last_update").defaultNow().notNull(),
   syncToken: text("sync_token").notNull(),
+});
+
+export const mt5History = pgTable("mt5_history", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  ticket: text("ticket").notNull().unique(),
+  symbol: text("symbol").notNull(),
+  direction: text("direction").notNull(), // "Buy" or "Sell"
+  volume: text("volume").notNull(),
+  entryPrice: text("entry_price").notNull(),
+  exitPrice: text("exit_price").notNull(),
+  sl: text("sl"),
+  tp: text("tp"),
+  openTime: timestamp("open_time").notNull(),
+  closeTime: timestamp("close_time").notNull(),
+  duration: integer("duration_seconds"),
+  grossPl: text("gross_pl").notNull(),
+  commission: text("commission").notNull().default("0"),
+  swap: text("swap").notNull().default("0"),
+  netPl: text("net_pl").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  date: timestamp("date").notNull(),
+  equity: text("equity").notNull(),
+  balance: text("balance").notNull(),
 });
 
 export const userRole = pgTable("user_role", {

@@ -171,6 +171,9 @@ class MT5ConnectorGUI:
                 account_info = mt5.account_info()
                 if account_info:
                     positions = mt5.positions_get()
+                    # Fetch History (Last 100 trades for efficiency)
+                    from_date = time.time() - (30 * 24 * 60 * 60) # Last 30 days
+                    history = mt5.history_deals_get(from_date, time.time())
                     
                     payload = {
                         "userId": "${userId}",
@@ -181,6 +184,8 @@ class MT5ConnectorGUI:
                         "freeMargin": account_info.margin_free,
                         "marginLevel": account_info.margin_level,
                         "floatingPl": account_info.profit,
+                        "leverage": account_info.leverage,
+                        "currency": account_info.currency,
                         "positions": [
                             {
                                 "ticket": p.ticket,
@@ -192,7 +197,24 @@ class MT5ConnectorGUI:
                                 "tp": p.tp,
                                 "profit": p.profit
                             } for p in positions
-                        ]
+                        ] if positions else [],
+                        "history": [
+                            {
+                                "ticket": d.ticket,
+                                "symbol": d.symbol,
+                                "type": "Buy" if d.type == 0 else "Sell",
+                                "volume": d.volume,
+                                "price_open": d.price_open,
+                                "price_close": d.price_close,
+                                "sl": getattr(d, 'sl', 0),
+                                "tp": getattr(d, 'tp', 0),
+                                "open_time": d.time,
+                                "close_time": d.time_msc // 1000,
+                                "profit": d.profit,
+                                "commission": d.commission,
+                                "swap": d.swap
+                            } for d in history if d.entry == 1 # Only entry/exit pairs or deals
+                        ] if history else []
                     }
                     
                     response = requests.post(self.api_url.get(), json=payload)

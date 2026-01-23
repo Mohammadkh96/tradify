@@ -1,0 +1,354 @@
+📌 CONTINUATION DIRECTIVE
+TRADIFY – MT5 Sync, Dashboard & Journal Professionalization
+CONTEXT (IMPORTANT)
+
+MT5 is now connected
+
+Balance / Equity are visible
+
+The platform is transitioning from visual prototype → production trading system
+
+From this point forward:
+
+Every number must come from MT5 or validated backend calculations.
+
+1️⃣ EXTEND MT5 SYNC (BACKEND – MANDATORY)
+Continue syncing the following MT5 data in real time:
+Account-Level (Every 1–2 seconds)
+
+Balance
+
+Equity
+
+Floating P&L
+
+Margin used
+
+Free margin
+
+Margin level %
+
+Leverage
+
+Currency
+
+Last update timestamp
+
+Store snapshots for:
+
+Daily equity
+
+Intraday P&L tracking
+
+Open Positions (Live)
+
+For each position:
+
+Ticket ID (primary key)
+
+Symbol
+
+Direction (BUY / SELL)
+
+Volume (lots)
+
+Entry price
+
+SL / TP
+
+Current price
+
+Floating P&L
+
+Swap
+
+Commission
+
+Open time
+
+➡ These must power:
+
+Dashboard “Open Positions”
+
+Journal “Active Trades”
+
+Account History (CRITICAL)
+
+Sync full MT5 history, not partial.
+
+For each closed trade:
+
+Ticket ID
+
+Symbol
+
+Direction
+
+Volume
+
+Entry price
+
+Exit price
+
+SL / TP
+
+Open time
+
+Close time
+
+Duration
+
+Gross P&L
+
+Commission
+
+Swap
+
+Net P&L
+
+This data must populate the Journal automatically.
+
+2️⃣ JOURNAL TAB – PROFESSIONAL TRADING JOURNAL
+Journal Structure (Non-Negotiable)
+A. Default View
+
+Chronological list (newest first)
+
+Clear distinction:
+
+🟢 MT5 Trades (Synced)
+
+🔵 Manual Trades (Rule Engine)
+
+Each row/card must show:
+
+Symbol
+
+Direction (color-coded)
+
+Date & time
+
+Result (Win / Loss / BE)
+
+Net P&L
+
+R:R (if manual)
+
+Source: MT5 / Manual
+
+B. Date Filter (REQUIRED)
+
+Add a professional date range filter:
+
+From date
+
+To date
+
+Quick presets:
+
+Today
+
+Yesterday
+
+This week
+
+This month
+
+Custom range
+
+Filtering must:
+
+Query backend (not frontend-only)
+
+Work for both MT5 & manual trades
+
+Update totals dynamically
+
+C. Journal Totals (Dynamic)
+
+Above the journal list, show:
+
+Total trades (filtered range)
+
+Win rate
+
+Net P&L
+
+Avg R:R
+
+Max drawdown (range-based)
+
+This makes the journal analytical, not just historical.
+
+3️⃣ DASHBOARD – PROFESSIONAL TRADER VIEW
+
+The dashboard must evolve from “summary” → command center.
+
+Add the Following Sections
+A. Account Health Panel
+
+Live from MT5:
+
+Balance
+
+Equity
+
+Floating P&L
+
+Margin used
+
+Free margin
+
+Margin level %
+
+Color logic:
+
+Healthy → emerald
+
+Warning → amber
+
+Critical → rose
+
+B. Equity Curve (MANDATORY)
+
+Line chart:
+
+Equity vs Balance
+
+Daily snapshots
+
+Zoom:
+
+1D / 1W / 1M / All
+
+This is the most trusted chart for traders.
+
+C. P&L Breakdown
+
+Daily P&L (bar chart)
+
+Weekly P&L
+
+Best / worst day
+
+D. Open Positions Widget
+
+Live table:
+
+Symbol
+
+Direction
+
+Size
+
+Floating P&L
+
+Distance to SL / TP
+
+E. Performance Metrics (Refined)
+
+Only compute these from validated history:
+
+Win rate
+
+Profit factor
+
+Expectancy
+
+Avg win vs avg loss
+
+Max drawdown
+
+Consistency score
+
+F. Sync Trust Indicators
+
+Always visible:
+
+“MT5 Connected” badge
+
+Last sync timestamp
+
+Data source: MT5 verified
+
+If disconnected:
+
+Freeze dashboard
+
+Show warning banner
+
+Disable “confidence illusion”
+
+4️⃣ DATA RULES (VERY IMPORTANT)
+Golden Rules
+
+❌ No frontend calculations for equity or margin
+
+❌ No mock values
+
+❌ No cached MT5 values beyond TTL
+
+✅ MT5 → Backend → Frontend only
+✅ Backend validates all numbers
+✅ Frontend displays, never guesses
+
+5️⃣ UX POLISH (PROFESSIONAL FEEL)
+Loading & Sync
+
+Skeleton loaders for dashboard cards
+
+“Syncing…” subtle animation
+
+Graceful reconnect behavior
+
+Clarity
+
+Tooltips on all metrics
+
+Clear labeling:
+
+“Live from MT5”
+
+“Calculated from closed trades”
+
+Visual Hierarchy
+
+Equity & Floating P&L = highest emphasis
+
+Secondary metrics = muted
+
+Loss / drawdown = visually serious, not flashy
+
+6️⃣ VALIDATION CHECKLIST (REQUIRED BEFORE RELEASE)
+
+Before considering this “done”:
+
+MT5 equity == Dashboard equity
+
+MT5 closed trades == Journal history
+
+Date filter works correctly
+
+Disconnect Python → dashboard warns
+
+Reconnect → data resumes cleanly
+
+No duplicate MT5 trades
+
+No missing history
+
+If any fail → do not ship
+
+7️⃣ SUCCESS DEFINITION
+
+TRADIFY is “professional” when:
+
+A trader opens MT5 and TRADIFY side by side
+
+Numbers match exactly
+
+Journal shows full account history
+
+Dashboard tells the truth
+
+The platform feels like a trading terminal, not a website
