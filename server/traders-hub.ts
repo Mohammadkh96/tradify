@@ -61,6 +61,16 @@ router.get("/user-role/:userId", async (req: Request, res: Response) => {
       .limit(1);
 
     if (roles.length === 0) {
+      // Auto-create a demo role if not found to ensure token generation works for the demo user
+      if (userId === "demo_user") {
+        const [newRole] = await db.insert(userRole).values({
+          userId,
+          role: "RECEIVER",
+          termsAccepted: true,
+          riskAcknowledged: true,
+        }).returning();
+        return res.json(newRole);
+      }
       return res.status(404).json({ error: "User role not found" });
     }
 
@@ -389,7 +399,7 @@ router.post("/generate-token", async (req: Request, res: Response) => {
       .set({ syncToken: token, updatedAt: new Date() })
       .where(eq(userRole.userId, userId));
 
-    res.json({ token });
+    res.json({ syncToken: token });
   } catch (error) {
     console.error("Error generating token:", error);
     res.status(500).json({ error: "Failed to generate token" });
