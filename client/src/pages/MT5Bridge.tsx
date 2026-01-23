@@ -118,25 +118,19 @@ class MT5ConnectorGUI:
         
         tab_control.pack(expand=1, fill="both")
 
-    def load_saved_token(self):
-        if os.path.exists('token.txt'):
-            with open('token.txt', 'r') as f:
-                self.token.set(f.read().strip())
-
-    def clear_token(self):
-        if os.path.exists('token.txt'):
-            os.remove('token.txt')
-        self.token.set("")
-        messagebox.showinfo("Success", "Saved token cleared")
-
     def start_sync(self):
         if not self.token.get():
             messagebox.showerror("Error", "Please enter a token")
             return
             
+        # Try to save the token to the user's home directory instead of the current working directory
+        # to avoid permission issues in protected folders like Downloads
         try:
-            with open('token.txt', 'w') as f:
+            home_dir = os.path.expanduser("~")
+            token_path = os.path.join(home_dir, "tradify_token.txt")
+            with open(token_path, 'w') as f:
                 f.write(self.token.get())
+            print(f"Token saved to {token_path}")
         except Exception as e:
             print(f"Warning: Could not save token locally: {e}")
             
@@ -144,6 +138,27 @@ class MT5ConnectorGUI:
             self.is_running = True
             threading.Thread(target=self.sync_loop, daemon=True).start()
             self.status_var.set("Syncing...")
+
+    def load_saved_token(self):
+        try:
+            home_dir = os.path.expanduser("~")
+            token_path = os.path.join(home_dir, "tradify_token.txt")
+            if os.path.exists(token_path):
+                with open(token_path, 'r') as f:
+                    self.token.set(f.read().strip())
+        except:
+            pass
+
+    def clear_token(self):
+        try:
+            home_dir = os.path.expanduser("~")
+            token_path = os.path.join(home_dir, "tradify_token.txt")
+            if os.path.exists(token_path):
+                os.remove(token_path)
+            self.token.set("")
+            messagebox.showinfo("Success", "Saved token cleared")
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not clear token: {e}")
 
     def sync_loop(self):
         while self.is_running:
