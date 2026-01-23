@@ -58,7 +58,7 @@ export default function MT5Bridge() {
         symbol: string;
         type: string;
         volume: number;
-        price_open: number;
+        price: number;
         profit: number;
         ticket: number;
       }>;
@@ -192,7 +192,7 @@ class MT5ConnectorGUI:
                                 "symbol": p.symbol,
                                 "type": "Buy" if p.type == 0 else "Sell",
                                 "volume": p.volume,
-                                "price_open": p.price_open,
+                                "price": p.price_open,
                                 "sl": p.sl,
                                 "tp": p.tp,
                                 "profit": p.profit
@@ -204,8 +204,7 @@ class MT5ConnectorGUI:
                                 "symbol": d.symbol,
                                 "type": "Buy" if d.type == 0 else "Sell",
                                 "volume": d.volume,
-                                "price_open": d.price_open,
-                                "price_close": d.price_close,
+                                "price": d.price,
                                 "sl": getattr(d, 'sl', 0),
                                 "tp": getattr(d, 'tp', 0),
                                 "open_time": d.time,
@@ -213,7 +212,7 @@ class MT5ConnectorGUI:
                                 "profit": d.profit,
                                 "commission": d.commission,
                                 "swap": d.swap
-                            } for d in history if d.entry == 1 # Only entry/exit pairs or deals
+                            } for d in history # Sync all deals, entry/exit handled by storage
                         ] if history else []
                     }
                     
