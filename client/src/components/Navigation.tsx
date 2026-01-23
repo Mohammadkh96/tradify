@@ -3,7 +3,7 @@ import {
   LayoutDashboard, 
   BookOpen, 
   PenTool, 
-  History, 
+  History as HistoryIcon, 
   Calculator,
   TrendingUp,
   Zap,
@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/journal", label: "Journal", icon: History },
+  { href: "/journal", label: "Journal", icon: HistoryIcon },
   { href: "/new-entry", label: "New Entry", icon: PenTool },
   { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
   { href: "/traders-hub", label: "Traders Hub", icon: Users },

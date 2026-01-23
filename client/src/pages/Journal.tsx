@@ -2,7 +2,7 @@ import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
 import { Navigation, MobileNav } from "@/components/Navigation";
 import { format, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Trash2, Search, Filter, Calendar, TrendingUp, Target, Activity, Share2 } from "lucide-react";
+import { Trash2, Search, Filter, Calendar as CalendarIcon, TrendingUp, Target, Activity, Share2, History as HistoryIcon } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -191,7 +191,7 @@ export default function Journal() {
           ))}
           {filteredTrades.length === 0 && (
             <div className="py-20 flex flex-col items-center justify-center text-slate-500 bg-[#0b1120] border border-slate-800 rounded-2xl border-dashed">
-              <History size={48} className="mb-4 opacity-20" />
+              <HistoryIcon size={48} className="mb-4 opacity-20" />
               <p>No trades found for this filter</p>
             </div>
           )}

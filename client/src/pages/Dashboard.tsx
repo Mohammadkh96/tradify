@@ -10,7 +10,7 @@ import {
   Target,
   BarChart3,
   Percent,
-  History,
+  History as HistoryIcon,
   LayoutDashboard
 } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -327,7 +327,7 @@ export default function Dashboard() {
 
           <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-              <History size={18} className="text-emerald-500" />
+              <HistoryIcon size={18} className="text-emerald-500" />
               Recent Entries
             </h3>
             <div className="space-y-4">
