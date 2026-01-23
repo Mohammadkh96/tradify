@@ -1,0 +1,239 @@
+🔴 CURRENT REALITY (IMPORTANT)
+What is happening now
+
+The dashboard looks professional ✅
+
+Metrics like Win Rate, Profit Factor, P&L are displayed ✅
+
+BUT:
+
+Equity is not live
+
+Margin is not live
+
+Open positions are not live
+
+Trade history is not coming from MT5
+
+There is no evidence of a real MT5 → App data pipeline
+
+This means:
+
+The MT5 connector is UI-only or partially stubbed.
+
+There is no active Python process:
+
+reading from the MT5 terminal
+
+pulling account/position data
+
+pushing it to your backend
+
+So your intuition is correct:
+
+“Shouldn’t MT5 have a Python app that syncs data?”
+✅ Yes — absolutely. That is REQUIRED.
+
+🧠 HOW THIS SHOULD ACTUALLY WORK (NON-NEGOTIABLE)
+
+MT5 cannot magically sync with a web app on its own.
+
+You need a local bridge.
+
+The ONLY correct architecture is:
+MT5 Terminal (running on user PC)
+        ↓
+Python Connector App (local process)
+        ↓
+Secure REST API (TRADIFY backend)
+        ↓
+Database
+        ↓
+Dashboard / Journal (read-only)
+
+
+If the Python app is not running, then:
+
+Equity = fake
+
+P&L = fake
+
+Dashboard = lying (even if unintentionally)
+
+🔌 WHAT THE MT5 PYTHON CONNECTOR MUST DO
+
+This is not optional. This is the foundation.
+
+1️⃣ Python App (Local, Downloadable)
+
+The user must:
+
+Download a Python app (or packaged .exe)
+
+Run it on the same machine as MT5
+
+Paste a one-time token from TRADIFY
+
+If this does not exist → NO MT5 SYNC EXISTS
+
+2️⃣ Python Connector Responsibilities
+
+Using the official MetaTrader5 Python package:
+
+import MetaTrader5 as mt5
+
+
+The connector must:
+
+Connect to MT5
+mt5.initialize()
+account_info = mt5.account_info()
+
+Pull LIVE data
+
+Balance
+
+Equity
+
+Free margin
+
+Margin used
+
+Margin level
+
+Leverage
+
+Pull OPEN positions
+positions = mt5.positions_get()
+
+
+Including:
+
+Symbol
+
+Volume
+
+Entry price
+
+SL / TP
+
+Floating P&L
+
+Pull HISTORY
+mt5.history_deals_get()
+
+
+Including:
+
+Closed trades
+
+Profit
+
+Commission
+
+Swap
+
+Time
+
+3️⃣ Sync Loop (CRITICAL)
+
+The Python app must run a loop:
+
+while True:
+    payload = collect_mt5_data()
+    POST payload → /api/mt5/sync
+    sleep(1–2 seconds)
+
+
+MT5 is the single source of truth
+The web app never recalculates equity or P&L
+
+4️⃣ Backend Responsibilities
+
+Your backend must:
+
+Authenticate using the token
+
+Store MT5 data per user
+
+Reject stale or malformed payloads
+
+Mark connection state:
+
+CONNECTED
+
+SYNCING
+
+DISCONNECTED
+
+If no payload received in X seconds → DISCONNECTED
+
+5️⃣ Dashboard Rules (VERY IMPORTANT)
+
+The dashboard must:
+
+❌ NEVER show MT5 metrics if connector is offline
+❌ NEVER guess equity
+❌ NEVER “simulate” data
+
+✅ Show:
+
+“MT5 DISCONNECTED”
+
+“Waiting for sync…”
+
+If you don’t enforce this, users will never trust the platform.
+
+🔍 WHY YOUR DASHBOARD LOOKS GOOD BUT IS WRONG
+
+Right now:
+
+Metrics exist
+
+Charts exist
+
+But they are not wired to MT5
+
+This is the dangerous phase:
+
+A platform that looks professional but is not truthful
+
+You are right to stop here and question it.
+
+✅ WHAT MUST BE DONE NEXT (IN ORDER)
+Step 1 — STOP UI WORK
+
+Do not add features.
+Do not polish charts.
+
+Step 2 — BUILD THE PYTHON MT5 CONNECTOR
+
+This is the missing heart.
+
+Without it:
+
+MT5 Connection page is cosmetic
+
+Dashboard is invalid
+
+Journal is unreliable
+
+Step 3 — ENFORCE HARD CONNECTION LOGIC
+
+No Python sync → No MT5 data
+
+No MT5 data → Dashboard locked
+
+🔒 HARD TRUTH (BUT IMPORTANT)
+
+You are building a business-grade trading platform.
+
+A trader will forgive:
+
+missing features
+
+slow UI
+
+They will never forgive wrong equity or P&L.
+
+You are doing the right thing by stopping here.

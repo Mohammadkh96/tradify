@@ -82,27 +82,40 @@ export async function registerRoutes(
   });
 
   // MT5 Bridge Endpoints
-  app.post("/api/mt5/update", async (req, res) => {
+  app.post("/api/mt5/sync", async (req, res) => {
     try {
-      // Direct integration for MT5 on same device via WebRequest
       const { account, positions } = req.body;
-      if (!account || !positions) {
-        return res.status(400).json({ message: "Invalid MT5 data payload" });
-      }
-      const data = await storage.updateMT5Data({ account, positions });
-      res.json(data);
-    } catch (error: any) {
+      if (!account) return res.status(400).json({ message: "Account data required" });
+      
+      await storage.updateMT5Data({
+        accountInfo: account,
+        positions: positions || [],
+        lastUpdate: new Date().toISOString(),
+        isConnected: true
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
       console.error("MT5 Sync Error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
-  app.get("/api/mt5/status", async (_req, res) => {
+  app.get("/api/mt5/status", async (req, res) => {
     try {
       const data = await storage.getMT5Data();
-      res.json(data);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      if (!data) return res.json({ isConnected: false });
+      
+      // Auto-disconnect if no update in 10 seconds
+      const lastUpdate = new Date(data.lastUpdate).getTime();
+      const now = new Date().getTime();
+      if (now - lastUpdate > 10000) {
+        return res.json({ ...data, isConnected: false });
+      }
+      
+      res.json({ ...data, isConnected: true });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 

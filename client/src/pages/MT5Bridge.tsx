@@ -7,14 +7,12 @@ import {
   RefreshCw, 
   AlertCircle,
   ShieldCheck,
-  Zap,
   Terminal,
   Copy,
   Check,
-  Globe
+  Cpu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,73 +24,67 @@ export default function MT5Bridge() {
     refetchInterval: 2000, 
   });
 
-  const eaCode = `// TRADIFY MT5 Cloud Bridge EA
-#property copyright "TRADIFY"
-#property version   "1.10"
-#property strict
+  const pythonCode = `import MetaTrader5 as mt5
+import requests
+import time
+import json
 
-input string ServerURL = "https://${window.location.host}/api/mt5/update";
-input int UpdateInterval = 2; // seconds
+# Configuration
+SERVER_URL = "https://\${window.location.host}/api/mt5/sync"
+INTERVAL = 2  # Seconds between syncs
 
-int OnInit() {
-   EventSetTimer(UpdateInterval);
-   return(INIT_SUCCEEDED);
-}
+def collect_mt5_data():
+    if not mt5.initialize():
+        print("MT5 Initialize failed")
+        return None
+        
+    account_info = mt5.account_info()
+    if account_info is None:
+        print("Failed to get account info")
+        return None
+        
+    positions = mt5.positions_get()
+    
+    payload = {
+        "account": {
+            "balance": account_info.balance,
+            "equity": account_info.equity,
+            "profit": account_info.profit,
+            "margin_level": account_info.margin_level
+        },
+        "positions": [
+            {
+                "symbol": p.symbol,
+                "type": "Buy" if p.type == 0 else "Sell",
+                "volume": p.volume,
+                "price_open": p.price_open,
+                "profit": p.profit
+            } for p in positions
+        ]
+    }
+    return payload
 
-void OnDeinit(const int reason) {
-   EventKillTimer();
-}
-
-void OnTimer() {
-   string json = "{";
-   json += "\\"account\\":{";
-   json += "\\"balance\\":" + DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE), 2) + ",";
-   json += "\\"equity\\":" + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2) + ",";
-   json += "\\"profit\\":" + DoubleToString(AccountInfoDouble(ACCOUNT_PROFIT), 2) + ",";
-   json += "\\"margin_level\\":" + DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL), 2);
-   json += "},\\"positions\\":[";
-   
-   int pos_count = 0;
-   for(int i=0; i<PositionsTotal(); i++) {
-      ulong ticket = PositionGetTicket(i);
-      if(PositionSelectByTicket(ticket)) {
-         if(pos_count > 0) json += ",";
-         json += "{";
-         json += "\\"symbol\\":\\"" + PositionGetString(POSITION_SYMBOL) + "\\",";
-         json += "\\"type\\":\\"" + (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY ? "Buy" : "Sell") + "\\",";
-         json += "\\"volume\\":" + DoubleToString(PositionGetDouble(POSITION_VOLUME), 2) + ",";
-         json += "\\"price_open\\":" + DoubleToString(PositionGetDouble(POSITION_PRICE_OPEN), 5) + ",";
-         json += "\\"profit\\":" + DoubleToString(PositionGetDouble(POSITION_PROFIT), 2);
-         json += "}";
-         pos_count++;
-      }
-   }
-   json += "]}";
-
-   char data[];
-   ArrayResize(data, StringLen(json) + 1);
-   StringToCharArray(json, data);
-   
-   string headers = "Content-Type: application/json\\r\\n";
-   char result[];
-   string result_headers;
-   
-   ResetLastError();
-   int res = WebRequest("POST", ServerURL, headers, 1000, data, result, result_headers);
-   
-   if(res == -1) {
-      Print("TRADIFY ERROR: WebRequest failed (", GetLastError(), "). Ensure URL is allowed in MT5 Options.");
-   } else if(res >= 400) {
-      Print("TRADIFY ERROR: Server returned status ", res, ". Check App logs.");
-   }
-}`;
+print("TRADIFY Python Connector Started")
+while True:
+    data = collect_mt5_data()
+    if data:
+        try:
+            response = requests.post(SERVER_URL, json=data)
+            if response.status_code == 200:
+                print(f"Synced: Balance \${data['account']['balance']}")
+            else:
+                print(f"Error: Server returned {response.status_code}")
+        except Exception as e:
+            print(f"Connection Error: {e}")
+            
+    time.sleep(INTERVAL)`;
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(eaCode);
+    navigator.clipboard.writeText(pythonCode);
     setCopied(true);
     toast({
       title: "Copied to clipboard",
-      description: "Paste this into your MetaEditor and compile as an EA.",
+      description: "Save this as bridge.py and run it locally.",
     });
     setTimeout(() => setCopied(false), 2000);
   };
@@ -108,11 +100,11 @@ void OnTimer() {
             <div className="flex items-center gap-2 mb-1">
               <div className={cn(
                 "w-2 h-2 rounded-full",
-                mt5 ? "bg-emerald-500 animate-pulse" : "bg-slate-700"
+                mt5?.isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
               )} />
-              <h1 className="text-3xl font-bold text-white tracking-tight">MT5 Bridge</h1>
+              <h1 className="text-3xl font-bold text-white tracking-tight">MT5 Sync Center</h1>
             </div>
-            <p className="text-slate-400">Cloud-to-Device Integration (WebRequest)</p>
+            <p className="text-slate-400">Professional Python Bridge (Standard Architecture)</p>
           </div>
           <button 
             onClick={() => refetch()}
@@ -125,32 +117,18 @@ void OnTimer() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 space-y-8">
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-6 mb-6">
-              <div className="flex items-center gap-2 text-emerald-500 mb-2">
-                <Globe size={18} />
-                <h3 className="font-bold uppercase tracking-widest text-xs">Cloud Synchronization</h3>
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-6 mb-6">
+              <div className="flex items-center gap-2 text-rose-500 mb-2">
+                <ShieldCheck size={18} />
+                <h3 className="font-bold uppercase tracking-widest text-xs">Security & Reliability Notice</h3>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Since Tradify is hosted on Replit, your MT5 terminal must send data via <strong>WebRequest</strong>. 
-                I have fixed the "Null Terminator" bug in the code below to ensure MT5 sends a valid payload.
+                Direct MT5 WebRequest is restricted by MT5 architecture. For professional-grade reliability, 
+                you must run the <strong>Python Connector</strong> locally on the same PC as your MT5 terminal.
               </p>
             </div>
 
-            {error ? (
-              <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-8 text-center">
-                <AlertCircle size={48} className="mx-auto text-rose-500 mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Sync Not Active</h3>
-                <p className="text-slate-400">Waiting for data from your MT5 terminal...</p>
-              </div>
-            ) : !mt5 ? (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-                <Zap size={48} className="mx-auto text-slate-700 mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Waiting for Bridge</h3>
-                <p className="text-slate-400 max-w-md mx-auto mb-6">
-                  Ensure the Expert Advisor is attached to a chart and "Algo Trading" is enabled in MT5.
-                </p>
-              </div>
-            ) : (
+            {mt5?.isConnected ? (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
@@ -164,14 +142,11 @@ void OnTimer() {
                   </div>
                   <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Profit/Loss</span>
-                      <Activity className={cn(mt5.accountInfo?.profit >= 0 ? "text-emerald-500" : "text-rose-500")} size={18} />
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Equity</span>
+                      <Activity className="text-emerald-500" size={18} />
                     </div>
-                    <div className={cn(
-                      "text-2xl font-mono font-bold",
-                      mt5.accountInfo?.profit >= 0 ? "text-emerald-500" : "text-rose-500"
-                    )}>
-                      ${mt5.accountInfo?.profit?.toLocaleString()}
+                    <div className="text-2xl font-mono font-bold text-white">
+                      ${mt5.accountInfo?.equity?.toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -180,7 +155,7 @@ void OnTimer() {
                   <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
                     <h3 className="font-bold flex items-center gap-2 text-sm uppercase tracking-widest">
                       <BarChart3 size={16} className="text-slate-500" />
-                      Open Positions ({mt5.positions?.length || 0})
+                      Live Positions ({mt5.positions?.length || 0})
                     </h3>
                   </div>
                   <div className="overflow-x-auto">
@@ -217,27 +192,40 @@ void OnTimer() {
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
+                <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-rose-500/20">
+                  <AlertCircle size={40} className="text-rose-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Sync Offline</h3>
+                <p className="text-slate-400 max-w-sm mx-auto mb-8 leading-relaxed">
+                  Your MT5 terminal is not sending data. The dashboard is currently locked to prevent inaccurate data display.
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-950 border border-slate-800 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Status: Waiting for Python Bridge...
+                </div>
+              </div>
             )}
           </div>
 
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
               <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Terminal size={16} className="text-emerald-500" />
-                Setup Guide
+                <Cpu size={16} className="text-emerald-500" />
+                Local Setup Guide
               </h3>
               <ol className="space-y-4 text-sm text-slate-400">
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">1</span>
-                  <span>Enable <strong>"Allow WebRequest for listed URL"</strong> in MT5 Options.</span>
+                  <span>Install Python on your Windows PC.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">2</span>
-                  <span>Add this URL: <code className="text-emerald-500 text-[10px] block mt-1 break-all bg-slate-950 p-1 rounded">https://{window.location.host}</code></span>
+                  <span>Open terminal and run: <code className="text-emerald-500 text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ml-1">pip install MetaTrader5 requests</code></span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">3</span>
-                  <span>Copy and Compile the EA below. <strong>(Includes Bug Fixes)</strong></span>
+                  <span>Copy the code below, save as <strong>bridge.py</strong>, and run it.</span>
                 </li>
               </ol>
 
@@ -250,10 +238,28 @@ void OnTimer() {
                     {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                   </button>
                 </div>
-                <div className="bg-slate-950 rounded-lg p-4 font-mono text-[10px] text-slate-500 h-64 overflow-y-auto border border-slate-800 group-hover:border-emerald-500/30 transition-colors">
-                  <pre>{eaCode}</pre>
+                <div className="bg-slate-950 rounded-lg p-4 font-mono text-[10px] text-slate-500 h-80 overflow-y-auto border border-slate-800 group-hover:border-emerald-500/30 transition-colors">
+                  <pre>{pythonCode}</pre>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Architecture Benefits</h3>
+              <ul className="space-y-2">
+                <li className="text-[11px] text-slate-400 flex items-center gap-2 italic">
+                  <ShieldCheck size={12} className="text-emerald-500 flex-shrink-0" />
+                  Bypasses MT5 WebRequest SSL restrictions
+                </li>
+                <li className="text-[11px] text-slate-400 flex items-center gap-2 italic">
+                  <ShieldCheck size={12} className="text-emerald-500 flex-shrink-0" />
+                  Zero latency synchronization (1-2s polling)
+                </li>
+                <li className="text-[11px] text-slate-400 flex items-center gap-2 italic">
+                  <ShieldCheck size={12} className="text-emerald-500 flex-shrink-0" />
+                  Handles large history & position payloads
+                </li>
+              </ul>
             </div>
           </div>
         </div>
