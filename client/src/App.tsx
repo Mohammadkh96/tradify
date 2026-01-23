@@ -17,9 +17,9 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/journal" component={Journal} />
       <Route path="/new-entry" component={NewEntry} />
-      <Route path="/knowledge" component={KnowledgeBase} />
+      <Route path="/knowledge-base" component={KnowledgeBase} />
       <Route path="/risk" component={RiskCalculator} />
-      <Route path="/mt5" component={MT5Bridge} />
+      <Route path="/mt5-bridge" component={MT5Bridge} />
       <Route component={NotFound} />
     </Switch>
   );
