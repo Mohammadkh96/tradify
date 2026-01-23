@@ -2,10 +2,11 @@ import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
 import { Navigation, MobileNav } from "@/components/Navigation";
 import { format, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Trash2, Search, Filter, Calendar as CalendarIcon, TrendingUp, Target, Activity, Share2, History as HistoryIcon } from "lucide-react";
+import { Trash2, Search, Filter, Calendar as CalendarIcon, TrendingUp, Target, Activity, Share2, History as HistoryIcon, Plus } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 
 export default function Journal() {
   const userId = "demo_user";
@@ -85,29 +86,38 @@ export default function Journal() {
       <MobileNav />
       
       <main className="md:ml-64 p-6 lg:p-10 max-w-7xl mx-auto">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Trade Journal</h1>
-            <p className="text-slate-400 mt-1">Review performance history</p>
+        <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center justify-between w-full md:w-auto">
+            <div>
+              <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                <HistoryIcon className="text-emerald-500" />
+                Trade Journal
+              </h1>
+              <p className="text-slate-400 mt-1">Institutional-grade performance logging</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 flex items-center gap-2">
-              <Filter size={14} className="text-slate-500" />
-              <select 
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-300 focus:outline-none"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-              </select>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-800">
+              {['all', 'today', 'week', 'month'].map((filter) => (
+                <Button
+                  key={filter}
+                  variant={dateFilter === filter ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setDateFilter(filter)}
+                  className={cn(
+                    "h-8 text-[10px] font-bold uppercase tracking-wider px-4 rounded-lg transition-all",
+                    dateFilter === filter ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-400 hover:text-white"
+                  )}
+                >
+                  {filter === 'all' ? 'All Time' : filter}
+                </Button>
+              ))}
             </div>
             <Link href="/new-entry">
-              <button className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase transition-colors shadow-lg shadow-emerald-500/20">
-                + New Entry
-              </button>
+              <Button className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs uppercase transition-all shadow-lg shadow-emerald-500/20 px-6 h-10 rounded-xl">
+                <Plus className="mr-2 h-4 w-4" />
+                New Entry
+              </Button>
             </Link>
           </div>
         </header>
