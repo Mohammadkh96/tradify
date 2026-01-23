@@ -46,12 +46,12 @@ export class DatabaseStorage implements IStorage {
     
     const values = {
       userId: data.userId,
-      balance: data.balance,
-      equity: data.equity,
-      margin: data.margin,
-      freeMargin: data.freeMargin,
-      marginLevel: data.marginLevel,
-      floatingPl: data.floatingPl,
+      balance: data.balance.toString(),
+      equity: data.equity.toString(),
+      margin: data.margin.toString(),
+      freeMargin: data.freeMargin.toString(),
+      marginLevel: data.marginLevel.toString(),
+      floatingPl: data.floatingPl.toString(),
       positions: data.positions,
       syncToken: data.syncToken,
       lastUpdate: new Date(),
