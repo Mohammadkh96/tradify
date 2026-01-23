@@ -155,7 +155,7 @@ export async function registerRoutes(
               liquidityTaken: true,
               structureConfirmed: true,
               entryConfirmed: true,
-              entryPrice: String(pos.price_open),
+              entryPrice: String(pos.price || 0),
               stopLoss: String(pos.sl || 0),
               takeProfit: String(pos.tp || 0),
               riskReward: "0",
