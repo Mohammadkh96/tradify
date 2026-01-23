@@ -10,6 +10,7 @@ import NewEntry from "@/pages/NewEntry";
 import KnowledgeBase from "@/pages/KnowledgeBase";
 import RiskCalculator from "@/pages/RiskCalculator";
 import MT5Bridge from "@/pages/MT5Bridge";
+import TradersHubTab from "@/components/TradersHubTab";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/knowledge-base" component={KnowledgeBase} />
       <Route path="/risk" component={RiskCalculator} />
       <Route path="/mt5-bridge" component={MT5Bridge} />
+      <Route path="/traders-hub" component={TradersHubTab} />
       <Route component={NotFound} />
     </Switch>
   );

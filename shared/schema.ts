@@ -47,6 +47,99 @@ export const mt5Data = pgTable("mt5_data", {
   lastUpdate: timestamp("last_update").defaultNow().notNull(),
 });
 
+export const userRole = pgTable("user_role", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().unique(),
+  role: text("role").notNull(), // "PROVIDER" or "RECEIVER"
+  kycVerified: boolean("kyc_verified").notNull().default(false),
+  kycVerificationDate: timestamp("kyc_verification_date"),
+  termsAccepted: boolean("terms_accepted").notNull().default(false),
+  riskAcknowledged: boolean("risk_acknowledged").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const signalProviderProfile = pgTable("signal_provider_profile", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().unique(),
+  providerName: text("provider_name").notNull(),
+  bio: text("bio"),
+  profileImageUrl: text("profile_image_url"),
+  tradingStyle: text("trading_style"),
+  marketsTraded: text("markets_traded"),
+  signalType: text("signal_type"),
+  yearsOfExperience: integer("years_of_experience"),
+  telegramHandle: text("telegram_handle"),
+  whatsappLink: text("whatsapp_link"),
+  discordServer: text("discord_server"),
+  customPlatform: text("custom_platform"),
+  monthlyReturnPercentage: numeric("monthly_return_percentage", { precision: 10, scale: 2 }),
+  winRate: numeric("win_rate", { precision: 5, scale: 2 }),
+  performanceHistory: text("performance_history"),
+  performanceVerified: boolean("performance_verified").notNull().default(false),
+  verificationBadgeType: text("verification_badge_type"),
+  pricingModel: text("pricing_model"),
+  monthlyPrice: numeric("monthly_price", { precision: 10, scale: 2 }),
+  yearlyPrice: numeric("yearly_price", { precision: 10, scale: 2 }),
+  priceDescription: text("price_description"),
+  isActive: boolean("is_active").notNull().default(true),
+  isVerified: boolean("is_verified").notNull().default(false),
+  suspendedUntil: timestamp("suspended_until"),
+  suspensionReason: text("suspension_reason"),
+  disclaimerAcknowledged: boolean("disclaimer_acknowledged").notNull().default(false),
+  noGuaranteeAcknowledged: boolean("no_guarantee_acknowledged").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  viewCount: integer("view_count").notNull().default(0),
+  subscriberCount: integer("subscriber_count").notNull().default(0),
+});
+
+export const signalReceiver = pgTable("signal_receiver", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().unique(),
+  receiverName: text("receiver_name").notNull(),
+  bio: text("bio"),
+  profileImageUrl: text("profile_image_url"),
+  interestedMarkets: text("interested_markets"),
+  experience: text("experience"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const providerSubscription = pgTable("provider_subscription", {
+  id: serial("id").primaryKey(),
+  receiverId: text("receiver_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  subscriptionStatus: text("subscription_status").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  cancelledAt: timestamp("cancelled_at"),
+  externalPlatform: text("external_platform"),
+  externalUserId: text("external_user_id"),
+});
+
+export const dispute = pgTable("dispute", {
+  id: serial("id").primaryKey(),
+  reporterId: text("reporter_id").notNull(),
+  reportedProviderId: text("reported_provider_id").notNull(),
+  reason: text("reason").notNull(),
+  description: text("description").notNull(),
+  evidence: text("evidence"),
+  status: text("status").notNull().default("PENDING"),
+  resolution: text("resolution"),
+  action: text("action"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const platformDisclaimer = pgTable("platform_disclaimer", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  disclaimerVersion: text("disclaimer_version").notNull(),
+  disclaimerText: text("disclaimer_text").notNull(),
+  acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
+});
+
 export const insertTradeSchema = createInsertSchema(tradeJournal, {
   pair: z.string().min(1, "Pair is required"),
 }).omit({
