@@ -15,6 +15,13 @@ export default function Journal() {
     queryKey: [`/api/mt5/history/${userId}`],
   });
   
+  const { data: userRoleData } = useQuery<any>({
+    queryKey: [`/api/traders-hub/user-role/${userId}`],
+  });
+
+  const subscription = userRoleData?.subscriptionTier || "FREE";
+  const isPro = subscription === "PRO";
+
   const deleteTrade = useDeleteTrade();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOutcome, setFilterOutcome] = useState<string>("all");
@@ -95,6 +102,11 @@ export default function Journal() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {!isPro && (
+              <Button variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
+                Upgrade to PRO
+              </Button>
+            )}
             <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-800">
               {['all', 'today', 'week', 'month'].map((filter) => (
                 <Button

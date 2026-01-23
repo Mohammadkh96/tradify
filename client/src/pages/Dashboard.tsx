@@ -11,7 +11,8 @@ import {
   BarChart3,
   Percent,
   History as HistoryIcon,
-  LayoutDashboard
+  LayoutDashboard,
+  Lock
 } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Link } from "wouter";
@@ -45,6 +46,13 @@ export default function Dashboard() {
   const { data: snapshots } = useQuery<any[]>({
     queryKey: [`/api/mt5/snapshots/${userId}`],
   });
+
+  const { data: userRoleData } = useQuery<any>({
+    queryKey: [`/api/traders-hub/user-role/${userId}`],
+  });
+
+  const subscription = userRoleData?.subscriptionTier || "FREE";
+  const isPro = subscription === "PRO";
 
   if (isLoading) {
     return (
@@ -166,6 +174,13 @@ export default function Dashboard() {
                   <Activity className="text-slate-700 mb-2 animate-pulse" size={32} />
                   <p className="text-xs text-slate-500 font-bold uppercase tracking-tighter">Awaiting historical equity snapshots</p>
                   <span className="text-[9px] text-slate-600 mt-1 italic">Curve populates after periodic sync intervals</span>
+                </div>
+              )}
+              {!isPro && chartData.length >= 30 && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-sm rounded-xl">
+                  <Lock className="text-emerald-500 mb-2" size={24} />
+                  <p className="text-sm font-bold text-white uppercase tracking-widest">30-Day Limit (FREE)</p>
+                  <Button variant="link" className="text-emerald-500 text-xs h-auto p-0 mt-1">Upgrade to PRO for full history</Button>
                 </div>
               )}
               <ResponsiveContainer width="100%" height="100%">

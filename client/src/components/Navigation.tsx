@@ -7,7 +7,8 @@ import {
   Calculator,
   TrendingUp,
   Zap,
-  Users
+  Users,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -70,6 +71,13 @@ export function Navigation() {
             </Link>
           );
         })}
+        
+        <Link href="/login">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 mt-4 border border-transparent hover:border-rose-500/20">
+            <LogOut size={18} className="text-slate-500 group-hover:text-rose-500" />
+            Sign Out
+          </div>
+        </Link>
       </nav>
 
       <div className="p-4 border-t border-slate-800">
