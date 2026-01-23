@@ -6,7 +6,8 @@ import {
   History, 
   Calculator,
   TrendingUp,
-  Zap
+  Zap,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
