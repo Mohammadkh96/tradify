@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, X, Send, Sparkles } from "lucide-react";
+import { TrendingUp, X, Send, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,10 +32,10 @@ export function ChatAssistant() {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/40 border-2 border-emerald-400/20 flex items-center justify-center group"
+          className="w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/40 border-2 border-emerald-400/20 flex items-center justify-center group p-0"
           size="icon"
         >
-          {isOpen ? <X size={24} /> : <MessageSquare size={24} className="group-hover:scale-110 transition-transform" />}
+          {isOpen ? <X size={24} /> : <TrendingUp size={28} strokeWidth={3} className="text-slate-950 group-hover:scale-110 transition-transform" />}
           <div className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-[#020617] animate-pulse" />
         </Button>
       </div>
@@ -52,8 +52,8 @@ export function ChatAssistant() {
             <Card className="bg-slate-950 border-slate-800 shadow-2xl overflow-hidden">
               <CardHeader className="bg-slate-900 border-b border-slate-800 p-4">
                 <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                    <Sparkles size={14} className="text-white" />
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center">
+                    <TrendingUp size={14} strokeWidth={3} className="text-slate-950" />
                   </div>
                   Tradify Assistant
                 </CardTitle>
