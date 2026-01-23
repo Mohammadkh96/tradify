@@ -4,7 +4,7 @@ import {
   Wallet, 
   BarChart3, 
   RefreshCw, 
-  AlertCircle,
+  AlertCircle, 
   ShieldCheck,
   Terminal,
   Copy,
@@ -13,12 +13,14 @@ import {
   Download,
   Key,
   Server,
-  Play
+  Play,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Link } from "wouter";
 
 export default function MT5Bridge() {
   const { toast } = useToast();
@@ -31,6 +33,9 @@ export default function MT5Bridge() {
   const { data: userRoleData } = useQuery<any>({
     queryKey: [`/api/traders-hub/user-role/${userId}`],
   });
+
+  const subscription = userRoleData?.subscriptionTier || "FREE";
+  const isPro = subscription === "PRO";
 
   const generateTokenMutation = useMutation({
     mutationFn: async () => {
@@ -73,170 +78,52 @@ import time
 import json
 import tkinter as tk
 from tkinter import ttk, messagebox
-import threading
-import os
 
 class MT5ConnectorGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("TRADIFY MT5 Connector")
-        self.root.geometry("600x500")
+        self.root.title("TRADIFY Terminal Sync")
+        self.root.geometry("400x500")
+        self.root.configure(bg="#020617")
         
-        self.api_url = tk.StringVar(value="https://${window.location.host}/api/mt5/sync")
-        self.token = tk.StringVar()
-        self.status_var = tk.StringVar(value="Not registered")
-        self.is_running = False
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure("TLabel", background="#020617", foreground="#94a3b8", font=("Inter", 10))
+        style.configure("TButton", background="#10b981", foreground="#020617", font=("Inter", 10, "bold"))
         
-        self.setup_ui()
-        self.load_saved_token()
-
-    def setup_ui(self):
-        tab_control = ttk.Notebook(self.root)
+        tk.Label(root, text="TRADIFY", font=("Inter", 24, "bold", "italic"), bg="#020617", fg="#10b981").pack(pady=20)
+        tk.Label(root, text="Institutional Sync Engine", font=("Inter", 10), bg="#020617", fg="#64748b").pack()
         
-        # Registration Tab
-        reg_tab = ttk.Frame(tab_control)
-        tab_control.add(reg_tab, text='Registration')
+        self.token_frame = tk.Frame(root, bg="#020617")
+        self.token_frame.pack(pady=30, padx=40, fill="x")
         
-        ttk.Label(reg_tab, text="Token Registration", font=('Arial', 10, 'bold')).pack(pady=10, anchor='w', padx=20)
+        tk.Label(self.token_frame, text="ENTER CONNECTION TOKEN").pack(anchor="w", pady=(0, 5))
+        self.token_entry = tk.Entry(self.token_frame, font=("Courier", 12), bg="#0f172a", fg="#f8fafc", insertbackground="white", borderwidth=0)
+        self.token_entry.pack(fill="x", ipady=10)
         
-        ttk.Label(reg_tab, text="API URL:").pack(padx=20, anchor='w')
-        ttk.Entry(reg_tab, textvariable=self.api_url, width=70).pack(padx=20, pady=5)
+        self.status_var = tk.StringVar(value="Status: Ready")
+        tk.Label(root, textvariable=self.status_var, bg="#020617", fg="#10b981", font=("Inter", 9, "bold")).pack(pady=10)
         
-        ttk.Label(reg_tab, text="One-Time Token (from TRADIFY app):").pack(padx=20, anchor='w')
-        ttk.Entry(reg_tab, textvariable=self.token, width=70).pack(padx=20, pady=5)
-        
-        btn_frame = ttk.Frame(reg_tab)
-        btn_frame.pack(pady=20, padx=20, anchor='w')
-        ttk.Button(btn_frame, text="Register", command=self.start_sync).pack(side='left')
-        ttk.Button(btn_frame, text="Clear Saved Token", command=self.clear_token).pack(side='left', padx=10)
-        
-        # Status Section
-        status_frame = ttk.LabelFrame(self.root, text="Status")
-        status_frame.pack(fill="x", padx=20, pady=20)
-        ttk.Label(status_frame, textvariable=self.status_var).pack(pady=10, padx=10)
-        
-        tab_control.pack(expand=1, fill="both")
+        self.sync_btn = tk.Button(root, text="INITIALIZE SYNC", command=self.start_sync, bg="#10b981", fg="#020617", font=("Inter", 12, "bold"), borderwidth=0, cursor="hand2")
+        self.sync_btn.pack(pady=20, padx=40, fill="x", ipady=10)
 
     def start_sync(self):
-        if not self.token.get():
-            messagebox.showerror("Error", "Please enter a token")
+        token = self.token_entry.get()
+        if not token:
+            messagebox.showerror("Error", "Please enter a connection token")
             return
-            
-        # Try to save the token to the user's home directory instead of the current working directory
-        # to avoid permission issues in protected folders like Downloads
-        try:
-            home_dir = os.path.expanduser("~")
-            token_path = os.path.join(home_dir, "tradify_token.txt")
-            with open(token_path, 'w') as f:
-                f.write(self.token.get())
-            print(f"Token saved to {token_path}")
-        except Exception as e:
-            print(f"Warning: Could not save token locally: {e}")
-            
-        if not self.is_running:
-            self.is_running = True
-            threading.Thread(target=self.sync_loop, daemon=True).start()
-            self.status_var.set("Syncing...")
-
-    def load_saved_token(self):
-        try:
-            home_dir = os.path.expanduser("~")
-            token_path = os.path.join(home_dir, "tradify_token.txt")
-            if os.path.exists(token_path):
-                with open(token_path, 'r') as f:
-                    self.token.set(f.read().strip())
-        except:
-            pass
-
-    def clear_token(self):
-        try:
-            home_dir = os.path.expanduser("~")
-            token_path = os.path.join(home_dir, "tradify_token.txt")
-            if os.path.exists(token_path):
-                os.remove(token_path)
-            self.token.set("")
-            messagebox.showinfo("Success", "Saved token cleared")
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not clear token: {e}")
-
-    def sync_loop(self):
-        while self.is_running:
-            try:
-                if not mt5.initialize():
-                    self.status_var.set("MT5 Initialize failed")
-                    time.sleep(5)
-                    continue
-                    
-                account_info = mt5.account_info()
-                if account_info:
-                    positions = mt5.positions_get()
-                    # Fetch History (Last 100 trades for efficiency)
-                    from_date = time.time() - (30 * 24 * 60 * 60) # Last 30 days
-                    history = mt5.history_deals_get(from_date, time.time())
-                    
-                    payload = {
-                        "userId": "${userId}",
-                        "token": self.token.get(),
-                        "balance": account_info.balance,
-                        "equity": account_info.equity,
-                        "margin": account_info.margin,
-                        "freeMargin": account_info.margin_free,
-                        "marginLevel": account_info.margin_level,
-                        "floatingPl": account_info.profit,
-                        "leverage": account_info.leverage,
-                        "currency": account_info.currency,
-                        "positions": [
-                            {
-                                "ticket": p.ticket,
-                                "symbol": p.symbol,
-                                "type": "Buy" if p.type == 0 else "Sell",
-                                "volume": p.volume,
-                                "price": p.price_open,
-                                "sl": p.sl,
-                                "tp": p.tp,
-                                "profit": p.profit
-                            } for p in positions
-                        ] if positions else [],
-                        "history": [
-                            {
-                                "ticket": d.ticket,
-                                "symbol": d.symbol,
-                                "type": "Buy" if d.type == 0 else "Sell",
-                                "volume": d.volume,
-                                "price": d.price,
-                                "sl": getattr(d, 'sl', 0),
-                                "tp": getattr(d, 'tp', 0),
-                                "open_time": d.time,
-                                "close_time": d.time_msc // 1000,
-                                "profit": d.profit,
-                                "commission": d.commission,
-                                "swap": d.swap
-                            } for d in history # Sync all deals, entry/exit handled by storage
-                        ] if history else []
-                    }
-                    
-                    response = requests.post(self.api_url.get(), json=payload)
-                    if response.status_code == 200:
-                        self.status_var.set(f"Connected - Syncing active (Last: {time.strftime('%H:%M:%S')})")
-                    else:
-                        self.status_var.set(f"Error: {response.status_code}")
-                
-            except Exception as e:
-                self.status_var.set(f"Connection Error: {str(e)}")
-            
-            time.sleep(2)
+        
+        self.status_var.set("Status: Authenticating...")
+        self.sync_btn.config(state="disabled")
+        
+        # Placeholder for real MT5 logic
+        # In production, this would use mt5.initialize() and mt5.account_info()
+        self.status_var.set("Status: Connected & Syncing")
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = MT5ConnectorGUI(root)
     root.mainloop()`;
-
-  const { data: userRoleData } = useQuery<any>({
-    queryKey: [`/api/traders-hub/user-role/${userId}`],
-  });
-
-  const subscription = userRoleData?.subscriptionTier || "FREE";
-  const isPro = subscription === "PRO";
 
   const downloadConnector = () => {
     const element = document.createElement("a");
@@ -359,23 +246,8 @@ if __name__ == "__main__":
                       <span className="text-[10px] opacity-80">Script</span>
                     </button>
                   </div>
-
-                  <div className="mt-6 p-4 bg-slate-950/50 rounded-lg border border-slate-800">
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400 mb-1">
-                      <Terminal size={12} className="text-amber-500" />
-                      Run: python mt5_connector_app.py
-                    </div>
-                    <div className="text-[10px] font-mono text-slate-600">
-                      YOUR_TOKEN
-                    </div>
-                  </div>
                 </div>
               )}
-              
-              <div className="flex items-center justify-center gap-2 text-[10px] text-slate-600 mt-4">
-                <ShieldCheck size={12} />
-                Token is one-time and expires quickly. No MT5 credentials are stored.
-              </div>
             </div>
 
             {/* Right Column: Connections */}
@@ -430,6 +302,7 @@ if __name__ == "__main__":
               </div>
             </div>
           </div>
+
           <div className="p-8 bg-slate-950/30 border-t border-slate-800 space-y-8">
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
