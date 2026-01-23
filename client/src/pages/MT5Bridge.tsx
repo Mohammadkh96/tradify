@@ -134,8 +134,11 @@ class MT5ConnectorGUI:
             messagebox.showerror("Error", "Please enter a token")
             return
             
-        with open('token.txt', 'w') as f:
-            f.write(self.token.get())
+        try:
+            with open('token.txt', 'w') as f:
+                f.write(self.token.get())
+        except Exception as e:
+            print(f"Warning: Could not save token locally: {e}")
             
         if not self.is_running:
             self.is_running = True
