@@ -73,28 +73,28 @@ export default function Dashboard() {
       label: "Balance", 
       value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.balance).toLocaleString()}` : "$0", 
       icon: <Wallet size={18} />, 
-      subtext: mt5?.status === "CONNECTED" ? "Live from MT5" : (mt5?.status === "SYNCING" ? "Syncing..." : "MT5 Disconnected"),
+      subtext: "🟢 MT5 LIVE",
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
       label: "Equity", 
       value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.equity).toLocaleString()}` : "$0", 
       icon: <Activity size={18} />, 
-      subtext: "Net Asset Value",
+      subtext: "🟢 MT5 LIVE",
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
       label: "Floating P&L", 
       value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.floatingPl).toLocaleString()}` : "$0", 
       icon: <TrendingUp size={18} />, 
-      subtext: "Current Open Risk",
+      subtext: "🟢 MT5 LIVE",
       trend: mt5?.status === "CONNECTED" && parseFloat(mt5.metrics?.floatingPl || "0") >= 0 ? "up" : "down" as "up" | "down"
     },
     { 
       label: "Margin Level", 
       value: mt5?.status === "CONNECTED" && mt5.metrics ? `${parseFloat(mt5.metrics.marginLevel).toFixed(2)}%` : "0%", 
       icon: <BarChart3 size={18} />, 
-      subtext: "Account Health",
+      subtext: "🟢 MT5 LIVE",
       trend: mt5?.status === "CONNECTED" && parseFloat(mt5.metrics?.marginLevel || "0") > 100 ? "up" : "down" as "up" | "down"
     },
   ];
@@ -190,6 +190,16 @@ export default function Dashboard() {
                     strokeWidth={3}
                     fillOpacity={1} 
                     fill="url(#colorEquity)" 
+                    name="Equity"
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="balance" 
+                    stroke="#64748b" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    fill="none" 
+                    name="Balance"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -201,7 +211,7 @@ export default function Dashboard() {
             <div className="h-64 w-full relative">
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-4xl font-black text-white">{winRate}%</span>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Verified</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">🟡 Derived</span>
               </div>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -235,19 +245,49 @@ export default function Dashboard() {
               Open Positions
             </h3>
             <div className="space-y-4 overflow-y-auto max-h-[400px]">
-              {mt5?.metrics?.positions?.map((pos: any) => (
-                <div key={pos.ticket} className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-sm font-bold text-white">{pos.symbol}</span>
-                    <span className={cn(
-                      "text-sm font-mono font-bold",
-                      pos.profit >= 0 ? "text-emerald-500" : "text-rose-500"
-                    )}>
-                      ${parseFloat(pos.profit).toFixed(2)}
-                    </span>
-                  </div>
+              {mt5?.metrics?.positions && mt5.metrics.positions.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="text-slate-500 border-b border-slate-800">
+                        <th className="pb-2 font-medium">Symbol</th>
+                        <th className="pb-2 font-medium">Type</th>
+                        <th className="pb-2 font-medium text-right">Volume</th>
+                        <th className="pb-2 font-medium text-right">Entry</th>
+                        <th className="pb-2 font-medium text-right">P&L</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-900">
+                      {mt5.metrics.positions.map((pos: any) => (
+                        <tr key={pos.ticket} className="group">
+                          <td className="py-3 font-bold text-white">{pos.symbol}</td>
+                          <td className="py-3">
+                            <span className={cn(
+                              "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
+                              pos.type === "Buy" ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                            )}>
+                              {pos.type}
+                            </span>
+                          </td>
+                          <td className="py-3 text-right font-mono text-slate-400">{pos.volume}</td>
+                          <td className="py-3 text-right font-mono text-slate-400">{parseFloat(pos.price).toFixed(5)}</td>
+                          <td className={cn(
+                            "py-3 text-right font-mono font-bold",
+                            pos.profit >= 0 ? "text-emerald-500" : "text-rose-500"
+                          )}>
+                            ${parseFloat(pos.profit).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
+              ) : (
+                <div className="py-10 flex flex-col items-center justify-center text-slate-500 opacity-50">
+                  <Activity size={32} className="mb-2" />
+                  <p className="text-xs">No active open positions</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -256,7 +296,31 @@ export default function Dashboard() {
             <div className="space-y-4">
               <div className="flex justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
                 <span className="text-xs text-slate-400">Margin Level</span>
-                <span className="text-sm font-mono font-bold text-slate-200">{parseFloat(mt5?.metrics?.marginLevel || "0").toFixed(2)}%</span>
+                <span className={cn(
+                  "text-sm font-mono font-bold",
+                  parseFloat(mt5?.metrics?.marginLevel || "0") > 300 ? "text-emerald-500" :
+                  parseFloat(mt5?.metrics?.marginLevel || "0") > 150 ? "text-amber-500" : "text-rose-500"
+                )}>
+                  {parseFloat(mt5?.metrics?.marginLevel || "0").toFixed(2)}%
+                </span>
+              </div>
+              <div className="flex justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <span className="text-xs text-slate-400">Margin Used</span>
+                <span className="text-sm font-mono font-bold text-slate-200">
+                  ${parseFloat(mt5?.metrics?.margin || "0").toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <span className="text-xs text-slate-400">Free Margin</span>
+                <span className="text-sm font-mono font-bold text-emerald-500">
+                  ${parseFloat(mt5?.metrics?.freeMargin || "0").toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <span className="text-xs text-slate-400">Leverage</span>
+                <span className="text-sm font-mono font-bold text-slate-200">
+                  1:{mt5?.metrics?.leverage || 100}
+                </span>
               </div>
             </div>
           </div>

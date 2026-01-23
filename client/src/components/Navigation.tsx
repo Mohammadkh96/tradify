@@ -24,10 +24,12 @@ const navItems = [
 
 export function Navigation() {
   const [location] = useLocation();
-  const { data: mt5 } = useQuery<{ isConnected: boolean }>({
-    queryKey: ["/api/mt5/status"],
+  const { data: mt5 } = useQuery<any>({
+    queryKey: [`/api/mt5/status/demo_user`],
     refetchInterval: 5000,
   });
+
+  const isConnected = mt5?.status === "CONNECTED";
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-800 bg-slate-950 text-slate-300 hidden md:flex flex-col">
@@ -35,7 +37,7 @@ export function Navigation() {
         <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white shadow-lg shadow-emerald-900/50">
           <TrendingUp size={20} />
         </div>
-        <span className="font-bold text-lg tracking-tight text-white">TRADIFY</span>
+        <span className="font-bold text-lg tracking-tight text-white uppercase italic">Tradify</span>
       </div>
 
       <nav className="flex-1 space-y-1 p-4">
@@ -73,11 +75,11 @@ export function Navigation() {
             <h4 className="text-xs font-semibold text-slate-500 uppercase">MT5 Status</h4>
             <div className={cn(
               "w-1.5 h-1.5 rounded-full",
-              mt5?.isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+              isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
             )} />
           </div>
           <p className="text-[11px] text-slate-300">
-            {mt5?.isConnected ? "Terminal Connected" : "Terminal Offline"}
+            {isConnected ? "Terminal Connected" : "Terminal Offline"}
           </p>
         </div>
       </div>

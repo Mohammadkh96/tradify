@@ -1,0 +1,273 @@
+🔧 ENHANCEMENT PLAN
+TRADIFY – Dashboard & Journal (Accuracy-First)
+1️⃣ FIRST RULE (NON-NEGOTIABLE)
+
+From this point forward:
+
+✅ Balance, Equity, Floating P&L, Margin Level → MT5 source of truth
+
+⚠️ All other metrics must be:
+
+Clearly labeled as Derived from History
+
+OR hidden until fully validated
+
+OR computed only from confirmed MT5 history
+
+❌ No silent assumptions
+❌ No “looks right” numbers
+
+2️⃣ DASHBOARD ENHANCEMENTS (PROFESSIONAL, TIERED)
+A. Split the Dashboard into 3 Logical Layers
+
+This instantly makes it feel more professional.
+
+🔹 Layer 1: LIVE ACCOUNT STATE (MT5 – REAL TIME)
+
+This section is already mostly correct — enhance clarity, not logic.
+
+Cards (Top Row):
+
+Balance (MT5)
+
+Equity (MT5)
+
+Floating P&L (MT5)
+
+Margin Level % (MT5)
+
+Enhancements:
+
+Add small label: SOURCE: MT5 LIVE
+
+Add “Last Sync: X sec ago”
+
+Color margin level:
+
+300% → Emerald
+
+150–300% → Amber
+
+<150% → Rose
+
+👉 This tells traders: “These numbers are real.”
+
+🔹 Layer 2: ACCOUNT HEALTH & RISK (MT5 + SIMPLE CALCS)
+
+Add a compact Account Health panel:
+
+Show:
+
+Margin Used
+
+Free Margin
+
+Leverage
+
+Open Risk (sum of floating exposure)
+
+These are safe because they come directly from MT5 or trivial math.
+
+🔹 Layer 3: PERFORMANCE ANALYTICS (HISTORY-BASED)
+
+This is where professionalism matters.
+
+Only compute metrics from:
+
+Closed MT5 trades
+
+Confirmed manual trades
+
+Metrics to keep (but refine):
+
+Win Rate → from closed trades only
+
+Net P&L → closed trades only
+
+Equity Curve → historical equity snapshots
+
+Trade Count
+
+Metrics to TEMPORARILY HIDE or LABEL:
+
+Profit Factor
+
+Expectancy
+
+Avg R:R
+
+Label them:
+
+“Calculated from synced trade history”
+
+If history is incomplete → show N/A
+
+This honesty = trust.
+
+3️⃣ EQUITY CURVE – MAKE IT PROFESSIONAL
+
+Right now it’s visually fine but under-informative.
+
+Enhance it by:
+
+Dual line:
+
+Equity
+
+Balance
+
+Tooltip on hover:
+
+Date
+
+Equity
+
+Balance
+
+Daily P&L
+
+Time filters:
+
+1D / 1W / 1M / All
+
+If there’s only 1 data point:
+
+Show “Waiting for historical snapshots…”
+
+4️⃣ OPEN POSITIONS PANEL (CRITICAL FOR PRO TRADERS)
+
+Your “Open Positions” card is empty — that’s a missed opportunity.
+
+Replace it with a live table:
+
+Columns:
+
+Symbol
+
+Direction (BUY/SELL)
+
+Lot Size
+
+Entry
+
+Current Price
+
+Floating P&L
+
+SL / TP
+
+Rules:
+
+Data must come directly from MT5
+
+If no open positions → show “No open positions”
+
+This instantly upgrades the dashboard to terminal-level usefulness.
+
+5️⃣ JOURNAL TAB – FROM LIST → ANALYSIS TOOL
+
+Your journal already looks clean. Now make it functional.
+
+A. Add Date Range Filtering (MANDATORY)
+
+At the top of the journal:
+
+From Date
+
+To Date
+
+Presets:
+
+Today
+
+This Week
+
+This Month
+
+Custom
+
+Filtering must:
+
+Query backend
+
+Recalculate totals dynamically
+
+B. Journal Summary (Filtered)
+
+Above the trade list, show (for selected range):
+
+Total trades
+
+Wins / Losses
+
+Net P&L
+
+Win Rate
+
+This makes the journal analytical, not just historical.
+
+C. Trade Row Enhancements
+
+Each trade row should show:
+
+Left:
+
+Symbol
+
+Direction
+
+MT5 ticket ID (small, muted)
+
+Center:
+
+Entry → Exit
+
+Lot size
+
+Duration
+
+Right:
+
+Result (Win/Loss/BE)
+
+Net P&L (color-coded)
+
+Badge:
+
+MT5 SYNCED or MANUAL
+
+6️⃣ DATA HONESTY (VERY IMPORTANT)
+
+Because only some values are accurate right now:
+
+Add Visual Truth Indicators
+
+Green dot: “MT5 Verified”
+
+Gray dot: “Derived”
+
+Amber dot: “Pending sync”
+
+Example:
+
+Balance → 🟢 MT5
+
+Win Rate → 🟡 Derived from history
+
+Profit Factor → ⚪ Hidden until validated
+
+This prevents false confidence, which kills trading platforms.
+
+7️⃣ UX POLISH THAT MAKES IT FEEL PREMIUM
+
+These are small but powerful:
+
+Skeleton loaders instead of empty cards
+
+Subtle pulse animation on live MT5 values
+
+Tooltips explaining metrics
+
+Sticky “MT5 LIVE” badge in header
+
+Clear “Terminal Offline” state (you already have this — good)
