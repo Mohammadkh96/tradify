@@ -42,9 +42,16 @@ export const tradeJournal = pgTable("trade_journal", {
 
 export const mt5Data = pgTable("mt5_data", {
   id: serial("id").primaryKey(),
-  accountInfo: jsonb("account_info").notNull(),
-  positions: jsonb("positions").notNull(),
+  userId: text("user_id").notNull(),
+  balance: numeric("balance", { precision: 20, scale: 2 }).notNull().default("0"),
+  equity: numeric("equity", { precision: 20, scale: 2 }).notNull().default("0"),
+  margin: numeric("margin", { precision: 20, scale: 2 }).notNull().default("0"),
+  freeMargin: numeric("free_margin", { precision: 20, scale: 2 }).notNull().default("0"),
+  marginLevel: numeric("margin_level", { precision: 10, scale: 2 }).notNull().default("0"),
+  floatingPl: numeric("floating_pl", { precision: 20, scale: 2 }).notNull().default("0"),
+  positions: jsonb("positions").notNull().default([]),
   lastUpdate: timestamp("last_update").defaultNow().notNull(),
+  syncToken: text("sync_token").notNull(),
 });
 
 export const userRole = pgTable("user_role", {

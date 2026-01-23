@@ -1,0 +1,224 @@
+📌 PLATFORM ENHANCEMENT DIRECTIVE – TRADIFY / Market Foundations
+OBJECTIVE (READ FIRST)
+
+Enhance the TRADIFY platform into a fully professional, production-grade trading system by fixing data integrity first, then upgrading UX, analytics, and reliability.
+
+Priority order is NON-NEGOTIABLE:
+
+Data correctness
+
+MT5 connector reliability
+
+Sync transparency
+
+Dashboard & UX polish
+
+No UI enhancement is valid unless it reflects real, verified MT5 data.
+
+1️⃣ CRITICAL BLOCKER – DATA INTEGRITY & SYNC
+Current State
+
+Dashboard displays metrics
+
+MT5 Connection page exists
+
+BUT data is not truly synced from MT5
+
+This creates false confidence and must be fixed immediately.
+
+2️⃣ REQUIRED ARCHITECTURAL CHANGE (MANDATORY)
+Implement a Local Python MT5 Connector
+
+The MT5 integration must be a Python application that runs locally on the user’s machine.
+
+Responsibilities:
+
+Connect directly to the MT5 terminal using MetaTrader5 Python package
+
+Pull live account data, positions, and history
+
+Sync data to TRADIFY backend every 1–2 seconds
+
+Authenticate using a user-generated token
+
+If the Python connector is not running:
+❌ Dashboard must NOT show MT5 metrics
+❌ Journal must NOT show MT5 trades
+
+3️⃣ BACKEND ENHANCEMENTS (DATA PIPELINE)
+Implement a Single Source of Truth
+
+MT5 → Python Connector → Backend → Frontend
+
+Backend must:
+
+Accept MT5 payloads only from authenticated connectors
+
+Store:
+
+Balance
+
+Equity
+
+Margin (used/free/level)
+
+Open positions
+
+Closed trades
+
+Reject stale or partial data
+
+Track last sync timestamp per user
+
+Add a connection health monitor:
+
+CONNECTED (payload < 3s)
+
+SYNCING (initial)
+
+DISCONNECTED (> 5s no data)
+
+4️⃣ DASHBOARD ENHANCEMENT (AFTER DATA IS CORRECT)
+Dashboard must reflect MT5 exactly
+
+Replace placeholder logic with MT5-backed values:
+
+Required Live Metrics
+
+Balance
+
+Equity
+
+Floating P&L
+
+Realized P&L (daily / total)
+
+Margin used
+
+Free margin
+
+Margin level %
+
+Visual Enhancements
+
+Add Equity vs Balance line chart
+
+Add Daily P&L bar chart
+
+Add Open Positions panel
+
+Add Connection status indicator (top-right)
+
+If MT5 disconnects:
+
+Freeze values
+
+Show “MT5 Disconnected”
+
+Disable refresh illusion
+
+5️⃣ TRADE JOURNAL ENHANCEMENT
+Journal Data Sources
+
+Manual trades → Rule Engine
+
+MT5 trades → Python sync
+
+Required behavior:
+
+MT5 trades auto-populate
+
+No duplicates
+
+Match MT5 ticket IDs
+
+Show:
+
+Entry
+
+SL / TP
+
+Lot size
+
+Commission / swap
+
+Result (floating / closed)
+
+Add clear labeling:
+
+“MT5 Synced”
+
+“Manual Journal”
+
+6️⃣ UX & PROFESSIONAL POLISH
+Visual Enhancements
+
+Use skeleton loaders during sync
+
+Add tooltips for metrics
+
+Improve spacing and hierarchy on dashboard cards
+
+Highlight critical values (Equity, Drawdown)
+
+Trust Indicators
+
+“Last synced: X seconds ago”
+
+“MT5 Source: Verified”
+
+Error banners when data mismatches
+
+7️⃣ VALIDATION & TESTING REQUIREMENTS
+
+Before any release:
+
+Mandatory Tests
+
+MT5 equity == Dashboard equity
+
+MT5 open positions == Journal positions
+
+MT5 P&L == Dashboard P&L
+
+Disconnect Python → Dashboard reflects instantly
+
+No test = no release.
+
+8️⃣ DEVELOPER RULES (STRICT)
+
+❌ No mock data for MT5 metrics
+
+❌ No silent failures
+
+❌ No UI-only “connected” states
+
+✅ Backend validates everything
+
+✅ Frontend is read-only for MT5 data
+
+9️⃣ SUCCESS DEFINITION
+
+The enhancement is complete when:
+
+User connects MT5
+
+Runs Python connector
+
+Opens dashboard
+
+Sees exact MT5 equity, margin, and P&L
+
+Closes MT5 → dashboard updates
+
+Disconnects connector → dashboard warns
+
+At that point, TRADIFY becomes trustworthy.
+
+FINAL NOTE (IMPORTANT)
+
+We are building a commercial trading platform.
+
+A beautiful UI with wrong numbers is worse than no UI.
+
+Accuracy first. Discipline always.

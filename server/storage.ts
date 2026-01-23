@@ -16,36 +16,63 @@ export interface IStorage {
   updateTrade(id: number, updates: UpdateTradeRequest): Promise<Trade>;
   deleteTrade(id: number): Promise<void>;
   validateTradeRules(trade: InsertTrade): { valid: boolean; reason?: string; matchedSetup?: string; violations?: string[] };
-  updateMT5Data(data: { accountInfo: any; positions: any[]; lastUpdate: string; isConnected: boolean }): Promise<MT5Data>;
-  getMT5Data(): Promise<MT5Data | undefined>;
+  updateMT5Data(data: { 
+    userId: string;
+    balance: string;
+    equity: string;
+    margin: string;
+    freeMargin: string;
+    marginLevel: string;
+    floatingPl: string;
+    positions: any[];
+    syncToken: string;
+  }): Promise<MT5Data>;
+  getMT5Data(userId: string): Promise<MT5Data | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async updateMT5Data(data: { accountInfo: any; positions: any[]; lastUpdate: string; isConnected: boolean }): Promise<MT5Data> {
-    const [existing] = await db.select().from(mt5Data).limit(1);
+  async updateMT5Data(data: { 
+    userId: string;
+    balance: string;
+    equity: string;
+    margin: string;
+    freeMargin: string;
+    marginLevel: string;
+    floatingPl: string;
+    positions: any[];
+    syncToken: string;
+  }): Promise<MT5Data> {
+    const [existing] = await db.select().from(mt5Data).where(eq(mt5Data.userId, data.userId)).limit(1);
+    
+    const values = {
+      userId: data.userId,
+      balance: data.balance,
+      equity: data.equity,
+      margin: data.margin,
+      freeMargin: data.freeMargin,
+      marginLevel: data.marginLevel,
+      floatingPl: data.floatingPl,
+      positions: data.positions,
+      syncToken: data.syncToken,
+      lastUpdate: new Date(),
+    };
+
     if (existing) {
       const [updated] = await db.update(mt5Data)
-        .set({ 
-          accountInfo: data.accountInfo, 
-          positions: data.positions, 
-          lastUpdate: new Date(data.lastUpdate) 
-        })
-        .where(eq(mt5Data.id, existing.id))
+        .set(values)
+        .where(eq(mt5Data.userId, data.userId))
         .returning();
       return updated;
     }
+    
     const [inserted] = await db.insert(mt5Data)
-      .values({ 
-        accountInfo: data.accountInfo, 
-        positions: data.positions,
-        lastUpdate: new Date(data.lastUpdate)
-      })
+      .values(values)
       .returning();
     return inserted;
   }
 
-  async getMT5Data(): Promise<MT5Data | undefined> {
-    const [data] = await db.select().from(mt5Data).limit(1);
+  async getMT5Data(userId: string): Promise<MT5Data | undefined> {
+    const [data] = await db.select().from(mt5Data).where(eq(mt5Data.userId, userId)).limit(1);
     return data;
   }
   async getTrades(): Promise<Trade[]> {

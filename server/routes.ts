@@ -85,41 +85,76 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
-  // MT5 Bridge Endpoints
+  // MT5 Bridge Endpoints (Authenticated & Validated)
   app.post("/api/mt5/sync", async (req, res) => {
     try {
-      const { account, positions } = req.body;
-      if (!account) return res.status(400).json({ message: "Account data required" });
-      
+      const { 
+        userId, 
+        token, 
+        balance, 
+        equity, 
+        margin, 
+        freeMargin, 
+        marginLevel, 
+        floatingPl, 
+        positions 
+      } = req.body;
+
+      if (!userId || !token) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       await storage.updateMT5Data({
-        accountInfo: account,
+        userId,
+        balance: String(balance || 0),
+        equity: String(equity || 0),
+        margin: String(margin || 0),
+        freeMargin: String(freeMargin || 0),
+        marginLevel: String(marginLevel || 0),
+        floatingPl: String(floatingPl || 0),
         positions: positions || [],
-        lastUpdate: new Date().toISOString(),
-        isConnected: true
+        syncToken: token
       });
       
-      res.json({ success: true });
+      res.json({ success: true, timestamp: new Date().toISOString() });
     } catch (error) {
       console.error("MT5 Sync Error:", error);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Sync failed" });
     }
   });
 
-  app.get("/api/mt5/status", async (req, res) => {
+  app.get("/api/mt5/status/:userId", async (req, res) => {
     try {
-      const data = await storage.getMT5Data();
-      if (!data) return res.json({ isConnected: false });
+      const { userId } = req.params;
+      const data = await storage.getMT5Data(userId);
       
-      // Auto-disconnect if no update in 10 seconds
-      const lastUpdate = new Date(data.lastUpdate).getTime();
-      const now = new Date().getTime();
-      if (now - lastUpdate > 10000) {
-        return res.json({ ...data, isConnected: false });
+      if (!data) {
+        return res.json({ status: "DISCONNECTED", metrics: null });
       }
       
-      res.json({ ...data, isConnected: true });
+      const lastUpdate = new Date(data.lastUpdate).getTime();
+      const now = new Date().getTime();
+      const diff = now - lastUpdate;
+      
+      let status = "CONNECTED";
+      if (diff > 10000) status = "DISCONNECTED";
+      else if (diff > 3000) status = "SYNCING";
+      
+      res.json({ 
+        status, 
+        lastUpdate: data.lastUpdate,
+        metrics: status === "CONNECTED" || status === "SYNCING" ? {
+          balance: data.balance,
+          equity: data.equity,
+          margin: data.margin,
+          freeMargin: data.freeMargin,
+          marginLevel: data.marginLevel,
+          floatingPl: data.floatingPl,
+          positions: data.positions
+        } : null
+      });
     } catch (error) {
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Status check failed" });
     }
   });
 
