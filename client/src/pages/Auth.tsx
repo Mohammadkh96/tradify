@@ -12,7 +12,7 @@ export default function Auth() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Demo login
-    setLocation("/dashboard");
+    setLocation("/");
   };
 
   return (

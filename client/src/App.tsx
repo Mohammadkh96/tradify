@@ -20,11 +20,9 @@ function Router() {
 
   const content = (
     <Switch>
-      <Route path="/">
-        <Redirect to="/login" />
-      </Route>
       <Route path="/login" component={Auth} />
       <Route path="/signup" component={Auth} />
+      <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/journal" component={Journal} />
       <Route path="/new-entry" component={NewEntry} />
