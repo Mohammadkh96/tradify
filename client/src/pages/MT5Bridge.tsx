@@ -98,8 +98,8 @@ while True:
     navigator.clipboard.writeText(pythonCode);
     setCopied(true);
     toast({
-      title: "Copied to clipboard",
-      description: "Save this as bridge.py and run it locally.",
+      title: "Connector Code Copied",
+      description: "Save as tradify_connector.py and run on your local PC.",
     });
     setTimeout(() => setCopied(false), 2000);
   };
@@ -117,9 +117,9 @@ while True:
                 "w-2 h-2 rounded-full",
                 mt5?.isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
               )} />
-              <h1 className="text-3xl font-bold text-white tracking-tight">MT5 Sync Center</h1>
+              <h1 className="text-3xl font-bold text-white tracking-tight">MT5 Standalone Connector</h1>
             </div>
-            <p className="text-slate-400">Professional Python Bridge (Standard Architecture)</p>
+            <p className="text-slate-400">Secure Desktop-to-Cloud Synchronization</p>
           </div>
           <button 
             onClick={() => refetch()}
@@ -132,14 +132,14 @@ while True:
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 space-y-8">
-            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-6 mb-6">
-              <div className="flex items-center gap-2 text-rose-500 mb-2">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
+              <div className="flex items-center gap-2 text-amber-500 mb-2">
                 <ShieldCheck size={18} />
-                <h3 className="font-bold uppercase tracking-widest text-xs">Security & Reliability Notice</h3>
+                <h3 className="font-bold uppercase tracking-widest text-xs">Standalone Connector Required</h3>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Direct MT5 WebRequest is restricted by MT5 architecture. For professional-grade reliability, 
-                you must run the <strong>Python Connector</strong> locally on the same PC as your MT5 terminal.
+                To connect to MetaTrader 5, you must run the <strong>Standalone Python Connector</strong> on your local computer. 
+                This app cannot access your local MT5 terminal directly from the cloud. The connector acts as a secure bridge between your terminal and this dashboard.
               </p>
             </div>
 
@@ -227,20 +227,20 @@ while True:
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
               <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Cpu size={16} className="text-emerald-500" />
-                Local Setup Guide
+                Standalone Setup Instructions
               </h3>
               <ol className="space-y-4 text-sm text-slate-400">
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">1</span>
-                  <span>Install Python on your Windows PC.</span>
+                  <span><strong>Download Python:</strong> Ensure Python is installed on the computer running MT5.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">2</span>
-                  <span>Open terminal and run: <code className="text-emerald-500 text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ml-1">pip install MetaTrader5 requests</code></span>
+                  <span><strong>Install Dependencies:</strong> Run <code className="text-emerald-500 text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ml-1">pip install MetaTrader5 requests</code> in your command prompt.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">3</span>
-                  <span>Copy the code below, save as <strong>bridge.py</strong>, and run it.</span>
+                  <span><strong>Run Connector:</strong> Copy the code below, save it as <code className="text-emerald-500">tradify_connector.py</code>, and run it: <code className="text-emerald-500 text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ml-1">python tradify_connector.py</code></span>
                 </li>
               </ol>
 
