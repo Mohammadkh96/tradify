@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigation, MobileNav } from "@/components/Navigation";
 import { 
   Activity, 
@@ -10,15 +10,39 @@ import {
   Terminal,
   Copy,
   Check,
-  Cpu
+  Cpu,
+  Download,
+  Key
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function MT5Bridge() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
+  const userId = "demo_user"; // In a real app, this would be the logged in user's ID
+
+  const { data: userRoleData } = useQuery<any>({
+    queryKey: [`/api/traders-hub/user-role/${userId}`],
+  });
+
+  const generateTokenMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/traders-hub/generate-token", { userId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/traders-hub/user-role/${userId}`] });
+      toast({
+        title: "Token Generated",
+        description: "Your new sync token has been generated.",
+      });
+    },
+  });
+
   const { data: mt5, isLoading, error, refetch } = useQuery<{
     status: string;
     metrics?: {
@@ -35,7 +59,7 @@ export default function MT5Bridge() {
       }>;
     };
   }>({
-    queryKey: ["/api/mt5/status/demo_user"],
+    queryKey: [`/api/mt5/status/${userId}`],
     refetchInterval: 2000, 
   });
 
@@ -46,8 +70,8 @@ import json
 
 # Configuration
 SERVER_URL = "https://${window.location.host}/api/mt5/sync"
-USER_ID = "demo_user"  # Your Tradify User ID
-TOKEN = "your_secure_token_here"  # Generated in Tradify Settings
+USER_ID = "${userId}"
+TOKEN = "${userRoleData?.syncToken || "PASTE_YOUR_TOKEN_HERE"}"
 INTERVAL = 2  # Seconds between syncs
 
 def collect_mt5_data():
@@ -98,6 +122,19 @@ while True:
             
     time.sleep(INTERVAL)`;
 
+  const downloadConnector = () => {
+    const element = document.createElement("a");
+    const file = new Blob([pythonCode], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = "tradify_connector.py";
+    document.body.appendChild(element);
+    element.click();
+    toast({
+      title: "Downloading Connector",
+      description: "tradify_connector.py is being downloaded.",
+    });
+  };
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(pythonCode);
     setCopied(true);
@@ -125,17 +162,60 @@ while True:
             </div>
             <p className="text-slate-400">Secure Desktop-to-Cloud Synchronization</p>
           </div>
-          <button 
-            onClick={() => refetch()}
-            className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors"
-          >
-            <RefreshCw size={16} className={cn(isLoading && "animate-spin")} />
-            Sync Status
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={downloadConnector}
+              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-500 transition-colors"
+            >
+              <Download size={16} />
+              Download Python File
+            </button>
+            <button 
+              onClick={() => refetch()}
+              className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors"
+            >
+              <RefreshCw size={16} className={cn(isLoading && "animate-spin")} />
+              Sync Status
+            </button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 space-y-8">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Key className="text-emerald-500" size={20} />
+                  <h3 className="font-bold text-white uppercase tracking-widest text-xs">Sync Authentication</h3>
+                </div>
+                <button 
+                  onClick={() => generateTokenMutation.mutate()}
+                  disabled={generateTokenMutation.isPending}
+                  className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-widest disabled:opacity-50"
+                >
+                  {userRoleData?.syncToken ? "Regenerate Token" : "Generate Token"}
+                </button>
+              </div>
+              
+              <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-sm text-slate-300 break-all mb-4 relative group">
+                {userRoleData?.syncToken ? (
+                  <>
+                    <span className="group-hover:blur-0 blur-sm transition-all duration-300">
+                      {userRoleData.syncToken}
+                    </span>
+                    <div className="absolute inset-0 flex items-center justify-center opacity-100 group-hover:opacity-0 transition-opacity bg-slate-950/50">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Hover to Reveal</span>
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-slate-500 italic">No token generated yet</span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed italic">
+                This token is required for the Python connector to authenticate. Never share this token with anyone.
+              </p>
+            </div>
+
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
               <div className="flex items-center gap-2 text-amber-500 mb-2">
                 <ShieldCheck size={18} />
@@ -143,7 +223,7 @@ while True:
               </div>
               <p className="text-sm text-slate-400 leading-relaxed">
                 To connect to MetaTrader 5, you must run the <strong>Standalone Python Connector</strong> on your local computer. 
-                This app cannot access your local MT5 terminal directly from the cloud. The connector acts as a secure bridge between your terminal and this dashboard.
+                This app cannot access your local MT5 terminal directly from the cloud.
               </p>
             </div>
 

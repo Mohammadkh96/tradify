@@ -377,4 +377,23 @@ router.post("/report-provider", async (req: Request, res: Response) => {
   }
 });
 
+// Sync Token Management
+router.post("/generate-token", async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    
+    await db.update(userRole)
+      .set({ syncToken: token, updatedAt: new Date() })
+      .where(eq(userRole.userId, userId));
+
+    res.json({ token });
+  } catch (error) {
+    console.error("Error generating token:", error);
+    res.status(500).json({ error: "Failed to generate token" });
+  }
+});
+
 export default router;

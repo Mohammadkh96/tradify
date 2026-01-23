@@ -62,6 +62,7 @@ export const userRole = pgTable("user_role", {
   kycVerificationDate: timestamp("kyc_verification_date"),
   termsAccepted: boolean("terms_accepted").notNull().default(false),
   riskAcknowledged: boolean("risk_acknowledged").notNull().default(false),
+  syncToken: text("sync_token"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

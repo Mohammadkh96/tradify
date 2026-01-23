@@ -104,6 +104,12 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Authentication required" });
       }
 
+      // Validate token against user's stored token
+      const [role] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
+      if (!role || role.syncToken !== token) {
+        return res.status(401).json({ message: "Invalid sync token" });
+      }
+
       await storage.updateMT5Data({
         userId,
         balance: String(balance || 0),
