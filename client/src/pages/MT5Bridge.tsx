@@ -12,7 +12,9 @@ import {
   Check,
   Cpu,
   Download,
-  Key
+  Key,
+  Server,
+  Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -23,7 +25,9 @@ export default function MT5Bridge() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
-  const userId = "demo_user"; // In a real app, this would be the logged in user's ID
+  const [accountNumber, setAccountNumber] = useState("1742554151");
+  const [broker, setBroker] = useState("Exness");
+  const userId = "demo_user";
 
   const { data: userRoleData } = useQuery<any>({
     queryKey: [`/api/traders-hub/user-role/${userId}`],
@@ -38,12 +42,12 @@ export default function MT5Bridge() {
       queryClient.invalidateQueries({ queryKey: [`/api/traders-hub/user-role/${userId}`] });
       toast({
         title: "Token Generated",
-        description: "Your new sync token has been generated.",
+        description: "Your one-time sync token has been generated.",
       });
     },
   });
 
-  const { data: mt5, isLoading, error, refetch } = useQuery<{
+  const { data: mt5, refetch } = useQuery<{
     status: string;
     metrics?: {
       balance: string;
@@ -56,6 +60,7 @@ export default function MT5Bridge() {
         volume: number;
         price_open: number;
         profit: number;
+        ticket: number;
       }>;
     };
   }>({
@@ -67,298 +72,320 @@ export default function MT5Bridge() {
 import requests
 import time
 import json
+import tkinter as tk
+from tkinter import ttk, messagebox
+import threading
+import os
 
-# Configuration
-SERVER_URL = "https://${window.location.host}/api/mt5/sync"
-USER_ID = "${userId}"
-TOKEN = "${userRoleData?.syncToken || "PASTE_YOUR_TOKEN_HERE"}"
-INTERVAL = 2  # Seconds between syncs
-
-def collect_mt5_data():
-    if not mt5.initialize():
-        print("MT5 Initialize failed")
-        return None
+class MT5ConnectorGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("TRADIFY MT5 Connector")
+        self.root.geometry("600x500")
         
-    account_info = mt5.account_info()
-    if account_info is None:
-        print("Failed to get account info")
-        return None
+        self.api_url = tk.StringVar(value="https://${window.location.host}/api/mt5/sync")
+        self.token = tk.StringVar()
+        self.status_var = tk.StringVar(value="Not registered")
+        self.is_running = False
         
-    positions = mt5.positions_get()
-    
-    payload = {
-        "userId": USER_ID,
-        "token": TOKEN,
-        "balance": account_info.balance,
-        "equity": account_info.equity,
-        "margin": account_info.margin,
-        "freeMargin": account_info.margin_free,
-        "marginLevel": account_info.margin_level,
-        "floatingPl": account_info.profit,
-        "positions": [
-            {
-                "symbol": p.symbol,
-                "type": "Buy" if p.type == 0 else "Sell",
-                "volume": p.volume,
-                "price_open": p.price_open,
-                "profit": p.profit
-            } for p in positions
-        ]
-    }
-    return payload
+        self.setup_ui()
+        self.load_saved_token()
 
-print(f"TRADIFY Python Connector Started for {USER_ID}")
-while True:
-    data = collect_mt5_data()
-    if data:
-        try:
-            response = requests.post(SERVER_URL, json=data)
-            if response.status_code == 200:
-                print(f"Synced: Balance \${data['balance']} | Status: {response.json().get('success')}")
-            else:
-                print(f"Error: Server returned {response.status_code} - {response.text}")
-        except Exception as e:
-            print(f"Connection Error: {e}")
+    def setup_ui(self):
+        tab_control = ttk.Notebook(self.root)
+        
+        # Registration Tab
+        reg_tab = ttk.Frame(tab_control)
+        tab_control.add(reg_tab, text='Registration')
+        
+        ttk.Label(reg_tab, text="Token Registration", font=('Arial', 10, 'bold')).pack(pady=10, anchor='w', padx=20)
+        
+        ttk.Label(reg_tab, text="API URL:").pack(padx=20, anchor='w')
+        ttk.Entry(reg_tab, textvariable=self.api_url, width=70).pack(padx=20, pady=5)
+        
+        ttk.Label(reg_tab, text="One-Time Token (from TRADIFY app):").pack(padx=20, anchor='w')
+        ttk.Entry(reg_tab, textvariable=self.token, width=70).pack(padx=20, pady=5)
+        
+        btn_frame = ttk.Frame(reg_tab)
+        btn_frame.pack(pady=20, padx=20, anchor='w')
+        ttk.Button(btn_frame, text="Register", command=self.start_sync).pack(side='left')
+        ttk.Button(btn_frame, text="Clear Saved Token", command=self.clear_token).pack(side='left', padx=10)
+        
+        # Status Section
+        status_frame = ttk.LabelFrame(self.root, text="Status")
+        status_frame.pack(fill="x", padx=20, pady=20)
+        ttk.Label(status_frame, textvariable=self.status_var).pack(pady=10, padx=10)
+        
+        tab_control.pack(expand=1, fill="both")
+
+    def load_saved_token(self):
+        if os.path.exists('token.txt'):
+            with open('token.txt', 'r') as f:
+                self.token.set(f.read().strip())
+
+    def clear_token(self):
+        if os.path.exists('token.txt'):
+            os.remove('token.txt')
+        self.token.set("")
+        messagebox.showinfo("Success", "Saved token cleared")
+
+    def start_sync(self):
+        if not self.token.get():
+            messagebox.showerror("Error", "Please enter a token")
+            return
             
-    time.sleep(INTERVAL)`;
+        with open('token.txt', 'w') as f:
+            f.write(self.token.get())
+            
+        if not self.is_running:
+            self.is_running = True
+            threading.Thread(target=self.sync_loop, daemon=True).start()
+            self.status_var.set("Syncing...")
+
+    def sync_loop(self):
+        while self.is_running:
+            try:
+                if not mt5.initialize():
+                    self.status_var.set("MT5 Initialize failed")
+                    time.sleep(5)
+                    continue
+                    
+                account_info = mt5.account_info()
+                if account_info:
+                    positions = mt5.positions_get()
+                    
+                    payload = {
+                        "userId": "${userId}",
+                        "token": self.token.get(),
+                        "balance": account_info.balance,
+                        "equity": account_info.equity,
+                        "margin": account_info.margin,
+                        "freeMargin": account_info.margin_free,
+                        "marginLevel": account_info.margin_level,
+                        "floatingPl": account_info.profit,
+                        "positions": [
+                            {
+                                "ticket": p.ticket,
+                                "symbol": p.symbol,
+                                "type": "Buy" if p.type == 0 else "Sell",
+                                "volume": p.volume,
+                                "price_open": p.price_open,
+                                "sl": p.sl,
+                                "tp": p.tp,
+                                "profit": p.profit
+                            } for p in positions
+                        ]
+                    }
+                    
+                    response = requests.post(self.api_url.get(), json=payload)
+                    if response.status_code == 200:
+                        self.status_var.set(f"Connected - Syncing active (Last: {time.strftime('%H:%M:%S')})")
+                    else:
+                        self.status_var.set(f"Error: {response.status_code}")
+                
+            except Exception as e:
+                self.status_var.set(f"Connection Error: {str(e)}")
+            
+            time.sleep(2)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MT5ConnectorGUI(root)
+    root.mainloop()`;
 
   const downloadConnector = () => {
     const element = document.createElement("a");
     const file = new Blob([pythonCode], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
-    element.download = "tradify_connector.py";
+    element.download = "tradify_connector_app.py";
     document.body.appendChild(element);
     element.click();
     toast({
       title: "Downloading Connector",
-      description: "tradify_connector.py is being downloaded.",
+      description: "tradify_connector_app.py is being downloaded.",
     });
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(pythonCode);
+    if (!userRoleData?.syncToken) return;
+    navigator.clipboard.writeText(userRoleData.syncToken);
     setCopied(true);
     toast({
-      title: "Connector Code Copied",
-      description: "Save as tradify_connector.py and run on your local PC.",
+      title: "Token Copied",
+      description: "Paste this into your MT5 Connector app.",
     });
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 pb-20 md:pb-0">
+    <div className="min-h-screen bg-[#020617] text-slate-50 pb-20 md:pb-0">
       <Navigation />
       <MobileNav />
       
       <main className="md:ml-64 p-6 lg:p-10 max-w-6xl mx-auto">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                mt5?.status === "CONNECTED" ? "bg-emerald-500 animate-pulse" : (mt5?.status === "SYNCING" ? "bg-amber-500 animate-pulse" : "bg-rose-500")
-              )} />
-              <h1 className="text-3xl font-bold text-white tracking-tight">MT5 Standalone Connector</h1>
+        <div className="bg-[#0b1120] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-500/10 p-2 rounded-lg">
+                <Server className="text-emerald-500" size={24} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">MT5 Connector (Token)</h1>
+                <p className="text-xs text-slate-400">Generate a one-time token, paste it in the desktop connector, then refresh status.</p>
+              </div>
             </div>
-            <p className="text-slate-400">Secure Desktop-to-Cloud Synchronization</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={downloadConnector}
-              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-500 transition-colors"
-            >
-              <Download size={16} />
-              Download Python File
-            </button>
-            <button 
-              onClick={() => refetch()}
-              className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors"
-            >
-              <RefreshCw size={16} className={cn(isLoading && "animate-spin")} />
-              Sync Status
-            </button>
-          </div>
-        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-7 space-y-8">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Key className="text-emerald-500" size={20} />
-                  <h3 className="font-bold text-white uppercase tracking-widest text-xs">Sync Authentication</h3>
+          <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Left Column: Form */}
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Account Number</label>
+                <input 
+                  type="text" 
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  className="w-full bg-[#020617] border border-slate-800 rounded-lg px-4 py-3 text-sm font-mono text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Broker / Server</label>
+                <input 
+                  type="text" 
+                  value={broker}
+                  onChange={(e) => setBroker(e.target.value)}
+                  className="w-full bg-[#020617] border border-slate-800 rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+
+              <button 
+                onClick={() => generateTokenMutation.mutate()}
+                disabled={generateTokenMutation.isPending}
+                className="w-full bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2"
+              >
+                {generateTokenMutation.isPending ? "Generating..." : "Generate Connection Token"}
+              </button>
+
+              {userRoleData?.syncToken && (
+                <div className="bg-slate-950 border border-[#0ea5e9]/30 rounded-2xl p-6 relative">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[10px] font-bold text-sky-400 uppercase tracking-widest flex items-center gap-2">
+                      One-Time Token
+                      <span className="text-slate-500 flex items-center gap-1 normal-case font-normal">
+                        <Activity size={10} /> Expires in ~15 min
+                      </span>
+                    </span>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <div className="flex-1 bg-[#0b1120] border border-slate-800 rounded-lg p-4 font-mono text-xs text-slate-300 break-all h-24 overflow-y-auto">
+                      {userRoleData.syncToken}
+                    </div>
+                    <button 
+                      onClick={copyToClipboard}
+                      className="bg-slate-800 hover:bg-slate-700 p-4 rounded-lg self-start transition-colors"
+                    >
+                      {copied ? <Check size={20} className="text-emerald-500" /> : <Copy size={20} className="text-slate-400" />}
+                    </button>
+                  </div>
+
+                  <div className="mt-4 flex items-start gap-2">
+                    <div className="mt-1">🚀</div>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      Download the connector below, run with Python, paste this token, and it will auto-register your MT5 connection.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-6">
+                    <button 
+                      onClick={downloadConnector}
+                      className="bg-[#0ea5e9]/10 border border-[#0ea5e9]/30 hover:bg-[#0ea5e9]/20 text-sky-400 py-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all"
+                    >
+                      <div className="flex items-center gap-1 font-bold text-xs uppercase tracking-tighter">
+                        <Download size={14} /> Download
+                      </div>
+                      <span className="text-[10px] opacity-80">Connector (Python)</span>
+                    </button>
+                    <button 
+                      className="bg-slate-800/50 border border-slate-700 hover:bg-slate-800 text-slate-400 py-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all"
+                    >
+                      <div className="flex items-center gap-1 font-bold text-xs uppercase tracking-tighter">
+                        <Play size={14} /> Launcher
+                      </div>
+                      <span className="text-[10px] opacity-80">Script</span>
+                    </button>
+                  </div>
+
+                  <div className="mt-6 p-4 bg-slate-950/50 rounded-lg border border-slate-800">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400 mb-1">
+                      <Terminal size={12} className="text-amber-500" />
+                      Run: python mt5_connector_app.py
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-600">
+                      YOUR_TOKEN
+                    </div>
+                  </div>
                 </div>
+              )}
+              
+              <div className="flex items-center justify-center gap-2 text-[10px] text-slate-600 mt-4">
+                <ShieldCheck size={12} />
+                Token is one-time and expires quickly. No MT5 credentials are stored.
+              </div>
+            </div>
+
+            {/* Right Column: Connections */}
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-emerald-500 font-bold text-lg">Connections</h3>
                 <button 
-                  onClick={() => generateTokenMutation.mutate()}
-                  disabled={generateTokenMutation.isPending}
-                  className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-widest disabled:opacity-50"
+                  onClick={() => refetch()}
+                  className="text-slate-400 hover:text-white flex items-center gap-2 text-sm transition-colors"
                 >
-                  {userRoleData?.syncToken ? "Regenerate Token" : "Generate Token"}
+                  <RefreshCw size={14} /> Refresh
                 </button>
               </div>
-              
-              <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-sm text-slate-300 break-all mb-4 relative group">
-                {userRoleData?.syncToken ? (
-                  <>
-                    <span className="group-hover:blur-0 blur-sm transition-all duration-300">
-                      {userRoleData.syncToken}
-                    </span>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-100 group-hover:opacity-0 transition-opacity bg-slate-950/50">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Hover to Reveal</span>
+
+              <div className="flex-1 bg-[#020617] border border-slate-800 rounded-xl p-8 flex flex-col items-center justify-center text-center">
+                {mt5?.status === "CONNECTED" ? (
+                  <div className="space-y-4 w-full text-left">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20">
+                        <Activity size={24} className="text-emerald-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-white font-bold">Live Connection</h4>
+                        <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                          {mt5.status}
+                        </div>
+                      </div>
                     </div>
-                  </>
+                    <div className="bg-slate-900/50 rounded-lg p-4 space-y-3 border border-slate-800">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">Balance</span>
+                        <span className="text-white font-mono">${parseFloat(mt5.metrics?.balance || "0").toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">Equity</span>
+                        <span className="text-emerald-500 font-mono">${parseFloat(mt5.metrics?.equity || "0").toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">Margin Level</span>
+                        <span className="text-white font-mono">{parseFloat(mt5.metrics?.marginLevel || "0").toFixed(2)}%</span>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  <span className="text-slate-500 italic">No token generated yet</span>
+                  <div className="space-y-4">
+                    <p className="text-slate-400 text-sm max-w-[240px]">
+                      No active connections yet. Generate a token and register via the connector.
+                    </p>
+                  </div>
                 )}
               </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed italic">
-                This token is required for the Python connector to authenticate. Never share this token with anyone.
-              </p>
-            </div>
-
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
-              <div className="flex items-center gap-2 text-amber-500 mb-2">
-                <ShieldCheck size={18} />
-                <h3 className="font-bold uppercase tracking-widest text-xs">Standalone Connector Required</h3>
-              </div>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                To connect to MetaTrader 5, you must run the <strong>Standalone Python Connector</strong> on your local computer. 
-                This app cannot access your local MT5 terminal directly from the cloud.
-              </p>
-            </div>
-
-            {mt5?.status === "CONNECTED" || mt5?.status === "SYNCING" ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Balance</span>
-                      <Wallet className="text-emerald-500" size={18} />
-                    </div>
-                    <div className="text-2xl font-mono font-bold text-white">
-                      ${parseFloat(mt5.metrics?.balance || "0").toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Equity</span>
-                      <Activity className="text-emerald-500" size={18} />
-                    </div>
-                    <div className="text-2xl font-mono font-bold text-white">
-                      ${parseFloat(mt5.metrics?.equity || "0").toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-                    <h3 className="font-bold flex items-center gap-2 text-sm uppercase tracking-widest">
-                      <BarChart3 size={16} className="text-slate-500" />
-                      Live Positions ({mt5.metrics?.positions?.length || 0})
-                    </h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-slate-950/50 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                          <th className="px-6 py-3">Symbol</th>
-                          <th className="px-6 py-3">Type</th>
-                          <th className="px-6 py-3 text-right">Profit</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800">
-                        {mt5.metrics?.positions?.map((pos: any, idx: number) => (
-                          <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="px-6 py-4 font-mono text-sm text-white">{pos.symbol}</td>
-                            <td className="px-6 py-4">
-                              <span className={cn(
-                                "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider",
-                                pos.type === "Buy" ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
-                              )}>
-                                {pos.type}
-                              </span>
-                            </td>
-                            <td className={cn(
-                              "px-6 py-4 font-mono text-sm text-right font-bold",
-                              pos.profit >= 0 ? "text-emerald-500" : "text-rose-500"
-                            )}>
-                              ${pos.profit?.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
-                <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-rose-500/20">
-                  <AlertCircle size={40} className="text-rose-500" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Sync Offline</h3>
-                <p className="text-slate-400 max-w-sm mx-auto mb-8 leading-relaxed">
-                  Your MT5 terminal is not sending data. The dashboard is currently locked to prevent inaccurate data display.
-                </p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-950 border border-slate-800 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Status: {mt5?.status === "DISCONNECTED" ? "Waiting for Python Bridge..." : mt5?.status}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
-              <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Cpu size={16} className="text-emerald-500" />
-                Standalone Setup Instructions
-              </h3>
-              <ol className="space-y-4 text-sm text-slate-400">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">1</span>
-                  <span><strong>Download Python:</strong> Ensure Python is installed on the computer running MT5.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">2</span>
-                  <span><strong>Install Dependencies:</strong> Run <code className="text-emerald-500 text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ml-1">pip install MetaTrader5 requests</code> in your command prompt.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-500">3</span>
-                  <span><strong>Run Connector:</strong> Copy the code below, save it as <code className="text-emerald-500">tradify_connector.py</code>, and run it: <code className="text-emerald-500 text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ml-1">python tradify_connector.py</code></span>
-                </li>
-              </ol>
-
-              <div className="mt-6 relative group">
-                <div className="absolute top-2 right-2 z-10">
-                  <button 
-                    onClick={copyToClipboard}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 rounded-md transition-colors text-slate-300"
-                  >
-                    {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                  </button>
-                </div>
-                <div className="bg-slate-950 rounded-lg p-4 font-mono text-[10px] text-slate-500 h-80 overflow-y-auto border border-slate-800 group-hover:border-emerald-500/30 transition-colors">
-                  <pre>{pythonCode}</pre>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Architecture Benefits</h3>
-              <ul className="space-y-2">
-                <li className="text-[11px] text-slate-400 flex items-center gap-2 italic">
-                  <ShieldCheck size={12} className="text-emerald-500 flex-shrink-0" />
-                  Bypasses MT5 WebRequest SSL restrictions
-                </li>
-                <li className="text-[11px] text-slate-400 flex items-center gap-2 italic">
-                  <ShieldCheck size={12} className="text-emerald-500 flex-shrink-0" />
-                  Zero latency synchronization (1-2s polling)
-                </li>
-                <li className="text-[11px] text-slate-400 flex items-center gap-2 italic">
-                  <ShieldCheck size={12} className="text-emerald-500 flex-shrink-0" />
-                  Handles large history & position payloads
-                </li>
-              </ul>
             </div>
           </div>
         </div>

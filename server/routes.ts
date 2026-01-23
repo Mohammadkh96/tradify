@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
+import { db } from "./db";
+import { userRole } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -121,6 +124,37 @@ export async function registerRoutes(
         positions: positions || [],
         syncToken: token
       });
+
+      // Sync positions into manual trade journal if they match ticket IDs
+      if (positions && positions.length > 0) {
+        for (const pos of positions) {
+          const existing = await storage.getTrades();
+          const alreadyLogged = existing.find(t => t.notes?.includes(`MT5_TICKET_${pos.ticket}`));
+          
+          if (!alreadyLogged) {
+            await storage.createTrade({
+              pair: pos.symbol,
+              direction: pos.type === "Buy" ? "Long" : "Short",
+              timeframe: "MT5_SYNC",
+              htfBias: "Bullish",
+              structureState: "None",
+              liquidityStatus: "None",
+              zoneValidity: "Valid",
+              htfBiasClear: true,
+              zoneValid: true,
+              liquidityTaken: true,
+              structureConfirmed: true,
+              entryConfirmed: true,
+              entryPrice: String(pos.price_open),
+              stopLoss: String(pos.sl || 0),
+              takeProfit: String(pos.tp || 0),
+              riskReward: "0",
+              outcome: "Pending",
+              notes: `[MT5 Synced] Ticket: ${pos.ticket} | MT5_TICKET_${pos.ticket}`
+            });
+          }
+        }
+      }
       
       res.json({ success: true, timestamp: new Date().toISOString() });
     } catch (error) {
