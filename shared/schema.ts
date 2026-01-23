@@ -1,67 +1,55 @@
-import { pgTable, text, serial, timestamp, boolean, numeric, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const tradeJournal = pgTable("trade_journal", {
   id: serial("id").primaryKey(),
   pair: text("pair").notNull(),
-  direction: text("direction", { enum: ["Long", "Short"] }).notNull(),
+  direction: text("direction").notNull(),
   timeframe: text("timeframe").notNull(),
-  
-  // Detection Rules (Manual Inputs)
-  htfBias: text("htf_bias", { enum: ["Bullish", "Bearish", "Range"] }).notNull(),
-  structureState: text("structure_state", { enum: ["BOS", "CHOCH", "None"] }).notNull(),
-  liquidityStatus: text("liquidity_status", { enum: ["Taken", "Pending", "None"] }).notNull(),
-  zoneValidity: text("zone_validity", { enum: ["Valid", "Invalid"] }).notNull(),
-  
-  // Execution Checklist (Booleans)
-  htfBiasClear: boolean("htf_bias_clear").notNull().default(false),
-  zoneValid: boolean("zone_valid").notNull().default(false),
-  liquidityTaken: boolean("liquidity_taken").notNull().default(false),
-  structureConfirmed: boolean("structure_confirmed").notNull().default(false),
-  entryConfirmed: boolean("entry_confirmed").notNull().default(false),
-  
-  // Rule Engine Output
-  isRuleCompliant: boolean("is_rule_compliant").notNull().default(false),
-  violationReason: text("violation_reason"),
-  matchedSetup: text("matched_setup"),
-  
-  // Trade Parameters
-  entryPrice: text("entry_price"), 
+  htfBias: text("htf_bias").notNull(),
+  htfBiasClear: boolean("htf_bias_clear").default(true),
+  zoneValid: boolean("zone_valid").default(true),
+  zoneValidity: text("zone_validity").default("Valid"),
+  liquidityTaken: boolean("liquidity_taken").default(true),
+  liquidityStatus: text("liquidity_status").default("Taken"),
+  structureConfirmed: boolean("structure_confirmed").default(true),
+  structureState: text("structure_state").default("BOS"),
+  entryConfirmed: boolean("entry_confirmed").default(true),
+  entryPrice: text("entry_price"),
   stopLoss: text("stop_loss"),
   takeProfit: text("take_profit"),
   riskReward: text("risk_reward"),
-  
-  // Outcome
-  outcome: text("outcome", { enum: ["Win", "Loss", "BE", "Pending"] }).notNull().default("Pending"),
+  outcome: text("outcome").notNull(),
   notes: text("notes"),
-  chartImageUrl: text("chart_image_url"),
-  
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isRuleCompliant: boolean("is_rule_compliant").default(true),
+  violationReason: text("violation_reason"),
+  matchedSetup: text("matched_setup"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const mt5Data = pgTable("mt5_data", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
-  balance: text("balance").notNull().default("0"),
-  equity: text("equity").notNull().default("0"),
-  margin: text("margin").notNull().default("0"),
-  freeMargin: text("free_margin").notNull().default("0"),
-  marginLevel: text("margin_level").notNull().default("0"),
-  floatingPl: text("floating_pl").notNull().default("0"),
-  leverage: integer("leverage").notNull().default(100),
-  currency: text("currency").notNull().default("USD"),
-  positions: jsonb("positions").notNull().default([]),
-  lastUpdate: timestamp("last_update").defaultNow().notNull(),
+  balance: text("balance").notNull(),
+  equity: text("equity").notNull(),
+  margin: text("margin").notNull(),
+  freeMargin: text("free_margin").notNull(),
+  marginLevel: text("margin_level").notNull(),
+  floatingPl: text("floating_pl").notNull(),
+  leverage: integer("leverage").default(100),
+  currency: text("currency").default("USD"),
+  positions: jsonb("positions").default([]),
   syncToken: text("sync_token").notNull(),
+  lastUpdate: timestamp("last_update").defaultNow(),
 });
 
 export const mt5History = pgTable("mt5_history", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
-  ticket: text("ticket").notNull().unique(),
+  ticket: text("ticket").notNull(),
   symbol: text("symbol").notNull(),
-  direction: text("direction").notNull(), // "Buy" or "Sell"
+  direction: text("direction").notNull(),
   volume: text("volume").notNull(),
   entryPrice: text("entry_price").notNull(),
   exitPrice: text("exit_price").notNull(),
@@ -69,12 +57,11 @@ export const mt5History = pgTable("mt5_history", {
   tp: text("tp"),
   openTime: timestamp("open_time").notNull(),
   closeTime: timestamp("close_time").notNull(),
-  duration: integer("duration_seconds"),
+  duration: integer("duration"),
   grossPl: text("gross_pl").notNull(),
-  commission: text("commission").notNull().default("0"),
-  swap: text("swap").notNull().default("0"),
+  commission: text("commission").default("0"),
+  swap: text("swap").default("0"),
   netPl: text("net_pl").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {
@@ -87,62 +74,37 @@ export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {
 
 export const userRole = pgTable("user_role", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().unique(),
-  role: text("role").notNull(), // "PROVIDER" or "RECEIVER"
-  kycVerified: boolean("kyc_verified").notNull().default(false),
+  userId: text("user_id").notNull(),
+  role: text("role").notNull(),
+  termsAccepted: boolean("terms_accepted").default(false),
+  riskAcknowledged: boolean("risk_acknowledged").default(false),
+  kycVerified: boolean("kyc_verified").default(false),
   kycVerificationDate: timestamp("kyc_verification_date"),
-  termsAccepted: boolean("terms_accepted").notNull().default(false),
-  riskAcknowledged: boolean("risk_acknowledged").notNull().default(false),
   syncToken: text("sync_token"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const signalProviderProfile = pgTable("signal_provider_profile", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().unique(),
+  userId: text("user_id").notNull(),
   providerName: text("provider_name").notNull(),
   bio: text("bio"),
-  profileImageUrl: text("profile_image_url"),
-  tradingStyle: text("trading_style"),
-  marketsTraded: text("markets_traded"),
-  signalType: text("signal_type"),
-  yearsOfExperience: integer("years_of_experience"),
-  telegramHandle: text("telegram_handle"),
-  whatsappLink: text("whatsapp_link"),
-  discordServer: text("discord_server"),
-  customPlatform: text("custom_platform"),
-  monthlyReturnPercentage: numeric("monthly_return_percentage", { precision: 10, scale: 2 }),
-  winRate: numeric("win_rate", { precision: 5, scale: 2 }),
-  performanceHistory: text("performance_history"),
-  performanceVerified: boolean("performance_verified").notNull().default(false),
-  verificationBadgeType: text("verification_badge_type"),
-  pricingModel: text("pricing_model"),
-  monthlyPrice: numeric("monthly_price", { precision: 10, scale: 2 }),
-  yearlyPrice: numeric("yearly_price", { precision: 10, scale: 2 }),
-  priceDescription: text("price_description"),
-  isActive: boolean("is_active").notNull().default(true),
-  isVerified: boolean("is_verified").notNull().default(false),
-  suspendedUntil: timestamp("suspended_until"),
-  suspensionReason: text("suspension_reason"),
-  disclaimerAcknowledged: boolean("disclaimer_acknowledged").notNull().default(false),
-  noGuaranteeAcknowledged: boolean("no_guarantee_acknowledged").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  viewCount: integer("view_count").notNull().default(0),
-  subscriberCount: integer("subscriber_count").notNull().default(0),
+  winRate: text("win_rate").default("0"),
+  subscriberCount: integer("subscriber_count").default(0),
+  viewCount: integer("view_count").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const signalReceiver = pgTable("signal_receiver", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().unique(),
+  userId: text("user_id").notNull(),
   receiverName: text("receiver_name").notNull(),
   bio: text("bio"),
-  profileImageUrl: text("profile_image_url"),
-  interestedMarkets: text("interested_markets"),
-  experience: text("experience"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const providerSubscription = pgTable("provider_subscription", {
@@ -150,10 +112,10 @@ export const providerSubscription = pgTable("provider_subscription", {
   receiverId: text("receiver_id").notNull(),
   providerId: text("provider_id").notNull(),
   subscriptionStatus: text("subscription_status").notNull(),
-  joinedAt: timestamp("joined_at").defaultNow().notNull(),
-  cancelledAt: timestamp("cancelled_at"),
   externalPlatform: text("external_platform"),
   externalUserId: text("external_user_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  cancelledAt: timestamp("cancelled_at"),
 });
 
 export const dispute = pgTable("dispute", {
@@ -161,14 +123,9 @@ export const dispute = pgTable("dispute", {
   reporterId: text("reporter_id").notNull(),
   reportedProviderId: text("reported_provider_id").notNull(),
   reason: text("reason").notNull(),
-  description: text("description").notNull(),
-  evidence: text("evidence"),
-  status: text("status").notNull().default("PENDING"),
-  resolution: text("resolution"),
-  action: text("action"),
-  resolvedAt: timestamp("resolved_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  description: text("description"),
+  status: text("status").default("PENDING"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const platformDisclaimer = pgTable("platform_disclaimer", {
@@ -176,32 +133,17 @@ export const platformDisclaimer = pgTable("platform_disclaimer", {
   userId: text("user_id").notNull(),
   disclaimerVersion: text("disclaimer_version").notNull(),
   disclaimerText: text("disclaimer_text").notNull(),
-  acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
+  acceptedAt: timestamp("accepted_at").defaultNow(),
 });
 
-export const insertTradeSchema = createInsertSchema(tradeJournal, {
-  pair: z.string().min(1, "Pair is required"),
-}).omit({
-  id: true,
-  createdAt: true,
-  isRuleCompliant: true,
-  violationReason: true,
-  matchedSetup: true
-});
-
-export type InsertTrade = z.infer<typeof insertTradeSchema>;
+export const insertTradeSchema = createInsertSchema(tradeJournal).omit({ id: true, createdAt: true });
+export const updateTradeSchema = insertTradeSchema.partial();
 export type Trade = typeof tradeJournal.$inferSelect;
-export type MT5Data = typeof mt5Data.$inferSelect;
-
-export const updateTradeSchema = createInsertSchema(tradeJournal).partial();
+export type InsertTrade = z.infer<typeof insertTradeSchema>;
 export type UpdateTradeRequest = z.infer<typeof updateTradeSchema>;
-
-export type ValidationResult = {
-  valid: boolean;
-  reason?: string;
-  violations?: string[];
-  matchedSetup?: string;
-};
+export type MT5Data = typeof mt5Data.$inferSelect;
+export type MT5History = typeof mt5History.$inferSelect;
+export type DailySnapshot = typeof dailyEquitySnapshots.$inferSelect;
 
 export const validationResultSchema = z.object({
   valid: z.boolean(),
@@ -209,3 +151,4 @@ export const validationResultSchema = z.object({
   violations: z.array(z.string()).optional(),
   matchedSetup: z.string().optional(),
 });
+export type ValidationResult = z.infer<typeof validationResultSchema>;

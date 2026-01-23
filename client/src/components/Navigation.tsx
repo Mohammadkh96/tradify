@@ -18,8 +18,8 @@ const navItems = [
   { href: "/new-entry", label: "New Entry", icon: PenTool },
   { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
   { href: "/traders-hub", label: "Traders Hub", icon: Users },
-  { href: "/knowledge-base", label: "Knowledge Base", icon: BookOpen },
-  { href: "/risk", label: "Risk Calculator", icon: Calculator },
+  { href: "/knowledge-base", label: "Education", icon: BookOpen },
+  { href: "/risk", label: "Calculator", icon: Calculator },
 ];
 
 export function Navigation() {

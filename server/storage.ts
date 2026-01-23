@@ -2,12 +2,14 @@ import { db } from "./db";
 import {
   tradeJournal,
   mt5Data,
+  mt5History,
+  dailyEquitySnapshots,
   type InsertTrade,
   type UpdateTradeRequest,
   type Trade,
   type MT5Data
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   getTrades(): Promise<Trade[]>;
@@ -70,8 +72,7 @@ export class DatabaseStorage implements IStorage {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const [existingSnapshot] = await db.select().from(dailyEquitySnapshots)
-      .where(eq(dailyEquitySnapshots.userId, data.userId))
-      .where(eq(dailyEquitySnapshots.date, today))
+      .where(and(eq(dailyEquitySnapshots.userId, data.userId), eq(dailyEquitySnapshots.date, today)))
       .limit(1);
 
     if (existingSnapshot) {
@@ -128,8 +129,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]> {
-    let query = db.select().from(mt5History).where(eq(mt5History.userId, userId));
-    return await query.orderBy(desc(mt5History.closeTime));
+    return await db.select().from(mt5History).where(eq(mt5History.userId, userId)).orderBy(desc(mt5History.closeTime));
   }
 
   async getDailySnapshots(userId: string): Promise<any[]> {
@@ -141,10 +141,6 @@ export class DatabaseStorage implements IStorage {
     return data;
   }
 
-  async getMT5Data(userId: string): Promise<MT5Data | undefined> {
-    const [data] = await db.select().from(mt5Data).where(eq(mt5Data.userId, userId)).limit(1);
-    return data;
-  }
   async getTrades(): Promise<Trade[]> {
     return await db.select().from(tradeJournal).orderBy(desc(tradeJournal.createdAt));
   }
@@ -157,7 +153,6 @@ export class DatabaseStorage implements IStorage {
   async createTrade(insertTrade: InsertTrade): Promise<Trade> {
     const validation = this.validateTradeRules(insertTrade);
     
-    // Ensure numeric strings are handled safely
     const finalTrade = {
       ...insertTrade,
       entryPrice: insertTrade.entryPrice || null,
@@ -187,24 +182,18 @@ export class DatabaseStorage implements IStorage {
   validateTradeRules(trade: InsertTrade) {
     const violations: string[] = [];
 
-    // GR-02: No trade allowed inside opposing HTF supply/demand
-    // (This is captured by manual user confirmation 'htfBiasClear')
     if (!trade.htfBiasClear) violations.push("HTF bias not clear");
     
-    // GR-03 & GR-06/07: Zone validation
     if (!trade.zoneValid || trade.zoneValidity === "Invalid") {
       violations.push("Zone invalidated or not valid");
     }
 
-    // GR-05: No confirmation → NO TRADE
     if (!trade.entryConfirmed) violations.push("Entry confirmation missing");
     
-    // GR-08: Liquidity must be taken before reversal entries
     if (trade.structureState === "CHOCH" && trade.liquidityStatus !== "Taken") {
       violations.push("Liquidity must be taken before reversal (CHOCH)");
     }
 
-    // Directional Alignment
     if (trade.direction === "Long" && trade.htfBias === "Bearish") {
       violations.push("Against HTF structure (Bearish bias on Long trade)");
     }
@@ -212,12 +201,10 @@ export class DatabaseStorage implements IStorage {
       violations.push("Against HTF structure (Bullish bias on Short trade)");
     }
 
-    // RR Check (GR-04)
     if (trade.riskReward && parseFloat(trade.riskReward) < 1.5) {
       violations.push("RR too small (Minimum 1:1.5)");
     }
 
-    // Setup Matching (Strategy Table)
     let matchedSetup: string | undefined;
     if (violations.length === 0) {
       if (trade.structureState === "BOS") {
