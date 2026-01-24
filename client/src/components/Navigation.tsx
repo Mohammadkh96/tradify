@@ -9,7 +9,8 @@ import {
   Zap,
   Users,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -56,6 +57,7 @@ export function Navigation() {
 
   const isConnected = mt5?.status === "CONNECTED";
   const isPro = userRole?.subscriptionTier === "PRO";
+  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-800 bg-slate-950 text-slate-300 hidden md:flex flex-col">
@@ -96,6 +98,22 @@ export function Navigation() {
             </Link>
           );
         })}
+
+        {isAdmin && (
+          <Link href="/admin">
+            <div
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group mt-4",
+                location === "/admin"
+                  ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                  : "text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/10"
+              )}
+            >
+              <Shield size={18} className={location === "/admin" ? "text-emerald-500" : "text-slate-500 group-hover:text-emerald-400"} />
+              Admin Console
+            </div>
+          </Link>
+        )}
         
         <Link href="/login">
           <div className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 mt-4 border border-transparent hover:border-rose-500/20">

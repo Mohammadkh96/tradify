@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
 import Pricing from "@/pages/Pricing";
 import Journal from "@/pages/Journal";
 import NewEntry from "@/pages/NewEntry";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/mt5-bridge" component={MT5Bridge} />
       <Route path="/traders-hub" component={TradersHubTab} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

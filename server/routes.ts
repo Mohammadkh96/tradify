@@ -5,7 +5,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
 import { db } from "./db";
-import { userRole } from "@shared/schema";
+import * as schema from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export async function registerRoutes(
@@ -221,13 +221,41 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/users", async (req, res) => {
+    const userId = req.headers["x-user-id"] as string || "dev-user";
+    const userRole = await storage.getUserRole(userId);
+    if (userRole?.role !== "OWNER" && userRole?.role !== "ADMIN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const users = await db.select().from(schema.userRole);
+    res.json(users);
+  });
+
+  app.post("/api/admin/update-user", async (req, res) => {
+    const userId = req.headers["x-user-id"] as string || "dev-user";
+    const userRole = await storage.getUserRole(userId);
+    if (userRole?.role !== "OWNER" && userRole?.role !== "ADMIN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const { targetUserId, updates } = req.body;
+    await db.update(schema.userRole).set(updates).where(eq(schema.userRole.userId, targetUserId));
+    res.json({ success: true });
+  });
+
   // Seed data on startup
   await seedDatabase();
 
   app.get("/api/user/role", async (req, res) => {
     const userId = req.headers["x-user-id"] as string || "dev-user";
     const role = await storage.getUserRole(userId);
-    res.json(role || { subscriptionTier: "FREE" });
+    // If no role found, ensure dev-user is OWNER for testing purposes
+    if (!role && userId === "dev-user") {
+      await storage.updateUserSubscription(userId, "FREE");
+      await db.update(schema.userRole).set({ role: "OWNER" }).where(eq(schema.userRole.userId, userId));
+      const updatedRole = await storage.getUserRole(userId);
+      return res.json(updatedRole);
+    }
+    res.json(role || { subscriptionTier: "FREE", role: "TRADER" });
   });
 
   app.post("/api/user/upgrade-dev", async (req, res) => {
