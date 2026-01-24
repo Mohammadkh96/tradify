@@ -161,7 +161,7 @@ export async function registerRoutes(
               riskReward: "0",
               outcome: "Pending",
               notes: `[MT5 Synced] Ticket: ${pos.ticket} | MT5_TICKET_${pos.ticket}`,
-              userId: userId // Associate synced trades with the correct user
+              userId: userId 
             });
           }
         }

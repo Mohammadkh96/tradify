@@ -4,6 +4,7 @@ import { z } from "zod";
 
 export const tradeJournal = pgTable("trade_journal", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().default("dev-user"),
   pair: text("pair").notNull(),
   direction: text("direction").notNull(),
   timeframe: text("timeframe").notNull(),
