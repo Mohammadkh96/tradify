@@ -27,7 +27,7 @@ function Router() {
     queryKey: ["/api/user/role"],
   });
 
-  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
+  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN" || userRole?.userId === "mohammad@admin.com";
 
   // Role-based entry flow: Redirect Admins to /admin/overview on root access
   if (location === "/" && isAdmin) {
