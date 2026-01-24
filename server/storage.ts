@@ -46,6 +46,11 @@ export class DatabaseStorage implements IStorage {
     return role;
   }
 
+  async createUserRole(role: any): Promise<any> {
+    const [newUserRole] = await db.insert(userRole).values(role).returning();
+    return newUserRole;
+  }
+
   async updateUserSubscription(userId: string, tier: string): Promise<void> {
     const [existing] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
     if (existing) {
