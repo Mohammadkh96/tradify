@@ -44,6 +44,11 @@ function Router() {
     return <Redirect to="/admin/overview" />;
   }
 
+  const isUserLoggedIn = localStorage.getItem("user_id") !== null;
+  if (isLandingPage && isUserLoggedIn && !isAdmin) {
+    return <Redirect to="/dashboard" />;
+  }
+
   const content = (
     <Switch>
       <Route path="/login" component={Auth} />
