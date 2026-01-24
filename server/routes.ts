@@ -222,11 +222,20 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/users", async (req, res) => {
-    const userId = req.headers["x-user-id"] as string || "dev-user";
-    const userRole = await storage.getUserRole(userId);
-    if (userRole?.role !== "OWNER" && userRole?.role !== "ADMIN" && userId !== "mohammad@admin.com") {
+    const userId = req.headers["x-user-id"] as string || req.query.userId as string || "dev-user";
+    
+    // Check if the requester is an authorized admin
+    const [dynamicAdmin] = await db.select().from(schema.adminAccess).where(eq(schema.adminAccess.email, userId)).limit(1);
+    const requesterRole = await storage.getUserRole(userId);
+    
+    const isAuthorized = userId === "mohammad@admin.com" || 
+                       (requesterRole?.role === "OWNER" || requesterRole?.role === "ADMIN") ||
+                       (dynamicAdmin && dynamicAdmin.isActive);
+
+    if (!isAuthorized) {
       return res.status(403).json({ message: "Forbidden" });
     }
+    
     const users = await db.select().from(schema.userRole);
     res.json(users);
   });
