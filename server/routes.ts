@@ -242,6 +242,42 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  // --- Admin Access Management ---
+  app.get("/api/admin/access", async (req, res) => {
+    const userId = req.headers["x-user-id"] as string || "dev-user";
+    const role = await storage.getUserRole(userId);
+    if (role?.role !== "OWNER") return res.status(403).json({ message: "Forbidden" });
+    
+    const admins = await db.select().from(schema.adminAccess);
+    res.json(admins);
+  });
+
+  app.post("/api/admin/access", async (req, res) => {
+    const userId = req.headers["x-user-id"] as string || "dev-user";
+    const role = await storage.getUserRole(userId);
+    if (role?.role !== "OWNER") return res.status(403).json({ message: "Forbidden" });
+    
+    const { email, label } = req.body;
+    const accessKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    
+    const [newAdmin] = await db.insert(schema.adminAccess).values({
+      email,
+      label,
+      accessKey,
+    }).returning();
+    
+    res.json(newAdmin);
+  });
+
+  app.delete("/api/admin/access/:id", async (req, res) => {
+    const userId = req.headers["x-user-id"] as string || "dev-user";
+    const role = await storage.getUserRole(userId);
+    if (role?.role !== "OWNER") return res.status(403).json({ message: "Forbidden" });
+    
+    await db.delete(schema.adminAccess).where(eq(schema.adminAccess.id, parseInt(req.params.id)));
+    res.json({ success: true });
+  });
+
   // Seed data on startup
   await seedDatabase();
 
@@ -249,7 +285,10 @@ export async function registerRoutes(
     // Check for hardcoded admin first
     const userId = req.query.userId as string || req.headers["x-user-id"] as string || "dev-user";
     
-    if (userId === "mohammad@admin.com") {
+    // Check dynamic admin access table
+    const [dynamicAdmin] = await db.select().from(schema.adminAccess).where(eq(schema.adminAccess.email, userId)).limit(1);
+
+    if (userId === "mohammad@admin.com" || (dynamicAdmin && dynamicAdmin.isActive)) {
       const [existing] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
       if (!existing || existing.role !== 'OWNER') {
         await storage.updateUserSubscription(userId, "PRO");

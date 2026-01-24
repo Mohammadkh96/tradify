@@ -137,6 +137,18 @@ export const platformDisclaimer = pgTable("platform_disclaimer", {
   acceptedAt: timestamp("accepted_at").defaultNow(),
 });
 
+export const adminAccess = pgTable("admin_access", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  accessKey: text("access_key").notNull(),
+  label: text("label"), // e.g. "Mohammad", "Support Team"
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAdminAccessSchema = createInsertSchema(adminAccess).omit({ id: true, createdAt: true });
+export type AdminAccess = typeof adminAccess.$inferSelect;
+
 export const insertTradeSchema = createInsertSchema(tradeJournal).omit({ id: true, createdAt: true });
 export const updateTradeSchema = insertTradeSchema.partial();
 export type Trade = typeof tradeJournal.$inferSelect;

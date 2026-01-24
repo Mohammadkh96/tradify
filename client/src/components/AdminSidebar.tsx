@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 const adminNavItems = [
   { href: "/admin/overview", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/access", label: "Team Access", icon: Shield },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/admin/mt5", label: "MT5 Monitor", icon: Zap },
   { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
