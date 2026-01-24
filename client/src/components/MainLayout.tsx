@@ -1,18 +1,31 @@
 import { ReactNode } from "react";
-import { Navigation, MobileNav } from "./Navigation";
+import { Navigation } from "./Navigation";
 import { ChatAssistant } from "./ChatAssistant";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const style = {
+    "--sidebar-width": "16rem",
+    "--sidebar-width-icon": "4rem",
+  };
+
   return (
-    <div className="min-h-screen bg-[#020617]">
-      <Navigation />
-      <MobileNav />
-      {children}
-      <ChatAssistant />
-    </div>
+    <SidebarProvider style={style as React.CSSProperties}>
+      <div className="flex min-h-screen w-full bg-[#020617]">
+        <AppSidebar />
+        <div className="flex flex-col flex-1 w-full min-w-0">
+          <Navigation />
+          <main className="flex-1 overflow-x-hidden pt-16 md:pt-0">
+            {children}
+          </main>
+          <ChatAssistant />
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }
