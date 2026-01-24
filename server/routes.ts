@@ -111,7 +111,7 @@ export async function registerRoutes(
       }
 
       // Validate token against user's stored token
-      const [role] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
+      const [role] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
       if (!role || role.syncToken !== token) {
         return res.status(401).json({ message: "Invalid sync token" });
       }
@@ -255,7 +255,7 @@ export async function registerRoutes(
       const updatedRole = await storage.getUserRole(userId);
       return res.json(updatedRole);
     }
-    res.json(role || { subscriptionTier: "FREE", role: "TRADER" });
+    return res.json(role || { subscriptionTier: "FREE", role: "TRADER" });
   });
 
   app.post("/api/user/upgrade-dev", async (req, res) => {
