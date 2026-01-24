@@ -20,7 +20,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/journal", label: "Journal", icon: HistoryIcon },
   { href: "/new-entry", label: "New Entry", icon: PenTool },
   { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
@@ -67,6 +67,11 @@ export function Navigation() {
   const isPro = userRole?.subscriptionTier === "PRO";
   const isAdmin = localStorage.getItem("user_id") === "mohammad@admin.com";
 
+  const handleLogout = () => {
+    localStorage.removeItem("user_id");
+    window.location.href = "/";
+  };
+
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-800 bg-slate-950 text-slate-300 hidden md:flex flex-col">
       <div className="flex items-center gap-3 px-6 h-20 border-b border-slate-800">
@@ -108,27 +113,28 @@ export function Navigation() {
         })}
 
         {isAdmin && (
-          <Link href="/admin">
+          <Link href="/admin/overview">
             <div
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group mt-4",
-                location === "/admin"
+                location.startsWith("/admin")
                   ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                   : "text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/10"
               )}
             >
-              <Shield size={18} className={location === "/admin" ? "text-emerald-500" : "text-slate-500 group-hover:text-emerald-400"} />
+              <Shield size={18} className={location.startsWith("/admin") ? "text-emerald-500" : "text-slate-500 group-hover:text-emerald-400"} />
               Admin Console
             </div>
           </Link>
         )}
         
-        <Link href="/login">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 mt-4 border border-transparent hover:border-rose-500/20">
-            <LogOut size={18} className="text-slate-500 group-hover:text-rose-500" />
-            Sign Out
-          </div>
-        </Link>
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 mt-4 border border-transparent hover:border-rose-500/20"
+        >
+          <LogOut size={18} className="text-slate-500 group-hover:text-rose-500" />
+          Sign Out
+        </button>
       </nav>
 
       <div className="p-4 border-t border-slate-800 space-y-2">
