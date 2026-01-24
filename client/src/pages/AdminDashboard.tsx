@@ -18,12 +18,19 @@ function AdminAccessTab() {
   const [label, setLabel] = useState("");
 
   const { data: admins, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/access"],
+    queryKey: ["/api/admin/access", localStorage.getItem("user_id")],
+    queryFn: async () => {
+      const userId = localStorage.getItem("user_id");
+      const res = await fetch(`/api/admin/access?userId=${userId}`);
+      if (!res.ok) throw new Error("Forbidden");
+      return res.json();
+    }
   });
 
   const addMutation = useMutation({
     mutationFn: async (data: { email: string; label: string }) => {
-      const res = await apiRequest("POST", "/api/admin/access", data);
+      const userId = localStorage.getItem("user_id");
+      const res = await apiRequest("POST", `/api/admin/access?userId=${userId}`, data);
       return res.json();
     },
     onSuccess: () => {
@@ -36,7 +43,8 @@ function AdminAccessTab() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/access/${id}`);
+      const userId = localStorage.getItem("user_id");
+      await apiRequest("DELETE", `/api/admin/access/${id}?userId=${userId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/access"] });
@@ -143,12 +151,19 @@ export default function AdminDashboard() {
   const [location] = useLocation();
 
   const { data: users, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/users"],
+    queryKey: ["/api/admin/users", localStorage.getItem("user_id")],
+    queryFn: async () => {
+      const userId = localStorage.getItem("user_id");
+      const res = await fetch(`/api/admin/users?userId=${userId}`);
+      if (!res.ok) throw new Error("Forbidden");
+      return res.json();
+    }
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ targetUserId, updates }: { targetUserId: string, updates: any }) => {
-      const res = await apiRequest("POST", "/api/admin/update-user", { targetUserId, updates });
+      const userId = localStorage.getItem("user_id");
+      const res = await apiRequest("POST", `/api/admin/update-user?userId=${userId}`, { targetUserId, updates });
       return res.json();
     },
     onSuccess: () => {
