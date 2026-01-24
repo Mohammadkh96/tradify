@@ -54,14 +54,30 @@ function Router() {
       <Route path="/login" component={Auth} />
       <Route path="/signup" component={Auth} />
       <Route path="/" component={Landing} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/journal" component={Journal} />
-      <Route path="/new-entry" component={NewEntry} />
-      <Route path="/knowledge-base" component={KnowledgeBase} />
-      <Route path="/risk" component={RiskCalculator} />
-      <Route path="/mt5-bridge" component={MT5Bridge} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/traders-hub" component={TradersHubTab} />
+      <Route path="/dashboard">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Dashboard />}
+      </Route>
+      <Route path="/journal">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Journal />}
+      </Route>
+      <Route path="/new-entry">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <NewEntry />}
+      </Route>
+      <Route path="/knowledge-base">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <KnowledgeBase />}
+      </Route>
+      <Route path="/risk">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <RiskCalculator />}
+      </Route>
+      <Route path="/mt5-bridge">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <MT5Bridge />}
+      </Route>
+      <Route path="/profile">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Profile />}
+      </Route>
+      <Route path="/traders-hub">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <TradersHubTab />}
+      </Route>
       <Route path="/pricing" component={Pricing} />
       
       {/* Admin Routes */}

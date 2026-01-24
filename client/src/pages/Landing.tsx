@@ -15,12 +15,12 @@ export default function Landing() {
             <span className="text-xl font-black tracking-tighter text-white uppercase italic">Tradify</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
+            <Link href="/login">
               <Button variant="ghost" className="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white">
                 Login
               </Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/signup">
               <Button className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase px-6 h-10 rounded-xl transition-all shadow-lg shadow-emerald-500/20">
                 Get Started
               </Button>
@@ -44,7 +44,7 @@ export default function Landing() {
             Standardize your edge with rule-based journaling and live MT5 terminal synchronization. No hype. No guessing. Just raw performance intelligence.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/dashboard">
+            <Link href="/signup">
               <Button className="w-full sm:w-auto h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20 rounded-2xl">
                 Start Journaling Now
                 <ArrowRight className="ml-2 h-4 w-4" />
