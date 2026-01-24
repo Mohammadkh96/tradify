@@ -1,0 +1,263 @@
+1️⃣ WHAT’S WRONG (CLEAR DIAGNOSIS)
+❌ Problem 1: The Profile Page Is Trying to Do Too Much
+
+Right now, the profile page mixes:
+
+Identity (email, role)
+
+System status
+
+Subscription plan
+
+Upgrade CTA
+
+Developer unlock
+
+MT5 status
+
+Settings
+
+This causes:
+
+Visual clutter
+
+No clear “main action”
+
+Confusion about what the page is for
+
+A profile page must feel calm and personal, not operational.
+
+❌ Problem 2: No Clear Vertical Hierarchy
+
+The user’s eyes don’t know where to start.
+
+Issues:
+
+Title is partially hidden by sidebar
+
+“System Status” floats without context
+
+Plan card competes with identity card
+
+Commit button is floating without section clarity
+
+A paid user expects:
+
+“This is my account. I control it here.”
+
+Right now it feels like a system dashboard.
+
+❌ Problem 3: Sidebar + Content Padding Conflict
+
+The content is too close to the sidebar.
+
+Symptoms:
+
+“PROFILE” header clipped visually
+
+Left content feels squeezed
+
+Right plan card feels detached
+
+This is a layout container issue, not a component issue.
+
+❌ Problem 4: Developer Unlock Should NOT Be Here
+
+This is important.
+
+Developer Unlock:
+
+Is not a user feature
+
+Is not profile-related
+
+Breaks trust if visible to normal users
+
+This should be:
+
+Admin-only
+
+Or behind a hidden flag
+
+Or moved to Admin Console
+
+2️⃣ WHAT A PROFESSIONAL PROFILE PAGE SHOULD FEEL LIKE
+
+For a commercial SaaS, the profile page should feel:
+
+Calm
+
+Personal
+
+Safe
+
+Predictable
+
+Focused on identity & security
+
+Not:
+
+Operational
+
+Technical
+
+Promotional-heavy
+
+3️⃣ THE CORRECT PROFILE PAGE STRUCTURE (DO THIS)
+✅ FIX THE LAYOUT FIRST (NON-NEGOTIABLE)
+Use a two-column grid with clear roles
+[ LEFT COLUMN – User Settings ]   [ RIGHT COLUMN – Plan Summary ]
+
+
+But with strict separation.
+
+4️⃣ PROPOSED PROFILE PAGE (EXACT BLUEPRINT)
+🔹 PAGE HEADER (FULL WIDTH)
+
+Top of content area (not overlapping sidebar):
+
+Profile
+Subtitle: Manage your account, security, and preferences.
+
+No system status here.
+
+🔹 LEFT COLUMN (70%) — USER CONTROLS
+SECTION 1: ACCOUNT IDENTITY (READ-ONLY)
+
+Card title: Account
+
+Fields:
+
+Email (read-only)
+
+Role (Trader)
+
+Member since
+
+This reassures users:
+
+“This is my real account.”
+
+SECTION 2: PERSONAL PREFERENCES (EDITABLE)
+
+Card title: Preferences
+
+Fields:
+
+Display name
+
+Timezone (dropdown)
+
+Button:
+
+Save changes
+
+This gives users ownership.
+
+SECTION 3: SECURITY (VERY IMPORTANT)
+
+Card title: Security
+
+Fields:
+
+Current password
+
+New password
+
+Confirm new password
+
+Button:
+
+Update password
+
+This MUST be here for a paid product.
+
+SECTION 4: MT5 CONNECTION (REFERENCE ONLY)
+
+Card title: MT5 Connection
+
+Show:
+
+Status (Connected / Offline)
+
+Last sync time
+
+Account number (masked)
+
+Buttons:
+
+Reset MT5 token
+
+Reconnect MT5
+
+No editing beyond that.
+
+🔹 RIGHT COLUMN (30%) — PLAN & BILLING (SUMMARY ONLY)
+SECTION 5: CURRENT PLAN (STICKY CARD)
+
+Card title: Your Plan
+
+Show:
+
+Plan name (Free / Pro)
+
+Billing cycle
+
+Key limits (30-day history, etc.)
+
+CTA:
+
+Upgrade to Pro (if Free)
+
+Manage subscription (if Pro)
+
+This is the only promotional area on the page.
+
+5️⃣ WHAT TO REMOVE OR MOVE (IMPORTANT)
+❌ REMOVE FROM PROFILE PAGE
+
+Developer Unlock
+
+System Status badge
+
+Anything admin-related
+
+✅ MOVE TO:
+
+Admin Console
+
+Or top app header (system status)
+
+6️⃣ SPACING & VISUAL FIXES (QUICK WINS)
+
+Tell your dev to:
+
+Increase left padding of main content (pl-8 or pl-10)
+
+Ensure header does not sit under sidebar
+
+Use consistent card widths
+
+Align Commit / Save buttons inside cards, not floating
+
+This alone will fix 60% of the visual issue.
+
+7️⃣ WHY THIS MATTERS FOR PAID USERS
+
+A paid user will judge your platform by:
+
+“Can I manage my account easily?”
+
+“Can I change my password?”
+
+“Do I understand my plan?”
+
+If the profile page feels messy:
+
+They feel unsafe
+
+They churn
+
+They contact support
+
+A clean profile page = lower churn, higher trust.
