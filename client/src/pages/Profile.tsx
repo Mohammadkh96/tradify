@@ -43,7 +43,7 @@ export default function Profile() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#020617] text-slate-50 min-h-screen">
-      <div className="max-w-6xl mx-auto px-8 py-12 space-y-12">
+      <div className="max-w-6xl mx-auto px-10 py-12 space-y-12">
         {/* Page Header */}
         <div className="space-y-2 border-b border-slate-800/50 pb-8">
           <h1 className="text-4xl font-black uppercase tracking-tighter italic text-white leading-none">

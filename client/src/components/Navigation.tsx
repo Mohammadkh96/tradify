@@ -132,7 +132,7 @@ export function Navigation() {
       </nav>
 
       <div className="p-4 border-t border-slate-800 space-y-2">
-        {!isPro && (
+        {isAdmin && !isPro && (
           <button
             onClick={() => upgradeMutation.mutate()}
             disabled={upgradeMutation.isPending}
