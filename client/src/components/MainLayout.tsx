@@ -21,9 +21,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="flex flex-col flex-1 w-full min-w-0">
           <Navigation />
           <main className="flex-1 overflow-x-hidden pt-16 md:pt-0">
-            <div className="md:p-0">
-              {children}
-            </div>
+            {children}
           </main>
           <ChatAssistant />
         </div>
