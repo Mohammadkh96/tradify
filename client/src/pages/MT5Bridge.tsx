@@ -151,8 +151,8 @@ if __name__ == "__main__":
   };
 
   return (
-    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
-      <main className="md:ml-64 p-6 lg:p-10 max-w-6xl mx-auto">
+    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
+      <main className="p-6 lg:p-10 max-w-6xl mx-auto">
         <div className="bg-[#0b1120] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
           {/* Header */}
           <div className="p-6 border-b border-slate-800 flex items-center justify-between">

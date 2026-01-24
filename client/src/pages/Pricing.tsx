@@ -20,8 +20,8 @@ const features = [
 
 export default function Pricing() {
   return (
-    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
-      <main className="md:ml-64 p-6 lg:p-10 max-w-5xl mx-auto">
+    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
+      <main className="p-6 lg:p-10 max-w-5xl mx-auto">
         <header className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic mb-4">
             Simple Pricing. <span className="text-emerald-500">No Hype.</span>

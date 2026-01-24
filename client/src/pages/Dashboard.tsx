@@ -120,9 +120,8 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
-      
-      <main className="md:ml-64 p-6 lg:p-10 max-w-7xl mx-auto">
+    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
+      <main className="p-6 lg:p-10 max-w-7xl mx-auto">
         <header className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-2">

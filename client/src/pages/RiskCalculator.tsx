@@ -16,8 +16,8 @@ export default function RiskCalculator() {
   const lotSize = parseFloat(stopLossPips) > 0 ? (riskAmount / (parseFloat(stopLossPips) * standardLotPipValue)).toFixed(2) : "0.00";
 
   return (
-    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
-      <main className="md:ml-64 p-6 lg:p-10 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[80vh]">
+    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
+      <main className="p-6 lg:p-10 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[80vh]">
         <div className="w-full max-w-md">
           <header className="mb-8 text-center">
             <div className="inline-flex p-4 bg-emerald-500/10 rounded-2xl mb-4 text-emerald-500">

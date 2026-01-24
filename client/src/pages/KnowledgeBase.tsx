@@ -239,8 +239,8 @@ export default function KnowledgeBase() {
   const currentModule = modules.find(m => m.id === activeModule);
 
   return (
-    <div className="min-h-screen text-slate-50 pb-20 md:pb-0">
-      <main className="md:ml-64 p-6 lg:p-10 max-w-7xl mx-auto">
+    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
+      <main className="p-6 lg:p-10 max-w-7xl mx-auto">
         <header className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <BookOpen className="text-emerald-500" size={28} />
