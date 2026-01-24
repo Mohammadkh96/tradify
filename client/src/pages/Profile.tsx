@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Shield, Key, Zap, Save, ChevronRight, CheckCircle2, Mail, BadgeCheck, Clock, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -9,18 +9,37 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Profile() {
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState("");
   const [timezone, setTimezone] = useState("UTC");
+  const [country, setCountry] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   const { data: userRole, isLoading } = useQuery<any>({
     queryKey: ["/api/user/role", localStorage.getItem("user_id")],
     queryFn: async () => {
       const userId = localStorage.getItem("user_id");
       const res = await fetch(`/api/user/role${userId ? `?userId=${userId}` : ""}`);
+      const data = await res.json();
+      if (data) {
+        setCountry(data.country || "");
+        setPhoneNumber(data.phoneNumber || "");
+      }
+      return data;
+    }
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      const res = await apiRequest("POST", "/api/user/update-profile", updates);
       return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/role"] });
+      toast({ title: "Success", description: "Profile updated successfully." });
     }
   });
 
@@ -118,9 +137,31 @@ export default function Profile() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Country</label>
+                      <Input 
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        placeholder="UNITED STATES"
+                        className="bg-slate-950 border-slate-800/50 h-12 text-sm font-bold uppercase tracking-wider rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Phone Number (Optional)</label>
+                      <Input 
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="+1 234 567 890"
+                        className="bg-slate-950 border-slate-800/50 h-12 text-sm font-bold uppercase tracking-wider rounded-xl"
+                      />
+                    </div>
                   </div>
-                  <Button className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.2em] text-[10px] h-11 px-8 rounded-xl shadow-lg shadow-emerald-500/10">
-                    Save Changes
+                  <Button 
+                    onClick={() => updateProfileMutation.mutate({ country, phoneNumber })}
+                    disabled={updateProfileMutation.isPending}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.2em] text-[10px] h-11 px-8 rounded-xl shadow-lg shadow-emerald-500/10"
+                  >
+                    {updateProfileMutation.isPending ? "SAVING..." : "Save Changes"}
                   </Button>
                 </CardContent>
               </Card>

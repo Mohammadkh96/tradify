@@ -83,6 +83,8 @@ export const userRole = pgTable("user_role", {
   kycVerificationDate: timestamp("kyc_verification_date"),
   subscriptionTier: text("subscription_tier").default("FREE"),
   syncToken: text("sync_token"),
+  country: text("country"),
+  phoneNumber: text("phone_number"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

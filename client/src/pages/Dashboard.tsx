@@ -61,7 +61,7 @@ export default function Dashboard() {
   });
 
   const { data: userRoleData } = useQuery<any>({
-    queryKey: [`/api/traders-hub/user-role/${userId}`],
+    queryKey: [`/api/traders-hub/user-role/${localStorage.getItem("user_id") || "demo_user"}`],
   });
 
   const subscription = userRoleData?.subscriptionTier || "FREE";

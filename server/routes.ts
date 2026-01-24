@@ -444,6 +444,18 @@ export async function registerRoutes(
     res.json({ success: true, message: "Developer PRO access granted" });
   });
 
+  app.post("/api/user/update-profile", async (req, res) => {
+    const userId = req.headers["x-user-id"] as string || req.query.userId as string;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const { country, phoneNumber } = req.body;
+    await db.update(schema.userRole)
+      .set({ country, phoneNumber, updatedAt: new Date() })
+      .where(eq(schema.userRole.userId, userId));
+
+    res.json({ success: true });
+  });
+
   return httpServer;
 }
 

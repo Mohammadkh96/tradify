@@ -261,28 +261,30 @@ export default function AdminDashboard() {
               <TableHeader className="bg-slate-900/30">
                 <TableRow className="border-slate-800">
                   <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Email/ID</TableHead>
-                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Role</TableHead>
+                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Region</TableHead>
                   <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Plan</TableHead>
-                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">MT5</TableHead>
+                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Registered</TableHead>
                   <TableHead className="text-right text-slate-500 font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users?.map((user) => (
                   <TableRow key={user.id} className="border-slate-800 hover:bg-slate-900/40">
-                    <TableCell className="font-mono text-xs text-slate-400">{user.userId}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={user.role === "OWNER" ? "text-rose-500 border-rose-500/30" : "text-slate-500"}>
-                        {user.role}
-                      </Badge>
+                      <div className="font-mono text-xs text-white">{user.userId}</div>
+                      <div className="text-[9px] text-slate-500 uppercase tracking-tighter">{user.role}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs text-slate-400">{user.country || "Not Set"}</div>
+                      <div className="text-[10px] text-slate-600">{user.phoneNumber || ""}</div>
                     </TableCell>
                     <TableCell>
                       <Badge className={user.subscriptionTier === "PRO" ? "bg-emerald-500 text-slate-950" : "bg-slate-800 text-slate-400"}>
                         {user.subscriptionTier}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-[10px] font-mono text-slate-600">
-                      {user.syncToken ? "CONNECTED" : "OFFLINE"}
+                    <TableCell className="text-[10px] font-mono text-slate-500">
+                      {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "N/A"}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button size="sm" variant="outline" className="h-7 text-[10px]" 
