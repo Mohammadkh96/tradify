@@ -23,13 +23,15 @@ function Router() {
   const isAuthPage = location === "/login" || location === "/signup";
   const isAdminRoute = location.startsWith("/admin");
 
-  const { data: userRole } = useQuery<any>({
+  const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
     queryKey: ["/api/user/role"],
   });
 
-  // Role-based entry flow: Redirect Admins to /admin/overview on root access
   const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN" || userRole?.userId === "mohammad@admin.com";
 
+  if (isRoleLoading) return null;
+
+  // Role-based entry flow: Redirect Admins to /admin/overview on root access
   if (location === "/" && isAdmin) {
     return <Redirect to="/admin/overview" />;
   }
