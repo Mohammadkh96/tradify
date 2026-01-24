@@ -31,8 +31,8 @@ function Router() {
 
   if (isRoleLoading) return null;
 
-  // Role-based entry flow: Redirect Admins to /admin/overview on root access
-  if (location === "/" && isAdmin) {
+  // Role-based entry flow: Redirect mohammad@admin.com directly to admin console
+  if (isAdmin && (location === "/" || location === "/dashboard" || location === "/journal" || location === "/new-entry")) {
     return <Redirect to="/admin/overview" />;
   }
 
