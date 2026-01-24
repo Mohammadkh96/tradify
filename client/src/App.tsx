@@ -12,6 +12,7 @@ import NewEntry from "@/pages/NewEntry";
 import KnowledgeBase from "@/pages/KnowledgeBase";
 import RiskCalculator from "@/pages/RiskCalculator";
 import MT5Bridge from "@/pages/MT5Bridge";
+import Profile from "@/pages/Profile";
 import TradersHubTab from "@/components/TradersHubTab";
 import Auth from "@/pages/Auth";
 import { MainLayout } from "@/components/MainLayout";
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/knowledge-base" component={KnowledgeBase} />
       <Route path="/risk" component={RiskCalculator} />
       <Route path="/mt5-bridge" component={MT5Bridge} />
+      <Route path="/profile" component={Profile} />
       <Route path="/traders-hub" component={TradersHubTab} />
       <Route path="/pricing" component={Pricing} />
       

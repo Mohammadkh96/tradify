@@ -10,7 +10,9 @@ import {
   Users,
   LogOut,
   ShieldCheck,
-  Shield
+  Shield,
+  User,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -25,7 +27,8 @@ const navItems = [
   { href: "/traders-hub", label: "Traders Hub", icon: Users },
   { href: "/knowledge-base", label: "Education", icon: BookOpen },
   { href: "/risk", label: "Calculator", icon: Calculator },
-  { href: "/pricing", label: "Plans", icon: Zap },
+  { href: "/pricing", label: "Plans", icon: CreditCard },
+  { href: "/profile", label: "Profile", icon: User },
 ];
 
 export function Navigation() {

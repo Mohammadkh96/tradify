@@ -1,0 +1,293 @@
+1️⃣ WHY YOU SEE demo_user, dev-user (ROOT CAUSE)
+What’s happening now
+
+Your app likely:
+
+Creates users without enforcing email as primary identity
+
+Uses placeholders for development
+
+Does not yet persist a real users table with verified emails
+
+Admin console is reading from:
+
+Mock data
+
+Seed data
+
+Or an incomplete auth payload
+
+This is not a UI bug — it’s a missing identity layer.
+
+✅ REQUIRED DECISION (NON-NEGOTIABLE)
+
+Email must be the primary user identifier everywhere.
+
+Not:
+
+username
+
+demo_user
+
+dev-user
+
+But:
+
+email (unique, verified)
+
+Everything else hangs off that.
+
+2️⃣ WHAT EVERY USER MUST HAVE (MINIMUM IDENTITY)
+
+To be a real SaaS user, each account must have:
+
+Core Identity
+
+Email (unique)
+
+Password (hashed)
+
+Role (user, admin, owner)
+
+Created date
+
+Last login
+
+Account State
+
+Plan (free, pro, trial)
+
+Subscription status
+
+Trial end date (optional)
+
+Profile (Editable by User)
+
+Display name
+
+Timezone
+
+Preferred currency (optional)
+
+Experience level (optional)
+
+This enables:
+
+Admin clarity
+
+User trust
+
+Support
+
+Billing
+
+Security
+
+3️⃣ USER PROFILE TAB — REQUIRED & PROFESSIONAL
+
+Yes — you absolutely need a Profile tab.
+Every serious SaaS has one.
+
+📍 WHERE IT LIVES
+
+Sidebar (User only):
+
+Dashboard
+Journal
+MT5 Bridge
+Plans
+Profile   ← NEW
+Sign Out
+
+🧑 PROFILE PAGE — STRUCTURE (BEST PRACTICE)
+SECTION 1: ACCOUNT OVERVIEW (READ-ONLY)
+
+Card: “Account”
+
+Email (read-only)
+
+Account role
+
+Member since
+
+Plan (Free / Pro)
+
+Button:
+
+“Manage Subscription” → Pricing / Billing
+
+This reassures users:
+
+“This is my real account.”
+
+SECTION 2: PERSONAL PROFILE (EDITABLE)
+
+Card: “Profile Information”
+
+Display name
+
+Timezone (dropdown)
+
+Experience level (optional)
+
+Button:
+
+“Save changes”
+
+This is about ownership & personalization.
+
+SECTION 3: SECURITY (CRITICAL)
+
+Card: “Security”
+
+Change password
+
+Current password
+
+New password
+
+Confirm new password
+
+Button:
+
+“Update password”
+
+Optional (later):
+
+Force logout all sessions
+
+This removes support tickets immediately.
+
+SECTION 4: SUBSCRIPTION (USER VIEW)
+
+Card: “Subscription”
+
+Current plan
+
+Status (Active / Trial / Expired)
+
+Next billing date (if Pro)
+
+Buttons:
+
+Upgrade to Pro
+
+Cancel subscription (if paid)
+
+This reduces churn anxiety.
+
+SECTION 5: MT5 CONNECTION (REFERENCE)
+
+Card: “MT5 Integration”
+
+Connected / Offline
+
+Account number (masked)
+
+Last sync time
+
+Buttons:
+
+Reset MT5 token
+
+Reconnect MT5
+
+This gives users control.
+
+4️⃣ HOW THIS FIXES THE ADMIN CONSOLE EMAIL ISSUE
+
+Once you implement the Profile + Identity layer correctly:
+
+Admin Console → Users Table will show:
+Email	Role	Plan	MT5	Actions
+user@email.com
+	Trader	Free	Connected	Grant Pro
+
+No more:
+
+demo_user
+
+dev-user
+
+confusion
+
+Because:
+
+Users can only register with email
+
+Email is stored, verified, and displayed
+
+Admin reads from the real users table
+
+5️⃣ REQUIRED DATABASE STRUCTURE (SIMPLE & CLEAN)
+
+You do NOT need anything fancy.
+
+users
+
+id
+
+email (unique)
+
+password_hash
+
+role
+
+created_at
+
+last_login
+
+profiles
+
+user_id
+
+display_name
+
+timezone
+
+experience_level
+
+subscriptions
+
+user_id
+
+plan
+
+status
+
+trial_end
+
+provider_id (Stripe later)
+
+This is enough for v1 production.
+
+6️⃣ IMPORTANT UX RULES (DO NOT SKIP)
+
+Email is never editable by user
+
+Password change requires current password
+
+Profile changes do not affect billing
+
+Admin changes override user state
+
+User cannot see admin-only fields
+
+7️⃣ FINAL VERDICT (HONEST)
+Are you missing something?
+
+✅ Yes — a proper user identity & profile system
+
+Is this normal at your stage?
+
+✅ Completely
+
+Will adding this:
+
+Fix admin confusion? → YES
+
+Increase user trust? → YES
+
+Reduce support load? → YES
+
+Make TRADIFY feel paid? → YES
