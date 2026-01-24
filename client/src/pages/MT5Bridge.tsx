@@ -239,6 +239,13 @@ if __name__ == "__main__":
                       <span className="text-[10px] opacity-80">Connector (Python)</span>
                     </button>
                     <button 
+                      onClick={() => {
+                        window.open('https://www.python.org/downloads/', '_blank');
+                        toast({
+                          title: "Python Required",
+                          description: "Ensure Python 3.x is installed to run the launcher.",
+                        });
+                      }}
                       className="bg-slate-800/50 border border-slate-700 hover:bg-slate-800 text-slate-400 py-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all"
                     >
                       <div className="flex items-center gap-1 font-bold text-xs uppercase tracking-tighter">

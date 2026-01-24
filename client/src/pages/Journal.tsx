@@ -186,7 +186,13 @@ export default function Journal() {
 
         <div className="space-y-3">
           {filteredTrades.map((trade: any) => (
-            <div key={trade.id} className="bg-[#0b1120] border border-slate-800 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-700 transition-colors group">
+            <div key={trade.id} className="bg-[#0b1120] border border-slate-800 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-emerald-500/30 transition-colors group relative">
+              <button 
+                onClick={() => deleteTrade.mutate(trade.id)}
+                className="absolute top-2 right-2 p-1.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500 hover:text-white z-10"
+              >
+                <Trash2 size={14} />
+              </button>
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs border",

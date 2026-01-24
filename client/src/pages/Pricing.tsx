@@ -89,7 +89,10 @@ export default function Pricing() {
                 ))}
               </div>
 
-              <Button className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20">
+              <Button 
+                onClick={() => window.location.href = 'mailto:support@tradify.com?subject=Upgrade to PRO'}
+                className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+              >
                 Upgrade to Pro
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -143,7 +146,10 @@ export default function Pricing() {
 
         <div className="text-center pb-20">
           <h3 className="text-2xl font-bold text-white mb-6">Ready to upgrade your trading edge?</h3>
-          <Button className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20">
+          <Button 
+            onClick={() => window.location.href = 'mailto:support@tradify.com?subject=Upgrade to PRO'}
+            className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+          >
             Start Free. Upgrade when you're ready.
           </Button>
         </div>
