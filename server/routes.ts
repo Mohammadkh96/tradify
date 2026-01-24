@@ -224,6 +224,18 @@ export async function registerRoutes(
   // Seed data on startup
   await seedDatabase();
 
+  app.get("/api/user/role", async (req, res) => {
+    const userId = req.headers["x-user-id"] as string || "dev-user";
+    const role = await storage.getUserRole(userId);
+    res.json(role || { subscriptionTier: "FREE" });
+  });
+
+  app.post("/api/user/upgrade-dev", async (req, res) => {
+    const userId = req.headers["x-user-id"] as string || "dev-user";
+    await storage.updateUserSubscription(userId, "PRO");
+    res.json({ success: true, message: "Developer PRO access granted" });
+  });
+
   return httpServer;
 }
 

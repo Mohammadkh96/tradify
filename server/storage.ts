@@ -4,6 +4,7 @@ import {
   mt5Data,
   mt5History,
   dailyEquitySnapshots,
+  userRole,
   type InsertTrade,
   type UpdateTradeRequest,
   type Trade,
@@ -35,9 +36,30 @@ export interface IStorage {
   getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]>;
   getDailySnapshots(userId: string): Promise<any[]>;
   getMT5Data(userId: string): Promise<MT5Data | undefined>;
+  getUserRole(userId: string): Promise<any>;
+  updateUserSubscription(userId: string, tier: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
+  async getUserRole(userId: string): Promise<any> {
+    const [role] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
+    return role;
+  }
+
+  async updateUserSubscription(userId: string, tier: string): Promise<void> {
+    const [existing] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
+    if (existing) {
+      await db.update(userRole)
+        .set({ subscriptionTier: tier, updatedAt: new Date() })
+        .where(eq(userRole.userId, userId));
+    } else {
+      await db.insert(userRole).values({
+        userId,
+        role: "TRADER",
+        subscriptionTier: tier,
+      });
+    }
+  }
   async updateMT5Data(data: { 
     userId: string;
     balance: string;

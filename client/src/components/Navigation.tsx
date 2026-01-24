@@ -8,10 +8,13 @@ import {
   TrendingUp,
   Zap,
   Users,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -26,12 +29,33 @@ const navItems = [
 
 export function Navigation() {
   const [location] = useLocation();
+  const { toast } = useToast();
+
   const { data: mt5 } = useQuery<any>({
     queryKey: [`/api/mt5/status/demo_user`],
     refetchInterval: 5000,
   });
 
+  const { data: userRole } = useQuery<any>({
+    queryKey: ["/api/user/role"],
+  });
+
+  const upgradeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/user/upgrade-dev");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/role"] });
+      toast({
+        title: "Developer Access",
+        description: "PRO features unlocked for testing.",
+      });
+    },
+  });
+
   const isConnected = mt5?.status === "CONNECTED";
+  const isPro = userRole?.subscriptionTier === "PRO";
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-800 bg-slate-950 text-slate-300 hidden md:flex flex-col">
@@ -81,7 +105,19 @@ export function Navigation() {
         </Link>
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4 border-t border-slate-800 space-y-2">
+        {!isPro && (
+          <button
+            onClick={() => upgradeMutation.mutate()}
+            disabled={upgradeMutation.isPending}
+            className="w-full bg-slate-900 hover:bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 rounded-lg p-3 transition-all flex items-center justify-center gap-2 group mb-2"
+          >
+            <ShieldCheck size={14} className="group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-black uppercase tracking-widest">
+              {upgradeMutation.isPending ? "Unlocking..." : "Developer Unlock"}
+            </span>
+          </button>
+        )}
         <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-xs font-semibold text-slate-500 uppercase">MT5 Status</h4>
