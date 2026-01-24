@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 function Router() {
   const [location] = useLocation();
   const isLandingPage = location === "/";
+  const isPricingPage = location === "/pricing";
   const isAuthPage = location === "/login" || location === "/signup";
   const isAdminRoute = location.startsWith("/admin");
 
@@ -92,7 +93,7 @@ function Router() {
     </Switch>
   );
 
-  if (isAuthPage || isLandingPage) return content;
+  if (isAuthPage || isLandingPage || isPricingPage) return content;
 
   if (isAdminRoute) {
     if (!isAdmin) return <Redirect to="/" />;
