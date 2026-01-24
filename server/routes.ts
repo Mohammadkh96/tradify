@@ -222,6 +222,111 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/performance/intelligence/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const manualTrades = await storage.getTrades();
+      const mt5History = await storage.getMT5History(userId);
+      
+      const trades = [
+        ...manualTrades.filter(t => t.userId === userId || t.userId === "dev-user").map(t => ({
+          netPl: parseFloat(t.entryPrice || "0") > 0 ? 0 : 0, // Manual trades usually don't have P&L logic yet unless calculated
+          outcome: t.outcome,
+          direction: t.direction,
+          createdAt: t.createdAt,
+          riskReward: parseFloat(t.riskReward || "0"),
+          setup: t.matchedSetup || "Unknown"
+        })),
+        ...mt5History.map(t => ({
+          netPl: parseFloat(t.netPl),
+          outcome: parseFloat(t.netPl) >= 0 ? "Win" : "Loss",
+          direction: t.direction,
+          createdAt: t.closeTime,
+          riskReward: 0, // MT5 history doesn't inherently store RR
+          setup: "MT5 Sync"
+        }))
+      ];
+
+      if (trades.length === 0) {
+        return res.json({ message: "No data available" });
+      }
+
+      // Session Analysis (Simple GMT based)
+      const sessions = { London: 0, NY: 0, Asia: 0 };
+      const days = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      
+      let totalPl = 0;
+      let wins = 0;
+      let losses = 0;
+      let totalRR = 0;
+      let rrCount = 0;
+      let maxDrawdown = 0;
+      let peak = 0;
+      let currentEquity = 0;
+      
+      const setups: Record<string, { wins: number, total: number }> = {};
+
+      trades.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()).forEach(t => {
+        const date = new Date(t.createdAt!);
+        const hour = date.getUTCHours();
+        const day = dayNames[date.getUTCDay()];
+        
+        const pl = t.netPl;
+        totalPl += pl;
+        currentEquity += pl;
+        
+        if (currentEquity > peak) peak = currentEquity;
+        const dd = peak - currentEquity;
+        if (dd > maxDrawdown) maxDrawdown = dd;
+
+        if (hour >= 8 && hour < 16) sessions.London += pl;
+        else if (hour >= 13 && hour < 21) sessions.NY += pl;
+        else sessions.Asia += pl;
+        
+        days[day as keyof typeof days] += pl;
+
+        if (t.outcome === "Win") wins++;
+        else if (t.outcome === "Loss") losses++;
+
+        if (t.riskReward > 0) {
+          totalRR += t.riskReward;
+          rrCount++;
+        }
+
+        if (!setups[t.setup]) setups[t.setup] = { wins: 0, total: 0 };
+        setups[t.setup].total++;
+        if (t.outcome === "Win") setups[t.setup].wins++;
+      });
+
+      const bestSession = Object.entries(sessions).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+      const bestDay = Object.entries(days).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+      
+      const setupStats = Object.entries(setups).map(([name, stat]) => ({
+        name,
+        winRate: (stat.wins / stat.total) * 100
+      }));
+      const bestSetup = setupStats.length ? setupStats.reduce((a, b) => a.winRate > b.winRate ? a : b).name : "N/A";
+
+      const profitFactor = Math.abs(totalPl) / (Math.abs(totalPl - currentEquity) || 1); // Simplified
+      const expectancy = trades.length ? totalPl / trades.length : 0;
+      const recoveryFactor = maxDrawdown > 0 ? totalPl / maxDrawdown : totalPl > 0 ? 100 : 0;
+
+      res.json({
+        bestSession,
+        bestDay,
+        bestSetup,
+        avgRR: rrCount ? (totalRR / rrCount).toFixed(2) : "0.00",
+        expectancy: expectancy.toFixed(2),
+        profitFactor: profitFactor.toFixed(2),
+        maxDrawdown: maxDrawdown.toFixed(2),
+        recoveryFactor: recoveryFactor.toFixed(2)
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Intelligence failure" });
+    }
+  });
+
   app.get("/api/admin/users", async (req, res) => {
     const userId = req.headers["x-user-id"] as string || req.query.userId as string || "dev-user";
     

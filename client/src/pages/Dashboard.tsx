@@ -12,7 +12,12 @@ import {
   Percent,
   History as HistoryIcon,
   LayoutDashboard,
-  Lock
+  Lock,
+  Zap,
+  Calendar,
+  Clock,
+  ShieldCheck,
+  ZapOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -42,6 +47,10 @@ export default function Dashboard() {
   }>({
     queryKey: [`/api/mt5/status/${userId}`],
     refetchInterval: 2000,
+  });
+
+  const { data: intelligence } = useQuery<any>({
+    queryKey: [`/api/performance/intelligence/${userId}`],
   });
 
   const { data: snapshots } = useQuery<any[]>({
@@ -168,6 +177,7 @@ export default function Dashboard() {
                 <p className="text-xs text-slate-500">Growth performance over time</p>
               </div>
             </div>
+            {/* Equity Curve Chart */}
             <div className="h-[300px] w-full relative">
               {chartData.length < 2 && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/20 backdrop-blur-[1px] rounded-xl border border-dashed border-slate-800/50">
@@ -229,55 +239,81 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-6 flex items-center justify-between">
-              Win Rate
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900 px-2 py-1 rounded border border-slate-800">
-                {winRateStatus}
-              </span>
-            </h3>
-            <div className="h-64 w-full relative">
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className={cn("text-4xl font-black text-white", winRate === "N/A" && "text-slate-600")}>
-                  {winRate === "N/A" ? "N/A" : `${winRate}%`}
-                </span>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
-                  {total} Trades Logged
-                </span>
-              </div>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={75}
-                    outerRadius={95}
-                    paddingAngle={8}
-                    dataKey="value"
-                    stroke="none"
-                    opacity={winRate === "N/A" ? 0.2 : 1}
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+          <div className="bg-[#0b1120] border border-emerald-500/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Zap size={80} className="text-emerald-500" />
             </div>
-            {winRate === "N/A" && (
-              <p className="text-[10px] text-center text-slate-500 mt-4 leading-relaxed italic">
-                Statistically valid win rate requires at least 20 trades.
-              </p>
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <ShieldCheck size={18} className="text-emerald-500" />
+              Performance Intelligence
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase block mb-1">Best Session</span>
+                  <div className="flex items-center gap-2">
+                    <Clock size={12} className="text-emerald-500" />
+                    <span className="text-xs font-bold text-white">{intelligence?.bestSession || "..."}</span>
+                  </div>
+                </div>
+                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase block mb-1">Best Day</span>
+                  <div className="flex items-center gap-2">
+                    <Calendar size={12} className="text-emerald-500" />
+                    <span className="text-xs font-bold text-white">{intelligence?.bestDay || "..."}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                <span className="text-[9px] font-bold text-slate-500 uppercase block mb-1">Profit Factor</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-black text-emerald-500">{intelligence?.profitFactor || "0.00"}</span>
+                  <div className="h-1.5 w-24 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500" style={{ width: `${Math.min((parseFloat(intelligence?.profitFactor || "0") / 3) * 100, 100)}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase block mb-1">Avg R:R</span>
+                  <span className="text-sm font-black text-white">{intelligence?.avgRR || "0.00"}</span>
+                </div>
+                <div className="p-3 text-right">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase block mb-1">Expectancy</span>
+                  <span className="text-sm font-black text-emerald-500">${intelligence?.expectancy || "0.00"}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-800/50 pt-4 mt-2">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">Max Drawdown</span>
+                  <span className="text-xs font-mono font-bold text-rose-500">${intelligence?.maxDrawdown || "0.00"}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">Recovery Factor</span>
+                  <span className="text-xs font-mono font-bold text-blue-500">{intelligence?.recoveryFactor || "0.00"}</span>
+                </div>
+              </div>
+            </div>
+
+            {!isPro && (
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
+                <Lock className="text-emerald-500 mb-3" size={24} />
+                <h4 className="text-sm font-bold text-white uppercase tracking-tighter mb-1">Intelligence Layer Locked</h4>
+                <p className="text-[10px] text-slate-400 mb-4">Upgrade to PRO to unlock advanced session and expectancy analytics.</p>
+                <Link href="/pricing">
+                  <Button className="bg-emerald-500 text-slate-950 font-black text-[10px] uppercase h-8 px-4">Unlock Intelligence</Button>
+                </Link>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Percent size={18} className="text-emerald-500" />
               Open Positions
