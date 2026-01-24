@@ -9,6 +9,7 @@ const features = [
   { name: "Risk & Position Size Calculator", free: true, pro: true },
   { name: "30-Day Trade Journal History", free: true, pro: true },
   { name: "Institutional Knowledge Base", free: true, pro: true },
+  { name: "Performance Intelligence Layer", free: false, pro: true },
   { name: "Full Equity Curve (All-Time)", free: false, pro: true },
   { name: "Advanced Performance Analytics", free: false, pro: true },
   { name: "Unlimited Journal History", free: false, pro: true },
