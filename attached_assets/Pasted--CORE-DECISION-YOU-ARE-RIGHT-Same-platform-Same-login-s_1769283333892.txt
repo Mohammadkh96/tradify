@@ -1,0 +1,281 @@
+✅ CORE DECISION (YOU ARE RIGHT)
+
+✔️ Same platform
+✔️ Same login system
+✔️ Different dashboard, different tabs, different layout for admin
+
+This is the correct SaaS pattern.
+
+🧠 ROLE-BASED ENTRY FLOW (CRITICAL)
+On login:
+IF role === "user"   → /app/dashboard
+IF role === "admin"  → /admin/overview
+
+
+Admins never land on the user dashboard
+
+Users never see admin UI
+
+No toggles, no switching modes
+
+This avoids mistakes and confusion.
+
+🧱 ADMIN CONSOLE – WHAT IT SHOULD ACTUALLY HAVE
+
+Think of the Admin Console as Operations + Control, not analytics.
+
+1️⃣ ADMIN OVERVIEW DASHBOARD (LANDING PAGE)
+
+This replaces what you currently have.
+
+Purpose:
+
+Give you a 30-second overview of the business & system health.
+
+Cards to show:
+📊 Business
+
+Total Users
+
+Active Users (last 24h / 7d)
+
+Free vs Pro count
+
+Trials active
+
+💳 Subscriptions
+
+Active Pro subscriptions
+
+Canceled this month
+
+Trial → Pro conversions (later)
+
+🔌 MT5 System
+
+MT5 connectors online
+
+MT5 connectors offline
+
+Failed syncs (last 24h)
+
+🟢 System Health
+
+API status
+
+Database status
+
+Worker / sync status
+
+This page answers:
+
+“Is the business and system healthy right now?”
+
+2️⃣ USERS MANAGEMENT (MOST IMPORTANT TAB)
+
+This is the heart of your admin console.
+
+/admin/users
+Table Columns:
+
+Email
+
+Role (User / Admin)
+
+Plan (Free / Pro / Trial)
+
+MT5 Status (Connected / Offline)
+
+Registered
+
+Last Active
+
+Actions (View)
+
+3️⃣ USER DETAIL VIEW (CLICK INTO USER)
+/admin/users/:id
+
+This page is non-negotiable.
+
+🧑 User Info
+
+Email
+
+Role
+
+Signup date
+
+Last login
+
+IP / region (optional)
+
+💳 Subscription
+
+Plan
+
+Status
+
+Trial end date
+
+Billing ID (Stripe later)
+
+🔌 MT5
+
+Connected? (Yes / No)
+
+Last sync time
+
+Account number (masked)
+
+Reset MT5 token (button)
+
+🎛 Admin Actions (CRITICAL)
+
+Promote to Pro
+
+Downgrade to Free
+
+Grant trial (7 / 14 / 30 days)
+
+Suspend / Ban user
+
+Add internal note
+
+This is how you handle support, promos, beta users.
+
+4️⃣ SUBSCRIPTIONS / PLANS TAB
+/admin/subscriptions
+
+Purpose:
+See who is paying and who is not.
+
+Show:
+
+Active Pro users
+
+Trials
+
+Expired
+
+Revenue summary (later)
+
+Controls:
+
+Manually assign plan
+
+Extend trial
+
+Cancel subscription
+
+5️⃣ MT5 MONITORING TAB (VERY IMPORTANT FOR YOU)
+/admin/mt5
+
+This is unique to your product.
+
+Show:
+
+Connected MT5 instances
+
+Offline instances
+
+Last heartbeat time
+
+Sync errors
+
+This lets you:
+
+Detect issues early
+
+Support users faster
+
+Maintain trust
+
+6️⃣ AUDIT LOGS (PROTECTION FOR YOU)
+/admin/audit-logs
+
+Log every admin action:
+
+Who did it
+
+What action
+
+Which user
+
+Timestamp
+
+Example:
+
+admin@tradify.io → Promoted user@email.com to Pro
+
+This protects you legally and operationally.
+
+7️⃣ ADMIN SIDEBAR (SEPARATE FROM USER SIDEBAR)
+
+Admins should see this, not the trading UI.
+
+Admin Sidebar Tabs:
+
+Overview
+
+Users
+
+Subscriptions
+
+MT5 Monitor
+
+Audit Logs
+
+System Settings (later)
+
+Sign Out
+
+Users will never see this sidebar.
+
+🚫 WHAT YOU SHOULD NOT PUT IN ADMIN
+
+❌ Charts about trading performance
+❌ User trading history (unless for support)
+❌ Signals / Traders Hub
+❌ Anything market-related
+
+Admin = operations, not trading.
+
+🎯 WHY THIS STRUCTURE IS GOOD
+
+This admin console allows you to:
+
+Operate subscriptions
+
+Support users
+
+Run promotions
+
+Handle beta testers
+
+Monitor MT5 health
+
+Scale professionally
+
+Without:
+
+Overengineering
+
+CRM bloat
+
+Unnecessary complexity
+
+🏁 FINAL VERDICT (VERY CLEAR)
+
+Your instinct is 100% correct.
+
+What you should do:
+
+Keep same platform
+
+Use role-based routing
+
+Give admins a different dashboard, tabs, and layout
+
+Never mix user & admin experiences
+
+This is how real SaaS products are built.

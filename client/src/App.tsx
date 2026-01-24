@@ -15,10 +15,24 @@ import MT5Bridge from "@/pages/MT5Bridge";
 import TradersHubTab from "@/components/TradersHubTab";
 import Auth from "@/pages/Auth";
 import { MainLayout } from "@/components/MainLayout";
+import { AdminLayout } from "@/components/AdminLayout";
+import { useQuery } from "@tanstack/react-query";
 
 function Router() {
   const [location] = useLocation();
   const isAuthPage = location === "/login" || location === "/signup";
+  const isAdminRoute = location.startsWith("/admin");
+
+  const { data: userRole } = useQuery<any>({
+    queryKey: ["/api/user/role"],
+  });
+
+  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
+
+  // Role-based entry flow: Redirect Admins to /admin/overview on root access
+  if (location === "/" && isAdmin) {
+    return <Redirect to="/admin/overview" />;
+  }
 
   const content = (
     <Switch>
@@ -33,12 +47,24 @@ function Router() {
       <Route path="/mt5-bridge" component={MT5Bridge} />
       <Route path="/traders-hub" component={TradersHubTab} />
       <Route path="/pricing" component={Pricing} />
-      <Route path="/admin" component={AdminDashboard} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin/overview" component={AdminDashboard} />
+      <Route path="/admin/users" component={AdminDashboard} />
+      <Route path="/admin/subscriptions" component={AdminDashboard} />
+      <Route path="/admin/mt5" component={AdminDashboard} />
+      <Route path="/admin/audit-logs" component={AdminDashboard} />
+      
       <Route component={NotFound} />
     </Switch>
   );
 
   if (isAuthPage) return content;
+
+  if (isAdminRoute) {
+    if (!isAdmin) return <Redirect to="/" />;
+    return <AdminLayout>{content}</AdminLayout>;
+  }
 
   return <MainLayout>{content}</MainLayout>;
 }
