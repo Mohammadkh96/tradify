@@ -8,10 +8,12 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#020617]">
+    <div className="min-h-screen bg-[#020617] flex">
       <Navigation />
       <MobileNav />
-      {children}
+      <main className="flex-1 md:ml-64 relative min-h-screen overflow-x-hidden">
+        {children}
+      </main>
       <ChatAssistant />
     </div>
   );

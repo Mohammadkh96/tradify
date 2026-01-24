@@ -42,14 +42,14 @@ export default function Profile() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#020617] text-slate-50 min-h-screen">
-      <div className="max-w-6xl mx-auto px-10 py-12 space-y-12">
+    <div className="flex-1 bg-[#020617] text-slate-50 min-h-screen">
+      <div className="max-w-5xl mx-auto px-6 py-12 space-y-12">
         {/* Page Header */}
         <div className="space-y-2 border-b border-slate-800/50 pb-8">
           <h1 className="text-4xl font-black uppercase tracking-tighter italic text-white leading-none">
             Profile
           </h1>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest opacity-70">
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] opacity-60">
             Manage your account, security, and preferences.
           </p>
         </div>

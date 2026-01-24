@@ -65,7 +65,7 @@ export function Navigation() {
 
   const isConnected = mt5?.status === "CONNECTED";
   const isPro = userRole?.subscriptionTier === "PRO";
-  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN" || userRole?.userId === "mohammad@admin.com";
+  const isAdmin = localStorage.getItem("user_id") === "mohammad@admin.com";
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-800 bg-slate-950 text-slate-300 hidden md:flex flex-col">
