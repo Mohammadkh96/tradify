@@ -247,7 +247,7 @@ export async function registerRoutes(
 
   app.get("/api/user/role", async (req, res) => {
     // Check for hardcoded admin first
-    const userId = req.headers["x-user-id"] as string || "dev-user";
+    const userId = req.query.userId as string || req.headers["x-user-id"] as string || "dev-user";
     
     if (userId === "mohammad@admin.com") {
       const [existing] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);

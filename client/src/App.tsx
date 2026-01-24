@@ -24,10 +24,15 @@ function Router() {
   const isAdminRoute = location.startsWith("/admin");
 
   const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
-    queryKey: ["/api/user/role"],
+    queryKey: ["/api/user/role", localStorage.getItem("user_id")],
+    queryFn: async () => {
+      const userId = localStorage.getItem("user_id");
+      const res = await fetch(`/api/user/role${userId ? `?userId=${userId}` : ""}`);
+      return res.json();
+    }
   });
 
-  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN" || userRole?.userId === "mohammad@admin.com";
+  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN" || userRole?.userId === "mohammad@admin.com" || localStorage.getItem("user_id") === "mohammad@admin.com";
 
   if (isRoleLoading) return null;
 

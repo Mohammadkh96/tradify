@@ -38,7 +38,12 @@ export function Navigation() {
   });
 
   const { data: userRole } = useQuery<any>({
-    queryKey: ["/api/user/role"],
+    queryKey: ["/api/user/role", localStorage.getItem("user_id")],
+    queryFn: async () => {
+      const userId = localStorage.getItem("user_id");
+      const res = await fetch(`/api/user/role${userId ? `?userId=${userId}` : ""}`);
+      return res.json();
+    }
   });
 
   const upgradeMutation = useMutation({

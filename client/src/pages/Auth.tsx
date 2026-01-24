@@ -12,7 +12,8 @@ export default function Auth() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Demo login
+    const email = (e.target as any).elements[0].value;
+    localStorage.setItem("user_id", email);
     setLocation("/");
   };
 
