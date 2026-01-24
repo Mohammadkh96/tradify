@@ -10,9 +10,17 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [, setLocation] = useLocation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const email = (e.target as any).elements[0].value;
+    
+    // Auto-create user role on login/signup to ensure visibility in admin console
+    try {
+      await fetch(`/api/user/role?userId=${email}`);
+    } catch (err) {
+      console.error("Failed to sync user role:", err);
+    }
+    
     localStorage.setItem("user_id", email);
     setLocation("/");
   };
