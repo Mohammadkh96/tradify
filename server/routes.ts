@@ -160,7 +160,8 @@ export async function registerRoutes(
               takeProfit: String(pos.tp || 0),
               riskReward: "0",
               outcome: "Pending",
-              notes: `[MT5 Synced] Ticket: ${pos.ticket} | MT5_TICKET_${pos.ticket}`
+              notes: `[MT5 Synced] Ticket: ${pos.ticket} | MT5_TICKET_${pos.ticket}`,
+              userId: userId // Associate synced trades with the correct user
             });
           }
         }
@@ -292,7 +293,11 @@ export async function registerRoutes(
 
   app.get("/api/user/role", async (req, res) => {
     // Check for hardcoded admin first
-    const userId = req.query.userId as string || req.headers["x-user-id"] as string || "dev-user";
+    const userId = req.query.userId as string || req.headers["x-user-id"] as string;
+    
+    if (!userId) {
+      return res.status(400).json({ message: "UserId required" });
+    }
     
     // Check dynamic admin access table
     const [dynamicAdmin] = await db.select().from(schema.adminAccess).where(eq(schema.adminAccess.email, userId)).limit(1);
