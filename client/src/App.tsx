@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import Pricing from "@/pages/Pricing";
+import Landing from "@/pages/Landing";
 import Journal from "@/pages/Journal";
 import NewEntry from "@/pages/NewEntry";
 import KnowledgeBase from "@/pages/KnowledgeBase";
@@ -21,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 
 function Router() {
   const [location] = useLocation();
+  const isLandingPage = location === "/";
   const isAuthPage = location === "/login" || location === "/signup";
   const isAdminRoute = location.startsWith("/admin");
 
@@ -38,7 +40,7 @@ function Router() {
   if (isRoleLoading) return null;
 
   // Role-based entry flow: Redirect mohammad@admin.com directly to admin console
-  if (isAdmin && (location === "/" || location === "/dashboard" || location === "/journal" || location === "/new-entry")) {
+  if (isAdmin && (location === "/dashboard" || location === "/journal" || location === "/new-entry")) {
     return <Redirect to="/admin/overview" />;
   }
 
@@ -46,7 +48,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Auth} />
       <Route path="/signup" component={Auth} />
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={Landing} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/journal" component={Journal} />
       <Route path="/new-entry" component={NewEntry} />
@@ -69,7 +71,7 @@ function Router() {
     </Switch>
   );
 
-  if (isAuthPage) return content;
+  if (isAuthPage || isLandingPage) return content;
 
   if (isAdminRoute) {
     if (!isAdmin) return <Redirect to="/" />;
