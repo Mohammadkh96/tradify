@@ -32,6 +32,9 @@ export default function Dashboard() {
   
   const { data: mt5 } = useQuery<{
     status: string;
+    lastSync?: string;
+    isLive?: boolean;
+    error?: string;
     metrics?: {
       balance: string;
       equity: string;
@@ -139,17 +142,39 @@ export default function Dashboard() {
             </h1>
             <p className="text-slate-400 mt-1">Market Overview & Performance Metrics</p>
           </div>
-          {mt5?.status === "CONNECTED" && (
-                <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 rounded-full px-5 py-2.5 backdrop-blur-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">MT5 Live</span>
-                  </div>
-                  <div className="w-px h-5 bg-slate-800" />
-                  <div className="text-[10px] text-slate-400 font-mono font-bold">
-                    {mt5.lastUpdate ? format(new Date(mt5.lastUpdate), 'HH:mm:ss') : 'N/A'}
-                  </div>
+          {mt5?.status === "CONNECTED" ? (
+            <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 rounded-full px-5 py-2.5 backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">MT5 Live</span>
+              </div>
+              <div className="w-px h-5 bg-slate-800" />
+              <div className="text-[10px] text-slate-400 font-mono font-bold">
+                Last Sync: {mt5?.lastSync ? format(new Date(mt5.lastSync), 'HH:mm:ss') : 'N/A'}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 rounded-full px-5 py-2.5 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                  <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">Terminal Offline</span>
                 </div>
+                {mt5?.lastSync && (
+                  <>
+                    <div className="w-px h-5 bg-slate-800" />
+                    <div className="text-[10px] text-slate-400 font-mono font-bold">
+                      Last: {format(new Date(mt5.lastSync), 'MMM d, HH:mm')}
+                    </div>
+                  </>
+                )}
+              </div>
+              {mt5?.error && (
+                <span className="text-[9px] text-rose-500/80 font-bold uppercase tracking-tighter pr-4">
+                  Error: {mt5.error}
+                </span>
+              )}
+            </div>
           )}
         </header>
 

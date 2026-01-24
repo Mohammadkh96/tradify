@@ -197,8 +197,18 @@ export async function registerRoutes(
       const now = new Date();
       const isLive = (now.getTime() - lastUpdate.getTime()) < 60000;
       
+      let error = undefined;
+      if (!isLive && data.lastUpdate) {
+        error = "Heartbeat timeout (last update > 60s)";
+      } else if (!data) {
+        error = "No terminal data found";
+      }
+
       res.json({
         status: isLive ? "CONNECTED" : "DISCONNECTED",
+        lastSync: data.lastUpdate,
+        isLive,
+        error,
         metrics: {
           balance: data.balance,
           equity: data.equity,
