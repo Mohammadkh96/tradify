@@ -58,6 +58,7 @@ function Router() {
       {/* Admin Routes */}
       <Route path="/admin/overview" component={AdminDashboard} />
       <Route path="/admin/users" component={AdminDashboard} />
+      <Route path="/admin/access" component={AdminDashboard} />
       <Route path="/admin/subscriptions" component={AdminDashboard} />
       <Route path="/admin/mt5" component={AdminDashboard} />
       <Route path="/admin/audit-logs" component={AdminDashboard} />
