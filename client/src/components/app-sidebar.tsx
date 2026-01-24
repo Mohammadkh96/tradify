@@ -50,7 +50,7 @@ export function AppSidebar() {
   const isConnected = mt5?.status === "CONNECTED";
 
   return (
-    <Sidebar className="border-r border-slate-800 bg-slate-950">
+    <Sidebar collapsible="icon" className="border-r border-slate-800 bg-slate-950">
       <SidebarHeader className="h-20 border-b border-slate-800 flex flex-row items-center px-6 gap-3">
         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
           <TrendingUp size={24} strokeWidth={3} />
