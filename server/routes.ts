@@ -248,6 +248,18 @@ export async function registerRoutes(
   app.get("/api/user/role", async (req, res) => {
     const userId = req.headers["x-user-id"] as string || "dev-user";
     const role = await storage.getUserRole(userId);
+    
+    // Explicitly check for mohammad@admin.com and force OWNER role if not set
+    if (userId === "mohammad@admin.com") {
+      const [existing] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
+      if (!existing || existing.role !== 'OWNER') {
+        await storage.updateUserSubscription(userId, "PRO");
+        await db.update(schema.userRole).set({ role: "OWNER" }).where(eq(schema.userRole.userId, userId));
+        const updated = await storage.getUserRole(userId);
+        return res.json(updated);
+      }
+    }
+
     // If no role found, ensure dev-user is OWNER for testing purposes
     if (!role && userId === "dev-user") {
       await storage.updateUserSubscription(userId, "FREE");
