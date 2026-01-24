@@ -13,10 +13,22 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const email = (e.target as any).elements[0].value;
+    let country = null;
+    let phoneNumber = null;
+
+    if (!isLogin) {
+      country = (e.target as any).elements[1].value;
+      phoneNumber = (e.target as any).elements[2].value;
+    }
     
     // Auto-create user role on login/signup to ensure visibility in admin console
     try {
-      await fetch(`/api/user/role?userId=${email}`);
+      const url = new URL("/api/user/role", window.location.origin);
+      url.searchParams.append("userId", email);
+      if (country) url.searchParams.append("country", country);
+      if (phoneNumber) url.searchParams.append("phoneNumber", phoneNumber);
+      
+      await fetch(url.toString());
     } catch (err) {
       console.error("Failed to sync user role:", err);
     }
@@ -103,9 +115,29 @@ export default function Auth() {
                 </div>
               </div>
               
+              {!isLogin && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Country</label>
+                    <Input 
+                      placeholder="UNITED STATES" 
+                      className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
+                      required={!isLogin}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Phone (Optional)</label>
+                    <Input 
+                      placeholder="+1 234 567 890" 
+                      className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Access Key</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Password</label>
                   {isLogin && <button type="button" className="text-[10px] font-bold text-emerald-500/70 hover:text-emerald-500 transition-colors uppercase tracking-widest">Forgot?</button>}
                 </div>
                 <div className="relative group">
@@ -121,7 +153,7 @@ export default function Auth() {
 
               {!isLogin && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Confirm Identity</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Confirm Password</label>
                   <div className="relative group">
                     <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                     <Input 

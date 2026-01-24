@@ -409,6 +409,8 @@ export async function registerRoutes(
   app.get("/api/user/role", async (req, res) => {
     // Check for hardcoded admin first
     const userId = req.query.userId as string || req.headers["x-user-id"] as string;
+    const country = req.query.country as string;
+    const phoneNumber = req.query.phoneNumber as string;
     
     if (!userId) {
       return res.status(400).json({ message: "UserId required" });
@@ -426,15 +428,33 @@ export async function registerRoutes(
       return res.json({ userId, role: 'OWNER', subscriptionTier: 'PRO' });
     }
 
-    const role = await storage.getUserRole(userId);
+    let role = await storage.getUserRole(userId);
     
-    // If no role found, ensure dev-user is OWNER for testing purposes
-    if (!role && userId === "dev-user") {
-      await storage.updateUserSubscription(userId, "FREE");
-      await db.update(schema.userRole).set({ role: "OWNER" }).where(eq(schema.userRole.userId, userId));
-      const updatedRole = await storage.getUserRole(userId);
-      return res.json(updatedRole);
+    // Create role if it doesn't exist
+    if (!role) {
+      role = await storage.createUserRole({
+        userId,
+        role: userId === "dev-user" ? "OWNER" : "TRADER",
+        country: country || null,
+        phoneNumber: phoneNumber || null,
+      });
+      if (userId === "dev-user") {
+        await storage.updateUserSubscription(userId, "FREE");
+      }
+    } else if (country || phoneNumber) {
+      // Update existing if new info provided during login/signup sync
+      await db.update(schema.userRole)
+        .set({ 
+          country: country || role.country, 
+          phoneNumber: phoneNumber || role.phoneNumber,
+          updatedAt: new Date() 
+        })
+        .where(eq(schema.userRole.userId, userId));
+      
+      // Refresh role data
+      role = await storage.getUserRole(userId);
     }
+    
     return res.json(role || { userId, subscriptionTier: "FREE", role: "TRADER" });
   });
 
