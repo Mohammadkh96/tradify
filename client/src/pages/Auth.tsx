@@ -68,14 +68,14 @@ export default function Auth() {
       
       // Redirect based on role
       if (roleData.role === "OWNER" || roleData.role === "ADMIN") {
-        setLocation("/admin");
+        window.location.href = "/admin/overview";
       } else {
-        setLocation("/");
+        window.location.href = "/dashboard";
       }
     } catch (err) {
       console.error("Failed to sync user role:", err);
       localStorage.setItem("user_id", email);
-      setLocation("/");
+      window.location.href = "/dashboard";
     }
   };
 
