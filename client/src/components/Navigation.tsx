@@ -67,9 +67,25 @@ export function Navigation() {
   const isPro = userRole?.subscriptionTier === "PRO";
   const isAdmin = localStorage.getItem("user_id") === "mohammad@admin.com";
 
-  const handleLogout = () => {
-    localStorage.removeItem("user_id");
-    window.location.href = "/";
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/logout", { method: "POST" });
+      if (response.ok) {
+        localStorage.removeItem("user_id");
+        queryClient.setQueryData(["/api/user"], null);
+        window.location.href = "/";
+        toast({
+          title: "Session Terminated",
+          description: "You have been logged out successfully.",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Logout Failed",
+        description: "An error occurred while terminating your session.",
+      });
+    }
   };
 
   return (

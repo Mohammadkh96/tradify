@@ -146,14 +146,14 @@ export async function registerRoutes(
   });
   
   // Traders Hub API
-  app.use("/api/traders-hub", tradersHubRouter);
+  app.use("/api/traders-hub", requireAuth, tradersHubRouter);
   
-  app.get(api.trades.list.path, async (req, res) => {
+  app.get(api.trades.list.path, requireAuth, async (req, res) => {
     const trades = await storage.getTrades();
     res.json(trades);
   });
 
-  app.get(api.trades.get.path, async (req, res) => {
+  app.get(api.trades.get.path, requireAuth, async (req, res) => {
     const trade = await storage.getTrade(Number(req.params.id));
     if (!trade) {
       return res.status(404).json({ message: 'Trade not found' });
@@ -161,10 +161,10 @@ export async function registerRoutes(
     res.json(trade);
   });
 
-  app.post(api.trades.create.path, async (req, res) => {
+  app.post(api.trades.create.path, requireAuth, async (req, res) => {
     try {
       const input = api.trades.create.input.parse(req.body);
-      const trade = await storage.createTrade(input);
+      const trade = await storage.createTrade({ ...input, userId: req.session.userId! });
       res.status(201).json(trade);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -479,39 +479,13 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/users", async (req, res) => {
-    const userId = req.headers["x-user-id"] as string || req.query.userId as string || "dev-user";
-    
-    // Check if the requester is an authorized admin
-    const [dynamicAdmin] = await db.select().from(schema.adminAccess).where(eq(schema.adminAccess.email, userId)).limit(1);
-    const requesterRole = await storage.getUserRole(userId);
-    
-    const isAuthorized = userId === "mohammad@admin.com" || 
-                       (requesterRole?.role === "OWNER" || requesterRole?.role === "ADMIN") ||
-                       (dynamicAdmin && dynamicAdmin.isActive);
-
-    if (!isAuthorized) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
     const users = await db.select().from(schema.userRole);
     res.json(users);
   });
 
-  app.post("/api/admin/update-user", async (req, res) => {
+  app.post("/api/admin/update-user", requireAdmin, async (req, res) => {
     try {
-      const userId = req.headers["x-user-id"] as string || req.query.userId as string || "dev-user";
-      const requesterRole = await storage.getUserRole(userId);
-      const [dynamicAdmin] = await db.select().from(schema.adminAccess).where(eq(schema.adminAccess.email, userId)).limit(1);
-      
-      const isAuthorized = userId === "mohammad@admin.com" || 
-                         (requesterRole?.role === "OWNER" || requesterRole?.role === "ADMIN") ||
-                         (dynamicAdmin && dynamicAdmin.isActive);
-
-      if (!isAuthorized) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
       const { targetUserId, updates } = req.body;
       
       // If subscriptionTier is being updated, use the dedicated storage method
@@ -535,20 +509,12 @@ export async function registerRoutes(
   });
 
   // --- Admin Access Management ---
-  app.get("/api/admin/access", async (req, res) => {
-    const userId = req.headers["x-user-id"] as string || req.query.userId as string || "dev-user";
-    const role = await storage.getUserRole(userId);
-    if (role?.role !== "OWNER" && userId !== "mohammad@admin.com") return res.status(403).json({ message: "Forbidden" });
-    
+  app.get("/api/admin/access", requireAdmin, async (req, res) => {
     const admins = await db.select().from(schema.adminAccess);
     res.json(admins);
   });
 
-  app.post("/api/admin/access", async (req, res) => {
-    const userId = req.headers["x-user-id"] as string || req.query.userId as string || "dev-user";
-    const role = await storage.getUserRole(userId);
-    if (role?.role !== "OWNER" && userId !== "mohammad@admin.com") return res.status(403).json({ message: "Forbidden" });
-    
+  app.post("/api/admin/access", requireAdmin, async (req, res) => {
     const { email, label } = req.body;
     const accessKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     
@@ -561,11 +527,7 @@ export async function registerRoutes(
     res.json(newAdmin);
   });
 
-  app.delete("/api/admin/access/:id", async (req, res) => {
-    const userId = req.headers["x-user-id"] as string || req.query.userId as string || "dev-user";
-    const role = await storage.getUserRole(userId);
-    if (role?.role !== "OWNER" && userId !== "mohammad@admin.com") return res.status(403).json({ message: "Forbidden" });
-    
+  app.delete("/api/admin/access/:id", requireAdmin, async (req, res) => {
     await db.delete(schema.adminAccess).where(eq(schema.adminAccess.id, parseInt(req.params.id)));
     res.json({ success: true });
   });

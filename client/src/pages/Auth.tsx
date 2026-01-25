@@ -99,9 +99,7 @@ export default function Auth() {
       }
       
       localStorage.setItem("user_id", data.userId);
-      
-      // Invalidate query to update user state globally
-      // (Assuming a global user hook or query is used)
+      queryClient.setQueryData(["/api/user"], data);
       
       // Redirect based on role
       if (data.role === "OWNER" || data.role === "ADMIN") {
