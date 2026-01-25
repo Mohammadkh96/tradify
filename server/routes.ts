@@ -261,7 +261,7 @@ export async function registerRoutes(
         return res.json({ message: "No data available" });
       }
 
-      // Session Analysis (Simple GMT based)
+      // Performance Intelligence Engine
       const sessions = { London: 0, NY: 0, Asia: 0 };
       const days = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
       const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -276,6 +276,11 @@ export async function registerRoutes(
       let currentEquity = 0;
       
       const setups: Record<string, { wins: number, total: number }> = {};
+      const violations = {
+        overRisk: 0,
+        outsideSession: 0,
+        noStrategy: 0
+      };
 
       trades.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()).forEach(t => {
         const date = new Date(t.createdAt!);
@@ -304,6 +309,10 @@ export async function registerRoutes(
           rrCount++;
         }
 
+        // Violations tracking
+        if (hour < 8 || hour >= 21) violations.outsideSession++;
+        if (!t.setup || t.setup === "Unknown") violations.noStrategy++;
+
         if (!setups[t.setup]) setups[t.setup] = { wins: 0, total: 0 };
         setups[t.setup].total++;
         if (t.outcome === "Win") setups[t.setup].wins++;
@@ -319,6 +328,7 @@ export async function registerRoutes(
       const bestSetup = setupStats.length ? setupStats.reduce((a, b) => a.winRate > b.winRate ? a : b).name : "N/A";
 
       const profitFactor = Math.abs(totalPl) / (Math.abs(totalPl - currentEquity) || 1); // Simplified
+      const winRateVal = trades.length ? (wins / trades.length) * 100 : 0;
       const expectancy = trades.length ? totalPl / trades.length : 0;
       const recoveryFactor = maxDrawdown > 0 ? totalPl / maxDrawdown : totalPl > 0 ? 100 : 0;
 
@@ -326,11 +336,14 @@ export async function registerRoutes(
         bestSession,
         bestDay,
         bestSetup,
+        winRate: winRateVal.toFixed(1),
         avgRR: rrCount ? (totalRR / rrCount).toFixed(2) : "0.00",
         expectancy: expectancy.toFixed(2),
         profitFactor: profitFactor.toFixed(2),
         maxDrawdown: maxDrawdown.toFixed(2),
-        recoveryFactor: recoveryFactor.toFixed(2)
+        maxDrawdownPercent: peak > 0 ? ((maxDrawdown / peak) * 100).toFixed(2) : "0.00",
+        recoveryFactor: recoveryFactor.toFixed(2),
+        violations
       });
     } catch (error) {
       res.status(500).json({ message: "Intelligence failure" });
