@@ -1,0 +1,199 @@
+🔐 B. AUTHENTICATION & USER ACCOUNTS
+REGISTRATION — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of Registration
+
+Make signup friction-light but professional
+
+Collect only essential data
+
+Enforce security and data integrity
+
+Prepare users for a serious platform (not a casual app)
+
+1️⃣ Email + Password Signup
+Functional Requirements
+
+User must register using:
+
+Email address
+
+Password
+
+Email must be:
+
+Valid format
+
+Case-insensitive uniqueness
+
+Password must never be stored in plain text.
+
+UX Requirements
+
+Clear form labels
+
+Clear validation errors (inline)
+
+Submit disabled until inputs are valid
+
+No auto-login if registration fails
+
+2️⃣ Password Rules Enforcement
+Security Rules (Minimum)
+
+Minimum length: 8 characters
+
+Must include at least:
+
+1 uppercase letter
+
+1 lowercase letter
+
+1 number
+
+No password reuse allowed (future-proof)
+
+Password hashed using a secure algorithm (e.g., bcrypt)
+
+UX Requirements
+
+Password rules shown before submit
+
+Real-time feedback (✔ / ✖)
+
+Clear error messages, not generic ones
+
+3️⃣ Duplicate Email Prevention
+Backend Requirements
+
+Email uniqueness enforced at database level
+
+Attempting to register with an existing email must:
+
+Return a clear error
+
+NOT reveal whether the account exists in detail
+
+Example safe message:
+
+“An account with this email already exists.”
+
+4️⃣ Country Field (Required or Selectable)
+Purpose
+
+Compliance
+
+Time zone context
+
+Future localization
+
+Functional Requirements
+
+Country selected from a dropdown list
+
+No free-text country field
+
+Stored as:
+
+ISO country code (preferred)
+
+Or standardized country name
+
+UX Requirements
+
+Default selection based on IP (if available)
+
+User can manually override
+
+Clear label: “Country”
+
+5️⃣ Phone Number (Optional)
+Purpose
+
+Optional account recovery
+
+Optional support contact
+
+Not used for marketing by default
+
+Functional Requirements
+
+Optional field
+
+International format support
+
+Country code required (+XX)
+
+Basic format validation only
+
+UX Requirements
+
+Clearly marked as Optional
+
+No blocking validation
+
+Can be added or updated later in profile
+
+6️⃣ Time Zone (Auto-Detected or Selectable)
+Purpose
+
+Accurate session analysis
+
+Correct timestamps
+
+Performance summaries by local time
+
+Functional Requirements
+
+Auto-detect time zone on first visit
+
+Allow manual override via dropdown
+
+Stored in standard format (e.g., UTC offset or IANA zone)
+
+UX Requirements
+
+Show detected time zone
+
+Allow change during registration or later in profile
+
+Clear label: “Time Zone”
+
+🔒 Data Handling & Compliance (Non-Negotiable)
+
+No unnecessary personal data collected
+
+No KYC-style data
+
+No address or ID collection
+
+Clear privacy policy reference on signup
+
+Explicit consent checkbox if legally required
+
+🧪 Edge Cases & Validation
+
+⬜ Invalid email → inline error
+
+⬜ Weak password → inline error
+
+⬜ Duplicate email → friendly error
+
+⬜ Country not selected → block submit
+
+⬜ Time zone missing → fallback to auto-detect
+
+✅ Definition of “DONE” (Acceptance Criteria)
+
+Registration is considered complete only if:
+
+User can successfully create an account
+
+All required fields are stored correctly
+
+Duplicate registrations are blocked
+
+Passwords are securely hashed
+
+User is redirected correctly after signup
+
+User record is visible in Admin Portal

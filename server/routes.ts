@@ -6,7 +6,8 @@ import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -15,6 +16,63 @@ export async function registerRoutes(
   // Add body parser limits for MT5 payloads
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+  
+  // Registration Endpoint
+  app.post("/api/register", async (req, res) => {
+    try {
+      const { email, password, country, phoneNumber, timezone } = req.body;
+      
+      if (!email || !password || !country || !timezone) {
+        return res.status(400).json({ message: "Required fields missing" });
+      }
+
+      // Check for existing user (case-insensitive)
+      const normalizedEmail = email.toLowerCase();
+      const [existing] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail)).limit(1);
+      
+      if (existing) {
+        return res.status(400).json({ message: "An account with this email already exists." });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user
+      const [newUser] = await db.insert(schema.userRole).values({
+        userId: normalizedEmail,
+        password: hashedPassword,
+        role: "TRADER",
+        country,
+        phoneNumber: phoneNumber || null,
+        timezone,
+        subscriptionTier: "FREE",
+      }).returning();
+
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Login Endpoint
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const normalizedEmail = email.toLowerCase();
+      
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail)).limit(1);
+      
+      if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
   
   // Traders Hub API
   app.use("/api/traders-hub", tradersHubRouter);
@@ -449,6 +507,7 @@ export async function registerRoutes(
     const userId = req.query.userId as string || req.headers["x-user-id"] as string;
     const country = req.query.country as string;
     const phoneNumber = req.query.phoneNumber as string;
+    const timezone = req.query.timezone as string;
     
     if (!userId) {
       return res.status(400).json({ message: "UserId required" });
@@ -475,16 +534,18 @@ export async function registerRoutes(
         role: userId === "dev-user" ? "OWNER" : "TRADER",
         country: country || null,
         phoneNumber: phoneNumber || null,
+        timezone: timezone || null,
       });
       if (userId === "dev-user") {
         await storage.updateUserSubscription(userId, "FREE");
       }
-    } else if (country || phoneNumber) {
+    } else if (country || phoneNumber || timezone) {
       // Update existing if new info provided during login/signup sync
       await db.update(schema.userRole)
         .set({ 
           country: country || role.country, 
           phoneNumber: phoneNumber || role.phoneNumber,
+          timezone: timezone || role.timezone,
           updatedAt: new Date() 
         })
         .where(eq(schema.userRole.userId, userId));

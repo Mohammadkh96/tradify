@@ -76,15 +76,15 @@ export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {
 export const userRole = pgTable("user_role", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
+  password: text("password"),
   role: text("role").notNull(),
   termsAccepted: boolean("terms_accepted").default(false),
   riskAcknowledged: boolean("risk_acknowledged").default(false),
-  kycVerified: boolean("kyc_verified").default(false),
-  kycVerificationDate: timestamp("kyc_verification_date"),
   subscriptionTier: text("subscription_tier").default("FREE"),
   syncToken: text("sync_token"),
-  country: text("country"),
+  country: text("country"), // ISO country name or code as per spec
   phoneNumber: text("phone_number"),
+  timezone: text("timezone"), // Added per spec
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

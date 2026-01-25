@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History } from "lucide-react";
+import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History, Check, X, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 const countries = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
@@ -40,42 +41,83 @@ const countries = [
   "Zambia", "Zimbabwe"
 ];
 
+const timezones = Intl.supportedValuesOf('timeZone');
+
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [country, setCountry] = useState<string>("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [timezone, setTimezone] = useState<string>("");
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    // Auto-detect timezone
+    try {
+      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (detected) setTimezone(detected);
+    } catch (e) {
+      console.error("Timezone detection failed", e);
+    }
+  }, []);
+
+  const passwordRules = [
+    { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+    { label: "1 uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
+    { label: "1 lowercase letter", test: (p: string) => /[a-z]/.test(p) },
+    { label: "1 number", test: (p: string) => /[0-9]/.test(p) },
+  ];
+
+  const isPasswordValid = passwordRules.every(rule => rule.test(password));
+  const isFormValid = isLogin 
+    ? email && password 
+    : email && isPasswordValid && password === confirmPassword && country && timezone;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const email = (e.target as any).elements[0].value;
-    let phoneNumber = null;
-
-    if (!isLogin) {
-      phoneNumber = (e.target as any).elements[2].value;
-    }
+    if (!isFormValid) return;
     
-    // Auto-create user role on login/signup to ensure visibility in admin console
     try {
-      const url = new URL("/api/user/role", window.location.origin);
-      url.searchParams.append("userId", email);
-      if (country) url.searchParams.append("country", country);
-      if (phoneNumber) url.searchParams.append("phoneNumber", phoneNumber);
+      const endpoint = isLogin ? "/api/login" : "/api/register";
+      const payload = isLogin 
+        ? { email, password }
+        : { email, password, country, phoneNumber, timezone };
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Authentication failed");
+      }
       
-      const response = await fetch(url.toString());
-      const roleData = await response.json();
-      
-      localStorage.setItem("user_id", email);
+      localStorage.setItem("user_id", data.userId);
       
       // Redirect based on role
-      if (roleData.role === "OWNER" || roleData.role === "ADMIN") {
+      if (data.role === "OWNER" || data.role === "ADMIN") {
         window.location.href = "/admin/overview";
       } else {
         window.location.href = "/dashboard";
       }
-    } catch (err) {
-      console.error("Failed to sync user role:", err);
-      localStorage.setItem("user_id", email);
-      window.location.href = "/dashboard";
+      
+      toast({
+        title: isLogin ? "Session Initialized" : "Account Created",
+        description: isLogin ? "Welcome back to the terminal." : "Precision trading starts now.",
+      });
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      toast({
+        variant: "destructive",
+        title: isLogin ? "Login Failed" : "Registration Failed",
+        description: err.message || "An error occurred.",
+      });
     }
   };
 
@@ -131,10 +173,10 @@ export default function Auth() {
       </div>
 
       {/* Right Side: Auth Form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 relative">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-y-auto">
         <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px]" />
         
-        <div className="w-full max-w-md space-y-8 relative z-10">
+        <div className="w-full max-w-md space-y-8 relative z-10 py-12">
           <div className="text-center lg:text-left">
             <h3 className="text-3xl font-bold text-white">{isLogin ? "Welcome back" : "Create your account"}</h3>
             <p className="text-slate-500 mt-2">
@@ -149,6 +191,8 @@ export default function Auth() {
                 <div className="relative group">
                   <Mail className="absolute left-3 top-3.5 h-4 w-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                   <Input 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="operator@tradify.io" 
                     className="pl-10 bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                     type="email"
@@ -158,30 +202,49 @@ export default function Auth() {
               </div>
               
               {!isLogin && (
-                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Country</label>
-                    <Select onValueChange={setCountry} required={!isLogin}>
-                      <SelectTrigger className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50">
-                        <SelectValue placeholder="SELECT COUNTRY" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                        {countries.map((c) => (
-                          <SelectItem key={c} value={c} className="focus:bg-emerald-500 focus:text-slate-950">
-                            {c.toUpperCase()}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <>
+                  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Country</label>
+                      <Select value={country} onValueChange={setCountry} required={!isLogin}>
+                        <SelectTrigger className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50 uppercase text-[10px] tracking-widest">
+                          <SelectValue placeholder="SELECT COUNTRY" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                          {countries.map((c) => (
+                            <SelectItem key={c} value={c} className="focus:bg-emerald-500 focus:text-slate-950 text-[10px] uppercase tracking-widest">
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Time Zone</label>
+                      <Select value={timezone} onValueChange={setTimezone} required={!isLogin}>
+                        <SelectTrigger className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50 uppercase text-[10px] tracking-widest">
+                          <SelectValue placeholder="SELECT ZONE" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                          {timezones.map((tz) => (
+                            <SelectItem key={tz} value={tz} className="focus:bg-emerald-500 focus:text-slate-950 text-[10px] uppercase tracking-widest">
+                              {tz.replace(/_/g, ' ')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Phone (Optional)</label>
                     <Input 
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="+1 234 567 890" 
                       className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                     />
                   </div>
-                </div>
+                </>
               )}
 
               <div className="space-y-2">
@@ -192,32 +255,53 @@ export default function Auth() {
                 <div className="relative group">
                   <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                   <Input 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••" 
                     className="pl-10 bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                     type="password"
                     required
                   />
                 </div>
+                {!isLogin && password && (
+                  <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-800 space-y-1 animate-in fade-in">
+                    {passwordRules.map((rule, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest">
+                        {rule.test(password) ? <Check className="text-emerald-500 h-3 w-3" /> : <X className="text-rose-500 h-3 w-3" />}
+                        <span className={rule.test(password) ? "text-emerald-500/70" : "text-slate-500"}>{rule.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {!isLogin && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Confirm Password</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Confirm Identity</label>
                   <div className="relative group">
                     <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                     <Input 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••" 
                       className="pl-10 bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                       type="password"
                       required
                     />
                   </div>
+                  {confirmPassword && password !== confirmPassword && (
+                    <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest ml-1">Passwords do not match</p>
+                  )}
                 </div>
               )}
             </div>
 
-            <Button className="w-full h-14 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs transition-all shadow-2xl shadow-emerald-500/20">
-              {isLogin ? "Initialize Session" : "Create Account"}
+            <Button 
+              type="submit"
+              disabled={!isFormValid}
+              className="w-full h-14 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs transition-all shadow-2xl shadow-emerald-500/20 disabled:opacity-50 disabled:grayscale"
+            >
+              {isLogin ? "Initialize Session" : "Establish Account"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </form>
