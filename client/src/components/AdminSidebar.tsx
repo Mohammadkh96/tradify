@@ -53,12 +53,16 @@ export function AdminSidebar() {
         </SidebarGroup>
         
         <div className="mt-auto pt-4 border-t border-slate-800">
-          <Link href="/login">
-            <div className="flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 cursor-pointer">
-              <LogOut size={18} />
-              Sign Out
-            </div>
-          </Link>
+          <button 
+            onClick={() => {
+              localStorage.removeItem("user_id");
+              window.location.href = "/";
+            }}
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 cursor-pointer"
+          >
+            <LogOut size={18} />
+            Sign Out
+          </button>
         </div>
       </SidebarContent>
     </Sidebar>
