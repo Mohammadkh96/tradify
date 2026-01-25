@@ -27,25 +27,21 @@ function Router() {
   const isAuthPage = location === "/login" || location === "/signup";
   const isAdminRoute = location.startsWith("/admin");
 
-  const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
-    queryKey: ["/api/user/role", localStorage.getItem("user_id")],
-    queryFn: async () => {
-      const userId = localStorage.getItem("user_id");
-      const res = await fetch(`/api/user/role${userId ? `?userId=${userId}` : ""}`);
-      return res.json();
-    }
+  const { data: userRole, isLoading: isRoleLoading, error: authError } = useQuery<any>({
+    queryKey: ["/api/user"],
+    retry: false,
   });
 
-  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN" || userRole?.userId === "mohammad@admin.com" || localStorage.getItem("user_id") === "mohammad@admin.com";
+  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
+  const isUserLoggedIn = !!userRole;
 
-  if (isRoleLoading) return null;
+  if (isRoleLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
 
   // Role-based entry flow: Redirect mohammad@admin.com directly to admin console
   if (isAdmin && (location === "/dashboard" || location === "/journal" || location === "/new-entry")) {
     return <Redirect to="/admin/overview" />;
   }
 
-  const isUserLoggedIn = localStorage.getItem("user_id") !== null;
   if (isLandingPage && isUserLoggedIn && !isAdmin) {
     return <Redirect to="/dashboard" />;
   }

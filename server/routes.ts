@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
@@ -8,11 +8,61 @@ import { db } from "./db";
 import * as schema from "@shared/schema";
 import { eq, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+
+const PostgresStore = connectPg(session);
+
+declare module "express-session" {
+  interface SessionData {
+    userId: string;
+    role: string;
+  }
+}
+
+// Authentication middleware
+const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Session expired. Please log in." });
+  }
+  next();
+};
+
+const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Session expired" });
+  }
+  
+  const user = await storage.getUserRole(req.session.userId);
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+};
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Session setup
+  app.use(session({
+    store: new PostgresStore({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+      },
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || "tradify_secret_2026",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: "lax"
+    }
+  }));
+
   // Add body parser limits for MT5 payloads
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -26,7 +76,6 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Required fields missing" });
       }
 
-      // Check for existing user (case-insensitive)
       const normalizedEmail = email.toLowerCase();
       const [existing] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail)).limit(1);
       
@@ -34,10 +83,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "An account with this email already exists." });
       }
 
-      // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create user
       const [newUser] = await db.insert(schema.userRole).values({
         userId: normalizedEmail,
         password: hashedPassword,
@@ -47,6 +94,9 @@ export async function registerRoutes(
         timezone,
         subscriptionTier: "FREE",
       }).returning();
+
+      req.session.userId = newUser.userId;
+      req.session.role = newUser.role;
 
       res.status(201).json(newUser);
     } catch (error) {
@@ -67,11 +117,32 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      req.session.userId = user.userId;
+      req.session.role = user.role;
+
       res.json(user);
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
     }
+  });
+
+  app.post("/api/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.clearCookie("connect.sid");
+      res.json({ success: true });
+    });
+  });
+
+  app.get("/api/user", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const user = await storage.getUserRole(req.session.userId);
+    res.json(user);
   });
   
   // Traders Hub API

@@ -1,0 +1,176 @@
+🔐 B. AUTHENTICATION & USER ACCOUNTS
+LOGIN & SECURITY — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of Login & Security
+
+Ensure reliable access control
+
+Prevent unauthorized dashboard access
+
+Maintain session stability across refreshes
+
+Eliminate routing inconsistencies
+
+Make auth behavior predictable and auditable
+
+1️⃣ Login Works Consistently
+Functional Requirements
+
+Users log in using:
+
+Email
+
+Password
+
+Credentials validated securely against hashed password
+
+Login must:
+
+Work across refreshes
+
+Work across browser tabs
+
+Work after short inactivity
+
+UX Requirements
+
+Clear error messages:
+
+Invalid email or password
+
+No silent failures
+
+Login button disabled during submission
+
+Loading state shown
+
+2️⃣ Session Persistence
+Functional Requirements
+
+Auth session must persist:
+
+Page refresh
+
+Browser reopen (if allowed)
+
+Use secure authentication method:
+
+HttpOnly cookies or secure tokens
+
+Session expiration defined (e.g., idle timeout)
+
+UX Requirements
+
+User should not be logged out unexpectedly
+
+If session expires:
+
+Redirect to login
+
+Show reason (“Session expired”)
+
+3️⃣ Logout Works Correctly
+Functional Requirements
+
+Logout:
+
+Invalidates session/token immediately
+
+Clears auth state client-side
+
+After logout:
+
+User cannot access protected routes
+
+Back button does not restore session
+
+UX Requirements
+
+Clear confirmation of logout
+
+Redirect to public landing or login page
+
+No cached protected content visible
+
+4️⃣ Protected Routes Enforced
+Functional Requirements
+
+All dashboard and admin pages must:
+
+Require valid authentication
+
+If unauthenticated user attempts access:
+
+Redirect to login
+
+Preserve intended destination (optional)
+
+Security Requirements
+
+Route protection enforced server-side, not only frontend
+
+API endpoints must validate authentication
+
+Admin routes require admin role
+
+5️⃣ Public Routes Accessible Without Authentication
+Public Pages
+
+Landing page
+
+Pricing
+
+Login
+
+Registration
+
+Legal pages (Terms, Privacy)
+
+Requirements
+
+Public routes must:
+
+Never redirect to dashboard automatically
+
+Load without auth checks
+
+Authenticated users may be redirected intentionally (e.g., from login → dashboard)
+
+🔒 Security Hardening (Minimum Standard)
+
+Passwords never logged
+
+Tokens never exposed to client JS if avoidable
+
+CSRF protection (if cookies used)
+
+Rate-limit login attempts
+
+Prevent brute force attacks
+
+Secure cookie flags enabled (Secure, SameSite)
+
+🧪 Edge Case Testing (Must Pass)
+
+⬜ Refresh dashboard → still logged in
+
+⬜ Logout → dashboard access blocked
+
+⬜ Direct URL to dashboard while logged out → redirected
+
+⬜ Login failure → no partial session created
+
+⬜ Admin routes blocked for non-admin users
+
+✅ Definition of “DONE” (Acceptance Criteria)
+
+Login & security are complete only if:
+
+Auth works reliably across sessions
+
+No unauthorized access possible
+
+Routing behaves predictably
+
+No accidental redirects
+
+Admin and user roles are enforced correctly
