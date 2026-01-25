@@ -28,13 +28,22 @@ export default function Auth() {
       if (country) url.searchParams.append("country", country);
       if (phoneNumber) url.searchParams.append("phoneNumber", phoneNumber);
       
-      await fetch(url.toString());
+      const response = await fetch(url.toString());
+      const roleData = await response.json();
+      
+      localStorage.setItem("user_id", email);
+      
+      // Redirect based on role
+      if (roleData.role === "OWNER" || roleData.role === "ADMIN") {
+        setLocation("/admin");
+      } else {
+        setLocation("/");
+      }
     } catch (err) {
       console.error("Failed to sync user role:", err);
+      localStorage.setItem("user_id", email);
+      setLocation("/");
     }
-    
-    localStorage.setItem("user_id", email);
-    setLocation("/");
   };
 
   return (
