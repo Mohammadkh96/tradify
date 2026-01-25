@@ -1,0 +1,267 @@
+1️⃣ Automatic MT5 Trade Capture
+
+Goal: Eliminate all manual journaling and ensure complete, accurate trade data.
+
+Functional Requirements
+
+Trades must be captured automatically from MT5 via the EA.
+
+Capture every closed trade:
+
+Symbol
+
+Direction (buy/sell)
+
+Lot size
+
+Entry price
+
+Exit price
+
+Open time
+
+Close time
+
+Commission
+
+Swap
+
+Profit/Loss
+
+Handle:
+
+Partial closes
+
+Multiple positions per symbol
+
+Hedging (if enabled)
+
+No duplicate trades.
+
+Trades must be associated with the correct user account.
+
+Reliability Requirements
+
+If sync fails:
+
+Do not lose trades
+
+Retry automatically
+
+Show:
+
+Last successful sync timestamp
+
+Connection health status (OK / Warning / Disconnected)
+
+UX Requirements
+
+User never manually inputs trades.
+
+User clearly sees that data is coming from MT5, not manual.
+
+2️⃣ Clean Performance Dashboard
+
+Goal: Immediate clarity on performance without clutter.
+
+Core Metrics (Mandatory)
+
+Account balance
+
+Equity
+
+Net P&L (absolute + %)
+
+Max drawdown (% and currency)
+
+Win rate
+
+Average R-multiple
+
+Expectancy per trade
+
+Visual Components
+
+Equity curve
+
+Drawdown overlay
+
+Trade markers (win/loss)
+
+Time-range filters (daily / weekly / monthly / custom)
+
+Data Accuracy
+
+Calculations must be deterministic and reproducible.
+
+No rounding inconsistencies between views.
+
+Metrics must update immediately after new trade sync.
+
+3️⃣ Discipline & Risk Visibility
+
+Goal: Make behavioral mistakes impossible to ignore.
+
+Risk Tracking
+
+Risk % per trade (calculated from SL or predefined risk rules)
+
+Identify:
+
+Over-risk trades
+
+Inconsistent risk sizing
+
+Daily loss limit tracking (if defined by user)
+
+Rule Violations (MVP)
+
+Over-risk per trade
+
+Exceeding daily loss
+
+Trading outside preferred session
+
+Trading without predefined strategy tag
+
+UI Behavior
+
+Violations are highlighted visually.
+
+Summary count:
+
+“Rule violations this week: X”
+
+No gamification or shaming — factual presentation only.
+
+4️⃣ Session & Behavior Analysis
+
+Goal: Identify when and why the user performs best or worst.
+
+Session Segmentation
+
+Automatically tag trades by:
+
+Asia
+
+London
+
+New York
+
+Allow manual override if needed.
+
+Session Metrics
+
+P&L per session
+
+Win rate per session
+
+Expectancy per session
+
+Average R per session
+
+Behavioral Insights
+
+Overtrading detection (trades clustered too closely)
+
+Performance degradation after X trades per day
+
+Best vs worst trading window comparison
+
+5️⃣ Weekly / Monthly Performance Summaries
+
+Goal: Reduce analysis fatigue and increase insight retention.
+
+Summary Content
+
+Total trades
+
+Net P&L
+
+Expectancy
+
+Win rate
+
+Best performing session
+
+Worst performing behavior
+
+Rule violation count
+
+Delivery
+
+Display summary inside dashboard
+
+Optional downloadable report (PDF/CSV)
+
+Clear timeframe selection
+
+AI Integration (Optional Later)
+
+Textual summary generated from metrics
+
+No predictions, no advice
+
+Purely descriptive and comparative
+
+6️⃣ Professional & Reliable Platform Experience
+
+Goal: Users trust Tradify as a serious tool, not a toy.
+
+UI/UX Standards
+
+No unnecessary animations
+
+No hype language
+
+Consistent typography & spacing
+
+Clear empty states
+
+Predictable navigation
+
+System Feedback
+
+Clear loading states
+
+Clear error messages
+
+No silent failures
+
+User always knows:
+
+What is happening
+
+If something is wrong
+
+Trust Signals
+
+“Read-only MT5 connection”
+
+“No broker credentials stored”
+
+“No trade execution”
+
+“No signals provided”
+
+🔒 Non-Negotiable Constraints (IMPORTANT)
+
+Replit must NOT:
+
+Add signal-like language
+
+Suggest trades
+
+Generate entries/exits
+
+Gamify performance
+
+Hide errors
+
+Everything must remain:
+
+Deterministic
+
+Transparent
+
+Auditable

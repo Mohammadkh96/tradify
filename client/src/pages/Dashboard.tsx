@@ -105,18 +105,18 @@ export default function Dashboard() {
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Floating P&L", 
-      value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.floatingPl).toLocaleString()}` : "$0", 
-      icon: <TrendingUp size={18} />, 
-      subtext: "🟢 MT5 LIVE",
-      trend: mt5?.status === "CONNECTED" && parseFloat(mt5.metrics?.floatingPl || "0") >= 0 ? "up" : "down" as "up" | "down"
+      label: "Win Rate", 
+      value: intelligence?.winRate ? `${intelligence.winRate}%` : "0%", 
+      icon: <Target size={18} />, 
+      subtext: "ALL TIME",
+      trend: parseFloat(intelligence?.winRate || "0") > 50 ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Margin Level", 
-      value: mt5?.status === "CONNECTED" && mt5.metrics ? `${parseFloat(mt5.metrics.marginLevel).toFixed(2)}%` : "0%", 
-      icon: <BarChart3 size={18} />, 
-      subtext: "🟢 MT5 LIVE",
-      trend: mt5?.status === "CONNECTED" && parseFloat(mt5.metrics?.marginLevel || "0") > 100 ? "up" : "down" as "up" | "down"
+      label: "Expectancy", 
+      value: intelligence?.expectancy ? `$${intelligence.expectancy}` : "$0", 
+      icon: <TrendingUp size={18} />, 
+      subtext: "PER TRADE",
+      trend: parseFloat(intelligence?.expectancy || "0") > 0 ? "up" : "down" as "up" | "down"
     },
   ];
 
