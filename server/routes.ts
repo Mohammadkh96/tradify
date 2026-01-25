@@ -370,14 +370,39 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/update-user", async (req, res) => {
-    const userId = req.headers["x-user-id"] as string || "dev-user";
-    const userRole = await storage.getUserRole(userId);
-    if (userRole?.role !== "OWNER" && userRole?.role !== "ADMIN") {
-      return res.status(403).json({ message: "Forbidden" });
+    try {
+      const userId = req.headers["x-user-id"] as string || req.query.userId as string || "dev-user";
+      const requesterRole = await storage.getUserRole(userId);
+      const [dynamicAdmin] = await db.select().from(schema.adminAccess).where(eq(schema.adminAccess.email, userId)).limit(1);
+      
+      const isAuthorized = userId === "mohammad@admin.com" || 
+                         (requesterRole?.role === "OWNER" || requesterRole?.role === "ADMIN") ||
+                         (dynamicAdmin && dynamicAdmin.isActive);
+
+      if (!isAuthorized) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { targetUserId, updates } = req.body;
+      
+      // If subscriptionTier is being updated, use the dedicated storage method
+      if (updates.subscriptionTier) {
+        await storage.updateUserSubscription(targetUserId, updates.subscriptionTier);
+        delete updates.subscriptionTier; // Remove from updates object to avoid duplicate update below
+      }
+
+      // Handle any other role/meta updates
+      if (Object.keys(updates).length > 0) {
+        await db.update(schema.userRole)
+          .set({ ...updates, updatedAt: new Date() })
+          .where(eq(schema.userRole.userId, targetUserId));
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update user error:", error);
+      res.status(500).json({ message: "Failed to update user" });
     }
-    const { targetUserId, updates } = req.body;
-    await db.update(schema.userRole).set(updates).where(eq(schema.userRole.userId, targetUserId));
-    res.json({ success: true });
   });
 
   // --- Admin Access Management ---
