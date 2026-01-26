@@ -57,15 +57,20 @@ export default function Dashboard() {
   }>({
     queryKey: [`/api/mt5/status/${userId}`],
     refetchInterval: 1000,
-    enabled: !!userId
+    enabled: !!userId,
+    // Add these to ensure fresh data and visibility
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: intelligence } = useQuery<any>({
     queryKey: [`/api/performance/intelligence/${userId}`],
+    staleTime: 0,
   });
 
   const { data: snapshots } = useQuery<any[]>({
     queryKey: [`/api/mt5/snapshots/${userId}`],
+    staleTime: 0,
   });
 
   const { data: userRoleData } = useQuery<any>({

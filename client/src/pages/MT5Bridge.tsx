@@ -70,7 +70,8 @@ export default function MT5Bridge() {
     };
   }>({
     queryKey: [`/api/mt5/status/${userId}`],
-    refetchInterval: 1000, 
+    refetchInterval: 1000,
+    staleTime: 0,
   });
 
   const pythonCode = `import MetaTrader5 as mt5
