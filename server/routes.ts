@@ -222,7 +222,7 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
-  // MT5 Bridge Endpoints (Authenticated & Validated)
+  // MT5 Bridge Sync Endpoint (REST API for Python Connector)
   app.post("/api/mt5/sync", async (req, res) => {
     try {
       const { 
@@ -241,24 +241,16 @@ export async function registerRoutes(
       } = req.body;
 
       if (!userId || !token) {
-        return res.status(401).json({ message: "Authentication required" });
+        return res.status(401).json({ message: "Authentication required: userId and token" });
       }
 
-      // Log the sync attempt
-      console.log(`[MT5 Sync] Connection attempt from ${userId} with token [${token}]`);
-      
-      // Validate token against user's stored token
-      const [role] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
-      
-      if (!role) {
-        console.error(`[MT5 Sync] User not found: ${userId}`);
-        return res.status(401).json({ 
-          message: "User not found",
-          error: "USER_NOT_FOUND" 
-        });
+      // 1. Identification & Security Check
+      const user = await storage.getUserRole(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found", error: "USER_NOT_FOUND" });
       }
 
-      const storedToken = role.syncToken?.trim();
+      const storedToken = user.syncToken?.trim();
       const providedToken = token?.trim();
 
       if (!storedToken) {
@@ -267,15 +259,19 @@ export async function registerRoutes(
           .set({ syncToken: providedToken })
           .where(eq(schema.userRole.userId, userId));
       } else if (storedToken !== providedToken) {
-        console.warn(`[MT5 Sync] Token mismatch for ${userId}.`);
-        return res.status(401).json({ 
+        console.warn(`[MT5 Sync] UNAUTHORIZED: Token mismatch for ${userId}.`);
+        return res.status(403).json({ 
           message: "Invalid Sync Token.",
           error: "TOKEN_MISMATCH"
         });
       }
 
+      console.log(`[MT5 Sync] HEARTBEAT: Received data from ${userId} at ${new Date().toISOString()}`);
+
+      // 2. Update real-time metrics & connection status
       await storage.updateMT5Data({
         userId,
+        syncToken: token,
         balance: String(balance || 0),
         equity: String(equity || 0),
         margin: String(margin || 0),
@@ -284,16 +280,14 @@ export async function registerRoutes(
         floatingPl: String(floatingPl || 0),
         leverage: leverage,
         currency: currency,
-        positions: positions || [],
-        syncToken: token
+        positions: positions || []
       });
 
-      // Sync History if provided
+      // 3. Update history (Journal Integrity)
       if (history && Array.isArray(history) && history.length > 0) {
         console.log(`[MT5 Sync] Syncing history for ${userId}. Count: ${history.length}`);
         await storage.syncMT5History(userId, history);
         
-        // Log sync event for traceability
         await db.insert(schema.adminAuditLog).values({
           adminId: "SYSTEM_MT5",
           actionType: "MT5_HISTORY_SYNC",
@@ -302,42 +296,10 @@ export async function registerRoutes(
         });
       }
 
-      // Sync positions into manual trade journal if they match ticket IDs
-      if (positions && positions.length > 0) {
-        for (const pos of positions) {
-          const existing = await storage.getTrades();
-          const alreadyLogged = existing.find(t => t.notes?.includes(`MT5_TICKET_${pos.ticket}`));
-          
-          if (!alreadyLogged) {
-            await storage.createTrade({
-              pair: pos.symbol,
-              direction: pos.type === "Buy" ? "Long" : "Short",
-              timeframe: "MT5_SYNC",
-              htfBias: "Bullish",
-              structureState: "None",
-              liquidityStatus: "None",
-              zoneValidity: "Valid",
-              htfBiasClear: true,
-              zoneValid: true,
-              liquidityTaken: true,
-              structureConfirmed: true,
-              entryConfirmed: true,
-              entryPrice: String(pos.price || 0),
-              stopLoss: String(pos.sl || 0),
-              takeProfit: String(pos.tp || 0),
-              riskReward: "0",
-              outcome: "Pending",
-              notes: `[MT5 Synced] Ticket: ${pos.ticket} | MT5_TICKET_${pos.ticket}`,
-              userId: userId 
-            });
-          }
-        }
-      }
-      
-      res.json({ success: true, timestamp: new Date().toISOString(), status: "CONNECTED" });
+      res.json({ success: true, status: "CONNECTED", timestamp: new Date().toISOString() });
     } catch (error) {
-      console.error("MT5 Sync Error:", error);
-      res.status(500).json({ message: "Sync failed" });
+      console.error("[MT5 Sync Error]:", error);
+      res.status(500).json({ message: "Synchronization failed" });
     }
   });
 

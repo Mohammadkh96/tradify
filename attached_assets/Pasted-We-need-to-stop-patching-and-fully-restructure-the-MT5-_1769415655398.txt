@@ -1,0 +1,137 @@
+We need to stop patching and fully restructure the MT5 connection and data pipeline, because the current implementation is inconsistent and unreliable.
+
+Important clarification:
+The Sync Token is NOT being used correctly (or at all) in the current flow, and the system behavior confirms this.
+As a result:
+
+Connection status is inaccurate
+
+Journal data is incorrect or incomplete
+
+Analytics and AI insights cannot be trusted
+
+This means we currently do not have a single, reliable source of truth.
+
+FINAL ARCHITECTURE (THIS MUST BE THE ONLY ONE)
+
+There must be ONE clean, simple, and verifiable flow:
+
+User device
+
+MT5 is opened normally (no EAs, no settings, no URLs)
+
+A local Python script runs on the user’s machine
+
+The script connects to MT5 using the official MetaTrader5 Python API
+
+Data flow
+
+Python script sends trade data + heartbeat to backend
+
+Backend stores data
+
+Backend updates connection state
+
+UI reads from that same backend state
+
+❌ No MT5 Expert Advisors
+❌ No WebRequest URLs
+❌ No MT5 configuration
+❌ No legacy EA logic anywhere
+
+REQUIRED RESTRUCTURE (NON-NEGOTIABLE)
+
+Connection Logic
+
+Define a single backend mechanism that determines connection status
+
+Status = “Connected” ONLY if data or heartbeat is received from the Python connector within a defined interval
+
+Remove all EA-based or legacy assumptions
+
+Authentication / Identification
+
+Clearly define how the backend identifies which user/account the Python connector belongs to
+
+If a token is used, it must be:
+
+Explicitly required
+
+Validated
+
+Logged
+
+If a token is NOT used, then remove it completely from:
+
+UI
+
+Backend
+
+Documentation
+
+Journal Data Integrity (CRITICAL)
+
+The journal must match MT5 trade history exactly
+
+Verify and fix:
+
+Duplicate trades
+
+Missing trades
+
+Incorrect P&L
+
+Incorrect timestamps
+
+Incorrect partial closes
+
+No analytics or AI should run until journal data is verified as correct
+
+Status & UI Consistency
+
+Sidebar connection status
+
+Bridge page status
+
+Journal availability
+
+Analytics availability
+
+All of these must depend on the same backend truth, not separate logic.
+
+AI Insights Dependency
+
+AI insights must only appear if:
+
+Journal data exists
+
+Analytics calculations are complete
+
+If data is missing or incorrect, AI must clearly show:
+
+“Not enough verified data yet”
+
+ACCEPTANCE TEST (THIS IS HOW WE VERIFY)
+
+This is the only test that matters:
+
+New user registers
+
+User opens MT5 normally
+
+User runs the Python connector
+
+Backend receives data
+
+Status switches to “Connected”
+
+Trades appear correctly in Journal
+
+Analytics numbers match MT5
+
+AI insights appear based on real data
+
+If any of these steps fail, the integration is not complete.
+
+Please do not apply partial fixes or UI-only changes.
+We need a clean, reliable, end-to-end restructuring so this platform can be trusted and launched.
