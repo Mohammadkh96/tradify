@@ -14,6 +14,7 @@ import KnowledgeBase from "@/pages/KnowledgeBase";
 import RiskCalculator from "@/pages/RiskCalculator";
 import MT5Bridge from "@/pages/MT5Bridge";
 import Profile from "@/pages/Profile";
+import Billing from "@/pages/Billing";
 import TradersHub from "@/pages/TradersHub";
 import Auth from "@/pages/Auth";
 import { MainLayout } from "@/components/MainLayout";
@@ -80,6 +81,9 @@ function Router() {
       </Route>
       <Route path="/profile">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Profile />}
+      </Route>
+      <Route path="/billing">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Billing />}
       </Route>
       <Route path="/traders-hub">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <TradersHub />}
