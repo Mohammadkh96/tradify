@@ -1,7 +1,10 @@
-import { ShieldCheck, Check, Zap, BarChart3, History, Lock, ArrowRight, X } from "lucide-react";
+import { ShieldCheck, Check, Zap, BarChart3, History, Lock, ArrowRight, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const features = [
   { name: "Live MT5 Data Connection", free: true, pro: true },
@@ -20,6 +23,60 @@ const features = [
 ];
 
 export default function Pricing() {
+  const { toast } = useToast();
+  const { data: user } = useQuery<any>({ queryKey: ["/api/user"] });
+  const { data: products, isLoading: isLoadingProducts } = useQuery<any[]>({ 
+    queryKey: ["/api/billing/products"] 
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: async (priceId: string) => {
+      const res = await apiRequest("POST", "/api/billing/checkout", { priceId });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Checkout Error",
+        description: error.message || "Failed to initiate checkout session",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const portalMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/billing/portal");
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Portal Error",
+        description: error.message || "Failed to open billing portal",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const isPro = user?.subscriptionTier === "PRO";
+
+  if (isLoadingProducts) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#020617]">
+        <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
+
+  // Find Pro Plan product from Stripe sync
+  const proProduct = products?.find(p => p.metadata?.plan === 'PRO' || p.name === 'Pro Plan');
+  const monthlyPrice = proProduct?.prices?.find((p: any) => p.recurring?.interval === 'month');
+
   return (
     <div className="flex-1 text-slate-50 pb-20 md:pb-0">
       <main className="p-6 lg:p-10 max-w-5xl mx-auto">
@@ -90,13 +147,34 @@ export default function Pricing() {
                 ))}
               </div>
 
-              <Button 
-                onClick={() => window.location.href = 'mailto:support@tradify.com?subject=Upgrade to PRO'}
-                className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-              >
-                Upgrade to Pro
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              {isPro ? (
+                <Button 
+                  onClick={() => portalMutation.mutate()}
+                  disabled={portalMutation.isPending}
+                  className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                >
+                  {portalMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : "Manage Subscription"}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => {
+                    if (!user) {
+                      window.location.href = "/signup";
+                      return;
+                    }
+                    if (monthlyPrice) checkoutMutation.mutate(monthlyPrice.id);
+                  }}
+                  disabled={checkoutMutation.isPending}
+                  className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                >
+                  {checkoutMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
+                    <>
+                      Upgrade to Pro
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -147,12 +225,27 @@ export default function Pricing() {
 
         <div className="text-center pb-20">
           <h3 className="text-2xl font-bold text-white mb-6">Ready to upgrade your trading edge?</h3>
-          <Button 
-            onClick={() => window.location.href = 'mailto:support@tradify.com?subject=Upgrade to PRO'}
-            className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-          >
-            Start Free. Upgrade when you're ready.
-          </Button>
+          {isPro ? (
+            <Button 
+              onClick={() => portalMutation.mutate()}
+              className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+            >
+              Manage Your Account
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => {
+                if (!user) {
+                  window.location.href = "/signup";
+                  return;
+                }
+                if (monthlyPrice) checkoutMutation.mutate(monthlyPrice.id);
+              }}
+              className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+            >
+              Start Your Free Trial
+            </Button>
+          )}
         </div>
       </main>
     </div>

@@ -9,17 +9,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 
 export default function Journal() {
-  const userId = "demo_user";
   const { data: manualTrades, isLoading: isLoadingManual } = useTrades();
   const { data: mt5History, isLoading: isLoadingHistory } = useQuery<any[]>({
-    queryKey: [`/api/mt5/history/${userId}`],
+    queryKey: user?.userId ? [`/api/mt5/history/${user.userId}`] : null,
+    enabled: !!user?.userId,
   });
   
-  const { data: userRoleData } = useQuery<any>({
-    queryKey: [`/api/traders-hub/user-role/${userId}`],
+  const { data: user } = useQuery<any>({
+    queryKey: ["/api/user"],
   });
 
-  const subscription = userRoleData?.subscriptionTier || "FREE";
+  const subscription = user?.subscriptionTier || "FREE";
   const isPro = subscription === "PRO";
 
   const deleteTrade = useDeleteTrade();

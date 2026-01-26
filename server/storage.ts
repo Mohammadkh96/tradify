@@ -242,7 +242,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]> {
-    return await db.select().from(mt5History).where(eq(mt5History.userId, userId)).orderBy(desc(mt5History.closeTime));
+    const [user] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
+    const isPro = user?.subscriptionTier === "PRO";
+    
+    let query = db.select().from(mt5History).where(eq(mt5History.userId, userId));
+    
+    if (!isPro) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      query = query.where(sql`${mt5History.closeTime} >= ${thirtyDaysAgo}`);
+    }
+    
+    return await query.orderBy(desc(mt5History.closeTime));
   }
 
   async getDailySnapshots(userId: string): Promise<any[]> {
@@ -293,7 +304,18 @@ export class DatabaseStorage implements IStorage {
   async getTrades(userId?: string): Promise<Trade[]> {
     const query = db.select().from(tradeJournal);
     if (userId) {
-      return await query.where(eq(tradeJournal.userId, userId)).orderBy(desc(tradeJournal.createdAt));
+      const [user] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
+      const isPro = user?.subscriptionTier === "PRO";
+      
+      let q = query.where(eq(tradeJournal.userId, userId));
+      
+      if (!isPro) {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        q = q.where(sql`${tradeJournal.createdAt} >= ${thirtyDaysAgo}`);
+      }
+      
+      return await q.orderBy(desc(tradeJournal.createdAt));
     }
     return await query.orderBy(desc(tradeJournal.createdAt));
   }
