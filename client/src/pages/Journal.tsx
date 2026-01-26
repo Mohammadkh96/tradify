@@ -36,7 +36,8 @@ export default function Journal() {
     }));
     
     const mt5 = (mt5History || []).map(t => ({
-      id: `mt5-${t.ticket}`,
+      id: t.id,
+      ticket: t.ticket,
       pair: t.symbol,
       direction: t.direction,
       timeframe: "MT5",
@@ -45,7 +46,8 @@ export default function Journal() {
       outcome: parseFloat(t.netPl) >= 0 ? "Win" : "Loss",
       netPl: parseFloat(t.netPl),
       riskReward: "N/A",
-      notes: `Ticket: ${t.ticket}`,
+      notes: t.notes || `Ticket: ${t.ticket}`,
+      tags: t.tags || [],
       source: "MT5",
       isMT5: true
     }));
@@ -210,10 +212,21 @@ export default function Journal() {
                       {trade.direction}
                     </span>
                   </div>
+                  <div className="flex flex-col gap-2">
                   <div className="text-[10px] text-slate-500 font-mono mt-0.5 uppercase flex items-center gap-2">
                     {trade.source === "MT5" ? <span className="text-sky-500">🟢 MT5 SYNCED</span> : <span className="text-slate-600">⚪ MANUAL</span>}
-                    {trade.notes?.includes("Ticket:") && <span className="opacity-50">#{trade.notes.split("Ticket: ")[1]}</span>}
+                    {trade.ticket && <span className="opacity-50">#{trade.ticket}</span>}
                   </div>
+                  {trade.tags && trade.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {trade.tags.map((tag: string) => (
+                        <span key={tag} className="text-[8px] px-1.5 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded uppercase font-bold">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 </div>
               </div>
               

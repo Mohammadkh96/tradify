@@ -63,6 +63,8 @@ export const mt5History = pgTable("mt5_history", {
   commission: text("commission").default("0"),
   swap: text("swap").default("0"),
   netPl: text("net_pl").notNull(),
+  notes: text("notes"),
+  tags: text("tags").array().default([]),
 });
 
 export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {

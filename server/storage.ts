@@ -5,10 +5,12 @@ import {
   mt5History,
   dailyEquitySnapshots,
   userRole,
+  adminAuditLog,
   type InsertTrade,
   type UpdateTradeRequest,
   type Trade,
-  type MT5Data
+  type MT5Data,
+  type AdminAuditLog
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -38,6 +40,8 @@ export interface IStorage {
   getMT5Data(userId: string): Promise<MT5Data | undefined>;
   getUserRole(userId: string): Promise<any>;
   updateUserSubscription(userId: string, tier: string): Promise<void>;
+  createAdminAuditLog(log: { adminId: number; actionType: string; targetUserId: string; details: any }): Promise<AdminAuditLog>;
+  getAdminAuditLogs(userId?: string): Promise<AdminAuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -65,6 +69,7 @@ export class DatabaseStorage implements IStorage {
       });
     }
   }
+
   async updateMT5Data(data: { 
     userId: string;
     balance: string;
@@ -174,12 +179,30 @@ export class DatabaseStorage implements IStorage {
     return data;
   }
 
+  async createAdminAuditLog(log: { adminId: number; actionType: string; targetUserId: string; details: any }): Promise<AdminAuditLog> {
+    const [inserted] = await db.insert(adminAuditLog).values({
+      adminId: log.adminId.toString(),
+      actionType: log.actionType,
+      targetUserId: log.targetUserId,
+      details: log.details,
+    }).returning();
+    return inserted;
+  }
+
+  async getAdminAuditLogs(userId?: string): Promise<AdminAuditLog[]> {
+    const query = db.select().from(adminAuditLog);
+    if (userId) {
+      return await query.where(eq(adminAuditLog.targetUserId, userId)).orderBy(desc(adminAuditLog.timestamp));
+    }
+    return await query.orderBy(desc(adminAuditLog.timestamp));
+  }
+
   async getTrades(): Promise<Trade[]> {
     return await db.select().from(tradeJournal).orderBy(desc(tradeJournal.createdAt));
   }
 
   async getTrade(id: number): Promise<Trade | undefined> {
-    const [trade] = await db.select().from(tradeJournal).where(eq(tradeJournal.id, id));
+    const [trade] = await db.select().from(tradeJournal).where(eq(tradeJournal.id, id)).limit(1);
     return trade;
   }
 
