@@ -190,7 +190,7 @@ export class DatabaseStorage implements IStorage {
             timeframe: "MT5_SYNC",
             entryPrice: trade.price?.toString() || "0",
             outcome: parseFloat(netPl) >= 0 ? "Win" : "Loss",
-            notes: `[MT5 Sync] Ticket: ${ticketStr} | Real-time verified deal.`,
+            notes: `[MT5 Sync] Ticket: ${ticketStr} | Real-time verified deal. | MT5_TICKET_${ticketStr}`,
             htfBiasClear: true,
             zoneValid: true,
             entryConfirmed: true,
