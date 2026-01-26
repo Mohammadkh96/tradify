@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2 } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
