@@ -151,8 +151,28 @@ export const adminAccess = pgTable("admin_access", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const aiPerformanceInsights = pgTable("ai_performance_insights", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  timeframe: text("timeframe").notNull(), // 'weekly', 'monthly', 'recent'
+  insightText: text("insight_text").notNull(),
+  metadata: jsonb("metadata"), // Input data summary for audit
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const aiInsightLogs = pgTable("ai_insight_logs", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  prompt: text("prompt").notNull(),
+  response: text("response").notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
 export const insertAdminAccessSchema = createInsertSchema(adminAccess).omit({ id: true, createdAt: true });
 export type AdminAccess = typeof adminAccess.$inferSelect;
+
+export type AIPerformanceInsight = typeof aiPerformanceInsights.$inferSelect;
+export type AIInsightLog = typeof aiInsightLogs.$inferSelect;
 
 export const insertTradeSchema = createInsertSchema(tradeJournal).omit({ id: true, createdAt: true });
 export const updateTradeSchema = insertTradeSchema.partial();

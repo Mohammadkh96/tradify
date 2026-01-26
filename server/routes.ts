@@ -6,10 +6,11 @@ import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { eq, or, desc } from "drizzle-orm";
+import { eq, or, desc, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { setupReplitAiIntegrations } from "./replit_integrations/ai_integrations";
 
 const PostgresStore = connectPg(session);
 
@@ -542,6 +543,74 @@ export async function registerRoutes(
       });
     } catch (error) {
       res.status(500).json({ message: "Intelligence failure" });
+    }
+  });
+
+  app.get("/api/ai/insights/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { timeframe = "recent" } = req.query;
+
+      // Check for existing recent insight (cache for 1 hour)
+      const existing = await storage.getAIInsights(userId, timeframe as string);
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      
+      if (existing.length > 0 && new Date(existing[0].createdAt!) > oneHourAgo) {
+        return res.json(existing[0]);
+      }
+
+      // Generate new insight
+      const intelligenceData = await (await fetch(`${req.protocol}://${req.get('host')}/api/performance/intelligence/${userId}`)).json();
+      
+      if (intelligenceData.message === "No data available" || intelligenceData.totalTrades < 5) {
+        return res.json({ insightText: "Insufficient data for AI analysis. Continue trading to unlock insights." });
+      }
+
+      const prompt = `You are a Performance Analyst for a rule-based trading application. 
+Analyze the following trading metrics and provide 1-3 short, factual, and non-advisory insights.
+Strict Rules:
+- Descriptive and factual ONLY.
+- NO trade recommendations.
+- NO buy/sell suggestions.
+- NO future market predictions.
+- MUST include the disclaimer: "This insight is for educational and analytical purposes only and does not constitute financial advice."
+
+Metrics:
+- Total Trades: ${intelligenceData.totalTrades}
+- Win Rate: ${intelligenceData.winRate}%
+- Profit Factor: ${intelligenceData.profitFactor}
+- Expectancy: ${intelligenceData.expectancy}
+- Best Session: ${intelligenceData.bestSession}
+- Violations: ${JSON.stringify(intelligenceData.violations)}
+
+Output exactly 1-3 bullet points.`;
+
+      const ai = await setupReplitAiIntegrations();
+      const response = await ai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 200,
+      });
+
+      const insightText = response.choices[0].message.content || "Unable to generate insights at this time.";
+      
+      const savedInsight = await storage.saveAIInsight({
+        userId,
+        timeframe: timeframe as string,
+        insightText,
+        metadata: intelligenceData
+      });
+
+      await storage.logAIRequest({
+        userId,
+        prompt,
+        response: insightText
+      });
+
+      res.json(savedInsight);
+    } catch (error) {
+      console.error("AI Insight Error:", error);
+      res.status(500).json({ message: "AI Analysis failed" });
     }
   });
 

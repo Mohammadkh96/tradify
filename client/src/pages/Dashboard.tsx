@@ -18,7 +18,9 @@ import {
   Clock,
   ShieldCheck,
   ZapOff,
-  RefreshCw
+  RefreshCw,
+  Sparkles,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -72,6 +74,11 @@ export default function Dashboard() {
 
   const subscription = userRoleData?.subscriptionTier || "FREE";
   const isPro = subscription === "PRO";
+
+  const { data: insights, isLoading: isInsightsLoading } = useQuery<any>({
+    queryKey: [`/api/ai/insights/${userId}`],
+    enabled: !!userId && isPro,
+  });
 
   if (isLoading) {
     return (
@@ -278,6 +285,55 @@ export default function Dashboard() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+          </div>
+
+          <div className="bg-[#0b1120] border border-emerald-500/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Zap size={80} className="text-emerald-500" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <Sparkles size={18} className="text-emerald-500" />
+              AI Performance Insights
+            </h3>
+            
+            <div className="space-y-4">
+              {isInsightsLoading ? (
+                <div className="flex flex-col items-center justify-center py-8 space-y-2">
+                  <div className="animate-spin text-emerald-500"><RefreshCw size={24} /></div>
+                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Generating Analyst Report...</p>
+                </div>
+              ) : insights?.insightText ? (
+                <div className="space-y-4">
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-line border-l-2 border-emerald-500/30 pl-4 py-1">
+                      {insights.insightText}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3 flex items-start gap-2">
+                    <Info size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <p className="text-[10px] text-slate-400 italic leading-tight">
+                      Note: These insights are generated based on your historical MT5 and Journal data using strictly analytical rules.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <p className="text-xs text-slate-500 italic">No insights available yet. Insights appear after 5+ recorded trades.</p>
+                </div>
+              )}
+            </div>
+
+            {!isPro && (
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
+                <Lock className="text-emerald-500 mb-3" size={24} />
+                <h4 className="text-sm font-bold text-white uppercase tracking-tighter mb-1">AI Analyst Locked</h4>
+                <p className="text-[10px] text-slate-400 mb-4">Upgrade to PRO to unlock contextual AI performance insights.</p>
+                <Link href="/pricing">
+                  <Button className="bg-emerald-500 text-slate-950 font-black text-[10px] uppercase h-8 px-4">Unlock AI Insights</Button>
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="bg-[#0b1120] border border-emerald-500/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">

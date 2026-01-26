@@ -1,0 +1,271 @@
+🤖 H. AI INSIGHTS MODULE (SAFE DESIGN)
+PERFORMANCE & BEHAVIORAL INSIGHTS — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of the AI Insights Module
+
+Increase user retention and value through clear performance understanding
+
+Help users reflect and improve behavior
+
+Never provide financial advice or trade recommendations
+
+Operate strictly as a performance analyst, not a trader
+
+✅ AI CAPABILITIES (ALLOWED)
+1️⃣ Analyze Historical User Trades
+Functional Requirements
+
+AI receives aggregated historical trade data only, including:
+
+Total trades
+
+Win rate
+
+Expectancy
+
+R-multiple statistics
+
+Drawdown
+
+Session performance
+
+Strategy-tagged performance
+
+AI must not receive:
+
+Live market data
+
+Symbols to trade
+
+Prices for future decisions
+
+Broker credentials
+
+Personally identifiable information (PII)
+
+Output Expectations
+
+AI describes what happened, not what to do next
+
+Language must be descriptive and factual
+
+2️⃣ Identify Behavioral Patterns
+Behavioral Signals AI May Analyze
+
+Overtrading frequency
+
+Risk inconsistency
+
+Performance degradation after X trades
+
+Session-based performance differences
+
+Strategy-specific outcomes
+
+Example (Allowed)
+
+“Trades taken after the third trade of the day show lower expectancy.”
+
+Constraints
+
+No moralizing language
+
+No judgment
+
+No urgency
+
+3️⃣ Highlight Risk Inconsistency
+Functional Requirements
+
+AI compares:
+
+Average risk per trade
+
+Distribution of risk sizes
+
+Outliers (over-risk trades)
+
+AI explains patterns, not corrective actions
+
+Example (Allowed)
+
+“Your risk per trade varies significantly, which coincides with higher drawdowns.”
+
+4️⃣ Summarize Weekly / Monthly Performance
+Functional Requirements
+
+AI generates summaries based on:
+
+Defined timeframe (week / month)
+
+Core metrics only
+
+Summary must include:
+
+Total trades
+
+Net P&L
+
+Expectancy
+
+Best performing session
+
+Most frequent rule violation
+
+Tone
+
+Neutral
+
+Analytical
+
+Concise
+
+Example
+
+“This week consisted of 42 trades with a net expectancy of +0.18R. Most losses occurred during the New York session.”
+
+5️⃣ Compare Best vs Worst Conditions
+Functional Requirements
+
+AI compares:
+
+Best vs worst session
+
+Best vs worst strategy
+
+Best vs worst time of day
+
+Comparisons are historical only
+
+Example (Allowed)
+
+“Historically, your London session trades outperform Asia session trades in both win rate and expectancy.”
+
+6️⃣ Ask Reflective Questions
+Purpose
+
+Encourage self-reflection without guidance.
+
+Examples (Allowed)
+
+“What changed in your execution during the New York session this week?”
+
+“Were the higher-risk trades aligned with your original plan?”
+
+Constraints
+
+Questions only
+
+No implied recommendations
+
+⛔ AI RESTRICTIONS (NON-NEGOTIABLE)
+
+The AI must never:
+
+❌ Suggest trades
+
+❌ Recommend buy/sell
+
+❌ Provide entry, stop-loss, or take-profit
+
+❌ Predict market direction
+
+❌ Rank symbols or assets
+
+❌ Encourage following other traders
+
+❌ Compare users against other users
+
+Any violation here is a hard failure.
+
+7️⃣ Mandatory Disclaimer
+Requirements
+
+Every AI response must clearly display:
+
+“This insight is for educational and analytical purposes only and does not constitute financial advice.”
+
+Disclaimer must be:
+
+Visible
+
+Non-dismissable
+
+Consistent across UI
+
+8️⃣ AI Positioned as Assistant, Not Advisor
+UX Requirements
+
+Label AI clearly as:
+
+“Performance Assistant”
+
+or “Trading Performance Insights”
+
+No “coach”, “mentor”, or “advisor” language
+
+No authority tone
+
+9️⃣ AI Responses Logged (Audit & Safety)
+Functional Requirements
+
+Every AI response must be logged with:
+
+User ID
+
+Timestamp
+
+Input data summary (metadata only)
+
+Output text
+
+Logs stored securely
+
+Logs accessible to admins (read-only)
+
+Purpose
+
+Compliance
+
+Debugging
+
+Abuse prevention
+
+Prompt tuning
+
+🔒 SECURITY & COST CONTROL
+
+Rate-limit AI requests per user
+
+Plan-based limits (Free vs Pro)
+
+Fail gracefully if AI unavailable
+
+Never block core dashboard if AI fails
+
+🧪 EDGE CASE TESTING (MUST PASS)
+
+⬜ AI unavailable → graceful fallback
+
+⬜ AI output never contains advice
+
+⬜ Disclaimer always present
+
+⬜ Same input → consistent tone
+
+⬜ No PII leakage
+
+⬜ Logs created for every response
+
+✅ DEFINITION OF “DONE” (ACCEPTANCE CRITERIA)
+
+AI Insights Module is complete only if:
+
+Insights are useful but safe
+
+No advisory language exists
+
+Users clearly understand AI’s role
+
+Logs and limits are enforced
+
+AI adds value without legal risk

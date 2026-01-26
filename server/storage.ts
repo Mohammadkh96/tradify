@@ -6,11 +6,15 @@ import {
   dailyEquitySnapshots,
   userRole,
   adminAuditLog,
+  aiPerformanceInsights,
+  aiInsightLogs,
   type InsertTrade,
   type UpdateTradeRequest,
   type Trade,
   type MT5Data,
-  type AdminAuditLog
+  type AdminAuditLog,
+  type AIPerformanceInsight,
+  type AIInsightLog
 } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -40,8 +44,11 @@ export interface IStorage {
   getMT5Data(userId: string): Promise<MT5Data | undefined>;
   getUserRole(userId: string): Promise<any>;
   updateUserSubscription(userId: string, tier: string): Promise<void>;
-  createAdminAuditLog(log: { adminId: number; actionType: string; targetUserId: string; details: any }): Promise<AdminAuditLog>;
+  createAdminAuditLog(log: { adminId: number | string; actionType: string; targetUserId: string; details: any }): Promise<AdminAuditLog>;
   getAdminAuditLogs(userId?: string): Promise<AdminAuditLog[]>;
+  getAIInsights(userId: string, timeframe: string): Promise<AIPerformanceInsight[]>;
+  saveAIInsight(insight: { userId: string; timeframe: string; insightText: string; metadata: any }): Promise<AIPerformanceInsight>;
+  logAIRequest(log: { userId: string; prompt: string; response: string }): Promise<AIInsightLog>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -202,6 +209,24 @@ export class DatabaseStorage implements IStorage {
       return await query.where(eq(adminAuditLog.targetUserId, userId)).orderBy(desc(adminAuditLog.timestamp));
     }
     return await query.orderBy(desc(adminAuditLog.timestamp));
+  }
+
+  async getAIInsights(userId: string, timeframe: string): Promise<AIPerformanceInsight[]> {
+    return await db.select()
+      .from(aiPerformanceInsights)
+      .where(and(eq(aiPerformanceInsights.userId, userId), eq(aiPerformanceInsights.timeframe, timeframe)))
+      .orderBy(desc(aiPerformanceInsights.createdAt))
+      .limit(5);
+  }
+
+  async saveAIInsight(insight: { userId: string; timeframe: string; insightText: string; metadata: any }): Promise<AIPerformanceInsight> {
+    const [inserted] = await db.insert(aiPerformanceInsights).values(insight).returning();
+    return inserted;
+  }
+
+  async logAIRequest(log: { userId: string; prompt: string; response: string }): Promise<AIInsightLog> {
+    const [inserted] = await db.insert(aiInsightLogs).values(log).returning();
+    return inserted;
   }
 
   async getTrades(): Promise<Trade[]> {
