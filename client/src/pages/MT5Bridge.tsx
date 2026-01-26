@@ -158,11 +158,11 @@ if __name__ == "__main__":
           <div className="p-6 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-500/10 p-2 rounded-lg">
-                <Server className="text-emerald-500" size={24} />
+                <ShieldCheck className="text-emerald-500" size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">MT5 Connector (Token)</h1>
-                <p className="text-xs text-slate-400">Generate a one-time token, paste it in the desktop connector, then refresh status.</p>
+                <h1 className="text-xl font-bold text-white">Python Connector Setup</h1>
+                <p className="text-xs text-slate-400">Sync MT5 directly from your device. No EA installation required.</p>
               </div>
             </div>
           </div>
@@ -170,143 +170,105 @@ if __name__ == "__main__":
           <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Left Column: Form */}
             <div className="space-y-6">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Account Number</label>
-                <input 
-                  type="text" 
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  className="w-full bg-[#020617] border border-slate-800 rounded-lg px-4 py-3 text-sm font-mono text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                />
+              <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800">
+                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 1: Download Connector</h3>
+                <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                  Download the Tradify Python Bridge. This script runs locally and communicates with MT5 via the MetaTrader5 library.
+                </p>
+                <Button 
+                  onClick={downloadConnector}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter"
+                >
+                  <Download size={14} className="mr-2" />
+                  Download tradify_connector.py
+                </Button>
               </div>
 
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Broker / Server</label>
-                <input 
-                  type="text" 
-                  value={broker}
-                  onChange={(e) => setBroker(e.target.value)}
-                  className="w-full bg-[#020617] border border-slate-800 rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                />
-              </div>
-
-              <button 
-                onClick={() => generateTokenMutation.mutate()}
-                disabled={generateTokenMutation.isPending}
-                className="w-full bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2"
-              >
-                {generateTokenMutation.isPending ? "Generating..." : "Generate Connection Token"}
-              </button>
-
-              {userRoleData?.syncToken && (
-                <div className="bg-slate-950 border border-[#0ea5e9]/30 rounded-2xl p-6 relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-bold text-sky-400 uppercase tracking-widest flex items-center gap-2">
-                      One-Time Token
-                      <span className="text-slate-500 flex items-center gap-1 normal-case font-normal">
-                        <Activity size={10} /> Expires in ~15 min
-                      </span>
-                    </span>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <div className="flex-1 bg-[#0b1120] border border-slate-800 rounded-lg p-4 font-mono text-xs text-slate-300 break-all h-24 overflow-y-auto">
-                      {userRoleData.syncToken}
+              <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800">
+                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 2: Connection Credentials</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">User ID</label>
+                    <div className="bg-[#020617] border border-slate-800 rounded-lg px-4 py-2 text-sm font-mono text-emerald-500">
+                      {userRoleData?.userId}
                     </div>
-                    <button 
-                      onClick={copyToClipboard}
-                      className="bg-slate-800 hover:bg-slate-700 p-4 rounded-lg self-start transition-colors"
-                    >
-                      {copied ? <Check size={20} className="text-emerald-500" /> : <Copy size={20} className="text-slate-400" />}
-                    </button>
                   </div>
 
-                  <div className="mt-4 flex items-start gap-2">
-                    <div className="mt-1">🚀</div>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                      Download the connector below, run with Python, paste this token, and it will auto-register your MT5 connection.
-                    </p>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Sync Token</label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-[#020617] border border-slate-800 rounded-lg px-4 py-2 text-sm font-mono text-emerald-500 truncate">
+                        {userRoleData?.syncToken || "Click Generate Below"}
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="border-slate-800 text-slate-400"
+                        onClick={copyToClipboard}
+                        disabled={!userRoleData?.syncToken}
+                      >
+                        {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                      </Button>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mt-6">
-                    <button 
-                      onClick={downloadConnector}
-                      className="bg-[#0ea5e9]/10 border border-[#0ea5e9]/30 hover:bg-[#0ea5e9]/20 text-sky-400 py-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all"
-                    >
-                      <div className="flex items-center gap-1 font-bold text-xs uppercase tracking-tighter">
-                        <Download size={14} /> Download
-                      </div>
-                      <span className="text-[10px] opacity-80">Connector (Python)</span>
-                    </button>
-                    <button 
-                      onClick={() => {
-                        window.open('https://www.python.org/downloads/', '_blank');
-                        toast({
-                          title: "Python Required",
-                          description: "Ensure Python 3.x is installed to run the launcher.",
-                        });
-                      }}
-                      className="bg-slate-800/50 border border-slate-700 hover:bg-slate-800 text-slate-400 py-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all"
-                    >
-                      <div className="flex items-center gap-1 font-bold text-xs uppercase tracking-tighter">
-                        <Play size={14} /> Launcher
-                      </div>
-                      <span className="text-[10px] opacity-80">Script</span>
-                    </button>
-                  </div>
+                  <Button 
+                    variant="outline"
+                    className="w-full border-slate-800 text-slate-400 text-[10px] uppercase font-bold tracking-widest h-10"
+                    onClick={() => generateTokenMutation.mutate()}
+                    disabled={generateTokenMutation.isPending}
+                  >
+                    {generateTokenMutation.isPending ? "Generating..." : "Generate New Token"}
+                  </Button>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Right Column: Connections */}
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-emerald-500 font-bold text-lg">Connections</h3>
-                <button 
-                  onClick={() => refetch()}
-                  className="text-slate-400 hover:text-white flex items-center gap-2 text-sm transition-colors"
-                >
-                  <RefreshCw size={14} /> Refresh
-                </button>
-              </div>
+            {/* Right Column: Execution */}
+            <div className="space-y-6">
+              <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800 h-full flex flex-col">
+                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 3: Run Connection</h3>
+                <div className="flex-1 space-y-4">
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Ensure MetaTrader 5 is running on this device, then execute the script in your terminal:
+                  </p>
+                  <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs text-slate-300">
+                    python tradify_connector.py
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Terminal size={14} className="text-emerald-500" />
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase">Connector Requirements</span>
+                    </div>
+                    <ul className="text-[10px] text-slate-500 space-y-2 list-disc pl-4">
+                      <li>Python 3.8+ installed on your device</li>
+                      <li>MetaTrader5 python package (`pip install MetaTrader5`)</li>
+                      <li>MT5 Terminal must be open and logged in</li>
+                    </ul>
+                  </div>
+                </div>
 
-              <div className="flex-1 bg-[#020617] border border-slate-800 rounded-xl p-8 flex flex-col items-center justify-center text-center">
-                {mt5?.status === "CONNECTED" ? (
-                  <div className="space-y-4 w-full text-left">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20">
-                        <Activity size={24} className="text-emerald-500" />
-                      </div>
-                      <div>
-                        <h4 className="text-white font-bold">Live Connection</h4>
-                        <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
-                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                          {mt5.status}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-slate-900/50 rounded-lg p-4 space-y-3 border border-slate-800">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">Balance</span>
-                        <span className="text-white font-mono">${parseFloat(mt5.metrics?.balance || "0").toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">Equity</span>
-                        <span className="text-emerald-500 font-mono">${parseFloat(mt5.metrics?.equity || "0").toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">Margin Level</span>
-                        <span className="text-white font-mono">{parseFloat(mt5.metrics?.marginLevel || "0").toFixed(2)}%</span>
-                      </div>
-                    </div>
+                <div className="mt-auto pt-6 border-t border-slate-800/50 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      mt5?.status === "CONNECTED" ? "bg-emerald-500 animate-pulse" : "bg-slate-700"
+                    )} />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {mt5?.status === "CONNECTED" ? "Live Sync Active" : "Waiting for Sync"}
+                    </span>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-slate-400 text-sm max-w-[240px]">
-                      No active connections yet. Generate a token and register via the connector.
-                    </p>
-                  </div>
-                )}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-slate-500 hover:text-white h-auto p-0 text-[10px] uppercase font-bold"
+                    onClick={() => refetch()}
+                  >
+                    <RefreshCw size={12} className="mr-1" />
+                    Refresh
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
