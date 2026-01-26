@@ -192,9 +192,14 @@ export default function Dashboard() {
                   )}
                 </div>
                 {mt5?.error && (
-                  <span className="text-[9px] text-rose-500/80 font-bold uppercase tracking-tighter pr-4">
-                    Error: {mt5.error}
+                  <span className="text-[9px] text-amber-500 font-bold uppercase tracking-tighter pr-4">
+                    Status: {mt5.error}
                   </span>
+                )}
+                {!mt5?.lastSync && (
+                  <Link href="/traders-hub">
+                    <Button variant="link" className="text-[10px] text-emerald-500 h-auto p-0 font-bold uppercase">Setup Bridge →</Button>
+                  </Link>
                 )}
               </div>
             )}
