@@ -234,94 +234,95 @@ export default function TradersHub() {
           )}
 
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter">
-              <Plus className="mr-2" size={18} />
-              Share Reasoning
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-black uppercase tracking-tighter">New Community Post</DialogTitle>
-              <CardDescription className="text-slate-400 font-bold uppercase text-[10px]">
-                Focus on reasoning and learning. No signals or advisory content.
-              </CardDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Post Type</label>
-                  <Select value={newPost.type} onValueChange={(v) => setNewPost({...newPost, type: v})}>
-                    <SelectTrigger className="bg-slate-900 border-slate-800">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      <SelectItem value="Idea">Market Idea</SelectItem>
-                      <SelectItem value="Review">Post-Trade Review</SelectItem>
-                      <SelectItem value="Commentary">Session Commentary</SelectItem>
-                      <SelectItem value="Education">Educational Write-up</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <DialogTrigger asChild>
+              <Button className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter">
+                <Plus className="mr-2" size={18} />
+                Share Reasoning
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-black uppercase tracking-tighter">New Community Post</DialogTitle>
+                <CardDescription className="text-slate-400 font-bold uppercase text-[10px]">
+                  Focus on reasoning and learning. No signals or advisory content.
+                </CardDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Post Type</label>
+                    <Select value={newPost.type} onValueChange={(v) => setNewPost({...newPost, type: v})}>
+                      <SelectTrigger className="bg-slate-900 border-slate-800">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        <SelectItem value="Idea">Market Idea</SelectItem>
+                        <SelectItem value="Review">Post-Trade Review</SelectItem>
+                        <SelectItem value="Commentary">Session Commentary</SelectItem>
+                        <SelectItem value="Education">Educational Write-up</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Symbol (Optional)</label>
+                    <Input 
+                      placeholder="e.g. XAUUSD"
+                      className="bg-slate-900 border-slate-800"
+                      value={newPost.symbol}
+                      onChange={(e) => setNewPost({...newPost, symbol: e.target.value})}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Symbol (Optional)</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Title</label>
                   <Input 
-                    placeholder="e.g. XAUUSD"
+                    placeholder="The core reasoning behind this observation..."
                     className="bg-slate-900 border-slate-800"
-                    value={newPost.symbol}
-                    onChange={(e) => setNewPost({...newPost, symbol: e.target.value})}
+                    value={newPost.title}
+                    onChange={(e) => setNewPost({...newPost, title: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Reasoning / Commentary</label>
+                  <Textarea 
+                    placeholder="Describe your observations, market context, and the 'why' behind this post..."
+                    className="bg-slate-900 border-slate-800 min-h-[150px]"
+                    value={newPost.content}
+                    onChange={(e) => setNewPost({...newPost, content: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                    <ImageIcon size={14} /> Image URL (Static Charts Only)
+                  </label>
+                  <Input 
+                    placeholder="https://example.com/chart-screenshot.png"
+                    className="bg-slate-900 border-slate-800"
+                    value={newPost.imageUrl}
+                    onChange={(e) => setNewPost({...newPost, imageUrl: e.target.value})}
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Title</label>
-                <Input 
-                  placeholder="The core reasoning behind this observation..."
-                  className="bg-slate-900 border-slate-800"
-                  value={newPost.title}
-                  onChange={(e) => setNewPost({...newPost, title: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Reasoning / Commentary</label>
-                <Textarea 
-                  placeholder="Describe your observations, market context, and the 'why' behind this post..."
-                  className="bg-slate-900 border-slate-800 min-h-[150px]"
-                  value={newPost.content}
-                  onChange={(e) => setNewPost({...newPost, content: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
-                  <ImageIcon size={14} /> Image URL (Static Charts Only)
-                </label>
-                <Input 
-                  placeholder="https://example.com/chart-screenshot.png"
-                  className="bg-slate-900 border-slate-800"
-                  value={newPost.imageUrl}
-                  onChange={(e) => setNewPost({...newPost, imageUrl: e.target.value})}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <div className="flex flex-col w-full gap-4">
-                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex gap-3">
-                  <AlertTriangle className="text-amber-500 shrink-0" size={18} />
-                  <p className="text-[10px] text-amber-200 leading-relaxed uppercase font-bold italic">
-                    I confirm this post is for educational reasoning only. No "Buy/Sell" commands, guarantees, or investment advice.
-                  </p>
+              <DialogFooter>
+                <div className="flex flex-col w-full gap-4">
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex gap-3">
+                    <AlertTriangle className="text-amber-500 shrink-0" size={18} />
+                    <p className="text-[10px] text-amber-200 leading-relaxed uppercase font-bold italic">
+                      I confirm this post is for educational reasoning only. No "Buy/Sell" commands, guarantees, or investment advice.
+                    </p>
+                  </div>
+                  <Button 
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter py-6"
+                    disabled={createMutation.isPending || !newPost.title || !newPost.content}
+                    onClick={() => createMutation.mutate(newPost)}
+                  >
+                    {createMutation.isPending ? "ENFORCING GUIDELINES..." : "PUBLISH TO HUB"}
+                  </Button>
                 </div>
-                <Button 
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter py-6"
-                  disabled={createMutation.isPending || !newPost.title || !newPost.content}
-                  onClick={() => createMutation.mutate(newPost)}
-                >
-                  {createMutation.isPending ? "ENFORCING GUIDELINES..." : "PUBLISH TO HUB"}
-                </Button>
-              </div>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -416,7 +417,7 @@ export default function TradersHub() {
           <Card className="bg-slate-950 border-emerald-500/20 shadow-2xl shadow-emerald-500/5 sticky top-24">
             <CardHeader>
               <CardTitle className="text-sm font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
-                <Info size={16} />
+                <span className="shrink-0"><Info size={16} /></span>
                 Hub Guidelines
               </CardTitle>
             </CardHeader>
@@ -450,7 +451,8 @@ export default function TradersHub() {
 
 function CreatorInfo({ userId }: { userId: string }) {
   const { data: profile } = useQuery<any>({
-    queryKey: [`/api/traders-hub/creators/${userId}`]
+    queryKey: [`/api/traders-hub/creators/${userId}`],
+    enabled: !!userId
   });
 
   if (!profile || profile.status !== "APPROVED") return null;

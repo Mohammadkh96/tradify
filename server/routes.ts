@@ -609,6 +609,37 @@ Output exactly 1-3 bullet points.`;
   });
 
   // --- Admin Access Management ---
+  app.get("/api/admin/creator-applications", requireAdmin, async (req, res) => {
+    try {
+      const apps = await storage.getCreatorApplications();
+      res.json(apps);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
+  app.post("/api/admin/creator-applications/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const { status } = req.body;
+      const adminId = req.session.userId!;
+      const id = parseInt(req.params.id);
+
+      await storage.updateCreatorApplicationStatus(id, status);
+
+      // Audit log
+      await db.insert(schema.adminAuditLog).values({
+        adminId,
+        actionType: `CREATOR_APP_${status}`,
+        targetUserId: "SYSTEM", // The application has its own userId
+        details: { applicationId: id, status }
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update application status" });
+    }
+  });
+
   app.get("/api/admin/access", requireAdmin, async (req, res) => {
     const admins = await db.select().from(schema.adminAccess);
     res.json(admins);
