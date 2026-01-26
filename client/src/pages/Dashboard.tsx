@@ -93,8 +93,8 @@ export default function Dashboard() {
   const losses = allTrades.filter(t => t.outcome === "Loss").length;
   const total = allTrades.length;
   
-  const winRate = total >= 20 ? ((wins / total) * 100).toFixed(1) : "N/A";
-  const winRateStatus = total >= 20 ? "🟡 DERIVED" : "⚪ WAITING (min 20)";
+  const winRate = total >= 5 ? ((wins / total) * 100).toFixed(1) : "N/A";
+  const winRateStatus = total >= 5 ? "🟢 CALCULATED" : "⚪ WAITING (min 5)";
   
   const chartData = snapshots?.map(s => ({
     date: format(new Date(s.date), 'MMM d'),

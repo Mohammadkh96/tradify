@@ -359,16 +359,15 @@ export async function registerRoutes(
         return res.json({ status: "DISCONNECTED" });
       }
       
-      // Check if last update was within 5 minutes (increased from 1m)
       const lastUpdate = new Date(data.lastUpdate || 0);
       const now = new Date();
-      const isLive = (now.getTime() - lastUpdate.getTime()) < 300000;
+      // Heartbeat: 30 seconds for live status, 5 minutes for disconnected error
+      const isLive = (now.getTime() - lastUpdate.getTime()) < 30000;
+      const isDisconnected = (now.getTime() - lastUpdate.getTime()) >= 300000;
       
       let error = undefined;
-      if (!isLive && data.lastUpdate) {
-        error = "Heartbeat timeout (last update > 5m)";
-      } else if (!data) {
-        error = "No terminal data found";
+      if (isDisconnected) {
+        error = "Terminal Offline (Last sync > 5m)";
       }
 
       res.json({
@@ -381,6 +380,10 @@ export async function registerRoutes(
           equity: data.equity,
           floatingPl: data.floatingPl,
           marginLevel: data.marginLevel,
+          margin: data.margin,
+          freeMargin: data.freeMargin,
+          leverage: data.leverage,
+          currency: data.currency,
           positions: data.positions
         }
       });

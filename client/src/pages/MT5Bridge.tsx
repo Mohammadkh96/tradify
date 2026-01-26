@@ -57,6 +57,8 @@ export default function MT5Bridge() {
       equity: string;
       floatingPl: string;
       marginLevel: string;
+      margin: string;
+      freeMargin: string;
       positions: Array<{
         symbol: string;
         type: string;
@@ -68,7 +70,7 @@ export default function MT5Bridge() {
     };
   }>({
     queryKey: [`/api/mt5/status/${userId}`],
-    refetchInterval: 2000, 
+    refetchInterval: 1000, 
   });
 
   const pythonCode = `import MetaTrader5 as mt5

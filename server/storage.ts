@@ -147,7 +147,6 @@ export class DatabaseStorage implements IStorage {
     console.log(`[MT5 Storage] Syncing history for ${userId}. Received ${trades.length} trades.`);
     for (const trade of trades) {
       try {
-        // Use ticket as unique identifier to prevent duplicates
         const ticketStr = trade.ticket.toString();
         const [existing] = await db.select().from(mt5History)
           .where(and(eq(mt5History.userId, userId), eq(mt5History.ticket, ticketStr)))
@@ -155,23 +154,47 @@ export class DatabaseStorage implements IStorage {
 
         if (!existing) {
           console.log(`[MT5 Storage] Inserting new trade ticket ${ticketStr} for ${userId}`);
+          const openTime = new Date(trade.open_time * 1000);
+          const closeTime = new Date(trade.close_time * 1000);
+          
           await db.insert(mt5History).values({
             userId,
             ticket: ticketStr,
             symbol: trade.symbol,
-            direction: trade.type === 0 ? "Buy" : "Sell",
+            direction: trade.type === 0 || trade.type === "Buy" ? "Buy" : "Sell",
             volume: trade.volume.toString(),
             entryPrice: trade.price?.toString() || "0",
             exitPrice: trade.price?.toString() || "0",
             sl: trade.sl?.toString(),
             tp: trade.tp?.toString(),
-            openTime: new Date(trade.open_time * 1000),
-            closeTime: new Date(trade.close_time * 1000),
+            openTime,
+            closeTime,
             duration: trade.close_time - trade.open_time,
             grossPl: trade.profit.toString(),
             commission: trade.commission?.toString() || "0",
             swap: trade.swap?.toString() || "0",
-            netPl: (trade.profit + (trade.commission || 0) + (trade.swap || 0)).toString(),
+            netPl: (parseFloat(trade.profit || 0) + parseFloat(trade.commission || 0) + parseFloat(trade.swap || 0)).toString(),
+          });
+
+          // Also auto-log to journal for manual rule verification if needed
+          await this.createTrade({
+            userId,
+            pair: trade.symbol,
+            direction: (trade.type === 0 || trade.type === "Buy") ? "Long" : "Short",
+            timeframe: "MT5_SYNC",
+            entryPrice: trade.price?.toString() || "0",
+            outcome: parseFloat(trade.profit) >= 0 ? "Win" : "Loss",
+            notes: `[MT5 Auto-Sync] Ticket: ${ticketStr}`,
+            htfBiasClear: true,
+            zoneValid: true,
+            entryConfirmed: true,
+            riskReward: "0",
+            htfBias: "Bullish",
+            structureState: "None",
+            liquidityStatus: "None",
+            zoneValidity: "Valid",
+            liquidityTaken: true,
+            structureConfirmed: true,
           });
         }
       } catch (err) {
