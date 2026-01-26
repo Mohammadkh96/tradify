@@ -596,16 +596,50 @@ export async function registerRoutes(
     res.json({ success: true, message: "Developer PRO access granted" });
   });
 
-  app.post("/api/user/update-profile", async (req, res) => {
-    const userId = req.headers["x-user-id"] as string || req.query.userId as string;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+  app.post("/api/user/update-profile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { country, phoneNumber, timezone } = req.body;
+      
+      await db.update(schema.userRole)
+        .set({ 
+          country, 
+          phoneNumber, 
+          timezone, 
+          updatedAt: new Date() 
+        })
+        .where(eq(schema.userRole.userId, userId));
 
-    const { country, phoneNumber } = req.body;
-    await db.update(schema.userRole)
-      .set({ country, phoneNumber, updatedAt: new Date() })
-      .where(eq(schema.userRole.userId, userId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Profile update error:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
 
-    res.json({ success: true });
+  app.post("/api/user/deactivate", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      await db.update(schema.userRole)
+        .set({ role: "DEACTIVATED", updatedAt: new Date() })
+        .where(eq(schema.userRole.userId, userId));
+      
+      req.session.destroy((err) => {
+        if (err) return res.status(500).json({ message: "Deactivation failed" });
+        res.clearCookie("connect.sid");
+        res.json({ success: true });
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to deactivate account" });
+    }
+  });
+
+  app.post("/api/user/reset-password-request", async (req, res) => {
+    const { email } = req.body;
+    // Spec: Do not reveal whether email exists
+    // In a real app, we'd send an email here. For this demo, we'll just log it.
+    console.log(`Password reset requested for: ${email}`);
+    res.json({ message: "If an account exists, a reset link has been sent." });
   });
 
   return httpServer;

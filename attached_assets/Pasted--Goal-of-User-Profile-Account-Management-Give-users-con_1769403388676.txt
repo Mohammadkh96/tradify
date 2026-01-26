@@ -1,0 +1,213 @@
+🎯 Goal of User Profile & Account Management
+
+Give users control over their account
+
+Allow safe updates to personal settings
+
+Support recovery and lifecycle events
+
+Clearly communicate plan status
+
+Meet basic compliance expectations
+
+1️⃣ Profile Page Exists
+Functional Requirements
+
+A dedicated Profile / Account Settings page must exist
+
+Accessible only to authenticated users
+
+Clearly separated sections:
+
+Personal Information
+
+Security
+
+Subscription
+
+Account Actions
+
+UX Requirements
+
+Clear navigation to profile page
+
+Changes require explicit save action
+
+Success and error messages displayed clearly
+
+2️⃣ User Can Update Country / Phone / Time Zone
+Editable Fields
+
+Country (dropdown)
+
+Phone number (optional)
+
+Time zone (dropdown or auto-detect)
+
+Functional Requirements
+
+Changes persist immediately after save
+
+Validation applied consistently
+
+Changes reflected across analytics (e.g., session analysis)
+
+UX Requirements
+
+Show current values
+
+Indicate optional vs required fields
+
+Show confirmation on successful update
+
+3️⃣ Password Reset Flow
+Functional Requirements
+
+“Forgot password” available on login page
+
+User enters email → receives reset link
+
+Reset link:
+
+One-time use
+
+Time-limited (e.g., 30–60 minutes)
+
+New password must meet password rules
+
+Old sessions invalidated after reset
+
+Security Requirements
+
+Do not reveal whether email exists
+
+Tokens stored securely
+
+Rate limit reset requests
+
+UX Requirements
+
+Clear success message:
+
+“If an account exists, a reset link has been sent.”
+
+Clear error handling for expired or invalid links
+
+4️⃣ Email Change Handling
+Functional Requirements
+
+User can request email change from profile
+
+Email change requires:
+
+Verification of new email (recommended)
+
+Old email remains active until confirmed
+
+Admin portal reflects updated email
+
+UX Requirements
+
+Clear explanation of process
+
+Show pending email change state (if applicable)
+
+Confirmation message on success
+
+5️⃣ Account Deletion / Deactivation Option
+Functional Requirements
+
+User can request:
+
+Account deactivation (preferred)
+
+Or permanent deletion (if supported)
+
+Deactivation:
+
+Prevents login
+
+Retains data for recovery or compliance
+
+Deletion:
+
+Requires confirmation
+
+Irreversible warning shown
+
+Compliance Requirements
+
+Align with Privacy Policy (GDPR-style expectations)
+
+Deletion does not break system integrity
+
+Subscriptions canceled automatically
+
+UX Requirements
+
+Clear warning language
+
+Secondary confirmation step
+
+Email confirmation recommended
+
+6️⃣ Plan Status Visible (Free / Pro)
+Functional Requirements
+
+User can clearly see:
+
+Current plan
+
+Plan limits (high level)
+
+Renewal date (if Pro)
+
+Plan status must:
+
+Match billing system
+
+Update immediately after changes
+
+UX Requirements
+
+Plan badge visible in profile
+
+Clear CTA to upgrade or manage plan
+
+No confusion between trial / paid states
+
+🔒 Data Integrity & Security (Non-Negotiable)
+
+Profile updates require authentication
+
+Sensitive changes require re-authentication (recommended)
+
+All changes logged (basic audit trail)
+
+No sensitive data exposed in frontend
+
+🧪 Edge Case Testing (Must Pass)
+
+⬜ Update profile → refresh → values persist
+
+⬜ Reset password → old password no longer works
+
+⬜ Email change → admin portal updates
+
+⬜ Deactivate account → login blocked
+
+⬜ Cancel Pro → plan updates correctly
+
+✅ Definition of “DONE” (Acceptance Criteria)
+
+User Profile & Account Management is complete only if:
+
+Users can fully manage their account
+
+All changes are reflected correctly
+
+Security-sensitive actions are protected
+
+Admin portal remains consistent
+
+No broken flows or dead ends

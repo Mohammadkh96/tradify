@@ -1,295 +1,270 @@
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Shield, Key, Zap, Save, ChevronRight, CheckCircle2, Mail, BadgeCheck, Clock, CreditCard } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { UserRole } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
+  "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+  "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
+  "Fiji", "Finland", "France",
+  "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
+  "Haiti", "Honduras", "Hungary",
+  "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast",
+  "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan",
+  "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
+  "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+  "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+  "Oman",
+  "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+  "Qatar",
+  "Romania", "Russia", "Rwanda",
+  "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+  "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
+  "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+  "Yemen",
+  "Zambia", "Zimbabwe"
+];
+
+const timezones = Intl.supportedValuesOf('timeZone');
 
 export default function Profile() {
   const { toast } = useToast();
-  const [displayName, setDisplayName] = useState("");
-  const [timezone, setTimezone] = useState("UTC");
-  const [country, setCountry] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-
-  const { data: userRole, isLoading } = useQuery<any>({
-    queryKey: ["/api/user/role", localStorage.getItem("user_id")],
-    queryFn: async () => {
-      const userId = localStorage.getItem("user_id");
-      const res = await fetch(`/api/user/role${userId ? `?userId=${userId}` : ""}`);
-      const data = await res.json();
-      if (data) {
-        setCountry(data.country || "");
-        setPhoneNumber(data.phoneNumber || "");
-      }
-      return data;
-    }
+  const { data: user, isLoading } = useQuery<UserRole>({
+    queryKey: ["/api/user"],
   });
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (updates: any) => {
-      const res = await apiRequest("POST", "/api/user/update-profile", updates);
+  const [country, setCountry] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [timezone, setTimezone] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setCountry(user.country || "");
+      setPhoneNumber(user.phoneNumber || "");
+      setTimezone(user.timezone || "");
+    }
+  }, [user]);
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/user/update-profile", {
+        country,
+        phoneNumber,
+        timezone,
+      });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user/role"] });
-      toast({ title: "Success", description: "Profile updated successfully." });
-    }
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "Profile Updated", description: "Your changes have been saved." });
+    },
   });
 
-  const { data: mt5Status } = useQuery<any>({
-    queryKey: [`/api/mt5/status/${localStorage.getItem("user_id")}`],
-    enabled: !!localStorage.getItem("user_id")
+  const deactivateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/user/deactivate");
+      return res.json();
+    },
+    onSuccess: () => {
+      window.location.href = "/";
+    },
   });
 
-  if (isLoading) {
-    return (
-      <div className="p-8 space-y-4 max-w-7xl mx-auto">
-        <Skeleton className="h-8 w-64 bg-slate-800" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-64 md:col-span-2 bg-slate-800" />
-          <Skeleton className="h-64 bg-slate-800" />
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="p-8 text-emerald-500 font-mono">LOADING PROFILE...</div>;
 
   return (
-    <div className="flex-1 bg-[#020617] text-slate-50 min-h-screen">
-      <div className="max-w-5xl mx-auto px-6 py-12 space-y-12">
-        {/* Page Header */}
-        <div className="space-y-2 border-b border-slate-800/50 pb-8">
-          <h1 className="text-4xl font-black uppercase tracking-tighter italic text-white leading-none">
-            Profile
-          </h1>
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] opacity-60">
-            Manage your account, security, and preferences.
-          </p>
+    <div className="p-8 max-w-4xl mx-auto space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter">Terminal Settings</h1>
+          <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Manage your institutional account</p>
+        </div>
+        <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg">
+          <CreditCard size={16} className="text-emerald-500" />
+          <span className="text-xs font-black text-white uppercase tracking-widest">{user?.subscriptionTier} PLAN</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-6">
+          <Card className="bg-slate-950 border-slate-800 shadow-2xl">
+            <CardHeader className="border-b border-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-lg">
+                  <User size={20} className="text-emerald-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-white uppercase italic tracking-tight">Personal Information</CardTitle>
+                  <CardDescription className="text-slate-500 uppercase text-[10px] font-bold tracking-widest">Identity and localization</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Terminal (Read-only)</label>
+                  <Input value={user?.userId} disabled className="bg-slate-900/50 border-slate-800 text-slate-400 h-11" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <Globe size={10} /> Country
+                  </label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger className="bg-slate-900 border-slate-800 text-white h-11 uppercase text-[10px] tracking-widest">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                      {countries.map((c) => (
+                        <SelectItem key={c} value={c} className="focus:bg-emerald-500 focus:text-slate-950 text-[10px] uppercase tracking-widest">
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <Clock size={10} /> Time Zone
+                  </label>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger className="bg-slate-900 border-slate-800 text-white h-11 uppercase text-[10px] tracking-widest">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 h-64">
+                      {timezones.map((tz) => (
+                        <SelectItem key={tz} value={tz} className="focus:bg-emerald-500 focus:text-slate-950 text-[10px] uppercase tracking-widest">
+                          {tz.replace(/_/g, ' ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <Phone size={10} /> Phone (Optional)
+                  </label>
+                  <Input 
+                    value={phoneNumber} 
+                    onChange={(e) => setPhoneNumber(e.target.value)} 
+                    placeholder="+1 234 567 890"
+                    className="bg-slate-900 border-slate-800 text-white h-11 focus:ring-emerald-500/20 focus:border-emerald-500/50" 
+                  />
+                </div>
+              </div>
+              <div className="pt-4 border-t border-slate-900 flex justify-end">
+                <Button 
+                  onClick={() => updateMutation.mutate()}
+                  disabled={updateMutation.isPending}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs h-11 px-8"
+                >
+                  <Save size={16} className="mr-2" />
+                  {updateMutation.isPending ? "Syncing..." : "Save Changes"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-950 border-slate-800 shadow-2xl border-rose-500/20">
+            <CardHeader className="border-b border-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-rose-500/10 rounded-lg">
+                  <AlertTriangle size={20} className="text-rose-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-white uppercase italic tracking-tight">Danger Zone</CardTitle>
+                  <CardDescription className="text-slate-500 uppercase text-[10px] font-bold tracking-widest">Irreversible account actions</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-200">Deactivate Account</h4>
+                  <p className="text-xs text-slate-500 mt-1">Temporarily disable your terminal access. Data is retained.</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    if (confirm("Are you sure you want to deactivate your account?")) {
+                      deactivateMutation.mutate();
+                    }
+                  }}
+                  className="border-rose-500/50 text-rose-500 hover:bg-rose-500/10 uppercase font-bold text-[10px] tracking-widest"
+                >
+                  Deactivate
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          {/* LEFT COLUMN (70%) — USER CONTROLS */}
-          <div className="lg:col-span-8 space-y-10">
-            
-            {/* SECTION 1: ACCOUNT IDENTITY (READ-ONLY) */}
-            <section className="space-y-6">
-              <div className="flex items-center gap-3 ml-1">
-                <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500 border border-emerald-500/20">
-                  <User size={18} />
+        <div className="space-y-6">
+          <Card className="bg-slate-950 border-slate-800 shadow-2xl">
+            <CardHeader className="border-b border-slate-900/50">
+              <CardTitle className="text-white uppercase italic tracking-tight text-lg">Plan Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Current Plan</span>
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-full">Active</span>
                 </div>
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white">Account</h2>
+                <div className="text-2xl font-black text-white uppercase italic tracking-tighter">{user?.subscriptionTier}</div>
               </div>
-              <Card className="bg-[#0b1120] border-slate-800 shadow-xl rounded-2xl">
-                <CardContent className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Email Address</label>
-                    <div className="bg-slate-950/50 border border-slate-800/50 rounded-xl px-4 h-12 flex items-center text-sm font-mono text-slate-400">
-                      {userRole?.userId}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Operator Role</label>
-                    <div className="bg-slate-950/50 border border-slate-800/50 rounded-xl px-4 h-12 flex items-center text-sm font-black text-emerald-500 uppercase tracking-widest">
-                      {userRole?.role || "TRADER"}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* SECTION 2: PERSONAL PREFERENCES (EDITABLE) */}
-            <section className="space-y-6">
-              <div className="flex items-center gap-3 ml-1">
-                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500 border border-blue-500/20">
-                  <BadgeCheck size={18} />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white">Preferences</h2>
+              
+              <div className="space-y-2">
+                <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Included Features</h5>
+                <ul className="space-y-2">
+                  {user?.subscriptionTier === "FREE" ? (
+                    <>
+                      <li className="flex items-center gap-2 text-xs text-slate-400">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Basic Journaling
+                      </li>
+                      <li className="flex items-center gap-2 text-xs text-slate-400">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> MT5 Integration
+                      </li>
+                      <li className="flex items-center gap-2 text-xs text-slate-400 opacity-50">
+                        <XCircle size={12} className="text-rose-500" /> Advanced Analytics
+                      </li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex items-center gap-2 text-xs text-slate-400">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Full Intelligence Suite
+                      </li>
+                      <li className="flex items-center gap-2 text-xs text-slate-400">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Priority Support
+                      </li>
+                    </>
+                  )}
+                </ul>
               </div>
-              <Card className="bg-[#0b1120] border-slate-800 shadow-xl rounded-2xl">
-                <CardContent className="p-8 space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Display Name</label>
-                      <Input 
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        placeholder="ENTER NAME"
-                        className="bg-slate-950 border-slate-800/50 h-12 text-sm font-bold uppercase tracking-wider rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Terminal Timezone</label>
-                      <Select value={timezone} onValueChange={setTimezone}>
-                        <SelectTrigger className="bg-slate-950 border-slate-800/50 h-12 text-sm font-bold uppercase tracking-wider rounded-xl">
-                          <SelectValue placeholder="SELECT TIMEZONE" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                          <SelectItem value="UTC" className="uppercase text-[10px] font-black tracking-widest">UTC (Universal)</SelectItem>
-                          <SelectItem value="EST" className="uppercase text-[10px] font-black tracking-widest">EST (New York)</SelectItem>
-                          <SelectItem value="GST" className="uppercase text-[10px] font-black tracking-widest">GST (Dubai)</SelectItem>
-                          <SelectItem value="SGT" className="uppercase text-[10px] font-black tracking-widest">SGT (Singapore)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Country</label>
-                      <Input 
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        placeholder="UNITED STATES"
-                        className="bg-slate-950 border-slate-800/50 h-12 text-sm font-bold uppercase tracking-wider rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Phone Number (Optional)</label>
-                      <Input 
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="+1 234 567 890"
-                        className="bg-slate-950 border-slate-800/50 h-12 text-sm font-bold uppercase tracking-wider rounded-xl"
-                      />
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={() => updateProfileMutation.mutate({ country, phoneNumber })}
-                    disabled={updateProfileMutation.isPending}
-                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.2em] text-[10px] h-11 px-8 rounded-xl shadow-lg shadow-emerald-500/10"
-                  >
-                    {updateProfileMutation.isPending ? "SAVING..." : "Save Changes"}
-                  </Button>
-                </CardContent>
-              </Card>
-            </section>
 
-            {/* SECTION 3: SECURITY */}
-            <section className="space-y-6">
-              <div className="flex items-center gap-3 ml-1">
-                <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500 border border-amber-500/20">
-                  <Shield size={18} />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white">Security</h2>
-              </div>
-              <Card className="bg-[#0b1120] border-slate-800 shadow-xl rounded-2xl">
-                <CardContent className="p-8 space-y-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Current Password</label>
-                    <Input type="password" placeholder="••••••••••••" className="bg-slate-950 border-slate-800/50 h-12 rounded-xl" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">New Password</label>
-                      <Input type="password" placeholder="••••••••••••" className="bg-slate-950 border-slate-800/50 h-12 rounded-xl" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Confirm Password</label>
-                      <Input type="password" placeholder="••••••••••••" className="bg-slate-950 border-slate-800/50 h-12 rounded-xl" />
-                    </div>
-                  </div>
-                  <Button variant="outline" className="border-slate-800 hover:bg-slate-900 text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] h-11 px-8 rounded-xl">
-                    Update Password
-                  </Button>
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* SECTION 4: MT5 CONNECTION (REFERENCE ONLY) */}
-            <section className="space-y-6">
-              <div className="flex items-center gap-3 ml-1">
-                <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500 border border-purple-500/20">
-                  <Zap size={18} />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white">MT5 Connection</h2>
-              </div>
-              <Card className="bg-[#0b1120] border-slate-800 shadow-xl rounded-2xl">
-                <CardContent className="p-8 space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Connection Status</label>
-                      <div className="flex items-center gap-2 h-12 px-4 bg-slate-950/50 border border-slate-800/50 rounded-xl">
-                        <div className={cn(
-                          "w-2 h-2 rounded-full",
-                          mt5Status?.status === "CONNECTED" ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                        )} />
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          {mt5Status?.status === "CONNECTED" ? "Synchronized" : "Disconnected"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Last Terminal Sync</label>
-                      <div className="h-12 px-4 bg-slate-950/50 border border-slate-800/50 rounded-xl flex items-center text-xs font-mono text-slate-400">
-                        {mt5Status?.lastSync ? new Date(mt5Status.lastSync).toLocaleString() : "NEVER"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-4">
-                    <Button variant="outline" className="border-slate-800 hover:bg-slate-900 text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] h-11 px-8 rounded-xl">
-                      Reset Sync Token
-                    </Button>
-                    <Button variant="outline" className="border-slate-800 hover:bg-slate-900 text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] h-11 px-8 rounded-xl">
-                      Reconnect Engine
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-          </div>
-
-          {/* RIGHT COLUMN (30%) — PLAN & BILLING */}
-          <div className="lg:col-span-4 sticky top-12">
-            <section className="space-y-6">
-              <div className="flex items-center gap-3 ml-1">
-                <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500 border border-emerald-500/20">
-                  <CreditCard size={18} />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white">Your Plan</h2>
-              </div>
-              <Card className="bg-gradient-to-b from-[#111827] to-[#0b1120] border-slate-800 shadow-2xl rounded-2xl overflow-hidden relative">
-                <div className="absolute top-4 right-4">
-                  <Badge className={cn(
-                    "font-black text-[9px] uppercase tracking-widest px-2 py-1 rounded-full",
-                    userRole?.subscriptionTier === "PRO" ? "bg-emerald-500 text-slate-950" : "bg-slate-800 text-slate-400"
-                  )}>
-                    {userRole?.subscriptionTier || "FREE"}
-                  </Badge>
-                </div>
-                <CardContent className="p-8 space-y-8">
-                  <div>
-                    <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-2">
-                      Tradify <span className="text-emerald-500">{userRole?.subscriptionTier === "PRO" ? "Pro" : "Free"}</span>
-                    </h3>
-                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-2">
-                      <Clock size={12} className="text-slate-700" /> Billed Monthly
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    {[
-                      { text: userRole?.subscriptionTier === "PRO" ? "Unlimited History" : "30-Day Limit", active: true },
-                      { text: userRole?.subscriptionTier === "PRO" ? "Real-time Sync" : "Standard Sync", active: true },
-                      { text: "Priority Execution", active: userRole?.subscriptionTier === "PRO" },
-                      { text: "Knowledge Base", active: true }
-                    ].map((feature, i) => (
-                      <div key={i} className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest">
-                        <CheckCircle2 size={14} className={feature.active ? "text-emerald-500" : "text-slate-800"} /> 
-                        <span className={feature.active ? "text-slate-300" : "text-slate-700"}>{feature.text}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button className="w-full bg-white hover:bg-slate-200 text-slate-950 font-black uppercase tracking-[0.2em] text-[10px] h-14 rounded-xl shadow-xl">
-                    {userRole?.subscriptionTier === "PRO" ? "Manage Subscription" : "Upgrade Terminal"}
-                  </Button>
-                </CardContent>
-              </Card>
-            </section>
-          </div>
+              {user?.subscriptionTier === "FREE" && (
+                <Button className="w-full bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-emerald-500/20">
+                  Upgrade to PRO
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

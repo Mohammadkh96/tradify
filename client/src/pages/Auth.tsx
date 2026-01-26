@@ -48,6 +48,8 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showForgot, setShowForgot] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
   const [country, setCountry] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [timezone, setTimezone] = useState<string>("");
@@ -73,8 +75,8 @@ export default function Auth() {
 
   const isPasswordValid = passwordRules.every(rule => rule.test(password));
   const isFormValid = isLogin 
-    ? email && password 
-    : email && isPasswordValid && password === confirmPassword && country && timezone;
+    ? (email && password) 
+    : (email && isPasswordValid && password === confirmPassword && !!country && !!timezone);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +123,65 @@ export default function Auth() {
       });
     }
   };
+
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/user/reset-password-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+      const data = await response.json();
+      toast({
+        title: "Reset Link Sent",
+        description: data.message,
+      });
+      setShowForgot(false);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to process reset request.",
+      });
+    }
+  };
+
+  if (showForgot) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-8 bg-slate-900/50 p-8 rounded-2xl border border-slate-800">
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-white uppercase italic tracking-tighter">Reset Password</h3>
+            <p className="text-slate-500 mt-2 text-xs uppercase tracking-widest font-bold">Enter your email to receive a recovery link</p>
+          </div>
+          <form onSubmit={handleResetRequest} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
+              <Input 
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="operator@tradify.io"
+                className="bg-[#0f172a] border-slate-800 text-white h-12"
+                type="email"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full h-12 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest">
+              Send Recovery Link
+            </Button>
+            <button 
+              type="button"
+              onClick={() => setShowForgot(false)}
+              className="w-full text-slate-500 hover:text-white text-xs font-bold uppercase tracking-widest"
+            >
+              Back to Login
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#020617] flex overflow-hidden">
@@ -251,7 +312,15 @@ export default function Auth() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Password</label>
-                  {isLogin && <button type="button" className="text-[10px] font-bold text-emerald-500/70 hover:text-emerald-500 transition-colors uppercase tracking-widest">Forgot?</button>}
+                  {isLogin && (
+                    <button 
+                      type="button" 
+                      onClick={() => setShowForgot(true)}
+                      className="text-[10px] font-bold text-emerald-500/70 hover:text-emerald-500 transition-colors uppercase tracking-widest"
+                    >
+                      Forgot?
+                    </button>
+                  )}
                 </div>
                 <div className="relative group">
                   <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
