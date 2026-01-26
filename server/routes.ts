@@ -258,32 +258,19 @@ export async function registerRoutes(
         });
       }
 
-      // Special case: if syncToken is null in DB, we should allow the first sync if a token is provided
-      // OR we should ensure every user has a token upon registration.
-      // For now, let's be more helpful in the error response.
       const storedToken = role.syncToken?.trim();
       const providedToken = token?.trim();
 
       if (!storedToken) {
-        console.warn(`[MT5 Sync] User ${userId} has no token generated. Auto-generating one from provided token.`);
+        console.warn(`[MT5 Sync] User ${userId} has no token. First sync allowed.`);
         await db.update(schema.userRole)
           .set({ syncToken: providedToken })
           .where(eq(schema.userRole.userId, userId));
       } else if (storedToken !== providedToken) {
-        console.warn(`[MT5 Sync] Token mismatch for ${userId}. Received: [${providedToken}], Expected: [${storedToken}]`);
-        
-        // Log mismatch to audit trail for debugging
-        await storage.createAdminAuditLog({
-          adminId: 0, // System
-          actionType: "MT5_SYNC_ERROR",
-          targetUserId: userId,
-          details: `Token mismatch. Received: ${providedToken?.substring(0, 8)}..., Expected: ${storedToken?.substring(0, 8)}...`
-        });
-
+        console.warn(`[MT5 Sync] Token mismatch for ${userId}.`);
         return res.status(401).json({ 
-          message: "Invalid sync token. Please ensure you are using the correct token from your Tradify Profile > MT5 Bridge settings.",
-          error: "TOKEN_MISMATCH",
-          instruction: "Verify the Sync Token in your Tradify Profile matches the one in your MT5 EA settings."
+          message: "Invalid Sync Token.",
+          error: "TOKEN_MISMATCH"
         });
       }
 

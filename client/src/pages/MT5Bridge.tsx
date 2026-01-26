@@ -27,8 +27,6 @@ export default function MT5Bridge() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
-  const [accountNumber, setAccountNumber] = useState("1742554151");
-  const [broker, setBroker] = useState("Exness");
   const userId = "demo_user";
 
   const { data: userRoleData } = useQuery<any>({
@@ -77,65 +75,127 @@ export default function MT5Bridge() {
 import requests
 import time
 import json
-import tkinter as tk
-from tkinter import ttk, messagebox
+import sys
+import os
 
-class MT5ConnectorGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("TRADIFY Terminal Sync")
-        self.root.geometry("400x500")
-        self.root.configure(bg="#020617")
-        
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure("TLabel", background="#020617", foreground="#94a3b8", font=("Inter", 10))
-        style.configure("TButton", background="#10b981", foreground="#020617", font=("Inter", 10, "bold"))
-        
-        tk.Label(root, text="TRADIFY", font=("Inter", 24, "bold", "italic"), bg="#020617", fg="#10b981").pack(pady=20)
-        tk.Label(root, text="Institutional Sync Engine", font=("Inter", 10), bg="#020617", fg="#64748b").pack()
-        
-        self.token_frame = tk.Frame(root, bg="#020617")
-        self.token_frame.pack(pady=30, padx=40, fill="x")
-        
-        tk.Label(self.token_frame, text="ENTER CONNECTION TOKEN").pack(anchor="w", pady=(0, 5))
-        self.token_entry = tk.Entry(self.token_frame, font=("Courier", 12), bg="#0f172a", fg="#f8fafc", insertbackground="white", borderwidth=0)
-        self.token_entry.pack(fill="x", ipady=10)
-        
-        self.status_var = tk.StringVar(value="Status: Ready")
-        tk.Label(root, textvariable=self.status_var, bg="#020617", fg="#10b981", font=("Inter", 9, "bold")).pack(pady=10)
-        
-        self.sync_btn = tk.Button(root, text="INITIALIZE SYNC", command=self.start_sync, bg="#10b981", fg="#020617", font=("Inter", 12, "bold"), borderwidth=0, cursor="hand2")
-        self.sync_btn.pack(pady=20, padx=40, fill="x", ipady=10)
+# TRADIFY CONNECTOR v2.0 (PYTHON NATIVE)
+# Requirements: pip install MetaTrader5 requests
 
-    def start_sync(self):
-        token = self.token_entry.get()
-        if not token:
-            messagebox.showerror("Error", "Please enter a connection token")
-            return
+def get_account_data():
+    if not mt5.initialize():
+        return None, f"MT5 Init Failed: {mt5.last_error()}"
+    
+    account_info = mt5.account_info()
+    if account_info is None:
+        mt5.shutdown()
+        return None, "Failed to fetch Account Info (Is MT5 logged in?)"
         
-        self.status_var.set("Status: Authenticating...")
-        self.sync_btn.config(state="disabled")
-        
-        # Placeholder for real MT5 logic
-        # In production, this would use mt5.initialize() and mt5.account_info()
-        self.status_var.set("Status: Connected & Syncing")
+    positions = mt5.positions_get()
+    pos_list = []
+    if positions:
+        for p in positions:
+            pos_list.append({
+                "ticket": p.ticket,
+                "symbol": p.symbol,
+                "type": "Buy" if p.type == 0 else "Sell",
+                "volume": p.volume,
+                "price": p.price_open,
+                "profit": p.profit,
+                "sl": p.sl,
+                "tp": p.tp
+            })
+            
+    history = mt5.history_deals_get(time.time() - 86400*7, time.time())
+    hist_list = []
+    if history:
+        for d in history:
+            if d.entry == 1: 
+                hist_list.append({
+                    "ticket": d.ticket,
+                    "symbol": d.symbol,
+                    "type": d.type,
+                    "volume": d.volume,
+                    "price": d.price,
+                    "profit": d.profit,
+                    "commission": d.commission,
+                    "swap": d.swap,
+                    "open_time": d.time_msc // 1000,
+                    "close_time": d.time
+                })
+
+    data = {
+        "balance": float(account_info.balance),
+        "equity": float(account_info.equity),
+        "margin": float(account_info.margin),
+        "freeMargin": float(account_info.margin_free),
+        "marginLevel": float(account_info.margin_level),
+        "floatingPl": float(account_info.profit),
+        "leverage": int(account_info.leverage),
+        "currency": account_info.currency,
+        "positions": pos_list,
+        "history": hist_list
+    }
+    return data, None
+
+def run_bridge(user_id, token, api_url):
+    print("="*50)
+    print(" TRADIFY TERMINAL CONNECTOR ")
+    print("="*50)
+    print(f"[*] User: {user_id}")
+    print(f"[*] API: {api_url}")
+    print("[*] Status: Monitoring MT5...")
+    
+    while True:
+        try:
+            data, err = get_account_data()
+            if err:
+                print(f"[!] {err}")
+                time.sleep(10)
+                continue
+                
+            payload = {
+                "userId": user_id,
+                "token": token,
+                **data
+            }
+            
+            resp = requests.post(api_url, json=payload, timeout=15)
+            if resp.status_code == 200:
+                print(f"[+] Synced | Equity: {data['equity']} | {time.strftime('%H:%M:%S')}")
+            else:
+                print(f"[!] Sync Error ({resp.status_code}): {resp.text}")
+                
+        except Exception as e:
+            print(f"[!] Error: {e}")
+            
+        time.sleep(10)
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = MT5ConnectorGUI(root)
-    root.mainloop()`;
+    USER_ID = "${userRoleData?.userId || "demo_user"}"
+    SYNC_TOKEN = "${userRoleData?.syncToken || ""}"
+    API_URL = "${window.location.origin}/api/mt5/sync"
+
+    if not SYNC_TOKEN:
+        print("[!] Error: No Sync Token found in settings.")
+        sys.exit(1)
+
+    try:
+        run_bridge(USER_ID, SYNC_TOKEN, API_URL)
+    except KeyboardInterrupt:
+        mt5.shutdown()
+        sys.exit(0)
+`;
 
   const downloadConnector = () => {
     const element = document.createElement("a");
     const file = new Blob([pythonCode], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
-    element.download = "tradify_connector_app.py";
+    element.download = "tradify_connector.py";
     document.body.appendChild(element);
     element.click();
     toast({
       title: "Downloading Connector",
-      description: "tradify_connector_app.py is being downloaded.",
+      description: "tradify_connector.py is being downloaded.",
     });
   };
 
