@@ -585,8 +585,7 @@ Metrics:
 
 Output exactly 1-3 bullet points.`;
 
-      const ai = openai;
-      const response = await ai.chat.completions.create({
+      const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 200,
