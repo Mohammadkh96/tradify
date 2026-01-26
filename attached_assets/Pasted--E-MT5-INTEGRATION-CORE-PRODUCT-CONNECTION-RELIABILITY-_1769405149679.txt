@@ -1,0 +1,254 @@
+🔗 E. MT5 INTEGRATION (CORE PRODUCT)
+CONNECTION & RELIABILITY — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of MT5 Integration
+
+Provide secure, read-only, reliable trade ingestion
+
+Eliminate manual trade entry
+
+Maintain user trust through transparency
+
+Never interfere with trading execution
+
+🔐 CONNECTION
+1️⃣ MT5 EA Connects Securely
+Functional Requirements
+
+MT5 Expert Advisor (EA) must:
+
+Run locally in the user’s MT5 terminal
+
+Send trade data to Tradify backend securely
+
+Communication must use:
+
+HTTPS only
+
+Server-side validation
+
+EA must support:
+
+Multiple symbols
+
+Hedging / netting accounts
+
+Partial closes
+
+UX Requirements
+
+Clear connection setup instructions
+
+Simple copy-paste token or config
+
+No technical jargon exposed to user
+
+2️⃣ Token-Based Authentication
+Functional Requirements
+
+Each user account generates a unique, revocable token
+
+EA authenticates using token only
+
+Token:
+
+Can be regenerated
+
+Can be revoked
+
+Is scoped to one user account
+
+Security Requirements
+
+Tokens stored hashed or securely
+
+No tokens hard-coded in EA
+
+Token misuse results in rejection
+
+3️⃣ No Broker Credentials Stored
+Non-Negotiable Rule
+
+Tradify must never:
+
+Request broker login
+
+Store broker credentials
+
+Access account execution rights
+
+Verification
+
+Backend validates only:
+
+Trade data payloads
+
+Account identifiers (non-sensitive)
+
+Trust Messaging
+
+Explicit UI copy:
+
+“Read-only MT5 connection. No broker credentials stored.”
+
+4️⃣ Read-Only Trade Data Confirmed
+Functional Requirements
+
+EA sends trade history only
+
+No trade execution commands allowed
+
+No modification or closure of trades
+
+No order placement APIs used
+
+Technical Safeguards
+
+Backend rejects any non-trade-data payload
+
+EA code does not include trading functions
+
+⚙️ RELIABILITY
+5️⃣ Connection Status Visible
+Functional Requirements
+
+Dashboard shows connection status:
+
+Connected
+
+Syncing
+
+Disconnected
+
+Error
+
+Status must reflect real backend state, not frontend guess
+
+UX Requirements
+
+Status visible at all times
+
+Color-coded but text-labeled (for clarity)
+
+6️⃣ Last Sync Timestamp Visible
+Functional Requirements
+
+Display timestamp of:
+
+Last successful data sync
+
+Timestamp format:
+
+User’s local time
+
+Or clearly labeled UTC
+
+UX Requirements
+
+Visible near connection status
+
+Updated on every successful sync
+
+7️⃣ Sync Frequency Correct
+Functional Requirements
+
+EA sends data:
+
+On trade close
+
+Or at defined interval (e.g., every X seconds)
+
+Backend must:
+
+Accept repeated payloads safely
+
+Prevent duplicate trade records
+
+Performance Requirements
+
+Sync frequency must not overload:
+
+MT5 terminal
+
+Backend
+
+Rate limiting applied server-side
+
+8️⃣ Graceful Failure Handling
+Functional Requirements
+
+If connection fails:
+
+EA retries automatically
+
+No data loss occurs
+
+Backend queues or retries as needed
+
+UX Requirements
+
+User informed of failure
+
+No misleading “Connected” state
+
+Clear recovery steps provided
+
+9️⃣ Clear Error Messages (No Silent Failures)
+Functional Requirements
+
+Errors must be:
+
+Logged server-side
+
+Classified (auth, network, format)
+
+Error messages displayed to user must be:
+
+Human-readable
+
+Actionable
+
+Example Messages
+
+“Connection lost. Retrying…”
+
+“Invalid token. Please regenerate.”
+
+“No data received in the last X minutes.”
+
+🔒 SECURITY & INTEGRITY (NON-NEGOTIABLE)
+
+No execution permissions ever
+
+No broker credentials stored
+
+All data validated server-side
+
+No silent failures
+
+Full traceability of sync events
+
+🧪 EDGE CASE TESTING (MUST PASS)
+
+⬜ EA disconnected → dashboard updates
+
+⬜ EA reconnects → sync resumes
+
+⬜ Token revoked → EA rejected
+
+⬜ Duplicate trades prevented
+
+⬜ Partial closes handled correctly
+
+✅ DEFINITION OF “DONE” (ACCEPTANCE CRITERIA)
+
+MT5 integration is complete only if:
+
+Connection is secure
+
+Data is accurate and complete
+
+Failures are visible and recoverable
+
+Users fully trust the integration
+
+No execution risk exists

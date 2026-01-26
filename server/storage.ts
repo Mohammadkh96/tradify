@@ -131,13 +131,17 @@ export class DatabaseStorage implements IStorage {
 
   async syncMT5History(userId: string, trades: any[]): Promise<void> {
     for (const trade of trades) {
-      const [existing] = await db.select().from(mt5History).where(eq(mt5History.ticket, trade.ticket.toString())).limit(1);
+      // Use ticket as unique identifier to prevent duplicates
+      const [existing] = await db.select().from(mt5History)
+        .where(and(eq(mt5History.userId, userId), eq(mt5History.ticket, trade.ticket.toString())))
+        .limit(1);
+
       if (!existing) {
         await db.insert(mt5History).values({
           userId,
           ticket: trade.ticket.toString(),
           symbol: trade.symbol,
-          direction: trade.type,
+          direction: trade.type === 0 ? "Buy" : "Sell",
           volume: trade.volume.toString(),
           entryPrice: trade.price?.toString() || "0",
           exitPrice: trade.price?.toString() || "0",

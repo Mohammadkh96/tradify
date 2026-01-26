@@ -6,7 +6,7 @@ import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { eq, or } from "drizzle-orm";
+import { eq, or, desc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -266,6 +266,14 @@ export async function registerRoutes(
       // Sync History if provided
       if (history && history.length > 0) {
         await storage.syncMT5History(userId, history);
+        
+        // Log sync event for traceability
+        await db.insert(schema.adminAuditLog).values({
+          adminId: "SYSTEM_MT5",
+          actionType: "MT5_HISTORY_SYNC",
+          targetUserId: userId,
+          details: { count: history.length, timestamp: new Date() }
+        });
       }
 
       // Sync positions into manual trade journal if they match ticket IDs
