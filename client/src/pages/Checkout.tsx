@@ -9,7 +9,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import PayPalButton from "@/components/PayPalButton";
 
-export default function Billing() {
+export default function Checkout() {
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useQuery<any>({ queryKey: ["/api/user"] });
   const { data: products } = useQuery<any[]>({ queryKey: ["/api/billing/products"] });

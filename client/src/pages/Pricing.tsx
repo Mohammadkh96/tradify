@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import PayPalButton from "@/components/PayPalButton";
 import { useState } from "react";
+import { Link } from "wouter";
 
 const features = [
   { name: "Live MT5 Data Connection", free: true, pro: true },
@@ -32,23 +33,6 @@ export default function Pricing() {
     queryKey: ["/api/billing/products"] 
   });
 
-  const checkoutMutation = useMutation({
-    mutationFn: async (priceId: string) => {
-      const res = await apiRequest("POST", "/api/billing/checkout", { priceId });
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      window.location.href = data.url;
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Checkout Error",
-        description: error.message || "Failed to initiate checkout session",
-        variant: "destructive",
-      });
-    }
-  });
-
   const portalMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/billing/portal");
@@ -66,7 +50,6 @@ export default function Pricing() {
     }
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
   const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
 
   if (isLoadingProducts) {
@@ -76,10 +59,6 @@ export default function Pricing() {
       </div>
     );
   }
-
-  // Find Pro Plan product from Stripe sync
-  const proProduct = products?.find(p => p.metadata?.plan === 'PRO' || p.name === 'Pro Plan');
-  const monthlyPrice = proProduct?.prices?.find((p: any) => p.recurring?.interval === 'month');
 
   return (
     <div className="flex-1 text-slate-50 pb-20 md:pb-0">
@@ -171,59 +150,14 @@ export default function Pricing() {
                   )}
                 </Button>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex gap-2 p-1 bg-slate-900/50 rounded-lg border border-slate-800">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPaymentMethod("stripe")}
-                      className={cn(
-                        "flex-1 gap-2 text-[10px] font-bold uppercase tracking-widest h-8",
-                        paymentMethod === "stripe" ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "text-slate-400"
-                      )}
-                    >
-                      <CreditCard size={12} />
-                      Stripe
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPaymentMethod("paypal")}
-                      className={cn(
-                        "flex-1 gap-2 text-[10px] font-bold uppercase tracking-widest h-8",
-                        paymentMethod === "paypal" ? "bg-[#0070ba] text-white hover:bg-[#005ea6]" : "text-slate-400"
-                      )}
-                    >
-                      <SiPaypal size={12} />
-                      PayPal
-                    </Button>
-                  </div>
-
-                  {paymentMethod === "stripe" ? (
-                    <Button 
-                      onClick={() => {
-                        if (!user) {
-                          window.location.href = "/signup";
-                          return;
-                        }
-                        if (monthlyPrice) checkoutMutation.mutate(monthlyPrice.id);
-                      }}
-                      disabled={checkoutMutation.isPending}
-                      className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-                    >
-                      {checkoutMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
-                        <>
-                          Upgrade to Pro
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <div className="w-full bg-white rounded-md p-1">
-                       <PayPalButton amount="19.00" currency="USD" intent="subscription" />
-                    </div>
-                  )}
-                </div>
+                <Link href="/checkout">
+                  <Button 
+                    className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                  >
+                    Upgrade to Pro
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
               )}
             </CardContent>
           </Card>
@@ -277,24 +211,25 @@ export default function Pricing() {
           <h3 className="text-2xl font-bold text-white mb-6">Ready to upgrade your trading edge?</h3>
           {isPro ? (
             <Button 
-              onClick={() => portalMutation.mutate()}
+              onClick={() => {
+                if (user?.subscriptionProvider === 'paypal') {
+                  window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
+                } else {
+                  portalMutation.mutate();
+                }
+              }}
               className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
             >
               Manage Your Account
             </Button>
           ) : (
-            <Button 
-              onClick={() => {
-                if (!user) {
-                  window.location.href = "/signup";
-                  return;
-                }
-                if (monthlyPrice) checkoutMutation.mutate(monthlyPrice.id);
-              }}
-              className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-            >
-              Start Your Free Trial
-            </Button>
+            <Link href="/checkout">
+              <Button 
+                className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+              >
+                Start Your Pro Trial
+              </Button>
+            </Link>
           )}
         </div>
       </main>
