@@ -303,13 +303,84 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/mt5/history/:userId", async (req, res) => {
+  // MT5 Bridge Sync Endpoint (REST API for Python Connector)
+  app.post("/api/mt5/sync", async (req, res) => {
     try {
-      const { userId } = req.params;
-      const history = await storage.getMT5History(userId);
-      res.json(history);
+      const { 
+        userId, 
+        token, 
+        balance, 
+        equity, 
+        margin, 
+        freeMargin, 
+        marginLevel, 
+        floatingPl, 
+        leverage,
+        currency,
+        positions,
+        history
+      } = req.body;
+
+      if (!userId || !token) {
+        return res.status(401).json({ message: "Authentication required: userId and token" });
+      }
+
+      // 1. Identification & Security Check
+      const user = await storage.getUserRole(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found", error: "USER_NOT_FOUND" });
+      }
+
+      const storedToken = user.syncToken?.trim();
+      const providedToken = token?.trim();
+
+      if (!storedToken) {
+        console.warn(`[MT5 Sync] User ${userId} has no token. First sync allowed.`);
+        await db.update(schema.userRole)
+          .set({ syncToken: providedToken })
+          .where(eq(schema.userRole.userId, userId));
+      } else if (storedToken !== providedToken) {
+        console.warn(`[MT5 Sync] UNAUTHORIZED: Token mismatch for ${userId}.`);
+        return res.status(403).json({ 
+          message: "Invalid Sync Token.",
+          error: "TOKEN_MISMATCH"
+        });
+      }
+
+      console.log(`[MT5 Sync] HEARTBEAT: Received data from ${userId} at ${new Date().toISOString()}`);
+
+      // 2. Update real-time metrics & connection status
+      await storage.updateMT5Data({
+        userId,
+        syncToken: token,
+        balance: String(balance || 0),
+        equity: String(equity || 0),
+        margin: String(margin || 0),
+        freeMargin: String(freeMargin || 0),
+        marginLevel: String(marginLevel || 0),
+        floatingPl: String(floatingPl || 0),
+        leverage: leverage,
+        currency: currency,
+        positions: positions || []
+      });
+
+      // 3. Update history (Journal Integrity)
+      if (history && Array.isArray(history) && history.length > 0) {
+        console.log(`[MT5 Sync] Syncing history for ${userId}. Count: ${history.length}`);
+        await storage.syncMT5History(userId, history);
+        
+        await db.insert(schema.adminAuditLog).values({
+          adminId: "SYSTEM_MT5",
+          actionType: "MT5_HISTORY_SYNC",
+          targetUserId: userId,
+          details: { count: history.length, timestamp: new Date() }
+        });
+      }
+
+      res.json({ success: true, status: "CONNECTED", timestamp: new Date().toISOString() });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch history" });
+      console.error("[MT5 Sync Error]:", error);
+      res.status(500).json({ message: "Synchronization failed" });
     }
   });
 

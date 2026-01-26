@@ -88,7 +88,7 @@ import json
 import sys
 import os
 
-# TRADIFY CONNECTOR v2.2 (PYTHON NATIVE)
+# TRADIFY CONNECTOR v2.3 (PYTHON NATIVE)
 # Requirements: pip install MetaTrader5 requests
 
 def get_account_data():
@@ -150,7 +150,7 @@ def get_account_data():
 
 def run_bridge(user_id, token, api_url):
     print("="*50)
-    print(" TRADIFY TERMINAL CONNECTOR ")
+    print(" TRADIFY TERMINAL CONNECTOR v2.3 ")
     print("="*50)
     print(f"[*] User: {user_id}")
     print(f"[*] API: {api_url}")
@@ -166,13 +166,16 @@ def run_bridge(user_id, token, api_url):
                 
             payload = {
                 "userId": user_id,
-                "token": token,
+                "token": token, # Enforced Sync Token
                 **data
             }
             
             resp = requests.post(api_url, json=payload, timeout=15)
             if resp.status_code == 200:
                 print(f"[+] Synced | Equity: {data['equity']} | {time.strftime('%H:%M:%S')}")
+            elif resp.status_code == 403:
+                print(f"[!] Auth Error: Invalid Sync Token. Please check the Bridge page.")
+                break
             else:
                 print(f"[!] Sync Error ({resp.status_code}): {resp.text}")
                 
@@ -182,9 +185,9 @@ def run_bridge(user_id, token, api_url):
         time.sleep(10)
 
 if __name__ == "__main__":
-    USER_ID = "${userRoleData?.userId || ""}"
-    SYNC_TOKEN = "${userRoleData?.syncToken || ""}"
-    API_URL = "${window.location.origin}/api/mt5/sync"
+    USER_ID = "\${userRoleData?.userId || ""}"
+    SYNC_TOKEN = "\${userRoleData?.syncToken || ""}"
+    API_URL = "\${window.location.origin}/api/mt5/sync"
 
     if not USER_ID or not SYNC_TOKEN:
         print("[!] Error: User ID or Sync Token missing. Please check the Tradify Bridge page.")
@@ -314,7 +317,7 @@ if __name__ == "__main__":
                     </div>
                     <ul className="text-[10px] text-slate-500 space-y-2 list-disc pl-4">
                       <li>Python 3.8+ installed on your device</li>
-                      <li>MetaTrader5 python package (`pip install MetaTrader5 requests`)</li>
+                      <li>MetaTrader5 python package (\`pip install MetaTrader5 requests\`)</li>
                       <li>MT5 Terminal must be open and logged in</li>
                     </ul>
                   </div>
