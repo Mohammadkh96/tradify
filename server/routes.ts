@@ -10,7 +10,7 @@ import { eq, or, desc, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { setupReplitAiIntegrations } from "./replit_integrations/ai_integrations";
+import { openai } from "./replit_integrations/audio/index";
 
 const PostgresStore = connectPg(session);
 
@@ -585,7 +585,7 @@ Metrics:
 
 Output exactly 1-3 bullet points.`;
 
-      const ai = await setupReplitAiIntegrations();
+      const ai = openai;
       const response = await ai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
