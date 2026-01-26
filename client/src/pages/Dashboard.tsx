@@ -140,7 +140,10 @@ export default function Dashboard() {
               <LayoutDashboard className="text-emerald-500" />
               Trader Dashboard
             </h1>
-            <p className="text-slate-400 mt-1">Market Overview & Performance Metrics</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-slate-400 text-sm">Market Overview & Performance Metrics</p>
+              <Link href="/risk" className="text-[10px] text-slate-600 hover:text-emerald-500 uppercase font-bold tracking-widest transition-colors">Risk Disclaimer</Link>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Button 
@@ -304,9 +307,14 @@ export default function Dashboard() {
                   
                   <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3 flex items-start gap-2">
                     <Info size={14} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <p className="text-[10px] text-slate-400 italic leading-tight">
-                      Note: These insights are generated based on your historical MT5 and Journal data using strictly analytical rules.
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-slate-400 italic leading-tight">
+                        Note: These insights are generated based on your historical MT5 and Journal data using strictly analytical rules.
+                      </p>
+                      <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
+                        Not financial advice. <Link href="/risk" className="text-emerald-500/50 hover:underline">View Disclaimer</Link>
+                      </p>
+                    </div>
                   </div>
                 </div>
               ) : (
