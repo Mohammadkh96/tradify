@@ -57,7 +57,7 @@ export default function Dashboard() {
     lastUpdate?: string;
   }>({
     queryKey: [`/api/mt5/status/${userId}`],
-    refetchInterval: 1000,
+    refetchInterval: 5000,
     enabled: !!userId,
     staleTime: 0,
     gcTime: 0,

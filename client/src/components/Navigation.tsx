@@ -45,6 +45,7 @@ export function Navigation() {
   const { data: mt5 } = useQuery<any>({
     queryKey: [`/api/mt5/status/${userId}`],
     refetchInterval: 5000,
+    staleTime: 0,
     enabled: !!userId,
   });
 
