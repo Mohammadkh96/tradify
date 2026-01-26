@@ -100,14 +100,14 @@ export default function Dashboard() {
       label: "Balance", 
       value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.balance).toLocaleString()}` : "$0", 
       icon: <Wallet size={18} />, 
-      subtext: "🟢 MT5 LIVE",
+      subtext: mt5?.status === "CONNECTED" ? "🟢 SYNC ACTIVE" : "🔴 OFFLINE",
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
       label: "Equity", 
       value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.equity).toLocaleString()}` : "$0", 
       icon: <Activity size={18} />, 
-      subtext: "🟢 MT5 LIVE",
+      subtext: mt5?.status === "CONNECTED" ? "🟢 SYNC ACTIVE" : "🔴 OFFLINE",
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 

@@ -243,6 +243,9 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Authentication required" });
       }
 
+      // Log the sync attempt
+      console.log(`[MT5 Sync] Connection attempt from ${userId} with token [${token}]`);
+      
       // Validate token against user's stored token
       const [role] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
       
@@ -251,9 +254,22 @@ export async function registerRoutes(
         return res.status(401).json({ message: "User not found" });
       }
 
-      if (role.syncToken !== token) {
-        console.error(`[MT5 Sync] Token mismatch for ${userId}. Received: ${token}, Expected: ${role.syncToken}`);
-        return res.status(401).json({ message: "Invalid sync token" });
+      const storedToken = role.syncToken?.trim();
+      const providedToken = token?.trim();
+
+      if (!storedToken) {
+        console.warn(`[MT5 Sync] User ${userId} has no token generated.`);
+        return res.status(401).json({ message: "Sync token not generated for this user" });
+      }
+
+      if (storedToken !== providedToken) {
+        console.warn(`[MT5 Sync] Token mismatch for ${userId}. Received: [${providedToken}], Expected: [${storedToken}]`);
+        return res.status(401).json({ 
+          message: "Invalid sync token",
+          error: "TOKEN_MISMATCH",
+          received: providedToken?.substring(0, 4) + "...",
+          expected: storedToken?.substring(0, 4) + "..."
+        });
       }
 
       await storage.updateMT5Data({
