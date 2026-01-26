@@ -81,6 +81,9 @@ export default function Pricing() {
     <div className="flex-1 text-slate-50 pb-20 md:pb-0">
       <main className="p-6 lg:p-10 max-w-5xl mx-auto">
         <header className="text-center mb-16">
+          <p className="text-slate-400 max-w-2xl mx-auto uppercase text-[10px] font-bold tracking-[0.2em] mb-4">
+            Not financial advice. Trading involves risk.
+          </p>
           <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic mb-4">
             Simple Pricing. <span className="text-emerald-500">No Hype.</span>
           </h1>
