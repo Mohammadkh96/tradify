@@ -264,6 +264,15 @@ export async function registerRoutes(
 
       if (storedToken !== providedToken) {
         console.warn(`[MT5 Sync] Token mismatch for ${userId}. Received: [${providedToken}], Expected: [${storedToken}]`);
+        
+        // Log mismatch to audit trail for debugging
+        await storage.createAdminAuditLog({
+          adminId: 0, // System
+          actionType: "MT5_SYNC_ERROR",
+          targetUserId: userId,
+          details: `Token mismatch. Received: ${providedToken?.substring(0, 8)}..., Expected: ${storedToken?.substring(0, 8)}...`
+        });
+
         return res.status(401).json({ 
           message: "Invalid sync token",
           error: "TOKEN_MISMATCH",

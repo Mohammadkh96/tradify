@@ -1,0 +1,263 @@
+📓 G. JOURNAL & HISTORY
+TRADE JOURNAL & HISTORY — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of Journal & History
+
+Provide a complete, accurate record of all trades
+
+Replace Excel/manual journaling entirely
+
+Enable fast review, filtering, and reflection
+
+Serve as the foundation for analytics, discipline, and AI insights
+
+1️⃣ Trades Auto-Imported
+Functional Requirements
+
+All trades must be automatically imported from MT5 via the EA
+
+Manual trade creation is not allowed
+
+Imported trade data must include at minimum:
+
+Trade ID (unique)
+
+Symbol
+
+Direction (Buy / Sell)
+
+Volume (lot size)
+
+Entry price
+
+Exit price
+
+Open time
+
+Close time
+
+Commission
+
+Swap
+
+Net P&L
+
+Support:
+
+Partial closes
+
+Multiple positions per symbol
+
+Hedging and netting accounts
+
+Data Integrity
+
+No duplicate trades
+
+Each trade linked to:
+
+User
+
+MT5 account
+
+Trades immutable except for user-added metadata (notes, tags)
+
+2️⃣ Trade List Sortable
+Functional Requirements
+
+Journal table must support sorting by:
+
+Date (open / close)
+
+Symbol
+
+P&L
+
+R-multiple
+
+Session
+
+Sorting must be:
+
+Fast
+
+Deterministic
+
+Consistent across reloads
+
+UX Requirements
+
+Clear sort indicators (↑ ↓)
+
+Default sort:
+
+Most recent trades first
+
+No pagination lag for reasonable datasets
+
+3️⃣ Filters (Date, Symbol, Session)
+Filter Types (MVP)
+
+Date range:
+
+Today
+
+Last 7 days
+
+Last 30 days
+
+Custom range
+
+Symbol:
+
+Dropdown or searchable list
+
+Session:
+
+Asia
+
+London
+
+New York
+
+Functional Requirements
+
+Filters must:
+
+Apply instantly
+
+Affect both journal list and derived metrics
+
+Multiple filters can be combined
+
+Filter state persists during session (optional)
+
+4️⃣ Notes Per Trade
+Functional Requirements
+
+User can add free-text notes to each trade
+
+Notes are:
+
+Optional
+
+Editable
+
+Stored separately from trade data
+
+Notes do not affect analytics
+
+UX Requirements
+
+Notes editor accessible from trade row
+
+Clear save confirmation
+
+No auto-save ambiguity
+
+Use Cases
+
+Entry reasoning
+
+Emotional state
+
+Post-trade review
+
+5️⃣ Strategy Tags
+Functional Requirements
+
+User can assign one or more strategy tags to a trade
+
+Strategy tags:
+
+User-defined
+
+Reusable
+
+Editable
+
+Tags stored as metadata linked to trade
+
+Analytics Integration
+
+Strategy tags must be usable in:
+
+Filters
+
+Performance breakdowns
+
+AI insights (later)
+
+UX Requirements
+
+Simple tag selector
+
+No forced tagging
+
+Clear tag visibility per trade
+
+6️⃣ Data Accuracy Verified
+Non-Negotiable Rule
+
+The journal must match MT5 trade history exactly.
+
+Verification Requirements
+
+Trade count equals MT5 trade count
+
+Net P&L equals MT5 net P&L
+
+Timestamps match MT5 records
+
+Partial closes reconciled correctly
+
+Validation Strategy
+
+Backend validation on ingest
+
+Periodic reconciliation checks (optional)
+
+Admin visibility into discrepancies (optional later)
+
+🔒 DATA INTEGRITY RULES
+
+Trade records are read-only
+
+Users cannot edit:
+
+Prices
+
+Times
+
+P&L
+
+Only metadata (notes, tags) is editable
+
+All changes logged internally
+
+🧪 EDGE CASE TESTING (MUST PASS)
+
+⬜ Partial close shown correctly
+
+⬜ Multiple trades same symbol same time
+
+⬜ Filter combinations behave correctly
+
+⬜ Sorting does not break filters
+
+⬜ Notes persist after refresh
+
+⬜ Strategy tags reflected in analytics
+
+✅ DEFINITION OF “DONE” (ACCEPTANCE CRITERIA)
+
+Journal & History is complete only if:
+
+All trades are present and correct
+
+Users never manually enter trades
+
+Filtering and sorting are reliable
+
+Notes and tags persist correctly
+
+Users trust the journal as a single source of truth
