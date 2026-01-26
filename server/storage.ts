@@ -8,6 +8,12 @@ import {
   adminAuditLog,
   aiPerformanceInsights,
   aiInsightLogs,
+  hubPosts,
+  hubComments,
+  hubReports,
+  type HubPost,
+  type HubComment,
+  type HubReport,
   type InsertTrade,
   type UpdateTradeRequest,
   type Trade,
@@ -49,6 +55,13 @@ export interface IStorage {
   getAIInsights(userId: string, timeframe: string): Promise<AIPerformanceInsight[]>;
   saveAIInsight(insight: { userId: string; timeframe: string; insightText: string; metadata: any }): Promise<AIPerformanceInsight>;
   logAIRequest(log: { userId: string; prompt: string; response: string }): Promise<AIInsightLog>;
+  // Trader Hub Methods
+  getHubPosts(): Promise<(HubPost & { user?: any, commentCount: number })[]>;
+  createHubPost(post: any): Promise<HubPost>;
+  deleteHubPost(id: number, userId: string, isAdmin: boolean): Promise<boolean>;
+  reportHubPost(report: any): Promise<HubReport>;
+  createHubComment(comment: any): Promise<HubComment>;
+  getHubComments(postId: number): Promise<HubComment[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -306,6 +319,53 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTrade(id: number): Promise<void> {
     await db.delete(tradeJournal).where(eq(tradeJournal.id, id));
+  }
+
+  // Trader Hub Implementation
+  async getHubPosts(): Promise<(HubPost & { user?: any, commentCount: number })[]> {
+    const posts = await db.select().from(hubPosts).orderBy(desc(hubPosts.createdAt));
+    const postsWithDetails = await Promise.all(posts.map(async (post) => {
+      const user = await this.getUserRole(post.userId);
+      const comments = await db.select().from(hubComments).where(eq(hubComments.postId, post.id));
+      return {
+        ...post,
+        user: user ? { userId: user.userId, role: user.role } : undefined,
+        commentCount: comments.length
+      };
+    }));
+    return postsWithDetails;
+  }
+
+  async createHubPost(post: any): Promise<HubPost> {
+    const [newPost] = await db.insert(hubPosts).values(post).returning();
+    return newPost;
+  }
+
+  async deleteHubPost(id: number, userId: string, isAdmin: boolean): Promise<boolean> {
+    if (isAdmin) {
+      await db.delete(hubPosts).where(eq(hubPosts.id, id));
+      return true;
+    }
+    const [post] = await db.select().from(hubPosts).where(eq(hubPosts.id, id)).limit(1);
+    if (post && post.userId === userId) {
+      await db.delete(hubPosts).where(eq(hubPosts.id, id));
+      return true;
+    }
+    return false;
+  }
+
+  async reportHubPost(report: any): Promise<HubReport> {
+    const [newReport] = await db.insert(hubReports).values(report).returning();
+    return newReport;
+  }
+
+  async createHubComment(comment: any): Promise<HubComment> {
+    const [newComment] = await db.insert(hubComments).values(comment).returning();
+    return newComment;
+  }
+
+  async getHubComments(postId: number): Promise<HubComment[]> {
+    return await db.select().from(hubComments).where(eq(hubComments.postId, postId)).orderBy(desc(hubComments.createdAt));
   }
 
   validateTradeRules(trade: InsertTrade) {

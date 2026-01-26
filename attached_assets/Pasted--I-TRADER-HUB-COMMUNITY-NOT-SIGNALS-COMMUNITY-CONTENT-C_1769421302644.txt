@@ -1,0 +1,238 @@
+🧑‍🤝‍🧑 I. TRADER HUB (COMMUNITY, NOT SIGNALS)
+COMMUNITY CONTENT & CREATOR SYSTEM — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of the Trader Hub
+
+Create a learning-oriented trading community
+
+Allow traders to share ideas, reasoning, and reviews
+
+Increase engagement and retention
+
+Explicitly avoid becoming a signal, advisory, or copy-trading platform
+
+Maintain legal, payment-processor, and platform safety
+
+🧱 CORE STRUCTURE
+1️⃣ Community Feed Exists
+Functional Requirements
+
+A dedicated Trader Hub page accessible from main navigation
+
+Feed displays community posts in chronological order
+
+Posts are scoped to:
+
+Authenticated users only
+
+Feed supports:
+
+Pagination or infinite scroll
+
+Basic sorting (latest, most discussed)
+
+UX Requirements
+
+Clean, professional layout
+
+Clear distinction between:
+
+User-generated content
+
+Platform analytics
+
+No trading urgency language anywhere in UI
+
+2️⃣ Traders Post Ideas & Commentary
+Allowed Post Types
+
+Market ideas (contextual, descriptive)
+
+Trade reasoning (why they considered a setup)
+
+Market observations
+
+Macro / session commentary
+
+Functional Requirements
+
+Post includes:
+
+Title
+
+Body text
+
+Optional symbol reference
+
+No requirement to include entry/exit details
+
+Posts are editable and deletable by author
+
+3️⃣ Charts & Reasoning Allowed
+Functional Requirements
+
+Users can attach:
+
+Images (charts/screenshots)
+
+Images stored securely
+
+Charts must be static images only (no live trading widgets)
+
+UX Requirements
+
+Clear caption or explanation field
+
+Encourage reasoning over outcomes
+
+4️⃣ Post-Trade Reviews Allowed
+Functional Requirements
+
+Users can publish post-trade reviews, including:
+
+What they planned
+
+What happened
+
+What they learned
+
+Reviews are retrospective only
+
+No forward-looking instructions
+
+UX Requirements
+
+Clearly labeled as “Post-Trade Review”
+
+Timestamp visible
+
+5️⃣ Educational Content Allowed
+Examples
+
+Strategy breakdowns (high-level)
+
+Risk management discussions
+
+Psychology lessons
+
+Session analysis write-ups
+
+Requirements
+
+Content framed as education, not instruction
+
+No “do this now” language
+
+⛔ CONTENT RESTRICTIONS (NON-NEGOTIABLE)
+
+These rules must be enforced at UI + moderation level.
+
+6️⃣ No “Buy / Sell” Commands
+Prohibited Examples
+
+“Buy EURUSD now”
+
+“Sell at market”
+
+“Entry here, SL here”
+
+Enforcement
+
+Automatic keyword detection (basic)
+
+Manual moderation fallback
+
+7️⃣ No Guaranteed Language
+Prohibited Examples
+
+“Guaranteed”
+
+“High probability win”
+
+“Can’t fail”
+
+“Easy profits”
+
+Enforcement
+
+Keyword filtering
+
+Clear community guidelines
+
+8️⃣ No Automation
+Prohibited
+
+Bots
+
+Auto-posting from signal services
+
+API-driven content feeds
+
+Trader Hub is human discussion only.
+
+9️⃣ No Copy Trading
+Prohibited
+
+Copy-trade links
+
+Auto-execution offers
+
+“Mirror my trades” language
+
+No execution integration under any circumstance.
+
+🔟 No Performance Promises
+Prohibited
+
+ROI claims
+
+Win-rate marketing
+
+Equity screenshots framed as marketing
+
+Users may discuss experiences but not promote outcomes.
+
+🔒 MODERATION & SAFETY
+Moderation Tools (MVP)
+
+⬜ Report post button
+
+⬜ Admin can remove posts
+
+⬜ Admin can warn or ban users
+
+⬜ Content guidelines visible to users
+
+Disclaimer (Required)
+
+Displayed clearly in Trader Hub UI:
+
+“All content shared here reflects personal opinions and experiences.
+It is for educational discussion only and does not constitute financial advice.”
+
+🧪 EDGE CASE TESTING (MUST PASS)
+
+⬜ Post creation works
+
+⬜ Images upload correctly
+
+⬜ Prohibited language flagged
+
+⬜ Reports reach admin
+
+⬜ Deleted posts disappear
+
+⬜ Feed loads consistently
+
+✅ DEFINITION OF “DONE” (ACCEPTANCE CRITERIA)
+
+Trader Hub is complete only if:
+
+Community content is clearly non-advisory
+
+No signal-like behavior exists
+
+Moderation controls work
+
+Legal and platform risk is minimized
+
+Engagement increases without compromising trust

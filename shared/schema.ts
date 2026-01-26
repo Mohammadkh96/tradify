@@ -201,3 +201,40 @@ export const adminAuditLog = pgTable("admin_audit_log", {
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
 export type UserRole = typeof userRole.$inferSelect;
 export type InsertUserRole = typeof userRole.$inferInsert;
+
+export const hubPosts = pgTable("hub_posts", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  symbol: text("symbol"),
+  imageUrl: text("image_url"),
+  type: text("type").notNull().default("Idea"), // Idea, Review, Commentary, Education
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const hubComments = pgTable("hub_comments", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: text("user_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const hubReports = pgTable("hub_reports", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: text("user_id").notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").notNull().default("PENDING"), // PENDING, RESOLVED
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertHubPostSchema = createInsertSchema(hubPosts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertHubCommentSchema = createInsertSchema(hubComments).omit({ id: true, createdAt: true });
+export const insertHubReportSchema = createInsertSchema(hubReports).omit({ id: true, createdAt: true });
+
+export type HubPost = typeof hubPosts.$inferSelect;
+export type HubComment = typeof hubComments.$inferSelect;
+export type HubReport = typeof hubReports.$inferSelect;
