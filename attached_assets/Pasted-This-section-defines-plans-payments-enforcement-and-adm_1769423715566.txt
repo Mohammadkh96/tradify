@@ -1,0 +1,322 @@
+This section defines plans, payments, enforcement, and admin control in a way that is scalable, auditable, and safe for a paid trading product.
+
+1️⃣ PLANS
+🆓 FREE PLAN — Trader Essentials
+
+Purpose:
+Trust-building, zero-friction onboarding, real MT5 visibility.
+
+Included Features
+
+Live MT5 Balance, Equity, Floating P&L, Margin Level
+
+Open Positions (live)
+
+Journal (manual + MT5)
+
+Trade history limited to last 30 days
+
+Basic dashboard
+
+Risk calculator
+
+Knowledge base
+
+Limited chat assistant
+
+Restrictions
+
+❌ Equity curve beyond 30 days
+
+❌ Advanced analytics (profit factor, expectancy, drawdown)
+
+❌ Journal export
+
+❌ Advanced date filtering
+
+❌ Unlimited assistant usage
+
+❌ Priority MT5 sync
+
+Technical Enforcement
+
+Backend enforces date limits (NOW() - 30 days)
+
+Pro-only API endpoints return 403 FORBIDDEN
+
+UI shows 🔒 “Pro feature” badges
+
+✅ Free plan defined clearly
+
+⭐ PRO PLAN — Trader Pro
+
+Purpose:
+Depth, analysis, efficiency — for serious traders.
+
+Included Features
+
+Unlimited MT5 trade history
+
+Full equity curve (all-time)
+
+Advanced analytics:
+
+Win rate (validated)
+
+Profit factor
+
+Expectancy
+
+Max drawdown
+
+Avg win vs loss
+
+Advanced journal filtering
+
+Trade tagging & notes
+
+Screenshot attachments
+
+Export to CSV / PDF
+
+Unlimited assistant usage
+
+Priority MT5 sync & historical backfill
+
+Pricing
+
+$19 / month
+
+$190 / year (2 months free)
+
+✅ Pro plan defined clearly
+✅ Feature limits enforced correctly
+
+2️⃣ PAYMENTS
+Payment Provider
+
+Stripe (recommended)
+
+Stripe Checkout or Stripe Customer Portal
+
+✅ Payment provider integrated
+
+Subscription Model
+
+Recurring subscription
+
+Monthly & yearly plans
+
+No lock-in
+
+Cancel anytime
+
+Stripe Objects
+
+Product: tradify_pro
+
+Prices:
+
+tradify_pro_monthly
+
+tradify_pro_yearly
+
+Upgrade Flow (Free → Pro)
+
+User Flow
+
+User clicks 🔒 Pro feature
+
+Redirect to Pricing or Checkout
+
+Stripe checkout
+
+Payment succeeds
+
+User redirected back to app
+
+Pro features unlock immediately
+
+Backend
+
+Stripe webhook: checkout.session.completed
+
+Update user:
+
+plan = PRO
+
+subscription_status = ACTIVE
+
+✅ Upgrade Free → Pro works
+
+Downgrade Flow (Pro → Free)
+
+User Flow
+
+User cancels subscription
+
+Access remains until end of billing period
+
+After period ends → downgraded to Free
+
+Backend
+
+Stripe webhook: customer.subscription.deleted
+
+Update user:
+
+plan = FREE
+
+subscription_status = CANCELED
+
+✅ Downgrade works
+
+Cancellation
+
+Rules
+
+User can cancel anytime
+
+No immediate data loss
+
+No forced retention tricks
+
+UI
+
+“Manage Subscription” → Stripe Portal
+
+Backend
+
+Listen to Stripe subscription updates
+
+Reflect status accurately
+
+✅ Cancellation works
+
+Payment Failure Handling (CRITICAL)
+
+Scenarios
+
+Card declined
+
+Expired card
+
+Insufficient funds
+
+Handling
+
+Stripe webhook: invoice.payment_failed
+
+Mark user:
+
+subscription_status = PAST_DUE
+
+Show banner in app:
+
+“Payment issue — please update your billing details”
+
+Grace Period
+
+3–7 days (configurable)
+
+After grace period:
+
+Pro features locked
+
+User downgraded to Free
+
+✅ Payment failure handling implemented
+
+3️⃣ BILLING ADMIN
+User Subscription Sync
+
+Each user record must store:
+
+plan (FREE / PRO)
+
+stripe_customer_id
+
+stripe_subscription_id
+
+subscription_status
+
+ACTIVE
+
+PAST_DUE
+
+CANCELED
+
+current_period_end
+
+Backend uses this as single source of truth.
+
+✅ Subscription status synced to user
+
+Admin Billing Dashboard
+
+Admin Capabilities
+
+View user list
+
+See:
+
+Email
+
+Plan
+
+Subscription status
+
+Billing cycle
+
+Last payment date
+
+Link to Stripe Customer page
+
+Admin Permissions
+
+Read-only (no manual edits)
+
+Stripe remains source of billing truth
+
+✅ Admin can view billing status
+
+4️⃣ SECURITY & COMPLIANCE (IMPORTANT)
+
+❌ No card data stored in TRADIFY
+
+❌ No payment logic in frontend
+
+✅ All billing via Stripe
+
+✅ Webhooks verified with Stripe signature
+
+✅ Billing actions logged
+
+5️⃣ ACCEPTANCE CHECKLIST (FINAL)
+Plans
+
+✅ Free plan defined clearly
+
+✅ Pro plan defined clearly
+
+✅ Feature limits enforced correctly
+
+Payments
+
+✅ Stripe integrated
+
+✅ Monthly subscription works
+
+✅ Upgrade Free → Pro works
+
+✅ Downgrade works
+
+✅ Cancellation works
+
+✅ Payment failure handling implemented
+
+Billing Admin
+
+✅ Subscription status synced to user
+
+✅ Admin can view billing status
