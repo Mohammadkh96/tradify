@@ -248,7 +248,7 @@ export class DatabaseStorage implements IStorage {
 
   async getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]> {
     const [user] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
-    const isPro = user?.subscriptionTier === "PRO";
+    const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
     
     let query = db.select().from(mt5History).where(eq(mt5History.userId, userId));
     

@@ -1,10 +1,13 @@
-import { ShieldCheck, Check, Zap, BarChart3, History, Lock, ArrowRight, X, Loader2 } from "lucide-react";
+import { ShieldCheck, Check, Zap, BarChart3, History, Lock, ArrowRight, X, Loader2, CreditCard } from "lucide-react";
+import { SiPaypal } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import PayPalButton from "@/components/PayPalButton";
+import { useState } from "react";
 
 const features = [
   { name: "Live MT5 Data Connection", free: true, pro: true },
@@ -63,6 +66,7 @@ export default function Pricing() {
     }
   });
 
+  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
   const isPro = user?.subscriptionTier === "PRO";
 
   if (isLoadingProducts) {
@@ -159,24 +163,59 @@ export default function Pricing() {
                   {portalMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : "Manage Subscription"}
                 </Button>
               ) : (
-                <Button 
-                  onClick={() => {
-                    if (!user) {
-                      window.location.href = "/signup";
-                      return;
-                    }
-                    if (monthlyPrice) checkoutMutation.mutate(monthlyPrice.id);
-                  }}
-                  disabled={checkoutMutation.isPending}
-                  className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-                >
-                  {checkoutMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
-                    <>
-                      Upgrade to Pro
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
+                <div className="space-y-4">
+                  <div className="flex gap-2 p-1 bg-slate-900/50 rounded-lg border border-slate-800">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPaymentMethod("stripe")}
+                      className={cn(
+                        "flex-1 gap-2 text-[10px] font-bold uppercase tracking-widest h-8",
+                        paymentMethod === "stripe" ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "text-slate-400"
+                      )}
+                    >
+                      <CreditCard size={12} />
+                      Stripe
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPaymentMethod("paypal")}
+                      className={cn(
+                        "flex-1 gap-2 text-[10px] font-bold uppercase tracking-widest h-8",
+                        paymentMethod === "paypal" ? "bg-[#0070ba] text-white hover:bg-[#005ea6]" : "text-slate-400"
+                      )}
+                    >
+                      <SiPaypal size={12} />
+                      PayPal
+                    </Button>
+                  </div>
+
+                  {paymentMethod === "stripe" ? (
+                    <Button 
+                      onClick={() => {
+                        if (!user) {
+                          window.location.href = "/signup";
+                          return;
+                        }
+                        if (monthlyPrice) checkoutMutation.mutate(monthlyPrice.id);
+                      }}
+                      disabled={checkoutMutation.isPending}
+                      className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                    >
+                      {checkoutMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
+                        <>
+                          Upgrade to Pro
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <div className="w-full bg-white rounded-md p-1">
+                       <PayPalButton amount="19.00" currency="USD" intent="subscription" />
+                    </div>
                   )}
-                </Button>
+                </div>
               )}
             </CardContent>
           </Card>
