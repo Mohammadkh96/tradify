@@ -238,3 +238,30 @@ export const insertHubReportSchema = createInsertSchema(hubReports).omit({ id: t
 export type HubPost = typeof hubPosts.$inferSelect;
 export type HubComment = typeof hubComments.$inferSelect;
 export type HubReport = typeof hubReports.$inferSelect;
+
+export const creatorProfiles = pgTable("creator_profiles", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  bio: text("bio"),
+  isVerified: boolean("is_verified").default(false),
+  externalLink: text("external_link"),
+  status: text("status").notNull().default("PENDING"), // PENDING, APPROVED, SUSPENDED
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const creatorApplications = pgTable("creator_applications", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  background: text("background").notNull(),
+  contentFocus: text("content_focus").notNull(),
+  status: text("status").notNull().default("PENDING"), // PENDING, APPROVED, REJECTED
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCreatorProfileSchema = createInsertSchema(creatorProfiles).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCreatorApplicationSchema = createInsertSchema(creatorApplications).omit({ id: true, createdAt: true });
+
+export type CreatorProfile = typeof creatorProfiles.$inferSelect;
+export type CreatorApplication = typeof creatorApplications.$inferSelect;

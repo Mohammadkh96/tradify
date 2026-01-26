@@ -11,9 +11,13 @@ import {
   hubPosts,
   hubComments,
   hubReports,
+  creatorProfiles,
+  creatorApplications,
   type HubPost,
   type HubComment,
   type HubReport,
+  type CreatorProfile,
+  type CreatorApplication,
   type InsertTrade,
   type UpdateTradeRequest,
   type Trade,
@@ -62,6 +66,13 @@ export interface IStorage {
   reportHubPost(report: any): Promise<HubReport>;
   createHubComment(comment: any): Promise<HubComment>;
   getHubComments(postId: number): Promise<HubComment[]>;
+  // Creator Program Methods
+  getCreatorProfile(userId: string): Promise<CreatorProfile | undefined>;
+  createCreatorApplication(app: any): Promise<CreatorApplication>;
+  getCreatorApplications(): Promise<CreatorApplication[]>;
+  updateCreatorApplicationStatus(id: number, status: string): Promise<void>;
+  updateCreatorProfile(userId: string, updates: any): Promise<CreatorProfile>;
+  getAllApprovedCreators(): Promise<CreatorProfile[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -366,6 +377,53 @@ export class DatabaseStorage implements IStorage {
 
   async getHubComments(postId: number): Promise<HubComment[]> {
     return await db.select().from(hubComments).where(eq(hubComments.postId, postId)).orderBy(desc(hubComments.createdAt));
+  }
+
+  // Creator Program Implementation
+  async getCreatorProfile(userId: string): Promise<CreatorProfile | undefined> {
+    const [profile] = await db.select().from(creatorProfiles).where(eq(creatorProfiles.userId, userId)).limit(1);
+    return profile;
+  }
+
+  async createCreatorApplication(app: any): Promise<CreatorApplication> {
+    const [newApp] = await db.insert(creatorApplications).values(app).returning();
+    return newApp;
+  }
+
+  async getCreatorApplications(): Promise<CreatorApplication[]> {
+    return await db.select().from(creatorApplications).orderBy(desc(creatorApplications.createdAt));
+  }
+
+  async updateCreatorApplicationStatus(id: number, status: string): Promise<void> {
+    const [app] = await db.update(creatorApplications)
+      .set({ status })
+      .where(eq(creatorApplications.id, id))
+      .returning();
+    
+    if (status === "APPROVED") {
+      const [existing] = await db.select().from(creatorProfiles).where(eq(creatorProfiles.userId, app.userId)).limit(1);
+      if (!existing) {
+        await db.insert(creatorProfiles).values({
+          userId: app.userId,
+          displayName: app.userId.split('@')[0],
+          status: "APPROVED"
+        });
+      } else {
+        await db.update(creatorProfiles).set({ status: "APPROVED" }).where(eq(creatorProfiles.userId, app.userId));
+      }
+    }
+  }
+
+  async updateCreatorProfile(userId: string, updates: any): Promise<CreatorProfile> {
+    const [updated] = await db.update(creatorProfiles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(creatorProfiles.userId, userId))
+      .returning();
+    return updated;
+  }
+
+  async getAllApprovedCreators(): Promise<CreatorProfile[]> {
+    return await db.select().from(creatorProfiles).where(eq(creatorProfiles.status, "APPROVED"));
   }
 
   validateTradeRules(trade: InsertTrade) {

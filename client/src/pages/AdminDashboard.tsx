@@ -194,6 +194,87 @@ function AuditLogsTab() {
   );
 }
 
+function CreatorApplicationsTab() {
+  const { toast } = useToast();
+  const { data: apps, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/creator-applications"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/creator-applications");
+      return res.json();
+    }
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const res = await apiRequest("POST", `/api/admin/creator-applications/${id}/status`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/creator-applications"] });
+      toast({ title: "Status Updated", description: "Creator application has been processed." });
+    }
+  });
+
+  if (isLoading) return <div className="p-8 text-emerald-500 font-mono">RETRIEVING APPLICATIONS...</div>;
+
+  return (
+    <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
+      <div>
+        <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
+          <ShieldAlert /> Creator Applications
+        </h1>
+        <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Approve or Reject Creator Requests</p>
+      </div>
+
+      <Card className="bg-[#0b1120] border-slate-800 overflow-hidden">
+        <Table>
+          <TableHeader className="bg-slate-900/50">
+            <TableRow className="border-slate-800">
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">User ID</TableHead>
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Background</TableHead>
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Focus</TableHead>
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Status</TableHead>
+              <TableHead className="text-right text-slate-500 font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {apps?.map((app) => (
+              <TableRow key={app.id} className="border-slate-800 hover:bg-slate-900/40">
+                <TableCell className="font-bold text-slate-300 text-xs">{app.userId}</TableCell>
+                <TableCell className="text-slate-400 text-xs max-w-xs truncate">{app.background}</TableCell>
+                <TableCell className="text-slate-400 text-xs">{app.contentFocus}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={cn(
+                    "text-[9px] font-black uppercase tracking-widest",
+                    app.status === "APPROVED" ? "border-emerald-500 text-emerald-500" : 
+                    app.status === "REJECTED" ? "border-rose-500 text-rose-500" : "border-amber-500 text-amber-500"
+                  )}>
+                    {app.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right space-x-2">
+                  {app.status === "PENDING" && (
+                    <>
+                      <Button size="sm" variant="outline" className="h-7 text-[10px] border-emerald-500/50 text-emerald-500" 
+                        onClick={() => updateStatusMutation.mutate({ id: app.id, status: "APPROVED" })}>
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-[10px] text-rose-500"
+                        onClick={() => updateStatusMutation.mutate({ id: app.id, status: "REJECTED" })}>
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [location] = useLocation();
@@ -368,6 +449,11 @@ export default function AdminDashboard() {
   // --- 4. AUDIT LOGS PAGE ---
   if (location === "/admin/audit-logs") {
     return <AuditLogsTab />;
+  }
+
+  // --- 5. CREATOR APPLICATIONS PAGE ---
+  if (location === "/admin/creator-applications") {
+    return <CreatorApplicationsTab />;
   }
 
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)

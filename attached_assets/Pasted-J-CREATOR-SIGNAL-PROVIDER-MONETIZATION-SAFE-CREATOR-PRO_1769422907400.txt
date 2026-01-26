@@ -1,0 +1,272 @@
+J. CREATOR / SIGNAL PROVIDER MONETIZATION (SAFE)
+CREATOR PROGRAM & PLATFORM MONETIZATION — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of the Creator Program
+
+Allow experienced traders to build an audience
+
+Allow Tradify to monetize creators safely
+
+Avoid selling signals
+
+Keep Tradify positioned as a platform, not an advisor or broker
+
+Maintain payment processor and legal safety
+
+🧑‍🎓 CREATOR PROGRAM
+1️⃣ Creator Application Flow
+Functional Requirements
+
+Users can apply to become a Creator
+
+Application includes:
+
+Short description of trading background
+
+Content focus (education, analysis, post-trade reviews, etc.)
+
+Agreement to Creator Guidelines
+
+Application is not auto-approved
+
+UX Requirements
+
+Clear explanation:
+
+“Creators share ideas and educational content. This is not a signal service.”
+
+Clear expectations before applying
+
+2️⃣ Manual Approval (Non-Negotiable)
+Functional Requirements
+
+All creator applications require manual admin approval
+
+Admin can:
+
+Approve
+
+Reject
+
+Suspend creator status later
+
+Security & Risk Rules
+
+No automatic creator onboarding
+
+Admin approval logged in audit trail
+
+3️⃣ Creator Profile Pages
+Functional Requirements
+
+Each approved creator has a public profile page containing:
+
+Profile name / handle
+
+Bio (text only)
+
+Content history (Trader Hub posts)
+
+Optional verified badge
+
+External link section (see below)
+
+UX Requirements
+
+Clean, professional layout
+
+No performance marketing
+
+No ROI statistics displayed
+
+4️⃣ Verified Badge (Optional)
+Purpose
+
+Indicates identity or long-term participation
+
+Does NOT indicate performance or profitability
+
+Rules
+
+Granted manually by admin
+
+No automated criteria
+
+Clearly labeled as:
+
+“Verified identity / participation — not a performance endorsement”
+
+🔗 EXTERNAL MONETIZATION (ALLOWED)
+5️⃣ One External Link per Creator (Telegram, etc.)
+Functional Requirements
+
+Creator may add one external link to their profile
+
+Examples:
+
+Telegram channel
+
+Discord
+
+Personal website
+
+Strict Rules
+
+Tradify does not verify or endorse external content
+
+Tradify does not embed external feeds
+
+Tradify does not redirect automatically
+
+6️⃣ Clear “External / Not Affiliated” Label
+Mandatory UI Label
+
+Displayed directly next to the link:
+
+“External platform. Tradify is not affiliated and does not endorse this content.”
+
+This label:
+
+Must be visible
+
+Cannot be removed
+
+Applies to all creators equally
+
+7️⃣ Tradify Does NOT Process Signal Payments
+Non-Negotiable Rule
+
+No payments for:
+
+Signals
+
+Trade calls
+
+Copy trading
+
+Tradify does not:
+
+Handle creator subscriptions for signals
+
+Take responsibility for external monetization
+
+Payment Boundary
+
+Creators monetize outside Tradify.
+Tradify monetizes platform access only.
+
+8️⃣ No Embedded Signal Feeds
+Prohibited
+
+Embedded Telegram messages
+
+Embedded Discord feeds
+
+Live signal widgets
+
+Automated content syncing
+
+Trader Hub remains manual, human-written content only.
+
+💰 HOW TRADIFY EARNS (SAFE MODELS)
+9️⃣ Creator Pro Subscription
+Functional Requirements
+
+Separate paid plan for creators
+
+Unlocks:
+
+Creator profile
+
+Posting privileges
+
+Visibility in Trader Hub
+
+Tradify sells creator tools, not signals
+
+🔟 Listing / Visibility Fees (Optional)
+Examples
+
+Featured creator slot
+
+Enhanced profile visibility
+
+Priority discovery
+
+Rules
+
+Visibility ≠ endorsement
+
+No performance-based ranking
+
+1️⃣1️⃣ Revenue Share (Optional & Careful)
+If implemented:
+
+Revenue share applies to:
+
+Creator Pro subscription
+
+Platform services
+
+Never tied to signal performance
+
+This is optional and can be added later.
+
+🔒 PLATFORM POSITIONING (CRITICAL)
+Tradify MUST always be positioned as:
+
+Platform provider
+
+Community host
+
+Analytics & discipline tool
+
+Tradify MUST NEVER be positioned as:
+
+Signal provider
+
+Trading advisor
+
+Copy-trading service
+
+Fund manager
+
+📜 REQUIRED DISCLAIMERS
+
+Displayed on:
+
+Creator profiles
+
+Trader Hub
+
+Creator application
+
+“Creators are independent users.
+Tradify does not provide signals or financial advice and does not endorse creator content.”
+
+🧪 EDGE CASE TESTING (MUST PASS)
+
+⬜ Creator application submission works
+
+⬜ Admin approval required
+
+⬜ Creator profile visible only after approval
+
+⬜ External link labeled correctly
+
+⬜ No embedded feeds possible
+
+⬜ Payments never linked to signals
+
+✅ DEFINITION OF “DONE” (ACCEPTANCE CRITERIA)
+
+Creator monetization is complete only if:
+
+Creators can build an audience
+
+Tradify earns from platform access
+
+No signal selling occurs inside Tradify
+
+Legal and payment processor risk is minimized
+
+Platform trust is preserved

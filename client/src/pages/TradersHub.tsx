@@ -12,7 +12,10 @@ import {
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
-  AlertTriangle
+  AlertTriangle,
+  UserCheck,
+  ExternalLink,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -40,6 +43,38 @@ export default function TradersHub() {
   const { data: posts, isLoading } = useQuery<any[]>({ 
     queryKey: ["/api/traders-hub/posts"],
     refetchInterval: 30000
+  });
+  const { data: creatorProfile } = useQuery<any>({
+    queryKey: [`/api/traders-hub/creators/${user?.userId}`],
+    enabled: !!user?.userId
+  });
+
+  const [isApplyOpen, setIsApplyOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [applyData, setApplyData] = useState({ background: "", contentFocus: "" });
+  const [profileData, setProfileData] = useState({ displayName: "", bio: "", externalLink: "" });
+
+  const applyMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/traders-hub/apply", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      setIsApplyOpen(false);
+      toast({ title: "Application submitted", description: "Moderators will review your request." });
+    }
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("PATCH", "/api/traders-hub/profile", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/traders-hub/creators/${user?.userId}`] });
+      setIsProfileOpen(false);
+      toast({ title: "Profile updated" });
+    }
   });
 
   const createMutation = useMutation({
@@ -94,7 +129,111 @@ export default function TradersHub() {
           <p className="text-slate-400 mt-1 uppercase text-xs font-bold tracking-widest">Community Learning & Research</p>
         </div>
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <div className="flex items-center gap-3">
+          {creatorProfile?.status === "APPROVED" ? (
+            <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-emerald-500/30 text-emerald-500 font-bold uppercase text-xs tracking-widest hover:bg-emerald-500/10">
+                  <UserCheck className="mr-2" size={16} />
+                  Creator Profile
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-black uppercase tracking-tighter">Edit Creator Profile</DialogTitle>
+                  <CardDescription className="text-[10px] uppercase font-bold text-slate-400">
+                    This is your public presence on the platform.
+                  </CardDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Display Name</label>
+                    <Input 
+                      className="bg-slate-900 border-slate-800"
+                      value={profileData.displayName || creatorProfile.displayName}
+                      onChange={(e) => setProfileData({...profileData, displayName: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Bio</label>
+                    <Textarea 
+                      className="bg-slate-900 border-slate-800"
+                      value={profileData.bio || creatorProfile.bio || ""}
+                      onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">External Link (Telegram/Discord)</label>
+                    <Input 
+                      className="bg-slate-900 border-slate-800"
+                      placeholder="https://t.me/yourchannel"
+                      value={profileData.externalLink || creatorProfile.externalLink || ""}
+                      onChange={(e) => setProfileData({...profileData, externalLink: e.target.value})}
+                    />
+                    <p className="text-[9px] text-slate-600 italic font-bold uppercase leading-tight mt-1">
+                      Tradify is not affiliated and does not endorse external content.
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter"
+                    onClick={() => updateProfileMutation.mutate(profileData)}
+                  >
+                    Save Profile
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-slate-800 text-slate-400 font-bold uppercase text-xs tracking-widest hover:bg-slate-900">
+                  <ShieldCheck className="mr-2" size={16} />
+                  Become a Creator
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-black uppercase tracking-tighter">Creator Program Application</DialogTitle>
+                  <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-tight">
+                    Creators share ideas and educational content. This is not a signal service.
+                  </CardDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Trading Background</label>
+                    <Textarea 
+                      placeholder="Briefly describe your experience..."
+                      className="bg-slate-900 border-slate-800"
+                      value={applyData.background}
+                      onChange={(e) => setApplyData({...applyData, background: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Content Focus</label>
+                    <Input 
+                      placeholder="e.g. Price Action, Macro Analysis, Education"
+                      className="bg-slate-900 border-slate-800"
+                      value={applyData.contentFocus}
+                      onChange={(e) => setApplyData({...applyData, contentFocus: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter"
+                    disabled={applyMutation.isPending || !applyData.background || !applyData.contentFocus}
+                    onClick={() => applyMutation.mutate(applyData)}
+                  >
+                    Submit Application
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter">
               <Plus className="mr-2" size={18} />
@@ -207,8 +346,11 @@ export default function TradersHub() {
                   <CardTitle className="text-xl font-black text-white tracking-tight uppercase group-hover:text-emerald-400 transition-colors">
                     {post.title}
                   </CardTitle>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-2">
                     Shared by <span className="text-emerald-500">{post.user?.userId || "Unknown"}</span>
+                    {post.user?.role === "OWNER" && (
+                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px] font-black h-4 uppercase">Verified</Badge>
+                    )}
                   </p>
                 </div>
                 {(user?.userId === post.userId || user?.role === "ADMIN" || user?.role === "OWNER") && (
@@ -234,22 +376,28 @@ export default function TradersHub() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="border-t border-slate-800/50 pt-4 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <button className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 hover:text-emerald-500 transition-colors uppercase">
-                    <MessageSquare size={14} />
-                    {post.commentCount} Discussions
-                  </button>
+              <CardFooter className="border-t border-slate-800/50 pt-4 flex flex-col items-stretch gap-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <button className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 hover:text-emerald-500 transition-colors uppercase">
+                      <MessageSquare size={14} />
+                      {post.commentCount} Discussions
+                    </button>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 text-[10px] font-bold text-slate-600 hover:text-amber-500 uppercase gap-1.5"
+                    onClick={() => reportMutation.mutate(post.id)}
+                  >
+                    <Flag size={12} />
+                    Flag
+                  </Button>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 text-[10px] font-bold text-slate-600 hover:text-amber-500 uppercase gap-1.5"
-                  onClick={() => reportMutation.mutate(post.id)}
-                >
-                  <Flag size={12} />
-                  Flag
-                </Button>
+                
+                {post.user?.userId && (
+                  <CreatorInfo userId={post.user.userId} />
+                )}
               </CardFooter>
             </Card>
           ))}
@@ -296,6 +444,41 @@ export default function TradersHub() {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CreatorInfo({ userId }: { userId: string }) {
+  const { data: profile } = useQuery<any>({
+    queryKey: [`/api/traders-hub/creators/${userId}`]
+  });
+
+  if (!profile || profile.status !== "APPROVED") return null;
+
+  return (
+    <div className="p-3 bg-slate-950 rounded-lg border border-slate-800/50 flex items-center justify-between gap-4 group">
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-black text-white uppercase truncate flex items-center gap-2">
+          {profile.displayName}
+          {profile.isVerified && <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[7px] h-3 uppercase">Verified Identity</Badge>}
+        </p>
+        <p className="text-[9px] text-slate-500 font-bold uppercase truncate mt-0.5">{profile.bio || "No bio provided"}</p>
+      </div>
+      {profile.externalLink && (
+        <div className="flex flex-col items-end gap-1">
+          <a 
+            href={profile.externalLink} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-[10px] font-black text-emerald-500 hover:text-emerald-400 flex items-center gap-1 uppercase tracking-tighter"
+          >
+            Connect <ExternalLink size={10} />
+          </a>
+          <span className="text-[7px] text-slate-700 font-black uppercase text-right leading-none">
+            Not Affiliated
+          </span>
+        </div>
+      )}
     </div>
   );
 }
