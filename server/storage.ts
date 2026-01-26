@@ -90,6 +90,8 @@ export class DatabaseStorage implements IStorage {
     subscriptionProvider?: string;
     subscriptionStatus?: string;
     subscriptionTier?: string;
+    currentPlan?: string;
+    renewalDate?: Date;
     paypalSubscriptionId?: string;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
@@ -445,6 +447,8 @@ export class DatabaseStorage implements IStorage {
     subscriptionProvider?: string;
     subscriptionStatus?: string;
     subscriptionTier?: string;
+    currentPlan?: string;
+    renewalDate?: Date;
     paypalSubscriptionId?: string;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;

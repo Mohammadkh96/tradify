@@ -85,6 +85,8 @@ export const userRole = pgTable("user_role", {
   subscriptionTier: text("subscription_tier").default("FREE"),
   subscriptionProvider: text("subscription_provider").default("stripe"), // stripe / paypal
   subscriptionStatus: text("subscription_status"),
+  currentPlan: text("current_plan"),
+  renewalDate: timestamp("renewal_date"),
   paypalSubscriptionId: text("paypal_subscription_id"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
