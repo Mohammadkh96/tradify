@@ -32,10 +32,11 @@ import { useQuery } from "@tanstack/react-query";
 export default function Dashboard() {
   const { data: trades, isLoading } = useTrades();
   const { data: user } = useQuery<any>({ 
-    queryKey: ["/api/user"] 
+    queryKey: ["/api/user"],
+    staleTime: 0,
   });
   
-  const userId = user?.userId || "demo_user";
+  const userId = user?.userId;
   
   const { data: mt5, refetch: refetchStatus } = useQuery<{
     status: string;
@@ -58,7 +59,6 @@ export default function Dashboard() {
     queryKey: [`/api/mt5/status/${userId}`],
     refetchInterval: 1000,
     enabled: !!userId,
-    // Add these to ensure fresh data and visibility
     staleTime: 0,
     gcTime: 0,
   });

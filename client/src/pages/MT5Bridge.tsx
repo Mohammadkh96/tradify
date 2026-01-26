@@ -26,11 +26,16 @@ import { Link } from "wouter";
 export default function MT5Bridge() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [copied, setCopied] = useState(false);
-  const userId = "demo_user";
+  const { data: user } = useQuery<any>({ 
+    queryKey: ["/api/user"],
+    staleTime: 0,
+  });
+  
+  const currentUserId = user?.userId;
 
   const { data: userRoleData } = useQuery<any>({
-    queryKey: [`/api/traders-hub/user-role/${userId}`],
+    queryKey: [`/api/traders-hub/user-role/${currentUserId}`],
+    enabled: !!currentUserId,
   });
 
   const subscription = userRoleData?.subscriptionTier || "FREE";
@@ -38,11 +43,11 @@ export default function MT5Bridge() {
 
   const generateTokenMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/traders-hub/generate-token", { userId });
+      const res = await apiRequest("POST", "/api/traders-hub/generate-token", { userId: currentUserId });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/traders-hub/user-role/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/traders-hub/user-role/${currentUserId}`] });
       toast({
         title: "Token Generated",
         description: "Your one-time sync token has been generated.",
@@ -69,9 +74,10 @@ export default function MT5Bridge() {
       }>;
     };
   }>({
-    queryKey: [`/api/mt5/status/${userId}`],
+    queryKey: [`/api/mt5/status/${currentUserId}`],
     refetchInterval: 1000,
     staleTime: 0,
+    enabled: !!currentUserId,
   });
 
   const pythonCode = `import MetaTrader5 as mt5
@@ -174,12 +180,12 @@ def run_bridge(user_id, token, api_url):
         time.sleep(10)
 
 if __name__ == "__main__":
-    USER_ID = "${userRoleData?.userId || "demo_user"}"
+    USER_ID = "${userRoleData?.userId || ""}"
     SYNC_TOKEN = "${userRoleData?.syncToken || ""}"
     API_URL = "${window.location.origin}/api/mt5/sync"
 
-    if not SYNC_TOKEN:
-        print("[!] Error: No Sync Token found in settings.")
+    if not USER_ID or not SYNC_TOKEN:
+        print("[!] Error: User ID or Sync Token missing. Please check the Tradify Bridge page.")
         sys.exit(1)
 
     try:
