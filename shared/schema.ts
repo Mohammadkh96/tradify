@@ -196,11 +196,24 @@ export const validationResultSchema = z.object({
 export const adminAuditLog = pgTable("admin_audit_log", {
   id: serial("id").primaryKey(),
   adminId: text("admin_id").notNull(),
-  actionType: text("action_type").notNull(), // e.g. "DEACTIVATE", "GRANT_PRO"
+  actionType: text("action_type").notNull(), // e.g. "DEACTIVATE", "GRANT_PRO", "SEND_EMAIL"
   targetUserId: text("target_user_id").notNull(),
   details: jsonb("details"),
   timestamp: timestamp("timestamp").defaultNow(),
 });
+
+export const sentEmails = pgTable("sent_emails", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  emailType: text("email_type").notNull(), // signup, payment_success, password_reset
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  status: text("status").notNull(), // sent, failed
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+
+export const insertSentEmailSchema = createInsertSchema(sentEmails).omit({ id: true, sentAt: true });
+export type SentEmail = typeof sentEmails.$inferSelect;
 
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
 export type UserRole = typeof userRole.$inferSelect;

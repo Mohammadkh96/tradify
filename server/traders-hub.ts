@@ -88,9 +88,10 @@ router.post("/posts", async (req, res) => {
 
     const postData = insertHubPostSchema.parse(req.body);
     
+    // Safety check for advisory language
     if (containsProhibitedLanguage(postData.content) || containsProhibitedLanguage(postData.title)) {
       return res.status(400).json({ 
-        message: "Post contains prohibited language. Signals, guarantees, and advisory content are not allowed." 
+        message: "Post violates community safety guidelines. Signals, guarantees, and advisory content are strictly prohibited." 
       });
     }
 

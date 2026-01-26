@@ -11,6 +11,7 @@ import { eq, or, desc, and, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { emailService } from "./emailService";
 import { openai } from "./replit_integrations/audio/index";
 
 const PostgresStore = connectPg(session);
@@ -99,6 +100,9 @@ export async function registerRoutes(
 
       req.session.userId = newUser.userId;
       req.session.role = newUser.role;
+
+      // Send signup email
+      await emailService.sendTransactionalEmail(newUser.userId, "signup", {});
 
       res.status(201).json(newUser);
     } catch (error) {
@@ -295,6 +299,38 @@ export async function registerRoutes(
   app.delete(api.trades.delete.path, async (req, res) => {
     await storage.deleteTrade(Number(req.params.id));
     res.status(204).send();
+  });
+
+  app.get("/api/admin/emails", requireAdmin, async (req, res) => {
+    try {
+      const emails = await db.select().from(schema.sentEmails).orderBy(desc(schema.sentEmails.sentAt));
+      res.json(emails);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch email logs" });
+    }
+  });
+
+  app.post("/api/admin/trigger-email", requireAdmin, async (req, res) => {
+    try {
+      const { userId, type, data } = req.body;
+      const success = await emailService.sendTransactionalEmail(userId, type, data || {});
+      
+      // Audit log for manual trigger
+      await db.insert(schema.adminAuditLog).values({
+        adminId: req.session.userId!,
+        actionType: "MANUAL_EMAIL_TRIGGER",
+        targetUserId: userId,
+        details: { type, success }
+      });
+
+      if (success) {
+        res.json({ message: "Email triggered successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to trigger email" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Error triggering email" });
+    }
   });
 
   // MT5 Bridge Sync Endpoint (REST API for Python Connector)
@@ -584,8 +620,11 @@ Strict Rules:
 - Descriptive and factual ONLY.
 - NO trade recommendations.
 - NO buy/sell suggestions.
-- NO future market predictions.
-- MUST include the disclaimer: "This insight is for educational and analytical purposes only and does not constitute financial advice."
+- NO entries, SL, or TP instructions.
+- NO symbol or timeframe recommendations.
+- NO market predictions.
+- MUST label output as "PERFORMANCE INSIGHT".
+- MUST include the disclaimer: "This is not financial advice."
 
 Metrics:
 - Total Trades: ${intelligenceData.totalTrades}
@@ -605,10 +644,13 @@ Output exactly 1-3 bullet points.`;
 
       const insightText = response.choices[0].message.content || "Unable to generate insights at this time.";
       
+      const disclaimer = "\n\nThis is not financial advice.";
+      const finalInsight = insightText.includes("This is not financial advice") ? insightText : insightText + disclaimer;
+
       const savedInsight = await storage.saveAIInsight({
         userId,
         timeframe: timeframe as string,
-        insightText,
+        insightText: finalInsight,
         metadata: intelligenceData
       });
 

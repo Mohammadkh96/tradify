@@ -1,0 +1,277 @@
+🤖 AI PURPOSE & BOUNDARIES (NON-NEGOTIABLE)
+✅ NOTION CHECKLIST — AI INSIGHTS
+AI Allowed Capabilities
+
+⬜ Analyze historical user trades only
+
+⬜ Detect behavioral patterns (overtrading, risk inconsistency)
+
+⬜ Highlight risk mistakes (post-trade only)
+
+⬜ Compare best vs worst performance conditions
+
+⬜ Generate weekly / monthly summaries
+
+⬜ Ask reflective, non-directive questions
+
+AI Prohibited Capabilities (Hard Block)
+
+⬜ NO buy/sell suggestions
+
+⬜ NO entries, SL, TP
+
+⬜ NO market predictions
+
+⬜ NO symbol or timeframe recommendations
+
+⬜ NO ranking of creators or traders
+
+⬜ NO encouragement to follow trades
+
+AI Inputs
+
+⬜ Aggregated trade statistics
+
+⬜ Historical performance metrics
+
+⬜ Behavior flags (over-risk, overtrading)
+
+⬜ Session performance data
+
+⬜ Strategy tags
+
+⬜ Time-based summaries
+
+⬜ NO raw credentials
+
+⬜ NO live price feeds
+
+⬜ NO user PII
+
+AI Output Rules
+
+⬜ Insight-based language only
+
+⬜ Descriptive, not prescriptive
+
+⬜ Neutral analytical tone
+
+⬜ Mandatory disclaimer appended:
+
+“This is not financial advice.”
+
+AI UX & Safety
+
+⬜ Output labeled “Performance Insight”
+
+⬜ Disclaimer visible in UI
+
+⬜ User can regenerate insight
+
+⬜ AI responses logged (user, timestamp, content)
+
+⬜ Rate-limited per user (Free vs Pro)
+
+AI System Checklist
+
+⬜ OpenAI API key secured (server-side only)
+
+⬜ Prompts restricted to analysis-only scope
+
+⬜ Output filter applied
+
+⬜ Usage limits enforced per plan
+
+⬜ Logs stored and reviewable by admin
+
+🗣 WHAT TO TELL REPLIT — AI
+
+Implement the AI module strictly as a performance insights engine, not a trading assistant.
+
+AI may only analyze historical, aggregated user data and provide descriptive insights.
+
+Any form of trade recommendation, prediction, or instruction is explicitly forbidden.
+
+Every AI response must:
+
+Be labeled “Performance Insight”
+
+End with “This is not financial advice”
+
+Be logged for audit
+
+AI must be rate-limited and gated by plan, and must never block core product functionality.
+
+💳 E. PAYMENTS API — SUBSCRIPTIONS & REVENUE
+✅ NOTION CHECKLIST — PAYMENTS
+Payment Provider Setup
+
+⬜ Stripe integrated
+
+⬜ Webhooks enabled
+
+⬜ Test vs live environments separated
+
+⬜ Currency handling defined
+
+⬜ Tax handling strategy defined
+
+Subscription Logic
+
+⬜ Free plan active
+
+⬜ Pro plan (monthly / annual)
+
+⬜ Free → Pro upgrade works
+
+⬜ Pro → Free downgrade works
+
+⬜ Cancellation works
+
+⬜ Billing cycle tracked
+
+⬜ Payment failure handled gracefully
+
+Access Control (Critical)
+
+⬜ Pro features gated server-side
+
+⬜ Subscription status synced to user record
+
+⬜ NO frontend-only checks
+
+⬜ Admin can view subscription state
+
+Webhook Handling
+
+⬜ subscription.created
+
+⬜ subscription.updated
+
+⬜ subscription.canceled
+
+⬜ invoice.paid
+
+⬜ invoice.payment_failed
+
+⬜ Events idempotent
+
+⬜ Events logged
+
+Payments Validation
+
+⬜ Stripe products & prices created
+
+⬜ Webhooks verified
+
+⬜ Subscription state stored in DB
+
+⬜ Upgrade tested
+
+⬜ Downgrade tested
+
+⬜ Cancellation tested
+
+⬜ Payment failure tested
+
+⬜ Admin visibility confirmed
+
+🗣 WHAT TO TELL REPLIT — PAYMENTS
+
+Implement Stripe subscriptions with server-side enforcement only.
+
+All plan logic must be driven by webhook events, not frontend assumptions.
+
+Subscription state must be stored in the database and reflected immediately in user access.
+
+Handle all Stripe webhook events idempotently and log them.
+
+Admin must be able to see the current subscription status of every user.
+
+📧 F. EMAIL & NOTIFICATIONS SYSTEM
+✅ NOTION CHECKLIST — EMAILS
+Email Provider
+
+⬜ Transactional provider selected (SendGrid / SES)
+
+⬜ Domain verified
+
+⬜ SPF configured
+
+⬜ DKIM configured
+
+⬜ DMARC configured
+
+⬜ Test emails confirmed
+
+Required Transactional Emails
+
+Account & Security
+
+⬜ Signup confirmation
+
+⬜ Login alert (optional)
+
+⬜ Password reset
+
+⬜ Email change confirmation
+
+⬜ Account deactivation confirmation
+
+Subscription & Billing
+
+⬜ Subscription activated
+
+⬜ Subscription renewed
+
+⬜ Payment failed
+
+⬜ Subscription canceled
+
+⬜ Plan upgraded / downgraded
+
+System & Trust
+
+⬜ Important system notices
+
+⬜ Terms / policy updates (optional)
+
+Email Content Rules
+
+⬜ Professional tone
+
+⬜ No hype
+
+⬜ No trading advice
+
+⬜ Clear sender identity
+
+⬜ Clear support contact
+
+⬜ Unsubscribe where applicable
+
+In-App Notifications (Optional)
+
+⬜ Payment failure alert
+
+⬜ Subscription change
+
+⬜ MT5 connection lost
+
+⬜ AI insight ready
+
+⬜ Rule violation detected
+
+Email System Checklist
+
+⬜ Templates written
+
+⬜ Trigger logic implemented
+
+⬜ Duplicate email prevention
+
+⬜ Rate limiting applied
+
+⬜ Logs stored
+
+⬜ Admin visibility of sent emails
