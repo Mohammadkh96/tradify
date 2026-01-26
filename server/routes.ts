@@ -252,18 +252,24 @@ export async function registerRoutes(
       
       if (!role) {
         console.error(`[MT5 Sync] User not found: ${userId}`);
-        return res.status(401).json({ message: "User not found" });
+        return res.status(401).json({ 
+          message: "User not found",
+          error: "USER_NOT_FOUND" 
+        });
       }
 
+      // Special case: if syncToken is null in DB, we should allow the first sync if a token is provided
+      // OR we should ensure every user has a token upon registration.
+      // For now, let's be more helpful in the error response.
       const storedToken = role.syncToken?.trim();
       const providedToken = token?.trim();
 
       if (!storedToken) {
-        console.warn(`[MT5 Sync] User ${userId} has no token generated.`);
-        return res.status(401).json({ message: "Sync token not generated for this user" });
-      }
-
-      if (storedToken !== providedToken) {
+        console.warn(`[MT5 Sync] User ${userId} has no token generated. Auto-generating one from provided token.`);
+        await db.update(schema.userRole)
+          .set({ syncToken: providedToken })
+          .where(eq(schema.userRole.userId, userId));
+      } else if (storedToken !== providedToken) {
         console.warn(`[MT5 Sync] Token mismatch for ${userId}. Received: [${providedToken}], Expected: [${storedToken}]`);
         
         // Log mismatch to audit trail for debugging
@@ -725,12 +731,15 @@ Output exactly 1-3 bullet points.`;
     
     // Create role if it doesn't exist
     if (!role) {
+      const syncToken = Math.random().toString(36).substring(2, 15);
       role = await storage.createUserRole({
         userId,
         role: userId === "dev-user" ? "OWNER" : "TRADER",
         country: country || null,
         phoneNumber: phoneNumber || null,
         timezone: timezone || null,
+        subscriptionTier: "FREE",
+        syncToken
       });
       if (userId === "dev-user") {
         await storage.updateUserSubscription(userId, "FREE");
