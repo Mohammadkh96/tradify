@@ -1,0 +1,99 @@
+We need to stop iterating blindly. The system is still not working end-to-end, and the screenshots confirm a state architecture problem, not a UI or script issue.
+
+What we see now:
+
+The Python connector runs and prints “Synced”
+
+The dashboard still shows “Terminal Offline”
+
+Balance, equity, journal, analytics, and AI insights are incorrect
+
+This proves that:
+
+The backend is not acting as a single source of truth
+
+Connection state, journal data, analytics, and AI are not wired together
+
+REQUIRED RESTRUCTURE (THIS IS NOT OPTIONAL)
+1. Single Source of Truth
+
+The backend must define connection state solely based on:
+
+“Have we received a valid sync payload from the Python connector in the last X seconds?”
+
+If yes → CONNECTED
+If no → OFFLINE
+
+No EA logic. No legacy checks. No UI assumptions.
+
+2. Atomic Sync Event
+
+When the backend receives data from the Python connector:
+
+Validate user/account
+
+Persist trades
+
+Update last_sync_at
+
+Mark connection as CONNECTED
+
+These must happen together, not separately.
+
+3. Status Endpoint Rewrite
+
+All UI components (sidebar, dashboard, bridge page) must:
+
+Read from the same backend status logic
+
+Derive status from last_sync_at
+
+Never rely on hardcoded or legacy flags
+
+4. Journal Data Integrity
+
+The journal must exactly match MT5:
+
+No missing trades
+
+No duplicates
+
+Correct P&L
+
+Correct timestamps
+
+If journal data is not verified, analytics and AI must NOT run.
+
+5. AI Insights Gating
+
+AI insights must:
+
+Only run after verified journal data exists
+
+Never run on placeholder or partial data
+
+Clearly show “Not enough verified data” if conditions are not met
+
+ACCEPTANCE TEST (ONLY THIS MATTERS)
+
+New user
+
+MT5 opened normally
+
+Python connector started
+
+Backend receives payload
+
+Status switches to CONNECTED within seconds
+
+Trades appear correctly in Journal
+
+Balance & equity match MT5
+
+Analytics are correct
+
+AI insights reflect real data
+
+Until this passes, the platform is not reliable and not launchable.
+
+Please stop partial fixes and align everything to this single flow.

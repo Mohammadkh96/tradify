@@ -332,7 +332,7 @@ if __name__ == "__main__":
                       mt5?.status === "CONNECTED" ? "bg-emerald-500 animate-pulse" : "bg-slate-700"
                     )} />
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      {mt5?.status === "CONNECTED" ? "Live Sync Active" : "Waiting for Sync"}
+                      {mt5?.status === "CONNECTED" ? "CONNECTED" : "OFFLINE"}
                     </span>
                   </div>
                   <Button 

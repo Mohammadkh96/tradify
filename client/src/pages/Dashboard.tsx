@@ -38,29 +38,11 @@ export default function Dashboard() {
   
   const userId = user?.userId;
   
-  const { data: mt5, refetch: refetchStatus } = useQuery<{
-    status: string;
-    lastSync?: string;
-    isLive?: boolean;
-    error?: string;
-    metrics?: {
-      balance: string;
-      equity: string;
-      floatingPl: string;
-      marginLevel: string;
-      margin: string;
-      freeMargin: string;
-      leverage: number;
-      currency: string;
-      positions: any[];
-    };
-    lastUpdate?: string;
-  }>({
+  const { data: mt5, refetch: refetchStatus } = useQuery<any>({
     queryKey: [`/api/mt5/status/${userId}`],
     refetchInterval: 5000,
     enabled: !!userId,
     staleTime: 0,
-    gcTime: 0,
   });
 
   const { data: intelligence } = useQuery<any>({

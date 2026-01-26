@@ -149,6 +149,7 @@ export class DatabaseStorage implements IStorage {
     for (const trade of trades) {
       try {
         const ticketStr = trade.ticket.toString();
+        // 1. Strict Deduplication: Check for existing ticket
         const [existing] = await db.select().from(mt5History)
           .where(and(eq(mt5History.userId, userId), eq(mt5History.ticket, ticketStr)))
           .limit(1);
@@ -158,6 +159,7 @@ export class DatabaseStorage implements IStorage {
           const openTime = new Date(trade.open_time * 1000);
           const closeTime = new Date(trade.close_time * 1000);
           
+          // 2. Accurate P&L: Net P&L = profit + commission + swap
           const commission = parseFloat(trade.commission || 0);
           const swap = parseFloat(trade.swap || 0);
           const profit = parseFloat(trade.profit || 0);
@@ -167,7 +169,7 @@ export class DatabaseStorage implements IStorage {
             userId,
             ticket: ticketStr,
             symbol: trade.symbol,
-            direction: (trade.type === 0 || trade.type === "Buy") ? "Buy" : "Sell",
+            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Buy" : "Sell",
             volume: trade.volume.toString(),
             entryPrice: trade.price?.toString() || "0",
             exitPrice: trade.price?.toString() || "0",
@@ -182,26 +184,32 @@ export class DatabaseStorage implements IStorage {
             netPl,
           });
 
-          // Auto-Journal only for verifiable wins/losses
-          await this.createTrade({
-            userId,
-            pair: trade.symbol,
-            direction: (trade.type === 0 || trade.type === "Buy") ? "Long" : "Short",
-            timeframe: "MT5_SYNC",
-            entryPrice: trade.price?.toString() || "0",
-            outcome: parseFloat(netPl) >= 0 ? "Win" : "Loss",
-            notes: `[MT5 Sync] Ticket: ${ticketStr} | Real-time verified deal. | MT5_TICKET_${ticketStr}`,
-            htfBiasClear: true,
-            zoneValid: true,
-            entryConfirmed: true,
-            riskReward: "0",
-            htfBias: "Bullish",
-            structureState: "None",
-            liquidityStatus: "None",
-            zoneValidity: "Valid",
-            liquidityTaken: true,
-            structureConfirmed: true,
-          });
+          // 3. Journal Integration: Only for verified wins/losses
+          const existingJournal = await db.select().from(tradeJournal)
+            .where(and(eq(tradeJournal.userId, userId), eq(tradeJournal.notes, `MT5_TICKET_${ticketStr}`)))
+            .limit(1);
+
+          if (existingJournal.length === 0) {
+            await this.createTrade({
+              userId,
+              pair: trade.symbol,
+              direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Long" : "Short",
+              timeframe: "MT5_SYNC",
+              entryPrice: trade.price?.toString() || "0",
+              outcome: parseFloat(netPl) >= 0 ? "Win" : "Loss",
+              notes: `MT5_TICKET_${ticketStr}`,
+              htfBiasClear: true,
+              zoneValid: true,
+              entryConfirmed: true,
+              riskReward: "0",
+              htfBias: "Bullish",
+              structureState: "None",
+              liquidityStatus: "None",
+              zoneValidity: "Valid",
+              liquidityTaken: true,
+              structureConfirmed: true,
+            });
+          }
         }
       } catch (err) {
         console.error(`[MT5 Sync] Integrity Error on ticket ${trade.ticket}:`, err);
