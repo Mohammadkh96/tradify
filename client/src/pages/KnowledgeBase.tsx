@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight, BookOpen, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -247,6 +248,9 @@ export default function KnowledgeBase() {
             <h1 className="text-3xl font-bold text-white tracking-tight">Market Foundations</h1>
           </div>
           <p className="text-slate-400 mt-1 italic">Structured rule systems for deterministic trading.</p>
+          <p className="text-[10px] text-slate-600 uppercase font-bold tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
+            Educational content only. Not financial advice. <Link href="/risk" className="ml-1 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
+          </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
