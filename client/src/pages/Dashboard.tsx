@@ -111,18 +111,18 @@ export default function Dashboard() {
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Win Rate", 
-      value: intelligence?.winRate ? `${intelligence.winRate}%` : "0%", 
-      icon: <Target size={18} />, 
-      subtext: "ALL TIME",
-      trend: parseFloat(intelligence?.winRate || "0") > 50 ? "up" : "down" as "up" | "down"
+      label: "Total P&L", 
+      value: intelligence?.totalPl ? `$${parseFloat(intelligence.totalPl).toLocaleString()}` : "$0", 
+      icon: <DollarSign size={18} />, 
+      subtext: "GROSS NET",
+      trend: parseFloat(intelligence?.totalPl || "0") >= 0 ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Expectancy", 
-      value: intelligence?.expectancy ? `$${intelligence.expectancy}` : "$0", 
-      icon: <TrendingUp size={18} />, 
-      subtext: "PER TRADE",
-      trend: parseFloat(intelligence?.expectancy || "0") > 0 ? "up" : "down" as "up" | "down"
+      label: "Profit Factor", 
+      value: intelligence?.profitFactor || "0.00", 
+      icon: <Percent size={18} />, 
+      subtext: "RELIABILITY",
+      trend: parseFloat(intelligence?.profitFactor || "0") >= 1.5 ? "up" : "down" as "up" | "down"
     },
   ];
 

@@ -1,0 +1,338 @@
+📊 F. DASHBOARD & ANALYTICS (MVP → PRO)
+CORE METRICS, DISCIPLINE & BEHAVIOR — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of Dashboard & Analytics
+
+Provide immediate, accurate performance clarity
+
+Make mistakes visible and undeniable
+
+Move users from “checking P&L” to improving execution
+
+Ensure all calculations are deterministic and auditable
+
+🧮 CORE METRICS
+1️⃣ Balance / Equity (Correct & Consistent)
+Functional Requirements
+
+Display:
+
+Current balance
+
+Current equity
+
+Values must:
+
+Match MT5 account data
+
+Update immediately after trade sync
+
+Balance ≠ equity must be clearly explained (tooltip or label)
+
+UX Requirements
+
+Always visible at top-level dashboard
+
+Clear labeling
+
+No flickering or delayed updates
+
+2️⃣ P&L (Profit & Loss) — Correct
+Functional Requirements
+
+Calculate:
+
+Net P&L (currency)
+
+Net P&L (%)
+
+Include:
+
+Commission
+
+Swap
+
+Support filtering:
+
+Day
+
+Week
+
+Month
+
+Custom range
+
+Validation
+
+P&L must reconcile exactly with MT5 history
+
+No rounding drift between views
+
+3️⃣ Drawdown — Correct
+Functional Requirements
+
+Calculate:
+
+Maximum drawdown (absolute)
+
+Maximum drawdown (%)
+
+Drawdown must be calculated from equity curve, not balance only
+
+Support rolling drawdown (optional later)
+
+Visualization
+
+Drawdown overlay on equity curve
+
+Clear peak → trough visibility
+
+4️⃣ Win Rate — Correct
+Functional Requirements
+
+Win rate = winning trades / total closed trades
+
+Breakeven trades handled explicitly (defined behavior)
+
+Filterable by:
+
+Time range
+
+Session
+
+Strategy
+
+UX Requirements
+
+Simple percentage display
+
+Tooltip explaining calculation
+
+5️⃣ R-Multiple — Correct
+Functional Requirements
+
+Calculate R per trade:
+
+Profit / risk
+
+Risk defined as:
+
+User-defined risk %
+
+Or inferred from SL (if available)
+
+Support:
+
+Positive R
+
+Negative R
+
+Display:
+
+Average R
+
+Distribution (optional later)
+
+Integrity
+
+R calculations must be consistent across dashboard and journal
+
+6️⃣ Expectancy — Calculated Correctly
+Functional Requirements
+
+Expectancy formula:
+
+(Win rate × Avg win) − (Loss rate × Avg loss)
+
+Calculated per:
+
+Trade
+
+Session
+
+Strategy (if tagged)
+
+Display expectancy in:
+
+R
+
+Currency (optional)
+
+UX Requirements
+
+Simple explanation tooltip
+
+Avoid jargon overload
+
+🧠 DISCIPLINE & BEHAVIOR
+7️⃣ Risk per Trade Tracked
+Functional Requirements
+
+Track risk % per trade
+
+Risk derived from:
+
+User-defined default risk
+
+Or SL distance (if available)
+
+Display:
+
+Risk % on each trade
+
+Average risk over period
+
+8️⃣ Over-Risk Detection
+Functional Requirements
+
+Detect trades where:
+
+Risk % exceeds user-defined limit
+
+Flag trades visually
+
+Count violations per period
+
+UX Requirements
+
+No alerts during trading
+
+Post-trade visibility only
+
+Clear “why flagged” explanation
+
+9️⃣ Overtrading Detection
+Functional Requirements
+
+Detect:
+
+Excessive number of trades per session/day
+
+Trades clustered within short intervals
+
+Thresholds:
+
+Configurable later
+
+Reasonable defaults for MVP
+
+UX Requirements
+
+Summary insight:
+
+“You traded X times today. Historical performance declines after Y trades.”
+
+🔵 SESSION & STRATEGY
+🔟 Session Performance Analysis
+Functional Requirements
+
+Automatically classify trades into:
+
+Asia
+
+London
+
+New York
+
+Calculate per session:
+
+P&L
+
+Win rate
+
+Expectancy
+
+Avg R
+
+UX Requirements
+
+Session comparison view
+
+Best vs worst session highlighted
+
+1️⃣1️⃣ Strategy Tagging
+Functional Requirements
+
+User can tag trades with:
+
+Strategy name
+
+Strategy tags:
+
+Optional
+
+Editable
+
+Analytics must support filtering by strategy
+
+UX Requirements
+
+Simple tag selector
+
+No forced tagging
+
+1️⃣2️⃣ Rule Violation Tracking (Basic)
+MVP Rule Set
+
+Over-risk trade
+
+Overtrading
+
+Trading outside preferred session
+
+Missing strategy tag (optional rule)
+
+Functional Requirements
+
+Count violations per period
+
+Show summary:
+
+“Rule violations this week: X”
+
+Drill-down to affected trades
+
+UX Requirements
+
+Neutral tone
+
+No gamification
+
+No shaming language
+
+🔒 DATA INTEGRITY & PERFORMANCE (NON-NEGOTIABLE)
+
+All calculations server-side
+
+Frontend displays only computed values
+
+No duplicated logic
+
+Results reproducible across reloads
+
+Time zone respected
+
+🧪 EDGE CASE TESTING (MUST PASS)
+
+⬜ Partial closes handled correctly
+
+⬜ Breakeven trades handled consistently
+
+⬜ Filters update metrics correctly
+
+⬜ Strategy tags reflected in analytics
+
+⬜ No metric mismatch between views
+
+✅ DEFINITION OF “DONE” (ACCEPTANCE CRITERIA)
+
+Dashboard & analytics are complete only if:
+
+Metrics are correct and trusted
+
+Behavior mistakes are visible
+
+Users can explain why results happened
+
+No calculation discrepancies exist
+
+Performance feels professional, not noisy

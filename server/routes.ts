@@ -403,11 +403,13 @@ export async function registerRoutes(
       }
 
       // Performance Intelligence Engine
-      const sessions = { London: 0, NY: 0, Asia: 0 };
+      const sessions = { London: { pl: 0, wins: 0, total: 0 }, NY: { pl: 0, wins: 0, total: 0 }, Asia: { pl: 0, wins: 0, total: 0 } };
       const days = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
       const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       
       let totalPl = 0;
+      let totalGrossProfit = 0;
+      let totalGrossLoss = 0;
       let wins = 0;
       let losses = 0;
       let totalRR = 0;
@@ -420,25 +422,40 @@ export async function registerRoutes(
       const violations = {
         overRisk: 0,
         outsideSession: 0,
-        noStrategy: 0
+        noStrategy: 0,
+        overtrading: 0
       };
+
+      const dailyTrades: Record<string, number> = {};
 
       trades.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()).forEach(t => {
         const date = new Date(t.createdAt!);
         const hour = date.getUTCHours();
         const day = dayNames[date.getUTCDay()];
+        const dateStr = date.toISOString().split('T')[0];
         
+        dailyTrades[dateStr] = (dailyTrades[dateStr] || 0) + 1;
+        if (dailyTrades[dateStr] > 5) violations.overtrading++; // Default threshold: 5 trades/day
+
         const pl = t.netPl;
         totalPl += pl;
+        if (pl > 0) totalGrossProfit += pl;
+        else totalGrossLoss += Math.abs(pl);
+
         currentEquity += pl;
-        
         if (currentEquity > peak) peak = currentEquity;
         const dd = peak - currentEquity;
         if (dd > maxDrawdown) maxDrawdown = dd;
 
-        if (hour >= 8 && hour < 16) sessions.London += pl;
-        else if (hour >= 13 && hour < 21) sessions.NY += pl;
-        else sessions.Asia += pl;
+        // Session classification
+        let session: "London" | "NY" | "Asia";
+        if (hour >= 8 && hour < 16) session = "London";
+        else if (hour >= 13 && hour < 21) session = "NY";
+        else session = "Asia";
+
+        sessions[session].pl += pl;
+        sessions[session].total++;
+        if (t.outcome === "Win") sessions[session].wins++;
         
         days[day as keyof typeof days] += pl;
 
@@ -459,7 +476,8 @@ export async function registerRoutes(
         if (t.outcome === "Win") setups[t.setup].wins++;
       });
 
-      const bestSession = Object.entries(sessions).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+      const bestSessionEntry = Object.entries(sessions).reduce((a, b) => a[1].pl > b[1].pl ? a : b);
+      const bestSession = bestSessionEntry[0];
       const bestDay = Object.entries(days).reduce((a, b) => a[1] > b[1] ? a : b)[0];
       
       const setupStats = Object.entries(setups).map(([name, stat]) => ({
@@ -468,10 +486,10 @@ export async function registerRoutes(
       }));
       const bestSetup = setupStats.length ? setupStats.reduce((a, b) => a.winRate > b.winRate ? a : b).name : "N/A";
 
-      const profitFactor = Math.abs(totalPl) / (Math.abs(totalPl - currentEquity) || 1); // Simplified
+      const profitFactor = totalGrossLoss > 0 ? totalGrossProfit / totalGrossLoss : 1;
       const winRateVal = trades.length ? (wins / trades.length) * 100 : 0;
       const expectancy = trades.length ? totalPl / trades.length : 0;
-      const recoveryFactor = maxDrawdown > 0 ? totalPl / maxDrawdown : totalPl > 0 ? 100 : 0;
+      const recoveryFactor = maxDrawdown > 0 ? totalPl / maxDrawdown : totalPl > 0 ? 1 : 0;
 
       res.json({
         bestSession,
@@ -484,7 +502,10 @@ export async function registerRoutes(
         maxDrawdown: maxDrawdown.toFixed(2),
         maxDrawdownPercent: peak > 0 ? ((maxDrawdown / peak) * 100).toFixed(2) : "0.00",
         recoveryFactor: recoveryFactor.toFixed(2),
-        violations
+        totalPl: totalPl.toFixed(2),
+        totalTrades: trades.length,
+        violations,
+        sessionMetrics: sessions
       });
     } catch (error) {
       res.status(500).json({ message: "Intelligence failure" });
