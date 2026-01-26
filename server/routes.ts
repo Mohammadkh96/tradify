@@ -113,7 +113,11 @@ export async function registerRoutes(
       
       const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail)).limit(1);
       
-      if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+      if (!user || user.role === "DEACTIVATED") {
+        return res.status(401).json({ message: "Account disabled or not found" });
+      }
+
+      if (!user.password || !(await bcrypt.compare(password, user.password))) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
@@ -646,6 +650,15 @@ export async function registerRoutes(
 }
 
 async function seedDatabase() {
+  // Ensure admin user has a password if it doesn't
+  const adminEmail = "mohammad@admin.com";
+  const [admin] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, adminEmail)).limit(1);
+  if (admin && !admin.password) {
+    const hashedPassword = await bcrypt.hash("Admin123!", 10);
+    await db.update(schema.userRole).set({ password: hashedPassword }).where(eq(schema.userRole.userId, adminEmail));
+    console.log("Seeded admin password");
+  }
+
   const existingTrades = await storage.getTrades();
   if (existingTrades.length === 0) {
     await storage.createTrade({

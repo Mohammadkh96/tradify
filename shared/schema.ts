@@ -167,4 +167,5 @@ export const validationResultSchema = z.object({
   violations: z.array(z.string()).optional(),
   matchedSetup: z.string().optional(),
 });
-export type ValidationResult = z.infer<typeof validationResultSchema>;
+export type UserRole = typeof userRole.$inferSelect;
+export type InsertUserRole = typeof userRole.$inferInsert;
