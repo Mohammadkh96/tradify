@@ -86,19 +86,24 @@ export class DatabaseStorage implements IStorage {
     return newUserRole;
   }
 
+  async updateUserSubscriptionInfo(userId: string, info: {
+    subscriptionProvider?: string;
+    subscriptionStatus?: string;
+    subscriptionTier?: string;
+    paypalSubscriptionId?: string;
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    currentPeriodEnd?: Date;
+  }) {
+    const [user] = await db.update(userRole)
+      .set({ ...info, updatedAt: new Date() })
+      .where(eq(userRole.userId, userId))
+      .returning();
+    return user;
+  }
+
   async updateUserSubscription(userId: string, tier: string): Promise<void> {
-    const [existing] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
-    if (existing) {
-      await db.update(userRole)
-        .set({ subscriptionTier: tier, updatedAt: new Date() })
-        .where(eq(userRole.userId, userId));
-    } else {
-      await db.insert(userRole).values({
-        userId,
-        role: "TRADER",
-        subscriptionTier: tier,
-      });
-    }
+    await this.updateUserSubscriptionInfo(userId, { subscriptionTier: tier });
   }
 
   async updateMT5Data(data: { 
@@ -436,6 +441,22 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateUserSubscriptionInfo(userId: string, info: {
+    subscriptionProvider?: string;
+    subscriptionStatus?: string;
+    subscriptionTier?: string;
+    paypalSubscriptionId?: string;
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    currentPeriodEnd?: Date;
+  }) {
+    const [user] = await db.update(userRole)
+      .set({ ...info, updatedAt: new Date() })
+      .where(eq(userRole.userId, userId))
+      .returning();
+    return user;
+  }
+
   async updateUserStripeInfo(userId: string, stripeInfo: {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
@@ -443,11 +464,7 @@ export class DatabaseStorage implements IStorage {
     subscriptionTier?: string;
     currentPeriodEnd?: Date;
   }) {
-    const [user] = await db.update(userRole)
-      .set({ ...stripeInfo, updatedAt: new Date() })
-      .where(eq(userRole.userId, userId))
-      .returning();
-    return user;
+    return this.updateUserSubscriptionInfo(userId, { ...stripeInfo, subscriptionProvider: 'stripe' });
   }
 
   async getProduct(productId: string) {

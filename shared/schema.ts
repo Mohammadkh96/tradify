@@ -83,9 +83,11 @@ export const userRole = pgTable("user_role", {
   termsAccepted: boolean("terms_accepted").default(false),
   riskAcknowledged: boolean("risk_acknowledged").default(false),
   subscriptionTier: text("subscription_tier").default("FREE"),
+  subscriptionProvider: text("subscription_provider").default("stripe"), // stripe / paypal
+  subscriptionStatus: text("subscription_status"),
+  paypalSubscriptionId: text("paypal_subscription_id"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
-  subscriptionStatus: text("subscription_status"),
   currentPeriodEnd: timestamp("current_period_end"),
   syncToken: text("sync_token"),
   country: text("country"), // ISO country name or code as per spec

@@ -43,6 +43,9 @@ const requireAdmin = async (req: Request, res: Response, next: NextFunction) => 
   next();
 };
 
+import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
+import { paypalService } from "./paypalService";
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -153,6 +156,28 @@ export async function registerRoutes(
     }
     const user = await storage.getUserRole(req.session.userId);
     res.json(user);
+  });
+
+  app.get("/api/paypal/setup", requireAuth, async (req, res) => {
+    await loadPaypalDefault(req, res);
+  });
+
+  app.post("/api/paypal/order", requireAuth, async (req, res) => {
+    await createPaypalOrder(req, res);
+  });
+
+  app.post("/api/paypal/order/:orderID/capture", requireAuth, async (req, res) => {
+    await capturePaypalOrder(req, res);
+  });
+
+  app.post("/api/paypal/webhook", express.json(), async (req, res) => {
+    try {
+      await paypalService.handleWebhook(req.body);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("PayPal webhook error:", error);
+      res.sendStatus(500);
+    }
   });
 
   // --- Stripe Billing Routes ---
