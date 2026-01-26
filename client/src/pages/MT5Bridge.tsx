@@ -76,7 +76,7 @@ export default function MT5Bridge() {
     };
   }>({
     queryKey: [`/api/mt5/status/${currentUserId}`],
-    refetchInterval: 1000,
+    refetchInterval: 5000,
     staleTime: 0,
     enabled: !!currentUserId,
   });
@@ -88,7 +88,7 @@ import json
 import sys
 import os
 
-# TRADIFY CONNECTOR v2.3 (PYTHON NATIVE)
+# TRADIFY CONNECTOR v2.5 (PYTHON NATIVE)
 # Requirements: pip install MetaTrader5 requests
 
 def get_account_data():
@@ -150,7 +150,7 @@ def get_account_data():
 
 def run_bridge(user_id, token, api_url):
     print("="*50)
-    print(" TRADIFY TERMINAL CONNECTOR v2.3 ")
+    print(" TRADIFY TERMINAL CONNECTOR v2.5 ")
     print("="*50)
     print(f"[*] User: {user_id}")
     print(f"[*] API: {api_url}")
@@ -166,7 +166,7 @@ def run_bridge(user_id, token, api_url):
                 
             payload = {
                 "userId": user_id,
-                "token": token, # Enforced Sync Token
+                "token": token, # REQUIRED Sync Token
                 **data
             }
             
@@ -185,9 +185,11 @@ def run_bridge(user_id, token, api_url):
         time.sleep(10)
 
 if __name__ == "__main__":
-    USER_ID = "\${userRoleData?.userId || ""}"
-    SYNC_TOKEN = "\${userRoleData?.syncToken || ""}"
-    API_URL = "\${window.location.origin}/api/mt5/sync"
+    # Real Absolute Values (Constructed during template generation)
+    USER_ID = "${currentUserId || ""}"
+    SYNC_TOKEN = "${userRoleData?.syncToken || ""}"
+    # Constructing real absolute URL for Python connector
+    API_URL = "${window.location.protocol}//${window.location.host}/api/mt5/sync"
 
     if not USER_ID or not SYNC_TOKEN:
         print("[!] Error: User ID or Sync Token missing. Please check the Tradify Bridge page.")
