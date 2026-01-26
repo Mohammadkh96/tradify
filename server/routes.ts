@@ -491,11 +491,31 @@ export async function registerRoutes(
   app.post("/api/admin/update-user", requireAdmin, async (req, res) => {
     try {
       const { targetUserId, updates } = req.body;
+      const adminId = req.session.userId!;
       
       // If subscriptionTier is being updated, use the dedicated storage method
       if (updates.subscriptionTier) {
         await storage.updateUserSubscription(targetUserId, updates.subscriptionTier);
+        
+        // Audit log
+        await db.insert(schema.adminAuditLog).values({
+          adminId,
+          actionType: `SET_PLAN_${updates.subscriptionTier}`,
+          targetUserId,
+          details: { updates }
+        });
+        
         delete updates.subscriptionTier; // Remove from updates object to avoid duplicate update below
+      }
+
+      // Handle role update (Deactivation/Reactivation)
+      if (updates.role) {
+        await db.insert(schema.adminAuditLog).values({
+          adminId,
+          actionType: updates.role === "DEACTIVATED" ? "DEACTIVATE_USER" : "ACTIVATE_USER",
+          targetUserId,
+          details: { updates }
+        });
       }
 
       // Handle any other role/meta updates
@@ -509,6 +529,15 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Update user error:", error);
       res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.get("/api/admin/audit-logs", requireAdmin, async (req, res) => {
+    try {
+      const logs = await db.select().from(schema.adminAuditLog).orderBy(desc(schema.adminAuditLog.timestamp));
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch audit logs" });
     }
   });
 

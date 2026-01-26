@@ -146,29 +146,74 @@ function AdminAccessTab() {
   );
 }
 
+function AuditLogsTab() {
+  const { data: logs, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/audit-logs"],
+  });
+
+  if (isLoading) return <div className="p-8 text-emerald-500 font-mono">RETRIEVING AUDIT TRAIL...</div>;
+
+  return (
+    <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
+      <div>
+        <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
+          <History /> Operational Audit Log
+        </h1>
+        <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Trace Admin Interventions</p>
+      </div>
+
+      <Card className="bg-[#0b1120] border-slate-800 overflow-hidden">
+        <Table>
+          <TableHeader className="bg-slate-900/50">
+            <TableRow className="border-slate-800">
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Admin</TableHead>
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Action</TableHead>
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Target User</TableHead>
+              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Timestamp</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {logs?.map((log) => (
+              <TableRow key={log.id} className="border-slate-800 hover:bg-slate-900/40">
+                <TableCell className="font-bold text-slate-300 text-xs">{log.adminId}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-emerald-500/20 text-emerald-500">
+                    {log.actionType}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-slate-400 text-xs font-mono">{log.targetUserId}</TableCell>
+                <TableCell className="text-slate-500 text-[10px] font-mono">
+                  {log.timestamp ? format(new Date(log.timestamp), "MMM d, HH:mm:ss") : "N/A"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [location] = useLocation();
+  const [searchEmail, setSearchEmail] = useState("");
 
   const { data: users, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/users", localStorage.getItem("user_id")],
-    queryFn: async () => {
-      const userId = localStorage.getItem("user_id");
-      const res = await fetch(`/api/admin/users?userId=${userId}`);
-      if (!res.ok) throw new Error("Forbidden");
-      return res.json();
-    }
+    queryKey: ["/api/admin/users"],
   });
+
+  const filteredUsers = users?.filter(u => u.userId.toLowerCase().includes(searchEmail.toLowerCase())) || [];
 
   const updateMutation = useMutation({
     mutationFn: async ({ targetUserId, updates }: { targetUserId: string, updates: any }) => {
-      const userId = localStorage.getItem("user_id");
-      const res = await apiRequest("POST", `/api/admin/update-user?userId=${userId}`, { targetUserId, updates });
+      const res = await apiRequest("POST", `/api/admin/update-user`, { targetUserId, updates });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({ title: "Success", description: "User updated successfully." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+      toast({ title: "Success", description: "User record updated and logged." });
     },
   });
 
@@ -248,11 +293,19 @@ export default function AdminDashboard() {
   if (location === "/admin/users") {
     return (
       <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
-            <Users /> User Management
-          </h1>
-          <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Control Access & Tiers</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
+              <Users /> User Management
+            </h1>
+            <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Control Access & Tiers</p>
+          </div>
+          <Input 
+            placeholder="Search by email..." 
+            value={searchEmail}
+            onChange={(e) => setSearchEmail(e.target.value)}
+            className="bg-slate-900 border-slate-800 text-xs w-full md:w-64"
+          />
         </div>
 
         <Card className="bg-[#0b1120] border-slate-800 overflow-hidden">
@@ -261,26 +314,27 @@ export default function AdminDashboard() {
               <TableHeader className="bg-slate-900/30">
                 <TableRow className="border-slate-800">
                   <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Email/ID</TableHead>
-                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Region</TableHead>
                   <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Plan</TableHead>
+                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Account Status</TableHead>
                   <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Registered</TableHead>
                   <TableHead className="text-right text-slate-500 font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users?.map((user) => (
+                {filteredUsers.map((user) => (
                   <TableRow key={user.id} className="border-slate-800 hover:bg-slate-900/40">
                     <TableCell>
                       <div className="font-mono text-xs text-white">{user.userId}</div>
                       <div className="text-[9px] text-slate-500 uppercase tracking-tighter">{user.role}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-xs text-slate-400">{user.country || "Not Set"}</div>
-                      <div className="text-[10px] text-slate-600">{user.phoneNumber || ""}</div>
-                    </TableCell>
-                    <TableCell>
                       <Badge className={user.subscriptionTier === "PRO" ? "bg-emerald-500 text-slate-950" : "bg-slate-800 text-slate-400"}>
                         {user.subscriptionTier}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={user.role === "DEACTIVATED" ? "border-rose-500/50 text-rose-500" : "border-emerald-500/50 text-emerald-500"}>
+                        {user.role === "DEACTIVATED" ? "DEACTIVATED" : "ACTIVE"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-[10px] font-mono text-slate-500">
@@ -290,6 +344,10 @@ export default function AdminDashboard() {
                       <Button size="sm" variant="outline" className="h-7 text-[10px]" 
                         onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { subscriptionTier: user.subscriptionTier === "PRO" ? "FREE" : "PRO" } })}>
                         {user.subscriptionTier === "PRO" ? "Set FREE" : "Grant PRO"}
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-[10px] text-rose-500 hover:bg-rose-500/10"
+                        onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { role: user.role === "DEACTIVATED" ? "TRADER" : "DEACTIVATED" } })}>
+                        {user.role === "DEACTIVATED" ? "Reactivate" : "Deactivate"}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -305,6 +363,11 @@ export default function AdminDashboard() {
   // --- 3. ADMIN ACCESS PAGE ---
   if (location === "/admin/access") {
     return <AdminAccessTab />;
+  }
+
+  // --- 4. AUDIT LOGS PAGE ---
+  if (location === "/admin/audit-logs") {
+    return <AuditLogsTab />;
   }
 
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)

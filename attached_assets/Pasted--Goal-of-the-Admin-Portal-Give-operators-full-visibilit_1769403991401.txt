@@ -1,0 +1,269 @@
+🎯 Goal of the Admin Portal
+
+Give operators full visibility and control over users
+
+Ensure secure separation between admin and user access
+
+Enable support, billing intervention, and compliance
+
+Maintain a reliable operational audit trail
+
+1️⃣ Admin Authentication Secured
+Functional Requirements
+
+Admins must authenticate via:
+
+Email + password
+
+Admin role flag in database
+
+Admin login cannot be accessed by regular users
+
+Admin sessions must be isolated from user sessions
+
+Security Requirements
+
+Admin role enforced server-side
+
+Admin credentials never hard-coded
+
+Optional: stricter password rules for admins
+
+2️⃣ Admin Routes Protected
+Functional Requirements
+
+All admin routes must:
+
+Require authenticated admin role
+
+Be inaccessible to non-admin users
+
+Direct URL access without admin auth must:
+
+Redirect to admin login
+
+Or return 403 (Forbidden)
+
+Security Requirements
+
+Route protection enforced on backend
+
+Admin APIs protected independently of frontend
+
+3️⃣ All Registered Users Listed
+Functional Requirements
+
+Admin dashboard must display all registered users
+
+User list must be sourced directly from the primary user database
+
+List must support:
+
+Pagination
+
+Sorting (by date, email, plan)
+
+Basic search (by email)
+
+UX Requirements
+
+Clear table layout
+
+Consistent formatting
+
+No missing or partial records
+
+4️⃣ Correct Registration Email Shown
+Functional Requirements
+
+Display the exact email address used during registration
+
+Email must:
+
+Match authentication system
+
+Update if user changes email
+
+No masked or placeholder emails
+
+5️⃣ Registration Date Shown
+Functional Requirements
+
+Display user registration timestamp
+
+Time displayed in:
+
+Admin’s local time
+
+Or clearly labeled UTC
+
+Used for:
+
+Auditing
+
+Support
+
+Billing context
+
+6️⃣ Plan Type Shown
+Functional Requirements
+
+Display current plan:
+
+Free
+
+Pro
+
+Plan status must:
+
+Match billing provider state
+
+Update immediately on change
+
+Trial or canceled states (if any) must be visible
+
+7️⃣ Account Status Shown
+Functional Requirements
+
+Display account status:
+
+Active
+
+Deactivated
+
+Status must affect:
+
+Login ability
+
+Access to protected routes
+
+Deactivated users cannot access dashboard
+
+🛠 ADMIN CONTROLS
+8️⃣ View User Details
+Functional Requirements
+
+Admin can open a user detail view showing:
+
+Email
+
+Country
+
+Phone (if provided)
+
+Time zone
+
+Plan
+
+Account status
+
+Registration date
+
+Read-only by default (except controls below)
+
+9️⃣ Deactivate / Reactivate Users
+Functional Requirements
+
+Admin can:
+
+Deactivate a user account
+
+Reactivate a previously deactivated account
+
+Deactivation effects:
+
+Immediately blocks login
+
+Preserves user data
+
+Reactivation restores access
+
+UX Requirements
+
+Clear confirmation modal
+
+Clear status indicator after action
+
+🔁 1️⃣0️⃣ Manual Plan Upgrade / Downgrade
+Functional Requirements
+
+Admin can manually:
+
+Upgrade user to Pro
+
+Downgrade user to Free
+
+Manual changes must:
+
+Update user access immediately
+
+Be reflected in admin list
+
+Be logged in audit trail
+
+Important Rule
+
+Manual changes must not break billing logic
+
+If billing exists, admin override must be explicit
+
+📝 1️⃣1️⃣ Basic Audit Logging
+Functional Requirements
+
+Log admin actions:
+
+Account deactivation / reactivation
+
+Manual plan changes
+
+Log entries must include:
+
+Admin ID
+
+Action type
+
+Target user
+
+Timestamp
+
+Storage
+
+Logs stored securely
+
+Read-only (no deletion from UI)
+
+🔒 Security & Integrity Rules (Non-Negotiable)
+
+Admin routes are never exposed publicly
+
+No admin actions without authentication
+
+No silent failures
+
+All critical actions logged
+
+🧪 Edge Case Testing (Must Pass)
+
+⬜ Non-admin cannot access admin routes
+
+⬜ Deactivated user cannot log in
+
+⬜ Reactivated user regains access
+
+⬜ Manual plan change reflects immediately
+
+⬜ Audit log records every admin action
+
+✅ Definition of “DONE” (Acceptance Criteria)
+
+Admin Portal is complete only if:
+
+Admin access is secure
+
+All users are visible and accurate
+
+Admin actions are reliable
+
+Billing and access remain consistent
+
+Audit trail exists for accountability
