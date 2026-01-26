@@ -245,7 +245,14 @@ export async function registerRoutes(
 
       // Validate token against user's stored token
       const [role] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
-      if (!role || role.syncToken !== token) {
+      
+      if (!role) {
+        console.error(`[MT5 Sync] User not found: ${userId}`);
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      if (role.syncToken !== token) {
+        console.error(`[MT5 Sync] Token mismatch for ${userId}. Received: ${token}, Expected: ${role.syncToken}`);
         return res.status(401).json({ message: "Invalid sync token" });
       }
 

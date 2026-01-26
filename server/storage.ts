@@ -95,6 +95,8 @@ export class DatabaseStorage implements IStorage {
       lastUpdate: new Date(),
     };
 
+    console.log(`[MT5 Storage] Updating data for ${data.userId}. Equity: ${values.equity}, Positions: ${values.positions.length}`);
+
     // Update Daily Snapshot
     const today = new Date();
     today.setHours(0, 0, 0, 0);
