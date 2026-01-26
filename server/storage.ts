@@ -266,8 +266,12 @@ export class DatabaseStorage implements IStorage {
     return inserted;
   }
 
-  async getTrades(): Promise<Trade[]> {
-    return await db.select().from(tradeJournal).orderBy(desc(tradeJournal.createdAt));
+  async getTrades(userId?: string): Promise<Trade[]> {
+    const query = db.select().from(tradeJournal);
+    if (userId) {
+      return await query.where(eq(tradeJournal.userId, userId)).orderBy(desc(tradeJournal.createdAt));
+    }
+    return await query.orderBy(desc(tradeJournal.createdAt));
   }
 
   async getTrade(id: number): Promise<Trade | undefined> {

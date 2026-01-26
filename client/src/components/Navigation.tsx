@@ -180,7 +180,7 @@ export function Navigation() {
             )} />
           </div>
           <p className="text-[11px] text-slate-300">
-            {isConnected ? "Terminal Connected" : "Terminal Offline"}
+            {isConnected ? "CONNECTED" : "OFFLINE"}
           </p>
         </div>
       </div>

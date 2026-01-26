@@ -154,7 +154,7 @@ export async function registerRoutes(
   app.use("/api/traders-hub", requireAuth, tradersHubRouter);
   
   app.get(api.trades.list.path, requireAuth, async (req, res) => {
-    const trades = await storage.getTrades();
+    const trades = await storage.getTrades(req.session.userId);
     res.json(trades);
   });
 
@@ -347,12 +347,12 @@ export async function registerRoutes(
   app.get("/api/performance/intelligence/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
-      const manualTrades = await storage.getTrades();
+      const manualTrades = await storage.getTrades(userId);
       const mt5History = await storage.getMT5History(userId);
       
       const trades = [
-        ...manualTrades.filter(t => t.userId === userId || t.userId === "dev-user").map(t => ({
-          netPl: parseFloat(t.entryPrice || "0") > 0 ? 0 : 0, // Manual trades usually don't have P&L logic yet unless calculated
+        ...manualTrades.map(t => ({
+          netPl: 0, // Manual trades P&L tracking not yet fully automated
           outcome: t.outcome,
           direction: t.direction,
           createdAt: t.createdAt,
@@ -364,7 +364,7 @@ export async function registerRoutes(
           outcome: parseFloat(t.netPl) >= 0 ? "Win" : "Loss",
           direction: t.direction,
           createdAt: t.closeTime,
-          riskReward: 0, // MT5 history doesn't inherently store RR
+          riskReward: 0,
           setup: "MT5 Sync"
         }))
       ];
