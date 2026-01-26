@@ -15,8 +15,8 @@ export default function Journal() {
 
   const { data: manualTrades, isLoading: isLoadingManual } = useTrades();
   const { data: mt5History, isLoading: isLoadingHistory } = useQuery<any[]>({
-    queryKey: user?.userId ? [`/api/mt5/history/${user.userId}`] : null,
-    enabled: !!user?.userId,
+    queryKey: user?.userId ? [`/api/mt5/history/${user.userId}`] : ["/api/mt5/history/demo"],
+    enabled: true,
   });
 
   const subscription = user?.subscriptionTier || "FREE";

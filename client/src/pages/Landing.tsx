@@ -59,15 +59,18 @@ export default function Landing() {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase mb-6 leading-[0.9]">
-            Execution-linked<br />
-            <span className="text-emerald-500">performance intelligence</span><br />
-            for MT5 traders
+            Standardize your<br />
+            <span className="text-emerald-500">execution logic</span><br />
+            with MT5 sync
           </h1>
           
-          <p className="max-w-2xl mx-auto text-lg text-slate-400 mb-12 leading-relaxed">
-            Data-driven validation and risk control for institutional-grade terminal operations. 
-            Standardize your execution logic through real-time MT5 synchronization and objective rule enforcement.
-          </p>
+          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 mb-12 max-w-2xl mx-auto text-left">
+            <h3 className="text-emerald-500 font-bold uppercase tracking-widest text-sm mb-2">Designed for Discipline</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Tradify is for MT5 traders who want execution discipline and performance clarity. 
+              <span className="block mt-2 text-rose-500/70 font-bold">NOT FOR: Signal seekers, shortcut beginners, or copy traders.</span>
+            </p>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup">
@@ -294,6 +297,10 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 text-center">
+        <div className="flex justify-center gap-6 mb-4">
+          <Link href="/terms" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
+          <Link href="/privacy" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
+        </div>
         <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em]">
           &copy; 2026 Tradify Intelligence Systems. All Rights Reserved.
         </p>

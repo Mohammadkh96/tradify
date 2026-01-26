@@ -1,0 +1,226 @@
+L. PUBLIC WEBSITE & ROUTING
+PUBLIC PAGES, NAVIGATION & ACCESS CONTROL — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of Public Website & Routing
+
+Clearly communicate what Tradify is and who it’s for
+
+Guide users smoothly from discovery → signup → dashboard
+
+Prevent accidental exposure of protected areas
+
+Ensure routing behaves predictably and professionally
+
+🧱 PUBLIC WEBSITE
+1️⃣ Public Landing Page Exists
+Functional Requirements
+
+A publicly accessible landing page available at /
+
+Does not require authentication
+
+Loads fast and reliably
+
+Content Scope
+
+Product overview
+
+Value proposition
+
+ICP messaging
+
+Call-to-action buttons
+
+UX Requirements
+
+Professional, calm tone
+
+No hype or exaggerated claims
+
+Consistent with app branding (dark institutional theme)
+
+2️⃣ Clear ICP Messaging
+Requirements
+
+Landing page must clearly state:
+
+Who Tradify is for:
+
+“MT5 traders who want execution discipline and performance clarity”
+
+Who it is not for:
+
+Signal seekers
+
+Beginners looking for shortcuts
+
+Copy traders
+
+UX Requirements
+
+ICP visible above the fold or immediately after hero section
+
+Language is explicit and unambiguous
+
+3️⃣ Clear Value Proposition
+Requirements
+
+Landing page must answer:
+
+What problem Tradify solves
+
+How it solves it (high level)
+
+Why it’s different
+
+Example Framing (Conceptual)
+
+Automatic MT5 trade capture
+
+Discipline & performance intelligence
+
+No signals, no execution, no hype
+
+UX Requirements
+
+Short, scannable sections
+
+No feature overload
+
+🔀 ROUTING & NAVIGATION
+4️⃣ CTA Routes Correctly
+CTA Buttons
+
+“Create Account”
+
+“Sign In”
+
+“View Plans”
+
+Routing Rules
+
+“Create Account” → /register
+
+“Sign In” → /login
+
+“View Plans” → /pricing
+
+Non-Negotiable
+
+CTAs must never route to the dashboard unless authenticated
+
+5️⃣ “View Plans” → Pricing (Not Dashboard)
+Functional Requirements
+
+Pricing page must be public
+
+Accessible without login
+
+Shows:
+
+Free vs Pro plans
+
+High-level feature differences
+
+No automatic redirect to dashboard
+
+UX Requirements
+
+Clear upgrade CTA
+
+Clear explanation of limits
+
+Honest, transparent pricing
+
+6️⃣ Public vs Protected Routes Correct
+Public Routes (Accessible Without Login)
+
+/
+
+/pricing
+
+/login
+
+/register
+
+/terms
+
+/privacy
+
+Protected Routes (Require Authentication)
+
+/dashboard
+
+/journal
+
+/mt5-bridge
+
+/trader-hub
+
+/profile
+
+/admin/*
+
+Enforcement
+
+Protected routes must:
+
+Redirect unauthenticated users to /login
+
+Not leak any protected data
+
+Auth checks enforced server-side, not frontend-only
+
+7️⃣ 404 Handling
+Functional Requirements
+
+Any unknown route must show a custom 404 page
+
+404 page must:
+
+Clearly state page not found
+
+Offer navigation back to landing or dashboard (if logged in)
+
+UX Requirements
+
+Branded
+
+Calm tone
+
+No technical error dumps
+
+🔒 SECURITY & CONSISTENCY RULES
+
+No accidental dashboard access via URL
+
+No fallback routes that expose data
+
+No silent redirects
+
+Routing logic centralized and documented
+
+🧪 EDGE CASE TESTING (MUST PASS)
+
+⬜ Logged-out user visits /dashboard → redirected to /login
+
+⬜ Logged-out user clicks “View Plans” → /pricing
+
+⬜ Logged-in user visits /login → redirected to /dashboard (optional)
+
+⬜ Unknown URL → custom 404 page
+
+⬜ No routing loops
+
+✅ DEFINITION OF “DONE” (ACCEPTANCE CRITERIA)
+
+Public website & routing are complete only if:
+
+New visitors understand the product in <30 seconds
+
+CTAs behave predictably
+
+Protected areas are secure
+
+Navigation feels professional and intentional
+
+No accidental redirects or leaks exist

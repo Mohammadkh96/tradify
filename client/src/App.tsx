@@ -18,6 +18,8 @@ import TradersHub from "@/pages/TradersHub";
 import Auth from "@/pages/Auth";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
 import { useQuery } from "@tanstack/react-query";
 
 function Router() {
@@ -25,9 +27,10 @@ function Router() {
   const isLandingPage = location === "/";
   const isPricingPage = location === "/pricing";
   const isAuthPage = location === "/login" || location === "/signup";
+  const isPublicLegalPage = location === "/terms" || location === "/privacy";
   const isAdminRoute = location.startsWith("/admin");
 
-  const { data: userRole, isLoading: isRoleLoading, error: authError } = useQuery<any>({
+  const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
     queryKey: ["/api/user"],
     retry: false,
   });
@@ -37,12 +40,8 @@ function Router() {
 
   if (isRoleLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
 
-  // Role-based entry flow: Redirect mohammad@admin.com directly to admin console
-  if (isAdmin && (location === "/dashboard" || location === "/journal" || location === "/new-entry")) {
-    return <Redirect to="/admin/overview" />;
-  }
-
-  if (isLandingPage && isUserLoggedIn && !isAdmin) {
+  // Security Redirects
+  if (isUserLoggedIn && isAuthPage) {
     return <Redirect to="/dashboard" />;
   }
 
@@ -50,7 +49,15 @@ function Router() {
     <Switch>
       <Route path="/login" component={Auth} />
       <Route path="/signup" component={Auth} />
+      <Route path="/register">
+        <Redirect to="/signup" />
+      </Route>
       <Route path="/" component={Landing} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/privacy" component={Privacy} />
+
+      {/* Protected Routes */}
       <Route path="/dashboard">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Dashboard />}
       </Route>
@@ -75,24 +82,34 @@ function Router() {
       <Route path="/traders-hub">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <TradersHub />}
       </Route>
-      <Route path="/pricing" component={Pricing} />
       
       {/* Admin Routes */}
-      <Route path="/admin/overview" component={AdminDashboard} />
-      <Route path="/admin/users" component={AdminDashboard} />
-      <Route path="/admin/access" component={AdminDashboard} />
-      <Route path="/admin/subscriptions" component={AdminDashboard} />
-      <Route path="/admin/mt5" component={AdminDashboard} />
-      <Route path="/admin/audit-logs" component={AdminDashboard} />
+      <Route path="/admin/overview">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/users">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/access">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/subscriptions">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/mt5">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/audit-logs">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
       
       <Route component={NotFound} />
     </Switch>
   );
 
-  if (isAuthPage || isLandingPage || isPricingPage) return content;
+  if (isAuthPage || isLandingPage || isPricingPage || isPublicLegalPage) return content;
 
   if (isAdminRoute) {
-    if (!isAdmin) return <Redirect to="/" />;
     return <AdminLayout>{content}</AdminLayout>;
   }
 
