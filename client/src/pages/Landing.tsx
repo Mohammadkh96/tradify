@@ -297,9 +297,10 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 text-center">
-        <div className="flex justify-center gap-6 mb-4">
+        <div className="flex justify-center flex-wrap gap-6 mb-4">
           <Link href="/terms" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
           <Link href="/privacy" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
+          <Link href="/risk" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
         </div>
         <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em]">
           &copy; 2026 Tradify Intelligence Systems. All Rights Reserved.

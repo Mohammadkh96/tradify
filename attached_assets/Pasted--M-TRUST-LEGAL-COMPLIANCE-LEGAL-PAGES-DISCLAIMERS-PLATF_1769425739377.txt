@@ -1,0 +1,245 @@
+🔒 M. TRUST, LEGAL & COMPLIANCE
+LEGAL PAGES, DISCLAIMERS & PLATFORM SAFETY — DETAILED SPECIFICATION (For Replit)
+🎯 Goal of Trust, Legal & Compliance
+
+Protect Tradify from legal and regulatory risk
+
+Build user trust through transparency
+
+Clearly define Tradify as a tool platform, not an advisor
+
+Satisfy payment processor and platform requirements
+
+Prevent misleading claims or expectations
+
+📜 LEGAL PAGES (PUBLIC, REQUIRED)
+1️⃣ Terms of Service
+Functional Requirements
+
+A public page at /terms
+
+Accessible without authentication
+
+Linked from:
+
+Landing page footer
+
+Registration page
+
+Login page
+
+Content Requirements (High-Level)
+
+Terms must clearly define:
+
+Tradify is a software platform, not a broker
+
+Users are responsible for their trading decisions
+
+No financial advice is provided
+
+Acceptable use of the platform
+
+Account termination rights
+
+Limitation of liability
+
+Governing law (can be generic initially)
+
+UX Requirements
+
+Clean, readable layout
+
+No hidden clauses
+
+No overly technical language
+
+2️⃣ Privacy Policy
+Functional Requirements
+
+A public page at /privacy
+
+Accessible without authentication
+
+Linked from:
+
+Landing page footer
+
+Registration page
+
+Content Requirements
+
+Privacy Policy must explain:
+
+What data is collected:
+
+Email
+
+Country
+
+Optional phone
+
+MT5 trade data (read-only)
+
+What is not collected:
+
+Broker credentials
+
+Payment card details (handled by Stripe)
+
+How data is stored and protected
+
+Data retention and deletion
+
+User rights (access, deletion)
+
+UX Requirements
+
+Plain, transparent language
+
+No vague or misleading statements
+
+3️⃣ Risk Disclaimer
+Functional Requirements
+
+A dedicated public page at /risk
+
+Linked from:
+
+Footer
+
+Dashboard (subtle link)
+
+Mandatory Disclaimer Language (Conceptual)
+
+Risk disclaimer must clearly state:
+
+Trading involves risk
+
+Losses can exceed expectations
+
+Past performance is not indicative of future results
+
+Tradify does not guarantee outcomes
+
+UX Requirements
+
+Prominent header
+
+Clear warnings
+
+No minimization of risk
+
+4️⃣ Data Usage Explanation
+Functional Requirements
+
+Section on landing page or separate /data-usage page
+
+Clearly explains:
+
+How MT5 data is used
+
+That the connection is read-only
+
+That data is used for analytics and insights only
+
+Required Statements
+
+“No broker credentials are stored”
+
+“No trades are executed by Tradify”
+
+“Data is used for performance analysis only”
+
+This is a trust-critical section.
+
+🚫 CONTENT & CLAIM RESTRICTIONS (NON-NEGOTIABLE)
+5️⃣ No Profit Guarantees Anywhere
+Prohibited Content (Anywhere in App, Site, Emails)
+
+“Guaranteed profits”
+
+“High probability returns”
+
+“Consistent income”
+
+“Win rate promises”
+
+“Proven strategy”
+
+Enforcement
+
+Manual review
+
+Content guidelines
+
+No marketing language implying certainty
+
+6️⃣ Clear “Not a Signal / Not Advice” Language
+Mandatory Placement
+
+This language must appear:
+
+In AI Insights panel
+
+In Trader Hub
+
+In Creator profiles
+
+In footer or legal section
+
+Required Conceptual Language
+
+“Tradify does not provide trading signals or financial advice.
+All information is for analytical and educational purposes only.”
+
+UX Requirements
+
+Visible
+
+Non-dismissable
+
+Consistent wording
+
+🤖 AI & COMMUNITY SAFETY ALIGNMENT
+AI Module
+
+AI labeled as “Performance Insights”
+
+Disclaimer shown with every AI output
+
+No advisory tone
+
+Trader Hub
+
+Clear disclaimer at top:
+
+“Community content reflects personal opinions and is not financial advice.”
+
+🧪 EDGE CASE TESTING (MUST PASS)
+
+⬜ Legal pages accessible without login
+
+⬜ Legal links visible on signup
+
+⬜ No profit language anywhere
+
+⬜ Disclaimers visible in AI & community
+
+⬜ Account deletion respects privacy policy
+
+⬜ No hidden advisory claims
+
+✅ DEFINITION OF “DONE” (ACCEPTANCE CRITERIA)
+
+Trust, legal, and compliance are complete only if:
+
+Legal pages exist and are accessible
+
+Platform positioning is unambiguous
+
+No advisory or guarantee language exists
+
+Payment processors would approve the site
+
+Users clearly understand Tradify’s role

@@ -20,6 +20,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import RiskDisclaimer from "@/pages/RiskDisclaimer";
 import { useQuery } from "@tanstack/react-query";
 
 function Router() {
@@ -27,7 +28,7 @@ function Router() {
   const isLandingPage = location === "/";
   const isPricingPage = location === "/pricing";
   const isAuthPage = location === "/login" || location === "/signup";
-  const isPublicLegalPage = location === "/terms" || location === "/privacy";
+  const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk";
   const isAdminRoute = location.startsWith("/admin");
 
   const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/risk" component={RiskDisclaimer} />
 
       {/* Protected Routes */}
       <Route path="/dashboard">

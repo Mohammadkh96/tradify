@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History, Check, X, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -384,6 +384,12 @@ export default function Auth() {
             >
               {isLogin ? "Need a terminal? Create account" : "Already registered? Log in"}
             </button>
+            <p className="text-center text-[10px] text-slate-500 mt-6 leading-relaxed uppercase tracking-widest font-bold">
+              By continuing, you agree to our{" "}
+              <Link href="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
+              <Link href="/privacy" className="text-emerald-500 hover:underline">Privacy</Link>, and acknowledge the{" "}
+              <Link href="/risk" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-8">
