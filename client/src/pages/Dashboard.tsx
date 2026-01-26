@@ -198,7 +198,7 @@ export default function Dashboard() {
                 )}
                 {!mt5?.lastSync && (
                   <Link href="/traders-hub">
-                    <Button variant="link" className="text-[10px] text-emerald-500 h-auto p-0 font-bold uppercase">Setup Bridge →</Button>
+                    <Button variant="ghost" className="text-[10px] text-emerald-500 h-auto p-0 font-bold uppercase hover:bg-transparent">Setup Bridge →</Button>
                   </Link>
                 )}
               </div>
