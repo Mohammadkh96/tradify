@@ -281,10 +281,9 @@ export async function registerRoutes(
         });
 
         return res.status(401).json({ 
-          message: "Invalid sync token",
+          message: "Invalid sync token. Please ensure you are using the correct token from your Tradify Profile > MT5 Bridge settings.",
           error: "TOKEN_MISMATCH",
-          received: providedToken?.substring(0, 4) + "...",
-          expected: storedToken?.substring(0, 4) + "..."
+          instruction: "Verify the Sync Token in your Tradify Profile matches the one in your MT5 EA settings."
         });
       }
 
@@ -373,14 +372,14 @@ export async function registerRoutes(
         return res.json({ status: "DISCONNECTED" });
       }
       
-      // Check if last update was within 1 minute
+      // Check if last update was within 5 minutes (increased from 1m)
       const lastUpdate = new Date(data.lastUpdate || 0);
       const now = new Date();
-      const isLive = (now.getTime() - lastUpdate.getTime()) < 60000;
+      const isLive = (now.getTime() - lastUpdate.getTime()) < 300000;
       
       let error = undefined;
       if (!isLive && data.lastUpdate) {
-        error = "Heartbeat timeout (last update > 60s)";
+        error = "Heartbeat timeout (last update > 5m)";
       } else if (!data) {
         error = "No terminal data found";
       }
