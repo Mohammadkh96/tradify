@@ -9,14 +9,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 
 export default function Journal() {
+  const { data: user } = useQuery<any>({
+    queryKey: ["/api/user"],
+  });
+
   const { data: manualTrades, isLoading: isLoadingManual } = useTrades();
   const { data: mt5History, isLoading: isLoadingHistory } = useQuery<any[]>({
     queryKey: user?.userId ? [`/api/mt5/history/${user.userId}`] : null,
     enabled: !!user?.userId,
-  });
-  
-  const { data: user } = useQuery<any>({
-    queryKey: ["/api/user"],
   });
 
   const subscription = user?.subscriptionTier || "FREE";
