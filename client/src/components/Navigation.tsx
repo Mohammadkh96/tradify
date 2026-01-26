@@ -35,18 +35,22 @@ export function Navigation() {
   const [location] = useLocation();
   const { toast } = useToast();
 
+  const { data: user } = useQuery<any>({ 
+    queryKey: ["/api/user"],
+    staleTime: 0,
+  });
+  
+  const userId = user?.userId;
+
   const { data: mt5 } = useQuery<any>({
-    queryKey: [`/api/mt5/status/demo_user`],
+    queryKey: [`/api/mt5/status/${userId}`],
     refetchInterval: 5000,
+    enabled: !!userId,
   });
 
   const { data: userRole } = useQuery<any>({
-    queryKey: ["/api/user/role", localStorage.getItem("user_id")],
-    queryFn: async () => {
-      const userId = localStorage.getItem("user_id");
-      const res = await fetch(`/api/user/role${userId ? `?userId=${userId}` : ""}`);
-      return res.json();
-    }
+    queryKey: [`/api/traders-hub/user-role/${userId}`],
+    enabled: !!userId,
   });
 
   const upgradeMutation = useMutation({
@@ -65,7 +69,7 @@ export function Navigation() {
 
   const isConnected = mt5?.status === "CONNECTED";
   const isPro = userRole?.subscriptionTier === "PRO";
-  const isAdmin = localStorage.getItem("user_id") === "mohammad@admin.com";
+  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
 
   const handleLogout = async () => {
     try {

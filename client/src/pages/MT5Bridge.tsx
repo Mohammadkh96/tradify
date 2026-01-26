@@ -88,7 +88,7 @@ import json
 import sys
 import os
 
-# TRADIFY CONNECTOR v2.0 (PYTHON NATIVE)
+# TRADIFY CONNECTOR v2.2 (PYTHON NATIVE)
 # Requirements: pip install MetaTrader5 requests
 
 def get_account_data():
@@ -115,7 +115,8 @@ def get_account_data():
                 "tp": p.tp
             })
             
-    history = mt5.history_deals_get(time.time() - 86400*7, time.time())
+    # Sync last 24 hours of deals by default
+    history = mt5.history_deals_get(time.time() - 86400, time.time())
     hist_list = []
     if history:
         for d in history:

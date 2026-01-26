@@ -355,26 +355,20 @@ export async function registerRoutes(
     try {
       const { userId } = req.params;
       const data = await storage.getMT5Data(userId);
-      if (!data) {
-        return res.json({ status: "DISCONNECTED" });
+      
+      if (!data || !data.lastUpdate) {
+        return res.json({ status: "DISCONNECTED", isLive: false });
       }
       
-      const lastUpdate = new Date(data.lastUpdate || 0);
+      const lastUpdate = new Date(data.lastUpdate);
       const now = new Date();
-      // Heartbeat: 30 seconds for live status, 5 minutes for disconnected error
-      const isLive = (now.getTime() - lastUpdate.getTime()) < 30000;
-      const isDisconnected = (now.getTime() - lastUpdate.getTime()) >= 300000;
+      // Heartbeat: 45 seconds for live status (allowing for 10s sync interval + network)
+      const isLive = (now.getTime() - lastUpdate.getTime()) < 45000;
       
-      let error = undefined;
-      if (isDisconnected) {
-        error = "Terminal Offline (Last sync > 5m)";
-      }
-
       res.json({
         status: isLive ? "CONNECTED" : "DISCONNECTED",
         lastSync: data.lastUpdate,
         isLive,
-        error,
         metrics: {
           balance: data.balance,
           equity: data.equity,
@@ -388,6 +382,7 @@ export async function registerRoutes(
         }
       });
     } catch (error) {
+      console.error("MT5 Status Error:", error);
       res.status(500).json({ message: "Failed to fetch status" });
     }
   });

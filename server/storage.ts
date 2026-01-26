@@ -92,6 +92,7 @@ export class DatabaseStorage implements IStorage {
   }): Promise<MT5Data> {
     const [existing] = await db.select().from(mt5Data).where(eq(mt5Data.userId, data.userId)).limit(1);
     
+    const now = new Date();
     const values = {
       userId: data.userId,
       balance: data.balance.toString(),
@@ -104,10 +105,10 @@ export class DatabaseStorage implements IStorage {
       currency: data.currency || "USD",
       positions: data.positions,
       syncToken: data.syncToken,
-      lastUpdate: new Date(),
+      lastUpdate: now,
     };
 
-    console.log(`[MT5 Storage] Updating data for ${data.userId}. Equity: ${values.equity}, Positions: ${values.positions.length}`);
+    console.log(`[MT5 Sync] HEARTBEAT: Received data from ${data.userId} at ${now.toISOString()}`);
 
     // Update Daily Snapshot
     const today = new Date();
