@@ -13,6 +13,7 @@ import {
   hubReports,
   creatorProfiles,
   creatorApplications,
+  signalProviderProfile,
   type HubPost,
   type HubComment,
   type HubReport,
@@ -26,7 +27,7 @@ import {
   type AIPerformanceInsight,
   type AIInsightLog
 } from "@shared/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   getTrades(): Promise<Trade[]>;
