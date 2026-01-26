@@ -4,9 +4,10 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
+import { stripeService } from "./stripeService";
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { eq, or, desc, and } from "drizzle-orm";
+import { eq, or, desc, and, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -148,6 +149,80 @@ export async function registerRoutes(
     }
     const user = await storage.getUserRole(req.session.userId);
     res.json(user);
+  });
+
+  // --- Stripe Billing Routes ---
+  app.get('/api/billing/products', requireAuth, async (req, res) => {
+    try {
+      const rows = await storage.listProductsWithPrices();
+      const productsMap = new Map();
+      for (const row of rows) {
+        if (!productsMap.has(row.product_id)) {
+          productsMap.set(row.product_id, {
+            id: row.product_id,
+            name: row.product_name,
+            description: row.product_description,
+            metadata: row.product_metadata,
+            prices: []
+          });
+        }
+        if (row.price_id) {
+          productsMap.get(row.product_id).prices.push({
+            id: row.price_id,
+            unit_amount: row.unit_amount,
+            currency: row.currency,
+            recurring: row.recurring
+          });
+        }
+      }
+      res.json(Array.from(productsMap.values()));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.post('/api/billing/checkout', requireAuth, async (req, res) => {
+    try {
+      const { priceId } = req.body;
+      const user = await storage.getUserRole(req.session.userId!);
+      
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripeService.createCustomer(user.userId, user.userId);
+        await storage.updateUserStripeInfo(user.userId, { stripeCustomerId: customer.id });
+        customerId = customer.id;
+      }
+
+      const session = await stripeService.createCheckoutSession(
+        customerId,
+        priceId,
+        `${req.protocol}://${req.get('host')}/dashboard?checkout=success`,
+        `${req.protocol}://${req.get('host')}/dashboard?checkout=cancel`
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Checkout error:", error);
+      res.status(500).json({ message: "Failed to initiate checkout" });
+    }
+  });
+
+  app.post('/api/billing/portal', requireAuth, async (req, res) => {
+    try {
+      const user = await storage.getUserRole(req.session.userId!);
+      if (!user.stripeCustomerId) {
+        return res.status(400).json({ message: "No billing profile found" });
+      }
+
+      const session = await stripeService.createCustomerPortalSession(
+        user.stripeCustomerId,
+        `${req.protocol}://${req.get('host')}/dashboard`
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to open portal" });
+    }
   });
   
   // Traders Hub API
