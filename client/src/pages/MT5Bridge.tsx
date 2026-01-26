@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
 export default function MT5Bridge() {
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: user } = useQuery<any>({ 
