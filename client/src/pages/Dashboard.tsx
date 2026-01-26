@@ -56,7 +56,7 @@ export default function Dashboard() {
     lastUpdate?: string;
   }>({
     queryKey: [`/api/mt5/status/${userId}`],
-    refetchInterval: 5000,
+    refetchInterval: 1000,
     enabled: !!userId
   });
 
@@ -168,11 +168,11 @@ export default function Dashboard() {
               <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 rounded-full px-5 py-2.5 backdrop-blur-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">MT5 Live</span>
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">MT5 Live Sync</span>
                 </div>
                 <div className="w-px h-5 bg-slate-800" />
-                <div className="text-[10px] text-slate-400 font-mono font-bold">
-                  Last Sync: {mt5?.lastSync ? format(new Date(mt5.lastSync), 'HH:mm:ss') : 'N/A'}
+                <div className="text-[10px] text-slate-400 font-mono font-bold uppercase">
+                  ACTIVE
                 </div>
               </div>
             ) : (

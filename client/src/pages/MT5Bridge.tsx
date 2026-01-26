@@ -303,7 +303,7 @@ if __name__ == "__main__":
                     </div>
                     <ul className="text-[10px] text-slate-500 space-y-2 list-disc pl-4">
                       <li>Python 3.8+ installed on your device</li>
-                      <li>MetaTrader5 python package (`pip install MetaTrader5`)</li>
+                      <li>MetaTrader5 python package (`pip install MetaTrader5 requests`)</li>
                       <li>MT5 Terminal must be open and logged in</li>
                     </ul>
                   </div>

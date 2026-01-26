@@ -334,7 +334,7 @@ export async function registerRoutes(
         }
       }
       
-      res.json({ success: true, timestamp: new Date().toISOString() });
+      res.json({ success: true, timestamp: new Date().toISOString(), status: "CONNECTED" });
     } catch (error) {
       console.error("MT5 Sync Error:", error);
       res.status(500).json({ message: "Sync failed" });
