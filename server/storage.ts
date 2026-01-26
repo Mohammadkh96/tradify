@@ -137,31 +137,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async syncMT5History(userId: string, trades: any[]): Promise<void> {
+    console.log(`[MT5 Storage] Syncing history for ${userId}. Received ${trades.length} trades.`);
     for (const trade of trades) {
-      // Use ticket as unique identifier to prevent duplicates
-      const [existing] = await db.select().from(mt5History)
-        .where(and(eq(mt5History.userId, userId), eq(mt5History.ticket, trade.ticket.toString())))
-        .limit(1);
+      try {
+        // Use ticket as unique identifier to prevent duplicates
+        const ticketStr = trade.ticket.toString();
+        const [existing] = await db.select().from(mt5History)
+          .where(and(eq(mt5History.userId, userId), eq(mt5History.ticket, ticketStr)))
+          .limit(1);
 
-      if (!existing) {
-        await db.insert(mt5History).values({
-          userId,
-          ticket: trade.ticket.toString(),
-          symbol: trade.symbol,
-          direction: trade.type === 0 ? "Buy" : "Sell",
-          volume: trade.volume.toString(),
-          entryPrice: trade.price?.toString() || "0",
-          exitPrice: trade.price?.toString() || "0",
-          sl: trade.sl?.toString(),
-          tp: trade.tp?.toString(),
-          openTime: new Date(trade.open_time * 1000),
-          closeTime: new Date(trade.close_time * 1000),
-          duration: trade.close_time - trade.open_time,
-          grossPl: trade.profit.toString(),
-          commission: trade.commission?.toString() || "0",
-          swap: trade.swap?.toString() || "0",
-          netPl: (trade.profit + (trade.commission || 0) + (trade.swap || 0)).toString(),
-        });
+        if (!existing) {
+          console.log(`[MT5 Storage] Inserting new trade ticket ${ticketStr} for ${userId}`);
+          await db.insert(mt5History).values({
+            userId,
+            ticket: ticketStr,
+            symbol: trade.symbol,
+            direction: trade.type === 0 ? "Buy" : "Sell",
+            volume: trade.volume.toString(),
+            entryPrice: trade.price?.toString() || "0",
+            exitPrice: trade.price?.toString() || "0",
+            sl: trade.sl?.toString(),
+            tp: trade.tp?.toString(),
+            openTime: new Date(trade.open_time * 1000),
+            closeTime: new Date(trade.close_time * 1000),
+            duration: trade.close_time - trade.open_time,
+            grossPl: trade.profit.toString(),
+            commission: trade.commission?.toString() || "0",
+            swap: trade.swap?.toString() || "0",
+            netPl: (trade.profit + (trade.commission || 0) + (trade.swap || 0)).toString(),
+          });
+        }
+      } catch (err) {
+        console.error(`[MT5 Storage] Error syncing trade ${trade.ticket}:`, err);
       }
     }
   }

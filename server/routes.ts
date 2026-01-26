@@ -296,7 +296,8 @@ export async function registerRoutes(
       });
 
       // Sync History if provided
-      if (history && history.length > 0) {
+      if (history && Array.isArray(history) && history.length > 0) {
+        console.log(`[MT5 Sync] Syncing history for ${userId}. Count: ${history.length}`);
         await storage.syncMT5History(userId, history);
         
         // Log sync event for traceability
