@@ -67,7 +67,7 @@ export default function Pricing() {
   });
 
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
-  const isPro = user?.subscriptionTier === "PRO";
+  const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
 
   if (isLoadingProducts) {
     return (
@@ -154,23 +154,23 @@ export default function Pricing() {
                 ))}
               </div>
 
-                  {isPro ? (
-                    <Button 
-                      onClick={() => {
-                        if (user?.subscriptionProvider === 'paypal') {
-                          window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
-                        } else {
-                          portalMutation.mutate();
-                        }
-                      }}
-                      disabled={portalMutation.isPending}
-                      className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-                    >
-                      {portalMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
-                        user?.subscriptionProvider === 'paypal' ? "Manage on PayPal" : "Manage Subscription"
-                      )}
-                    </Button>
-                  ) : (
+              {isPro ? (
+                <Button 
+                  onClick={() => {
+                    if (user?.subscriptionProvider === 'paypal') {
+                      window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
+                    } else {
+                      portalMutation.mutate();
+                    }
+                  }}
+                  disabled={portalMutation.isPending}
+                  className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                >
+                  {portalMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
+                    user?.subscriptionProvider === 'paypal' ? "Manage on PayPal" : "Manage Subscription"
+                  )}
+                </Button>
+              ) : (
                 <div className="space-y-4">
                   <div className="flex gap-2 p-1 bg-slate-900/50 rounded-lg border border-slate-800">
                     <Button

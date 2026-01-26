@@ -239,6 +239,9 @@ export async function registerRoutes(
   app.post('/api/billing/portal', requireAuth, async (req, res) => {
     try {
       const user = await storage.getUserRole(req.session.userId!);
+      if (user.subscriptionProvider === 'paypal') {
+        return res.json({ url: 'https://www.paypal.com/myaccount/billing/subscriptions' });
+      }
       if (!user.stripeCustomerId) {
         return res.status(400).json({ message: "No billing profile found" });
       }
