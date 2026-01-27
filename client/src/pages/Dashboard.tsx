@@ -75,8 +75,8 @@ export default function Dashboard() {
   }
 
   const allTrades = trades || [];
-  const wins = allTrades.filter(t => t.outcome === "Win").length;
-  const losses = allTrades.filter(t => t.outcome === "Loss").length;
+  const wins = allTrades.filter(t => Number(t.profit) > 0).length;
+  const losses = allTrades.filter(t => Number(t.profit) < 0).length;
   const total = allTrades.length;
   
   const winRate = total >= 5 ? ((wins / total) * 100).toFixed(1) : "N/A";
