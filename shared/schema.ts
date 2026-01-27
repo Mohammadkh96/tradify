@@ -21,6 +21,7 @@ export const tradeJournal = pgTable("trade_journal", {
   stopLoss: text("stop_loss"),
   takeProfit: text("take_profit"),
   riskReward: text("risk_reward"),
+  netPl: text("net_pl"), // Added for unified P&L tracking
   outcome: text("outcome").notNull(),
   notes: text("notes"),
   isRuleCompliant: boolean("is_rule_compliant").default(true),

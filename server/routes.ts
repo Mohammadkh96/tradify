@@ -516,29 +516,18 @@ export async function registerRoutes(
   app.get("/api/performance/intelligence/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
-      const manualTrades = await storage.getTrades(userId);
-      const mt5History = await storage.getMT5History(userId);
+      const trades = await storage.getTrades(userId);
       
-      const trades = [
-        ...manualTrades.map(t => ({
-          netPl: 0, // Manual trades P&L tracking not yet fully automated
-          outcome: t.outcome,
-          direction: t.direction,
-          createdAt: t.createdAt,
-          riskReward: parseFloat(t.riskReward || "0"),
-          setup: t.matchedSetup || "Unknown"
-        })),
-        ...mt5History.map(t => ({
-          netPl: parseFloat(t.netPl),
-          outcome: parseFloat(t.netPl) >= 0 ? "Win" : "Loss",
-          direction: t.direction,
-          createdAt: t.closeTime,
-          riskReward: 0,
-          setup: "MT5 Sync"
-        }))
-      ];
+      const normalizedTrades = trades.map(t => ({
+        netPl: parseFloat(t.netPl || "0"),
+        outcome: t.outcome,
+        direction: t.direction,
+        createdAt: t.createdAt,
+        riskReward: parseFloat(t.riskReward || "0"),
+        setup: t.matchedSetup || (t.timeframe === "MT5_SYNC" ? "MT5 Sync" : "Manual Entry")
+      }));
 
-      if (trades.length === 0) {
+      if (normalizedTrades.length === 0) {
         return res.json({ message: "No data available" });
       }
 
@@ -551,7 +540,7 @@ export async function registerRoutes(
       let totalGrossProfit = 0;
       let totalGrossLoss = 0;
       let wins = 0;
-      let losses = 0;
+      let totalTradesCount = normalizedTrades.length;
       let totalRR = 0;
       let rrCount = 0;
       let maxDrawdown = 0;
@@ -568,14 +557,14 @@ export async function registerRoutes(
 
       const dailyTrades: Record<string, number> = {};
 
-      trades.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()).forEach(t => {
+      normalizedTrades.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()).forEach(t => {
         const date = new Date(t.createdAt!);
         const hour = date.getUTCHours();
         const day = dayNames[date.getUTCDay()];
         const dateStr = date.toISOString().split('T')[0];
         
         dailyTrades[dateStr] = (dailyTrades[dateStr] || 0) + 1;
-        if (dailyTrades[dateStr] > 5) violations.overtrading++; // Default threshold: 5 trades/day
+        if (dailyTrades[dateStr] > 5) violations.overtrading++;
 
         const pl = t.netPl;
         totalPl += pl;
@@ -600,16 +589,14 @@ export async function registerRoutes(
         days[day as keyof typeof days] += pl;
 
         if (t.outcome === "Win") wins++;
-        else if (t.outcome === "Loss") losses++;
 
         if (t.riskReward > 0) {
           totalRR += t.riskReward;
           rrCount++;
         }
 
-        // Violations tracking
         if (hour < 8 || hour >= 21) violations.outsideSession++;
-        if (!t.setup || t.setup === "Unknown") violations.noStrategy++;
+        if (t.setup === "Manual Entry") violations.noStrategy++;
 
         if (!setups[t.setup]) setups[t.setup] = { wins: 0, total: 0 };
         setups[t.setup].total++;
@@ -627,8 +614,8 @@ export async function registerRoutes(
       const bestSetup = setupStats.length ? setupStats.reduce((a, b) => a.winRate > b.winRate ? a : b).name : "N/A";
 
       const profitFactor = totalGrossLoss > 0 ? totalGrossProfit / totalGrossLoss : 1;
-      const winRateVal = trades.length ? (wins / trades.length) * 100 : 0;
-      const expectancy = trades.length ? totalPl / trades.length : 0;
+      const winRateVal = totalTradesCount ? (wins / totalTradesCount) * 100 : 0;
+      const expectancy = totalTradesCount ? totalPl / totalTradesCount : 0;
       const recoveryFactor = maxDrawdown > 0 ? totalPl / maxDrawdown : totalPl > 0 ? 1 : 0;
 
       res.json({
@@ -643,11 +630,12 @@ export async function registerRoutes(
         maxDrawdownPercent: peak > 0 ? ((maxDrawdown / peak) * 100).toFixed(2) : "0.00",
         recoveryFactor: recoveryFactor.toFixed(2),
         totalPl: totalPl.toFixed(2),
-        totalTrades: trades.length,
+        totalTrades: totalTradesCount,
         violations,
         sessionMetrics: sessions
       });
     } catch (error) {
+      console.error("Intelligence failure:", error);
       res.status(500).json({ message: "Intelligence failure" });
     }
   });

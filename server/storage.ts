@@ -253,6 +253,7 @@ export class DatabaseStorage implements IStorage {
               stopLoss: trade.sl?.toString() || null,
               takeProfit: trade.tp?.toString() || null,
               riskReward: "0",
+              netPl,
               outcome: netPlNum >= 0 ? "Win" : "Loss",
               notes: `MT5_TICKET_${ticketStr}`,
             });
@@ -360,6 +361,7 @@ export class DatabaseStorage implements IStorage {
       stopLoss: insertTrade.stopLoss || null,
       takeProfit: insertTrade.takeProfit || null,
       riskReward: insertTrade.riskReward || null,
+      netPl: insertTrade.netPl || "0",
       isRuleCompliant: validation.valid,
       violationReason: validation.reason || null,
       matchedSetup: validation.matchedSetup || null,
