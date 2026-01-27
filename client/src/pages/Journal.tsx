@@ -45,6 +45,7 @@ export default function Journal() {
       timeframe: "MT5",
       createdAt: t.openTime,
       closeTime: t.closeTime,
+      duration: t.duration,
       outcome: parseFloat(t.netPl) >= 0 ? "Win" : "Loss",
       netPl: parseFloat(t.netPl),
       riskReward: "N/A",
@@ -203,8 +204,8 @@ export default function Journal() {
                   </div>
                   <div className="flex flex-col gap-2">
                   <div className="text-[10px] text-muted-foreground font-mono mt-0.5 uppercase flex items-center gap-2">
-                    {trade.source === "MT5" ? <span className="text-sky-500">🟢 MT5 SYNCED</span> : <span className="text-muted-foreground">⚪ MANUAL</span>}
-                    {trade.ticket && <span className="opacity-50">#{trade.ticket}</span>}
+                    {trade.source === "MT5" ? <span className="text-sky-500 font-bold">MT5 SYNCED</span> : <span className="text-muted-foreground">MANUAL</span>}
+                    {trade.ticket && <span className="text-muted-foreground/50 bg-muted/50 px-1 rounded">#{trade.ticket}</span>}
                   </div>
                   {trade.tags && trade.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
@@ -223,7 +224,15 @@ export default function Journal() {
                 <div className="text-right">
                   <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Duration</div>
                   <div className="text-sm font-mono text-muted-foreground">
-                    {trade.source === "MT5" ? "Synced" : "Manual"}
+                    {trade.isMT5 ? (
+                      (() => {
+                        const seconds = trade.duration || 0;
+                        const h = Math.floor(seconds / 3600);
+                        const m = Math.floor((seconds % 3600) / 60);
+                        const s = seconds % 60;
+                        return `${h}h ${m}m ${s}s`;
+                      })()
+                    ) : "Manual"}
                   </div>
                 </div>
                 <div className="text-right">
@@ -232,7 +241,7 @@ export default function Journal() {
                     "text-xl font-black font-mono",
                     parseFloat(trade.netPl) >= 0 ? "text-emerald-500" : "text-rose-500"
                   )}>
-                    {trade.netPl !== 0 ? `$${parseFloat(trade.netPl).toFixed(2)}` : "-"}
+                    {trade.netPl !== 0 ? (trade.netPl > 0 ? `+$${parseFloat(trade.netPl).toFixed(2)}` : `-$${Math.abs(parseFloat(trade.netPl)).toFixed(2)}`) : "$0.00"}
                   </div>
                 </div>
                 <div className="text-right w-24">
