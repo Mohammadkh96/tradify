@@ -5,6 +5,45 @@
 @tailwind utilities;
 
 :root {
+  /* Light Theme */
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  
+  --primary: 160 84% 39%;
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 160 84% 39%;
+  
+  --radius: 0.3rem;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --bullish: 160 84% 39%;
+  --bearish: 0 84% 60%;
+}
+
+.dark {
   /* Dark "Terminal" Theme - Slate based */
   --background: 222 47% 11%;     /* slate-950 */
   --foreground: 210 40% 98%;     /* slate-50 */
@@ -33,15 +72,6 @@
   --border: 217 33% 20%;         /* slate-800 */
   --input: 217 33% 17%;
   --ring: 160 84% 39%;
-  
-  --radius: 0.3rem;
-  
-  --font-sans: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  
-  /* Custom Trading Colors */
-  --bullish: 160 84% 39%;
-  --bearish: 0 84% 60%;
 }
 
 @layer base {
