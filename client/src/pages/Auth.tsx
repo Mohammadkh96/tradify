@@ -120,8 +120,8 @@ export default function Auth() {
       // Success logic
       if (data.token || data.accessToken) {
         const token = data.token || data.accessToken;
+        localStorage.setItem("user_token", token);
         localStorage.setItem("user_id", data.user?.id);
-        // Note: The rest of the app might expect userId or user object
         queryClient.setQueryData(["/api/user"], data.user);
       }
       
