@@ -5,33 +5,33 @@
 @tailwind utilities;
 
 :root {
-  /* Light Theme */
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+  /* Light Theme - Clean Professional */
+  --background: 210 40% 98%;     /* slate-50 */
+  --foreground: 222 47% 11%;     /* slate-950 */
   
-  --card: 0 0% 100%;
+  --card: 0 0% 100%;             /* white */
   --card-foreground: 222 47% 11%;
   
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
   
-  --primary: 160 84% 39%;
+  --primary: 160 84% 39%;        /* emerald-600 */
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
+  --secondary: 210 40% 96.1%;    /* slate-100 */
+  --secondary-foreground: 222 47% 11.2%;
   
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
   
-  --accent: 210 40% 96%;
-  --accent-foreground: 222 47% 11%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222 47% 11.2%;
   
-  --destructive: 0 84% 60%;
+  --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
   --ring: 160 84% 39%;
   
   --radius: 0.3rem;
@@ -39,6 +39,7 @@
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   
+  /* Custom Trading Colors */
   --bullish: 160 84% 39%;
   --bearish: 0 84% 60%;
 }
