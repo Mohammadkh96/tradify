@@ -70,14 +70,22 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Auth Routes
   app.post("/api/auth/register", authLimiter, validateSchema(insertUserSchema), async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, country, phoneNumber, timezone } = req.body;
       const existing = await storage.getUserByEmail(email);
       if (existing) {
         return res.status(400).json({ error: { code: "EMAIL_EXISTS", message: "Email already exists" } });
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
-      const user = await storage.createUser({ email, passwordHash });
+      const user = await storage.createUser({ 
+        email, 
+        passwordHash,
+        country,
+        phoneNumber,
+        timezone,
+        role: "user",
+        status: "active"
+      });
       
       const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
       
