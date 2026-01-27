@@ -95,11 +95,20 @@ export default function Auth() {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || "Authentication failed");
+        let message = "Authentication failed";
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          message = errorData.message || errorData.error?.message || message;
+        } else {
+          const text = await response.text();
+          if (text && text.length < 200) message = text;
+        }
+        throw new Error(message);
       }
+
+      const data = await response.json();
       
       localStorage.setItem("user_id", data.userId);
       queryClient.setQueryData(["/api/user"], data);
@@ -128,11 +137,18 @@ export default function Auth() {
   const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch("/api/user/reset-password-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: resetEmail }),
-      });
+      if (!response.ok) {
+        let message = "Reset request failed";
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          message = errorData.message || errorData.error?.message || message;
+        } else {
+          const text = await response.text();
+          if (text && text.length < 200) message = text;
+        }
+        throw new Error(message);
+      }
       const data = await response.json();
       toast({
         title: "Reset Link Sent",
