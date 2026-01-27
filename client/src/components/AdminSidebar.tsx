@@ -16,21 +16,21 @@ export function AdminSidebar() {
   const [location] = useLocation();
 
   return (
-    <Sidebar className="border-r border-slate-800 bg-slate-950">
-      <SidebarHeader className="h-20 border-b border-slate-800 flex items-center px-6">
+    <Sidebar className="border-r border-border bg-card">
+      <SidebarHeader className="h-20 border-b border-border flex items-center px-6">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
+          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
             <Shield size={24} strokeWidth={3} />
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-xl tracking-tighter text-white uppercase italic leading-none">Admin</span>
-            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">Console</span>
+            <span className="font-black text-xl tracking-tighter text-foreground uppercase italic leading-none">Admin</span>
+            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1">Console</span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-slate-500 uppercase text-[10px] font-bold tracking-widest mb-2">Operations</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest mb-2">Operations</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminNavItems.map((item) => (
@@ -39,7 +39,7 @@ export function AdminSidebar() {
                     <Link href={item.href}>
                       <div className={cn(
                         "flex items-center gap-3 w-full px-4 py-2 rounded-md transition-colors",
-                        location === item.href ? "bg-emerald-500/10 text-emerald-500" : "text-slate-400 hover:text-white hover:bg-slate-900"
+                        location === item.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
                       )}>
                         <item.icon size={18} />
                         <span className="font-medium text-sm">{item.label}</span>
@@ -52,13 +52,13 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         
-        <div className="mt-auto pt-4 border-t border-slate-800">
+        <div className="mt-auto pt-4 border-t border-border">
           <button 
             onClick={() => {
               localStorage.removeItem("user_id");
               window.location.href = "/";
             }}
-            className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 cursor-pointer"
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 cursor-pointer"
           >
             <LogOut size={18} />
             Sign Out

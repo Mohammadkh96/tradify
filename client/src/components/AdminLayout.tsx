@@ -10,7 +10,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full bg-slate-950 text-slate-50 overflow-hidden">
+      <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
         <AdminSidebar />
         <main className="flex-1 overflow-y-auto">
           {children}
