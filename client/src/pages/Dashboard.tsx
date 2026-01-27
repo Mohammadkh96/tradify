@@ -36,7 +36,7 @@ export default function Dashboard() {
     staleTime: 0,
   });
   
-  const userId = user?.userId;
+  const userId = user?.id; // Fixed: user schema now uses 'id' not 'userId'
   
   const { data: mt5, refetch: refetchStatus } = useQuery<any>({
     queryKey: [`/api/mt5/status/${userId}`],
@@ -47,19 +47,18 @@ export default function Dashboard() {
 
   const { data: intelligence } = useQuery<any>({
     queryKey: [`/api/performance/intelligence/${userId}`],
+    enabled: !!userId,
     staleTime: 0,
   });
 
   const { data: snapshots } = useQuery<any[]>({
     queryKey: [`/api/mt5/snapshots/${userId}`],
+    enabled: !!userId,
     staleTime: 0,
   });
 
-  const { data: userRoleData } = useQuery<any>({
-    queryKey: [`/api/traders-hub/user-role/${localStorage.getItem("user_id") || "demo_user"}`],
-  });
-
-  const subscription = userRoleData?.subscriptionTier || "FREE";
+  // Fixed: subscription info now comes from user object or separate subscription query
+  const subscription = user?.subscriptionTier || "FREE";
   const isPro = subscription === "PRO";
 
   const { data: insights, isLoading: isInsightsLoading } = useQuery<any>({

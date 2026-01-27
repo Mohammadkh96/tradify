@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertTradeSchema, tradeJournal, validationResultSchema } from './schema';
+import { insertTradeSchema, trades, validationResultSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -20,14 +20,14 @@ export const api = {
       method: 'GET' as const,
       path: '/api/trades',
       responses: {
-        200: z.array(z.custom<typeof tradeJournal.$inferSelect>()),
+        200: z.array(z.custom<typeof trades.$inferSelect>()),
       },
     },
     get: {
       method: 'GET' as const,
       path: '/api/trades/:id',
       responses: {
-        200: z.custom<typeof tradeJournal.$inferSelect>(),
+        200: z.custom<typeof trades.$inferSelect>(),
         404: errorSchemas.notFound,
       },
     },
@@ -36,7 +36,7 @@ export const api = {
       path: '/api/trades',
       input: insertTradeSchema,
       responses: {
-        201: z.custom<typeof tradeJournal.$inferSelect>(),
+        201: z.custom<typeof trades.$inferSelect>(),
         400: errorSchemas.validation,
       },
     },
@@ -45,7 +45,7 @@ export const api = {
       path: '/api/trades/:id',
       input: insertTradeSchema.partial(),
       responses: {
-        200: z.custom<typeof tradeJournal.$inferSelect>(),
+        200: z.custom<typeof trades.$inferSelect>(),
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
       },

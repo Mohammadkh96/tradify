@@ -2,8 +2,24 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let message = res.statusText;
+    try {
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        message = data.error?.message || data.message || text || message;
+      } catch {
+        message = text || message;
+      }
+    } catch {
+      // Fallback
+    }
+    
+    if (res.status === 429) {
+      message = "Too many requests. Please wait a moment.";
+    }
+    
+    throw new Error(`${res.status}: ${message}`);
   }
 }
 
