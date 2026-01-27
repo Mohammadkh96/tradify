@@ -95,9 +95,9 @@ export default function Auth() {
         body: JSON.stringify(payload),
       });
 
+      const contentType = response.headers.get("content-type");
       if (!response.ok) {
         let message = "Authentication failed";
-        const contentType = response.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           const errorData = await response.json();
           message = errorData.message || errorData.error?.message || message;
@@ -106,6 +106,10 @@ export default function Auth() {
           if (text && text.length < 200) message = text;
         }
         throw new Error(message);
+      }
+
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Unexpected response format from server");
       }
 
       const data = await response.json();
