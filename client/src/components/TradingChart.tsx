@@ -40,15 +40,15 @@ export function TradingChart({ symbol = 'BTC/USD' }: TradingChartProps) {
       borderVisible: false,
       wickUpColor: '#10b981',
       wickDownColor: '#ef4444',
-    });
-    candleSeriesRef.current = candlestickSeries as any;
+    }) as any;
+    candleSeriesRef.current = candlestickSeries;
 
     const smaSeries = chart.addLineSeries({
       color: '#3b82f6',
       lineWidth: 2,
       title: 'SMA 20',
-    });
-    smaSeriesRef.current = smaSeries as any;
+    }) as any;
+    smaSeriesRef.current = smaSeries;
 
     // Generate mock data
     const generateData = () => {

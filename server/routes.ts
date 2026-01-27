@@ -43,7 +43,7 @@ const logger = (req: Request, res: Response, next: NextFunction) => {
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500, // Increased for polling and MT5 sync
   message: { error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests" } }
 });
 
