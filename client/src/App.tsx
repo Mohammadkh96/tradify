@@ -35,15 +35,26 @@ function Router() {
   const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer";
   const isAdminRoute = location.startsWith("/admin");
 
-  const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
+  const { data: userRole, isLoading: isRoleLoading, isError: isRoleError } = useQuery<any>({
     queryKey: ["/api/user"],
     retry: false,
+    staleTime: Infinity, // Prevent constant refetching during session
   });
 
   const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
   const isUserLoggedIn = !!userRole;
 
-  if (isRoleLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
+  // Only show loading screen for protected routes or if we haven't decided if it's public yet
+  const isPublicPage = isLandingPage || isPricingPage || isAuthPage || isPublicLegalPage || 
+                       location === "/features" || location === "/how-it-works" || location === "/resources";
+
+  if (isRoleLoading && !isPublicPage) {
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
+  }
+
+  if (isRoleError && !isPublicPage) {
+    return <Redirect to="/login" />;
+  }
 
   // Security Redirects
   if (isUserLoggedIn && isAuthPage) {
