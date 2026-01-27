@@ -114,7 +114,7 @@ function Router() {
     </Switch>
   );
 
-  if (isAuthPage || isLandingPage || isPricingPage || isPublicLegalPage) return content;
+  if (isAuthPage || isLandingPage || isPublicLegalPage) return content;
 
   if (isAdminRoute) {
     return <AdminLayout>{content}</AdminLayout>;
