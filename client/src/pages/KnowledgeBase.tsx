@@ -240,16 +240,16 @@ export default function KnowledgeBase() {
   const currentModule = modules.find(m => m.id === activeModule);
 
   return (
-    <div className="flex-1 text-foreground pb-20 md:pb-0">
+    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
         <header className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <BookOpen className="text-primary" size={28} />
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Market Foundations</h1>
+            <BookOpen className="text-emerald-500" size={28} />
+            <h1 className="text-3xl font-bold text-white tracking-tight">Market Foundations</h1>
           </div>
-          <p className="text-muted-foreground mt-1 italic">Structured rule systems for deterministic trading.</p>
-          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mt-2 border-l-2 border-primary/50 pl-2">
-            Educational content only. Not financial advice. <Link href="/risk" className="ml-1 text-primary/70 hover:underline">View Risk Disclaimer</Link>
+          <p className="text-slate-400 mt-1 italic">Structured rule systems for deterministic trading.</p>
+          <p className="text-[10px] text-slate-600 uppercase font-bold tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
+            Educational content only. Not financial advice. <Link href="/risk" className="ml-1 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
           </p>
         </header>
 
@@ -263,14 +263,14 @@ export default function KnowledgeBase() {
                 className={cn(
                   "w-full p-4 rounded-lg border text-left transition-all duration-200 flex justify-between items-center group",
                   activeModule === module.id
-                    ? "bg-primary/10 border-primary text-primary"
-                    : "bg-card border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                    ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+                    : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 )}
               >
                 <div className="flex items-center gap-3">
                   <span className={cn(
                     "flex items-center justify-center min-w-[24px] h-6 rounded text-xs font-bold",
-                    activeModule === module.id ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                    activeModule === module.id ? "bg-emerald-500/20 text-emerald-500" : "bg-slate-800 text-slate-500"
                   )}>
                     {module.id}
                   </span>
@@ -291,15 +291,15 @@ export default function KnowledgeBase() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-card border border-border rounded-xl p-8 shadow-xl min-h-[600px] border-t-4 border-t-primary"
+                  className="bg-slate-900 border border-slate-800 rounded-xl p-8 shadow-xl min-h-[600px] border-t-4 border-t-emerald-500"
                 >
-                  <div className="flex items-center justify-between mb-8 border-b border-border pb-6">
+                  <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-6">
                     <div>
-                      <span className="text-primary text-xs font-bold tracking-[0.2em] uppercase mb-1 block">Layer 1: Static Knowledge</span>
-                      <h2 className="text-3xl font-bold text-foreground">{currentModule.title}</h2>
+                      <span className="text-emerald-500 text-xs font-bold tracking-[0.2em] uppercase mb-1 block">Layer 1: Static Knowledge</span>
+                      <h2 className="text-3xl font-bold text-white">{currentModule.title}</h2>
                     </div>
                     <div className="hidden sm:block">
-                      <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-widest border border-border">
+                      <div className="px-3 py-1 bg-slate-800 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-700">
                         Rule System v1.0
                       </div>
                     </div>
@@ -309,26 +309,26 @@ export default function KnowledgeBase() {
                     {currentModule.sections.map((section, idx) => (
                       <div key={idx} className="relative">
                         <div className="flex items-center gap-3 mb-4">
-                          <div className="w-1.5 h-6 bg-primary rounded-full" />
-                          <h3 className="text-lg font-semibold text-foreground">{section.title}</h3>
+                          <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
+                          <h3 className="text-lg font-semibold text-slate-100">{section.title}</h3>
                         </div>
                         
                         <div className="grid grid-cols-1 gap-3 ml-4">
                           {section.content.map((item, i) => (
                             <div 
                               key={i} 
-                              className="group flex items-start gap-3 p-4 bg-background/50 border border-border rounded-lg hover:border-primary/30 transition-colors"
+                              className="group flex items-start gap-3 p-4 bg-slate-950/50 border border-slate-800/50 rounded-lg hover:border-emerald-500/30 transition-colors"
                             >
                               <div className="mt-1">
                                 {currentModule.id === 9 ? (
-                                  <XCircle size={14} className="text-destructive" />
+                                  <XCircle size={14} className="text-rose-500" />
                                 ) : currentModule.id === 10 ? (
-                                  <CheckCircle2 size={14} className="text-primary" />
+                                  <CheckCircle2 size={14} className="text-emerald-500" />
                                 ) : (
-                                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground group-hover:bg-primary transition-colors mt-1" />
+                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors mt-1" />
                                 )}
                               </div>
-                              <p className="text-muted-foreground text-sm leading-relaxed font-mono">
+                              <p className="text-slate-300 text-sm leading-relaxed font-mono">
                                 {item}
                               </p>
                             </div>
@@ -339,18 +339,18 @@ export default function KnowledgeBase() {
                   </div>
 
                   {currentModule.id === 9 && (
-                    <div className="mt-12 p-6 bg-destructive/5 border border-destructive/20 rounded-xl flex items-start gap-4">
-                      <ShieldAlert className="text-destructive shrink-0" size={24} />
+                    <div className="mt-12 p-6 bg-rose-500/5 border border-rose-500/20 rounded-xl flex items-start gap-4">
+                      <ShieldAlert className="text-rose-500 shrink-0" size={24} />
                       <div>
-                        <h4 className="text-destructive font-bold text-sm uppercase tracking-wider mb-1">Hard Filter Warning</h4>
-                        <p className="text-muted-foreground text-xs leading-relaxed">
+                        <h4 className="text-rose-500 font-bold text-sm uppercase tracking-wider mb-1">Hard Filter Warning</h4>
+                        <p className="text-slate-400 text-xs leading-relaxed">
                           Violating any of these rules results in an immediate NO TRADE decision, regardless of other confirmations.
                         </p>
                       </div>
                     </div>
                   )}
 
-                  <div className="mt-12 pt-8 border-t border-border flex justify-between items-center text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
+                  <div className="mt-12 pt-8 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
                     <span>Market Knowledge Engine</span>
                     <span>Deterministic Execution</span>
                   </div>
@@ -369,11 +369,11 @@ export default function KnowledgeBase() {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: hsl(var(--muted-foreground) / 0.2);
+          background: #1e293b;
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: hsl(var(--muted-foreground) / 0.4);
+          background: #334155;
         }
       `}</style>
     </div>

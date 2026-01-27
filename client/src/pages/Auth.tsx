@@ -84,10 +84,10 @@ export default function Auth() {
     if (!isFormValid) return;
     
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+      const endpoint = isLogin ? "/api/login" : "/api/register";
       const payload = isLogin 
         ? { email, password }
-        : { email, password, country, phoneNumber: phoneNumber || null, timezone };
+        : { email, password, country, phoneNumber, timezone };
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -98,18 +98,14 @@ export default function Auth() {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("Response not OK:", data);
-        throw new Error(data.error?.message || data.message || "Authentication failed");
+        throw new Error(data.message || "Authentication failed");
       }
       
-      localStorage.setItem("user_id", data.user.id);
-      localStorage.setItem("accessToken", data.accessToken);
-      
-      // Update query client before redirecting
-      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      localStorage.setItem("user_id", data.userId);
+      queryClient.setQueryData(["/api/user"], data);
       
       // Redirect based on role
-      if (data.user.role === "admin") {
+      if (data.role === "OWNER" || data.role === "ADMIN") {
         window.location.replace("/admin/overview");
       } else {
         window.location.replace("/dashboard");
@@ -154,31 +150,31 @@ export default function Auth() {
 
   if (showForgot) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-2xl border border-border">
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-8 bg-slate-900/50 p-8 rounded-2xl border border-slate-800">
           <div className="text-center">
-            <h3 className="text-2xl font-bold text-foreground uppercase italic tracking-tighter">Reset Password</h3>
-            <p className="text-muted-foreground mt-2 text-xs uppercase tracking-widest font-bold">Enter your email to receive a recovery link</p>
+            <h3 className="text-2xl font-bold text-white uppercase italic tracking-tighter">Reset Password</h3>
+            <p className="text-slate-500 mt-2 text-xs uppercase tracking-widest font-bold">Enter your email to receive a recovery link</p>
           </div>
           <form onSubmit={handleResetRequest} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Address</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
               <Input 
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
                 placeholder="operator@tradify.io"
-                className="bg-background border-border text-foreground h-12"
+                className="bg-[#0f172a] border-slate-800 text-white h-12"
                 type="email"
                 required
               />
             </div>
-            <Button type="submit" className="w-full h-12 bg-primary text-primary-foreground font-black uppercase tracking-widest">
+            <Button type="submit" className="w-full h-12 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest">
               Send Recovery Link
             </Button>
             <button 
               type="button"
               onClick={() => setShowForgot(false)}
-              className="w-full text-muted-foreground hover:text-foreground text-xs font-bold uppercase tracking-widest"
+              className="w-full text-slate-500 hover:text-white text-xs font-bold uppercase tracking-widest"
             >
               Back to Login
             </button>
@@ -189,27 +185,27 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex overflow-hidden">
+    <div className="min-h-screen bg-[#020617] flex overflow-hidden">
       {/* Left Side: Brand & Trust (Hidden on Mobile) */}
-      <div className="hidden lg:flex flex-1 flex-col justify-between p-12 bg-gradient-to-br from-card to-background relative">
+      <div className="hidden lg:flex flex-1 flex-col justify-between p-12 bg-gradient-to-br from-[#0f172a] to-[#020617] relative">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px]" />
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-12">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/20">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-2xl shadow-emerald-500/20">
               <TrendingUp size={32} strokeWidth={3} />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase italic leading-none">Tradify</h1>
-              <p className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] mt-1">Institutional Terminal</p>
+              <h1 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Tradify</h1>
+              <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em] mt-1">Institutional Terminal</p>
             </div>
           </div>
 
           <div className="space-y-10 max-w-md">
             <div>
-              <h2 className="text-4xl font-bold text-foreground mb-4 leading-tight">Professional MT5 analytics and disciplined trading.</h2>
-              <p className="text-muted-foreground text-lg">No hype. Just deterministic rule-based intelligence for serious traders.</p>
+              <h2 className="text-4xl font-bold text-white mb-4 leading-tight">Professional MT5 analytics and disciplined trading.</h2>
+              <p className="text-slate-400 text-lg">No hype. Just deterministic rule-based intelligence for serious traders.</p>
             </div>
 
             <div className="space-y-6">
@@ -219,10 +215,10 @@ export default function Auth() {
                 { icon: <History size={20} />, title: "Rule-Based Journal", desc: "Enforce discipline with custom validation engines." }
               ].map((item, i) => (
                 <div key={i} className="flex gap-4 items-start">
-                  <div className="mt-1 text-primary">{item.icon}</div>
+                  <div className="mt-1 text-emerald-500">{item.icon}</div>
                   <div>
-                    <h4 className="font-bold text-foreground">{item.title}</h4>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    <h4 className="font-bold text-slate-200">{item.title}</h4>
+                    <p className="text-sm text-slate-500">{item.desc}</p>
                   </div>
                 </div>
               ))}
@@ -230,23 +226,23 @@ export default function Auth() {
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center gap-6 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+        <div className="relative z-10 flex items-center gap-6 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">
           <span>© 2026 TRADIFY</span>
-          <div className="w-1 h-1 rounded-full bg-border" />
+          <div className="w-1 h-1 rounded-full bg-slate-800" />
           <span>Precision</span>
-          <div className="w-1 h-1 rounded-full bg-border" />
+          <div className="w-1 h-1 rounded-full bg-slate-800" />
           <span>Discipline</span>
         </div>
       </div>
 
       {/* Right Side: Auth Form */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-y-auto">
-        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px]" />
         
         <div className="w-full max-w-md space-y-8 relative z-10 py-12">
           <div className="text-center lg:text-left">
-            <h3 className="text-3xl font-bold text-foreground">{isLogin ? "Welcome back" : "Create your account"}</h3>
-            <p className="text-muted-foreground mt-2">
+            <h3 className="text-3xl font-bold text-white">{isLogin ? "Welcome back" : "Create your account"}</h3>
+            <p className="text-slate-500 mt-2">
               {isLogin ? "Log in to your trading dashboard." : "Professional MT5 analytics and disciplined trading — no hype."}
             </p>
           </div>
@@ -254,14 +250,14 @@ export default function Auth() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Terminal</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Terminal</label>
                 <div className="relative group">
-                  <Mail className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <Mail className="absolute left-3 top-3.5 h-4 w-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                   <Input 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="operator@tradify.io" 
-                    className="pl-10 bg-background border-border text-foreground h-12 focus:ring-primary/20 focus:border-primary/50"
+                    className="pl-10 bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                     type="email"
                     required
                   />
@@ -272,14 +268,14 @@ export default function Auth() {
                 <>
                   <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Country</label>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Country</label>
                       <Select value={country} onValueChange={setCountry} required={!isLogin}>
-                        <SelectTrigger className="bg-background border-border text-foreground h-12 focus:ring-primary/20 focus:border-primary/50 uppercase text-[10px] tracking-widest">
+                        <SelectTrigger className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50 uppercase text-[10px] tracking-widest">
                           <SelectValue placeholder="SELECT COUNTRY" />
                         </SelectTrigger>
-                        <SelectContent className="bg-card border-border text-foreground">
+                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
                           {countries.map((c) => (
-                            <SelectItem key={c} value={c} className="focus:bg-primary focus:text-primary-foreground text-[10px] uppercase tracking-widest">
+                            <SelectItem key={c} value={c} className="focus:bg-emerald-500 focus:text-slate-950 text-[10px] uppercase tracking-widest">
                               {c}
                             </SelectItem>
                           ))}
@@ -287,14 +283,14 @@ export default function Auth() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Time Zone</label>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Time Zone</label>
                       <Select value={timezone} onValueChange={setTimezone} required={!isLogin}>
-                        <SelectTrigger className="bg-background border-border text-foreground h-12 focus:ring-primary/20 focus:border-primary/50 uppercase text-[10px] tracking-widest">
+                        <SelectTrigger className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50 uppercase text-[10px] tracking-widest">
                           <SelectValue placeholder="SELECT ZONE" />
                         </SelectTrigger>
-                        <SelectContent className="bg-card border-border text-foreground">
+                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
                           {timezones.map((tz) => (
-                            <SelectItem key={tz} value={tz} className="focus:bg-primary focus:text-primary-foreground text-[10px] uppercase tracking-widest">
+                            <SelectItem key={tz} value={tz} className="focus:bg-emerald-500 focus:text-slate-950 text-[10px] uppercase tracking-widest">
                               {tz.replace(/_/g, ' ')}
                             </SelectItem>
                           ))}
@@ -303,12 +299,12 @@ export default function Auth() {
                     </div>
                   </div>
                   <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Phone (Optional)</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Phone (Optional)</label>
                     <Input 
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="+1 234 567 890" 
-                      className="bg-background border-border text-foreground h-12 focus:ring-primary/20 focus:border-primary/50"
+                      className="bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                     />
                   </div>
                 </>
@@ -316,34 +312,34 @@ export default function Auth() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Password</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Password</label>
                   {isLogin && (
                     <button 
                       type="button" 
                       onClick={() => setShowForgot(true)}
-                      className="text-[10px] font-bold text-primary/70 hover:text-primary transition-colors uppercase tracking-widest"
+                      className="text-[10px] font-bold text-emerald-500/70 hover:text-emerald-500 transition-colors uppercase tracking-widest"
                     >
                       Forgot?
                     </button>
                   )}
                 </div>
                 <div className="relative group">
-                  <Lock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                   <Input 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••" 
-                    className="pl-10 bg-background border-border text-foreground h-12 focus:ring-primary/20 focus:border-primary/50"
+                    className="pl-10 bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                     type="password"
                     required
                   />
                 </div>
                 {!isLogin && password && (
-                  <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-1 animate-in fade-in">
+                  <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-800 space-y-1 animate-in fade-in">
                     {passwordRules.map((rule, i) => (
                       <div key={i} className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest">
-                        {rule.test(password) ? <Check className="text-primary h-3 w-3" /> : <X className="text-destructive h-3 w-3" />}
-                        <span className={rule.test(password) ? "text-primary/70" : "text-muted-foreground"}>{rule.label}</span>
+                        {rule.test(password) ? <Check className="text-emerald-500 h-3 w-3" /> : <X className="text-rose-500 h-3 w-3" />}
+                        <span className={rule.test(password) ? "text-emerald-500/70" : "text-slate-500"}>{rule.label}</span>
                       </div>
                     ))}
                   </div>
@@ -352,20 +348,20 @@ export default function Auth() {
 
               {!isLogin && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Confirm Identity</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Confirm Identity</label>
                   <div className="relative group">
-                    <Lock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                     <Input 
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••" 
-                      className="pl-10 bg-background border-border text-foreground h-12 focus:ring-primary/20 focus:border-primary/50"
+                      className="pl-10 bg-[#0f172a] border-slate-800 text-white h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                       type="password"
                       required
                     />
                   </div>
                   {confirmPassword && password !== confirmPassword && (
-                    <p className="text-[9px] font-bold text-destructive uppercase tracking-widest ml-1">Passwords do not match</p>
+                    <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest ml-1">Passwords do not match</p>
                   )}
                 </div>
               )}
@@ -374,36 +370,36 @@ export default function Auth() {
             <Button 
               type="submit"
               disabled={!isFormValid}
-              className="w-full h-14 bg-gradient-to-r from-primary/80 to-primary hover:from-primary hover:to-primary/90 text-primary-foreground font-black uppercase tracking-[0.15em] text-xs transition-all shadow-2xl shadow-primary/20 disabled:opacity-50 disabled:grayscale"
+              className="w-full h-14 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs transition-all shadow-2xl shadow-emerald-500/20 disabled:opacity-50 disabled:grayscale"
             >
               {isLogin ? "Initialize Session" : "Establish Account"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </form>
 
-          <div className="pt-6 border-t border-border/50 text-center">
+          <div className="pt-6 border-t border-slate-800/50 text-center">
             <button 
               onClick={() => setIsLogin(!isLogin)}
-              className="text-muted-foreground hover:text-primary text-xs font-bold transition-colors"
+              className="text-slate-500 hover:text-emerald-500 text-xs font-bold transition-colors"
             >
               {isLogin ? "Need a terminal? Create account" : "Already registered? Log in"}
             </button>
-            <p className="text-center text-[10px] text-muted-foreground mt-6 leading-relaxed uppercase tracking-widest font-bold">
+            <p className="text-center text-[10px] text-slate-500 mt-6 leading-relaxed uppercase tracking-widest font-bold">
               By continuing, you agree to our{" "}
-              <Link href="/terms" className="text-primary hover:underline">Terms</Link>,{" "}
-              <Link href="/privacy" className="text-primary hover:underline">Privacy</Link>, and acknowledge the{" "}
-              <Link href="/risk" className="text-primary hover:underline">Risk Disclaimer</Link>.
+              <Link href="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
+              <Link href="/privacy" className="text-emerald-500 hover:underline">Privacy</Link>, and acknowledge the{" "}
+              <Link href="/risk" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-8">
-            <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-xl border border-border/50">
-              <ShieldCheck size={16} className="text-primary/50" />
-              <span className="text-[9px] text-muted-foreground leading-tight">No broker credentials needed</span>
+            <div className="flex items-center gap-2 p-3 bg-slate-900/30 rounded-xl border border-slate-800/50">
+              <ShieldCheck size={16} className="text-emerald-500/50" />
+              <span className="text-[9px] text-slate-500 leading-tight">No broker credentials needed</span>
             </div>
-            <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-xl border border-border/50">
-              <ShieldCheck size={16} className="text-primary/50" />
-              <span className="text-[9px] text-muted-foreground leading-tight">Local MT5 execution</span>
+            <div className="flex items-center gap-2 p-3 bg-slate-900/30 rounded-xl border border-slate-800/50">
+              <ShieldCheck size={16} className="text-emerald-500/50" />
+              <span className="text-[9px] text-slate-500 leading-tight">Local MT5 execution</span>
             </div>
           </div>
         </div>

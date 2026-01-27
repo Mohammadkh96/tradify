@@ -352,10 +352,10 @@ export default function TradersHub() {
                   <CardTitle className="text-xl font-black text-white tracking-tight uppercase group-hover:text-emerald-400 transition-colors">
                     {post.title}
                   </CardTitle>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter flex items-center gap-2">
-                    Shared by <span className="text-primary">{post.user?.userId || "Unknown"}</span>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-2">
+                    Shared by <span className="text-emerald-500">{post.user?.userId || "Unknown"}</span>
                     {post.user?.role === "OWNER" && (
-                      <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] font-black h-4 uppercase">Verified</Badge>
+                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px] font-black h-4 uppercase">Verified</Badge>
                     )}
                   </p>
                 </div>
@@ -363,7 +363,7 @@ export default function TradersHub() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="text-muted-foreground hover:text-destructive h-8 w-8"
+                    className="text-slate-500 hover:text-rose-500 h-8 w-8"
                     onClick={() => {
                       if (window.confirm("Delete this post?")) deleteMutation.mutate(post.id);
                     }}
@@ -373,19 +373,19 @@ export default function TradersHub() {
                 )}
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
+                <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
                   {post.content}
                 </p>
                 {post.imageUrl && (
-                  <div className="rounded-lg border border-border overflow-hidden bg-background">
+                  <div className="rounded-lg border border-slate-800 overflow-hidden bg-slate-950">
                     <img src={post.imageUrl} alt="Market Reasoning Chart" className="w-full h-auto object-contain max-h-[400px]" />
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="border-t border-border pt-4 flex flex-col items-stretch gap-4">
+              <CardFooter className="border-t border-slate-800/50 pt-4 flex flex-col items-stretch gap-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase">
+                    <button className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 hover:text-emerald-500 transition-colors uppercase">
                       <MessageSquare size={14} />
                       {post.commentCount} Discussions
                     </button>
@@ -393,7 +393,7 @@ export default function TradersHub() {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-7 text-[10px] font-bold text-muted-foreground hover:text-primary uppercase gap-1.5"
+                    className="h-7 text-[10px] font-bold text-slate-600 hover:text-amber-500 uppercase gap-1.5"
                     onClick={() => reportMutation.mutate(post.id)}
                   >
                     <Flag size={12} />
@@ -408,10 +408,10 @@ export default function TradersHub() {
             </Card>
           ))}
           {posts?.length === 0 && (
-            <div className="p-12 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center text-center">
-              <Users size={48} className="text-muted-foreground mb-4" />
-              <h3 className="text-muted-foreground font-black uppercase text-xl">The Hub is Quiet</h3>
-              <p className="text-muted-foreground/50 text-sm mt-2 max-w-xs uppercase font-bold italic">
+            <div className="p-12 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-center">
+              <Users size={48} className="text-slate-800 mb-4" />
+              <h3 className="text-slate-400 font-black uppercase text-xl">The Hub is Quiet</h3>
+              <p className="text-slate-600 text-sm mt-2 max-w-xs uppercase font-bold italic">
                 Be the first to share your market reasoning or session commentary.
               </p>
             </div>
@@ -419,9 +419,9 @@ export default function TradersHub() {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-card border-primary/20 shadow-2xl shadow-primary/5 sticky top-24">
+          <Card className="bg-slate-950 border-emerald-500/20 shadow-2xl shadow-emerald-500/5 sticky top-24">
             <CardHeader>
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+              <CardTitle className="text-sm font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
                 <span className="shrink-0"><Info size={16} /></span>
                 Hub Guidelines
               </CardTitle>
@@ -435,8 +435,8 @@ export default function TradersHub() {
                   { label: "BE FACTUAL", desc: "Use data and charts to support your reasoning." }
                 ].map((item, i) => (
                   <div key={i} className="space-y-1">
-                    <h5 className="text-[10px] font-black text-foreground tracking-tight uppercase italic">{item.label}</h5>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase leading-tight">{item.desc}</p>
+                    <h5 className="text-[10px] font-black text-white tracking-tight uppercase italic">{item.label}</h5>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase leading-tight">{item.desc}</p>
                   </div>
                 ))}
               </div>

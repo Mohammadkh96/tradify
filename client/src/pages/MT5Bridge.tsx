@@ -227,18 +227,18 @@ if __name__ == "__main__":
   };
 
   return (
-    <div className="flex-1 text-foreground pb-20 md:pb-0">
+    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
       <main className="p-6 lg:p-10 max-w-6xl mx-auto">
-        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
+        <div className="bg-[#0b1120] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
           {/* Header */}
-          <div className="p-6 border-b border-border flex items-center justify-between">
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-primary/10 p-2 rounded-lg">
-                <ShieldCheck className="text-primary" size={24} />
+              <div className="bg-emerald-500/10 p-2 rounded-lg">
+                <ShieldCheck className="text-emerald-500" size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Python Connector Setup</h1>
-                <p className="text-xs text-muted-foreground">Sync MT5 directly from your device. No EA installation required.</p>
+                <h1 className="text-xl font-bold text-white">Python Connector Setup</h1>
+                <p className="text-xs text-slate-400">Sync MT5 directly from your device. No EA installation required.</p>
               </div>
             </div>
           </div>
@@ -246,51 +246,51 @@ if __name__ == "__main__":
           <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Left Column: Form */}
             <div className="space-y-6">
-              <div className="bg-background/50 rounded-xl p-5 border border-border">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">Step 1: Download Connector</h3>
-                <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+              <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800">
+                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 1: Download Connector</h3>
+                <p className="text-xs text-slate-400 mb-4 leading-relaxed">
                   Download the Tradify Python Bridge. This script runs locally and communicates with MT5 via the MetaTrader5 library.
                 </p>
                 <Button 
                   onClick={downloadConnector}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-tighter"
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter"
                 >
                   <Download size={14} className="mr-2" />
                   Download tradify_connector.py
                 </Button>
               </div>
 
-              <div className="bg-background/50 rounded-xl p-5 border border-border">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">Step 2: Connection Credentials</h3>
+              <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800">
+                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 2: Connection Credentials</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">User ID</label>
-                    <div className="bg-background border border-border rounded-lg px-4 py-2 text-sm font-mono text-primary">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">User ID</label>
+                    <div className="bg-[#020617] border border-slate-800 rounded-lg px-4 py-2 text-sm font-mono text-emerald-500">
                       {userRoleData?.userId}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Sync Token</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Sync Token</label>
                     <div className="flex gap-2">
-                      <div className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-sm font-mono text-primary truncate">
+                      <div className="flex-1 bg-[#020617] border border-slate-800 rounded-lg px-4 py-2 text-sm font-mono text-emerald-500 truncate">
                         {userRoleData?.syncToken || "Click Generate Below"}
                       </div>
                       <Button 
                         variant="outline" 
                         size="icon" 
-                        className="border-border text-muted-foreground"
+                        className="border-slate-800 text-slate-400"
                         onClick={copyToClipboard}
                         disabled={!userRoleData?.syncToken}
                       >
-                        {copied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+                        {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                       </Button>
                     </div>
                   </div>
 
                   <Button 
                     variant="outline"
-                    className="w-full border-border text-muted-foreground text-[10px] uppercase font-bold tracking-widest h-10"
+                    className="w-full border-slate-800 text-slate-400 text-[10px] uppercase font-bold tracking-widest h-10"
                     onClick={() => generateTokenMutation.mutate()}
                     disabled={generateTokenMutation.isPending}
                   >
@@ -302,22 +302,22 @@ if __name__ == "__main__":
 
             {/* Right Column: Execution */}
             <div className="space-y-6">
-              <div className="bg-background/50 rounded-xl p-5 border border-border h-full flex flex-col">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">Step 3: Run Connection</h3>
+              <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800 h-full flex flex-col">
+                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 3: Run Connection</h3>
                 <div className="flex-1 space-y-4">
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="text-xs text-slate-400 leading-relaxed">
                     Ensure MetaTrader 5 is running on this device, then execute the script in your terminal:
                   </p>
-                  <div className="bg-background p-4 rounded-lg border border-border font-mono text-xs text-foreground">
+                  <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs text-slate-300">
                     python tradify_connector.py
                   </div>
                   
-                  <div className="mt-6 p-4 bg-primary/5 border border-primary/10 rounded-xl">
+                  <div className="mt-6 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
-                      <Terminal size={14} className="text-primary" />
-                      <span className="text-[10px] font-bold text-primary uppercase">Connector Requirements</span>
+                      <Terminal size={14} className="text-emerald-500" />
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase">Connector Requirements</span>
                     </div>
-                    <ul className="text-[10px] text-muted-foreground space-y-2 list-disc pl-4">
+                    <ul className="text-[10px] text-slate-500 space-y-2 list-disc pl-4">
                       <li>Python 3.8+ installed on your device</li>
                       <li>MetaTrader5 python package (\`pip install MetaTrader5 requests\`)</li>
                       <li>MT5 Terminal must be open and logged in</li>
@@ -325,20 +325,20 @@ if __name__ == "__main__":
                   </div>
                 </div>
 
-                <div className="mt-auto pt-6 border-t border-border flex items-center justify-between">
+                <div className="mt-auto pt-6 border-t border-slate-800/50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "w-2 h-2 rounded-full",
-                      mt5?.status === "CONNECTED" ? "bg-primary animate-pulse" : "bg-muted"
+                      mt5?.status === "CONNECTED" ? "bg-emerald-500 animate-pulse" : "bg-slate-700"
                     )} />
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                       {mt5?.status === "CONNECTED" ? "CONNECTED" : "OFFLINE"}
                     </span>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="text-muted-foreground hover:text-foreground h-auto p-0 text-[10px] uppercase font-bold"
+                    className="text-slate-500 hover:text-white h-auto p-0 text-[10px] uppercase font-bold"
                     onClick={() => refetch()}
                   >
                     <RefreshCw size={12} className="mr-1" />
@@ -349,13 +349,13 @@ if __name__ == "__main__":
             </div>
           </div>
 
-          <div className="p-8 bg-muted/30 border-t border-border space-y-8">
+          <div className="p-8 bg-slate-950/30 border-t border-slate-800 space-y-8">
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Refresh Interval</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Refresh Interval</label>
                 {!isPro && (
                   <Link href="/pricing">
-                    <span className="text-[9px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded cursor-pointer hover:bg-primary/20 transition-colors">PRO: Priority Sync</span>
+                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded cursor-pointer hover:bg-emerald-500/20 transition-colors">PRO: Priority Sync</span>
                   </Link>
                 )}
               </div>
@@ -367,8 +367,8 @@ if __name__ == "__main__":
                     className={cn(
                       "py-2 rounded-lg text-xs font-bold border transition-all",
                       !isPro && (interval === '2s' || interval === '1s') 
-                        ? "bg-muted/50 border-border text-muted-foreground/50 cursor-not-allowed"
-                        : "bg-background border-border text-muted-foreground hover:border-primary/50"
+                        ? "bg-slate-900/50 border-slate-800 text-slate-600 cursor-not-allowed"
+                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-emerald-500/50"
                     )}
                   >
                     {interval}
@@ -377,15 +377,15 @@ if __name__ == "__main__":
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-border">
+            <div className="space-y-4 pt-4 border-t border-slate-800">
               <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Historical Backfill</label>
-                {!isPro && <Lock size={12} className="text-muted-foreground" />}
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Historical Backfill</label>
+                {!isPro && <Lock size={12} className="text-slate-600" />}
               </div>
               <Button 
                 variant="outline" 
                 disabled={!isPro}
-                className="w-full border-border text-muted-foreground text-xs font-bold uppercase tracking-widest h-12"
+                className="w-full border-slate-800 text-slate-400 text-xs font-bold uppercase tracking-widest h-12"
               >
                 {isPro ? "Request Full Backfill" : "Pro Feature Only"}
               </Button>
