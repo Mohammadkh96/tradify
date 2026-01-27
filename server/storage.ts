@@ -153,7 +153,7 @@ export class DatabaseStorage implements IStorage {
 
     // Update Daily Snapshot
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0); // Use UTC for consistency
     const [existingSnapshot] = await db.select().from(dailyEquitySnapshots)
       .where(and(eq(dailyEquitySnapshots.userId, data.userId), eq(dailyEquitySnapshots.date, today)))
       .limit(1);

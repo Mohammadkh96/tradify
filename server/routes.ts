@@ -666,9 +666,12 @@ export async function registerRoutes(
       }
 
       // Generate new insight
-      const intelligenceData = await (await fetch(`${req.protocol}://${req.get('host')}/api/performance/intelligence/${userId}`)).json();
-      
-      if (intelligenceData.message === "No data available" || intelligenceData.totalTrades < 5) {
+      const intelligenceRes = await fetch(`${req.protocol}://${req.get('host')}/api/performance/intelligence/${userId}`, {
+        headers: { cookie: req.headers.cookie || "" }
+      });
+      const intelligenceData = await intelligenceRes.json();
+
+      if (intelligenceData.message === "No data available" || (intelligenceData.totalTrades || 0) < 5) {
         return res.json({ insightText: "Insufficient data for AI analysis. Continue trading to unlock insights." });
       }
 

@@ -108,7 +108,7 @@ export default function Dashboard() {
   ];
 
   const recentTrades = [...allTrades].sort((a, b) => 
-    new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+    new Date(b.createdAt || b.openTime || 0).getTime() - new Date(a.createdAt || a.openTime || 0).getTime()
   ).slice(0, 5);
 
   return (
