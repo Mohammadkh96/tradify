@@ -321,15 +321,6 @@ function Router() {
                   Learn how Tradify protects user data, enforces read-only integrations, handles AI responsibly, and avoids conflicts of interest. Support is focused on clarity, accuracy, and trust.
                 </p>
               </div>
-              <div className="p-8 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 flex flex-col justify-center">
-                <div className="flex gap-4 mb-4">
-                  <div className="px-3 py-1 bg-background border border-border rounded-full text-[10px] font-black uppercase tracking-widest text-rose-500">No profit guarantees</div>
-                  <div className="px-3 py-1 bg-background border border-border rounded-full text-[10px] font-black uppercase tracking-widest text-rose-500">No predictive language</div>
-                </div>
-                <p className="text-sm text-muted-foreground italic font-medium">
-                  "This content is intentionally calm, professional, and credible — aligned with Tradify’s long-term vision."
-                </p>
-              </div>
             </div>
           </div>
         </div>
