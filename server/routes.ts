@@ -96,6 +96,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         password: "" // Adding placeholder to satisfy type requirement
       });
       
+      console.log("User created successfully:", user.id);
+      
       const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
       
       await storage.createAuditLog({
@@ -115,9 +117,17 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post("/api/auth/login", authLimiter, async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log("Login attempt for:", email);
       const user = await storage.getUserByEmail(email);
       
-      if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      if (!user) {
+        console.error("User not found:", email);
+        return res.status(401).json({ error: { code: "AUTH_INVALID_CREDENTIALS", message: "Invalid email or password" } });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isPasswordValid) {
+        console.error("Invalid password for:", email);
         return res.status(401).json({ error: { code: "AUTH_INVALID_CREDENTIALS", message: "Invalid email or password" } });
       }
 
@@ -131,6 +141,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role } });
     } catch (error) {
+      console.error("Login error:", error);
       res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Login failed" } });
     }
   });

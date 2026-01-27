@@ -98,7 +98,8 @@ export default function Auth() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Authentication failed");
+        console.error("Response not OK:", data);
+        throw new Error(data.error?.message || data.message || "Authentication failed");
       }
       
       localStorage.setItem("user_id", data.user.id);
