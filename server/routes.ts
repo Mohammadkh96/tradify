@@ -89,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         ipAddress: req.ip
       });
 
-      res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role } });
+      res.status(201).json({ success: true, token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (error) {
       res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Registration failed" } });
     }
@@ -112,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       await storage.updateUser(user.id, { lastLoginAt: new Date() });
 
-      res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role } });
+      res.json({ success: true, accessToken, user: { id: user.id, email: user.email, role: user.role } });
     } catch (error) {
       res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Login failed" } });
     }

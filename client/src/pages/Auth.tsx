@@ -96,30 +96,34 @@ export default function Auth() {
       });
 
       const contentType = response.headers.get("content-type");
-      if (!response.ok) {
-        let message = "Authentication failed";
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await response.json();
-          message = errorData.message || errorData.error?.message || message;
-        } else {
-          const text = await response.text();
-          if (text && text.length < 200) {
-            message = text;
-          } else if (response.status === 429) {
-            message = "Too many attempts. Please try again later.";
-          }
-        }
-        throw new Error(message);
-      }
+      let data;
 
-      if (!contentType || !contentType.includes("application/json")) {
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        if (response.status === 429) {
+          throw new Error("Too many attempts. Please try again later.");
+        }
         throw new Error("Unexpected response format from server");
       }
 
-      const data = await response.json();
-      
-      localStorage.setItem("user_id", data.userId);
-      queryClient.setQueryData(["/api/user"], data);
+      if (!response.ok) {
+        const message = data?.error?.message || data?.message || "Authentication failed";
+        throw new Error(message);
+      }
+
+      if (!data || typeof data !== 'object') {
+        throw new Error("Invalid response data from server");
+      }
+
+      // Success logic
+      if (data.token || data.accessToken) {
+        const token = data.token || data.accessToken;
+        localStorage.setItem("user_id", data.user?.id);
+        // Note: The rest of the app might expect userId or user object
+        queryClient.setQueryData(["/api/user"], data.user);
+      }
       
       // Redirect based on role
       if (data.role === "OWNER" || data.role === "ADMIN") {
