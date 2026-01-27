@@ -185,6 +185,15 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 });
 
 // Schemas
+export const validationResultSchema = z.object({
+  valid: z.boolean(),
+  reason: z.string().optional(),
+  violations: z.array(z.string()).optional(),
+  matchedSetup: z.string().optional(),
+});
+
+export type ValidationResult = z.infer<typeof validationResultSchema>;
+
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 
   createdAt: true, 
