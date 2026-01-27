@@ -33,13 +33,14 @@ function Router() {
   const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer";
   const isAdminRoute = location.startsWith("/admin");
 
-  const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
+  const { data: userRole, isLoading: isRoleLoading, error } = useQuery<any>({
     queryKey: ["/api/user"],
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
-  const isUserLoggedIn = !!userRole;
+  const isAdmin = userRole?.role === "admin" || userRole?.role === "OWNER" || userRole?.role === "ADMIN";
+  const isUserLoggedIn = !!userRole && !error;
 
   if (isRoleLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
 

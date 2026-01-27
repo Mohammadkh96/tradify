@@ -104,7 +104,9 @@ export default function Auth() {
       
       localStorage.setItem("user_id", data.user.id);
       localStorage.setItem("accessToken", data.accessToken);
-      queryClient.setQueryData(["/api/user"], data.user);
+      
+      // Update query client before redirecting
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       
       // Redirect based on role
       if (data.user.role === "admin") {

@@ -23,10 +23,16 @@ const authenticateToken = (req: any, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Missing token" } });
+  if (!token) {
+    console.error("Authentication failed: Missing token");
+    return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Missing token" } });
+  }
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) return res.status(403).json({ error: { code: "FORBIDDEN", message: "Invalid or expired token" } });
+    if (err) {
+      console.error("Authentication failed: Invalid or expired token", err.message);
+      return res.status(403).json({ error: { code: "FORBIDDEN", message: "Invalid or expired token" } });
+    }
     req.user = user;
     next();
   });
