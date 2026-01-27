@@ -1,6 +1,6 @@
 import { useTrades } from "@/hooks/use-trades";
 import { StatCard } from "@/components/StatCard";
-import { Navigation, MobileNav } from "@/components/Navigation";
+import { TradingChart } from "@/components/TradingChart";
 import { 
   TrendingUp, 
   Activity, 
@@ -189,6 +189,10 @@ export default function Dashboard() {
               trend={stat.trend}
             />
           ))}
+        </div>
+
+        <div className="mb-8">
+          <TradingChart symbol="BTC/USD" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
