@@ -1,0 +1,186 @@
+Light mode was added, but it is partial and inconsistent.
+Some components, cards, text, and UI states still rely on hardcoded dark colors, so they do not respond to theme changes.
+
+This means:
+
+Theme switching is not centralized
+
+Components are not theme-aware
+
+Styles are leaking from dark-mode assumptions
+
+✅ REQUIRED FIX: PROPER THEME SYSTEM (NOT PATCHES)
+1️⃣ Single Source of Truth for Theme
+Requirement
+
+Introduce a global theme state (light | dark)
+
+Theme must be accessible by:
+
+Layout
+
+Pages
+
+Components
+
+Cards
+
+Buttons
+
+Text
+
+Borders
+
+Icons
+
+❌ Do NOT:
+
+Toggle classes randomly
+
+Override styles inline
+
+Hardcode colors per component
+
+2️⃣ Replace Hardcoded Colors with Theme Tokens
+Problem seen in screenshot
+
+Cards still use:
+
+Dark gradients
+
+Dark text colors
+
+Dark border shadows
+
+Text opacity tuned for dark backgrounds
+
+Required action
+
+Define design tokens instead of raw colors.
+
+Example (conceptual, not code):
+
+bg-primary
+
+bg-surface
+
+text-primary
+
+text-secondary
+
+border-default
+
+accent-success
+
+Each token must have:
+
+Light value
+
+Dark value
+
+3️⃣ Card & Pricing Components (Explicitly Broken)
+Required fixes
+
+Pricing cards must:
+
+Switch background color
+
+Switch text contrast
+
+Switch border visibility
+
+Remove dark gradients in light mode
+
+“Recommended” badge must:
+
+Adapt color contrast
+
+Not assume dark background
+
+Explicit instruction
+
+No pricing card may define its own colors directly.
+
+4️⃣ Text Contrast & Accessibility
+Issues
+
+Some text is:
+
+Too light on light background
+
+Using opacity meant for dark mode
+
+Required fixes
+
+All text must reference theme tokens
+
+No opacity hacks for readability
+
+Minimum contrast standards enforced
+
+5️⃣ Buttons & CTAs
+Required fixes
+
+Primary CTA buttons:
+
+Must adapt background + text color
+
+Hover states must be theme-aware
+
+Secondary buttons:
+
+Borders and text must adapt
+
+6️⃣ Shadows & Depth (Often Missed)
+
+Dark mode shadows ≠ light mode shadows.
+
+Required fixes
+
+Define:
+
+shadow-card-light
+
+shadow-card-dark
+
+Light mode:
+
+Softer, lighter shadows
+
+Dark mode:
+
+Subtle glow or deep shadow
+
+7️⃣ Icons, Dividers, and Badges
+Required fixes
+
+Icons must inherit text color
+
+Dividers must adapt opacity per theme
+
+Status badges must define light/dark variants
+
+8️⃣ Theme Enforcement Rule (IMPORTANT)
+
+Add a rule:
+
+Any new component must use theme tokens only.
+Hardcoded colors are forbidden.
+
+This prevents regression.
+
+🧱 ACCEPTANCE CRITERIA (WHAT “DONE” MEANS)
+
+Replit must confirm:
+
+ Switching theme updates 100% of UI
+
+ No hardcoded dark colors remain
+
+ All cards readable in light mode
+
+ No text relies on opacity hacks
+
+ Pricing section looks intentional in both modes
+
+ No visual regressions when toggling
