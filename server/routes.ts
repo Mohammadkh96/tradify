@@ -196,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const user = await storage.getUserById(req.params.userId);
       const [token] = await db.select().from(passwordResetTokens)
         .where(eq(passwordResetTokens.userId, req.params.userId))
-        .orderBy(desc(passwordResetTokens.createdAt))
+        .orderBy(desc(passwordResetTokens.id))
         .limit(1);
         
       res.json({ 
