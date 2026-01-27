@@ -87,7 +87,7 @@ export default function Auth() {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const payload = isLogin 
         ? { email, password }
-        : { email, password, country, phoneNumber, timezone };
+        : { email, password, country, phoneNumber: phoneNumber || null, timezone };
 
       const response = await fetch(endpoint, {
         method: "POST",

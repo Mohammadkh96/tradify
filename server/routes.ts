@@ -70,8 +70,10 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Auth Routes
   app.post("/api/auth/register", authLimiter, async (req, res) => {
     try {
+      console.log("Registration attempt:", req.body);
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
+        console.error("Validation failed:", result.error.errors);
         return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: result.error.errors[0].message } });
       }
 
@@ -90,7 +92,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         phoneNumber,
         timezone,
         role: "user",
-        status: "active"
+        status: "active",
+        password: "" // Adding placeholder to satisfy type requirement
       });
       
       const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
