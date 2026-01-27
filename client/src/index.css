@@ -92,8 +92,8 @@
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-slate-950;
+  @apply bg-background;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-800 rounded hover:bg-slate-700;
+  @apply bg-muted rounded hover:bg-muted-foreground/30;
 }
