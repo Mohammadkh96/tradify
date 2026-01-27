@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History, Sun, Moon } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -275,16 +275,34 @@ function CreatorApplicationsTab() {
   );
 }
 
+import { useTheme } from "@/components/theme-provider";
+
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [location] = useLocation();
   const [searchEmail, setSearchEmail] = useState("");
+  const { theme, setTheme } = useTheme();
 
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
   });
 
-  const filteredUsers = users?.filter(u => u.userId.toLowerCase().includes(searchEmail.toLowerCase())) || [];
+  const deleteUserMutation = useMutation({
+    mutationFn: async (targetUserId: string) => {
+      const userId = localStorage.getItem("user_id");
+      await apiRequest("DELETE", `/api/admin/users/${targetUserId}?userId=${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+      toast({ title: "User Deleted", description: "The user account has been permanently removed." });
+    },
+  });
+
+  const filteredUsers = users?.filter(u => 
+    u.userId.toLowerCase().includes(searchEmail.toLowerCase()) && 
+    u.role !== "OWNER"
+  ) || [];
 
   const updateMutation = useMutation({
     mutationFn: async ({ targetUserId, updates }: { targetUserId: string, updates: any }) => {
@@ -311,11 +329,21 @@ export default function AdminDashboard() {
   if (location === "/admin/overview") {
     return (
       <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
-            <LayoutDashboard /> Admin Overview
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Business & System Health</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
+              <LayoutDashboard /> Admin Overview
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Business & System Health</p>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 border-border"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          >
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -381,12 +409,22 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Control Access & Tiers</p>
           </div>
-          <Input 
-            placeholder="Search by email..." 
-            value={searchEmail}
-            onChange={(e) => setSearchEmail(e.target.value)}
-            className="bg-muted border-border text-xs w-full md:w-64"
-          />
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 border-border"
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </Button>
+            <Input 
+              placeholder="Search by email..." 
+              value={searchEmail}
+              onChange={(e) => setSearchEmail(e.target.value)}
+              className="bg-muted border-border text-xs w-full md:w-64"
+            />
+          </div>
         </div>
 
         <Card className="bg-card border-border overflow-hidden">
@@ -429,6 +467,15 @@ export default function AdminDashboard() {
                       <Button size="sm" variant="ghost" className="h-7 text-[10px] text-rose-500 hover:bg-rose-500/10"
                         onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { role: user.role === "DEACTIVATED" ? "TRADER" : "DEACTIVATED" } })}>
                         {user.role === "DEACTIVATED" ? "Reactivate" : "Deactivate"}
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-[10px] text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+                        onClick={() => {
+                          if (confirm("Are you sure you want to permanently delete this user? This action cannot be undone.")) {
+                            deleteUserMutation.mutate(user.userId);
+                          }
+                        }}>
+                        <Trash2 size={12} className="mr-1" />
+                        Delete
                       </Button>
                     </TableCell>
                   </TableRow>

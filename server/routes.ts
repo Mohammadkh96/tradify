@@ -329,6 +329,36 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  app.delete("/api/admin/users/:targetUserId", requireAdmin, async (req, res) => {
+    try {
+      const { targetUserId } = req.params;
+      
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, targetUserId)).limit(1);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.role === "OWNER") {
+        return res.status(403).json({ message: "Cannot delete the Owner account" });
+      }
+
+      await db.delete(schema.userRole).where(eq(schema.userRole.userId, targetUserId));
+
+      // Audit log for deletion
+      await db.insert(schema.adminAuditLog).values({
+        adminId: req.session.userId!,
+        actionType: "DELETE_USER",
+        targetUserId: targetUserId,
+        details: { timestamp: new Date() }
+      });
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   app.get("/api/admin/emails", requireAdmin, async (req, res) => {
     try {
       const emails = await db.select().from(schema.sentEmails).orderBy(desc(schema.sentEmails.sentAt));
