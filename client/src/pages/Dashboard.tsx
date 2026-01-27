@@ -379,8 +379,10 @@ export default function Dashboard() {
               {recentTrades.map((trade) => (
                 <div key={trade.id} className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-border">
                   <div>
-                    <div className="text-xs font-bold text-foreground">{trade.pair}</div>
-                    <div className="text-[10px] text-muted-foreground">{trade.outcome}</div>
+                    <div className="text-xs font-bold text-foreground">{trade.symbol || "N/A"}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {Number(trade.profit) >= 0 ? "Win" : "Loss"}
+                    </div>
                   </div>
                 </div>
               ))}
