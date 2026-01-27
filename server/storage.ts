@@ -1,5 +1,8 @@
 import { db } from "./db";
 import {
+  users,
+  emailVerificationTokens,
+  passwordResetTokens,
   tradeJournal,
   mt5Data,
   mt5History,
@@ -14,6 +17,8 @@ import {
   creatorProfiles,
   creatorApplications,
   signalProviderProfile,
+  type User,
+  type InsertUser,
   type HubPost,
   type HubComment,
   type HubReport,
@@ -30,6 +35,19 @@ import {
 import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
+  createUser(user: InsertUser & { passwordHash: string }): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User>;
+  
+  createEmailVerificationToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void>;
+  getVerificationToken(tokenHash: string): Promise<any>;
+  consumeVerificationToken(id: number): Promise<void>;
+
+  createPasswordResetToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void>;
+  getPasswordResetToken(tokenHash: string): Promise<any>;
+  consumePasswordResetToken(id: number): Promise<void>;
+
   getTrades(): Promise<Trade[]>;
   getTrade(id: number): Promise<Trade | undefined>;
   createTrade(trade: InsertTrade): Promise<Trade>;
@@ -77,9 +95,58 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getUserRole(userId: string): Promise<any> {
-    const [role] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
-    return role;
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+    return user;
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return user;
+  }
+
+  async createUser(user: InsertUser & { passwordHash: string }): Promise<User> {
+    const [newUser] = await db.insert(users).values({
+      email: user.email.toLowerCase(),
+      passwordHash: user.passwordHash,
+      role: "user",
+      status: "active",
+    }).returning();
+    return newUser;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    const [updatedUser] = await db.update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async createEmailVerificationToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+    await db.insert(emailVerificationTokens).values({ userId, token, expiresAt });
+  }
+
+  async getVerificationToken(token: string): Promise<any> {
+    const [t] = await db.select().from(emailVerificationTokens).where(eq(emailVerificationTokens.token, token)).limit(1);
+    return t;
+  }
+
+  async consumeVerificationToken(id: number): Promise<void> {
+    await db.update(emailVerificationTokens).set({ usedAt: new Date() }).where(eq(emailVerificationTokens.id, id));
+  }
+
+  async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+    await db.insert(passwordResetTokens).values({ userId, token, expiresAt });
+  }
+
+  async getPasswordResetToken(token: string): Promise<any> {
+    const [t] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token)).limit(1);
+    return t;
+  }
+
+  async consumePasswordResetToken(id: number): Promise<void> {
+    await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.id, id));
   }
 
   async createUserRole(role: any): Promise<any> {

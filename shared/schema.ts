@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
 export const tradeJournal = pgTable("trade_journal", {
   id: serial("id").primaryKey(),
@@ -74,6 +75,48 @@ export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {
   equity: text("equity").notNull(),
   balance: text("balance").notNull(),
 });
+
+export const users = pgTable("users", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
+  status: text("status", { enum: ["active", "suspended", "deleted"] }).default("active").notNull(),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  token: text("token").notNull(), // Hashed
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+});
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  token: text("token").notNull(), // Hashed
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({ 
+  id: true, 
+  emailVerified: true, 
+  status: true,
+  createdAt: true, 
+  updatedAt: true,
+  lastLoginAt: true 
+}).extend({
+  password: z.string().min(8).regex(/[a-zA-Z]/).regex(/[0-9]/),
+});
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export const userRole = pgTable("user_role", {
   id: serial("id").primaryKey(),

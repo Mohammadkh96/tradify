@@ -9,187 +9,198 @@ import { db } from "./db";
 import * as schema from "@shared/schema";
 import { eq, or, desc, and, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
+import jwt from "jsonwebtoken";
+import { v4 as uuidv4 } from "uuid";
+import rateLimit from "express-rate-limit";
 import { emailService } from "./emailService";
-import { openai } from "./replit_integrations/audio/index";
 
-const PostgresStore = connectPg(session);
+const JWT_SECRET = process.env.JWT_SECRET || "fintech_ultra_secret_2026";
 
-declare module "express-session" {
-  interface SessionData {
-    userId: string;
-    role: string;
-  }
-}
-
-// Authentication middleware
-const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ message: "Session expired. Please log in." });
-  }
+// Production-grade Middleware
+const requestID = (req: Request, res: Response, next: NextFunction) => {
+  req.headers['x-request-id'] = req.headers['x-request-id'] || uuidv4();
   next();
 };
 
-const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ message: "Session expired" });
+const requireAuth = (req: any, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Missing token" } });
+
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) return res.status(403).json({ error: { code: "FORBIDDEN", message: "Invalid or expired token" } });
+    req.user = user;
+    next();
+  });
+};
+
+const authenticateToken = requireAuth;
+
+const requireAdmin = async (req: any, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Missing token" } });
   }
   
-  const user = await storage.getUserRole(req.session.userId);
-  if (user?.role !== "OWNER" && user?.role !== "ADMIN") {
-    return res.status(403).json({ message: "Admin access required" });
+  const user = await storage.getUserById(req.user.sub);
+  if (user?.role !== "admin") {
+    return res.status(403).json({ error: { code: "FORBIDDEN", message: "Admin access required" } });
   }
   next();
 };
 
-import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
-import { paypalService } from "./paypalService";
+const logger = (req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms - ID: ${req.headers['x-request-id']}`);
+  });
+  next();
+};
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests" } }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: { code: "AUTH_RATE_LIMIT", message: "Too many attempts" } }
+});
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Session setup
-  app.use(session({
-    store: new PostgresStore({
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-      },
-      createTableIfMissing: true,
-    }),
-    secret: process.env.SESSION_SECRET || "tradify_secret_2026",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: "lax"
-    }
-  }));
+  app.use(requestID);
+  app.use(logger);
+  app.use(generalLimiter);
 
-  // Add body parser limits for MT5 payloads
-  app.use(express.json({ limit: '1mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-  
-  // Registration Endpoint
-  app.post("/api/register", async (req, res) => {
-    try {
-      const { email, password, country, phoneNumber, timezone } = req.body;
-      
-      if (!email || !password || !country || !timezone) {
-        return res.status(400).json({ message: "Required fields missing" });
-      }
-
-      const normalizedEmail = email.toLowerCase();
-      const [existing] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail)).limit(1);
-      
-      if (existing) {
-        return res.status(400).json({ message: "An account with this email already exists." });
-      }
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      const [newUser] = await db.insert(schema.userRole).values({
-        userId: normalizedEmail,
-        password: hashedPassword,
-        role: "TRADER",
-        country,
-        phoneNumber: phoneNumber || null,
-        timezone,
-        subscriptionTier: "FREE",
-      }).returning();
-
-      req.session.userId = newUser.userId;
-      req.session.role = newUser.role;
-
-      // Send signup email
-      await emailService.sendTransactionalEmail(newUser.userId, "signup", {});
-
-      res.status(201).json(newUser);
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Registration failed" });
-    }
-  });
-
-  // Login Endpoint
-  app.post("/api/login", async (req, res) => {
+  const validateSchema = (schema: z.ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
+  try {
+    schema.parse(req.body);
+    next();
+  } catch (err: any) {
+    res.status(400).json({ error: { code: "VALIDATION_ERROR", message: err.errors[0].message } });
+  }
+};
+  app.post("/auth/register", authLimiter, validateSchema(schema.insertUserSchema), async (req, res) => {
     try {
       const { email, password } = req.body;
-      const normalizedEmail = email.trim().toLowerCase();
-      
-      console.log(`[Auth] Login attempt for: ${normalizedEmail}`);
-      
-      const users = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail));
-      console.log(`[Auth] Found ${users.length} users with this email`);
-      
-      if (users.length === 0) {
-        console.log(`[Auth] User not found: ${normalizedEmail}`);
-        return res.status(401).json({ message: "Invalid email or password" });
+      const existing = await storage.getUserByEmail(email);
+      if (existing) {
+        return res.status(201).json({ message: "Registration successful. Please check your email." });
       }
 
-      const user = users[0];
-      console.log(`[Auth] Debug info for ${normalizedEmail}: Role=${user.role}, HasPassword=${!!user.password}`);
-
-      if (user.role === "DEACTIVATED") {
-        return res.status(401).json({ message: "Account disabled" });
-      }
-
-      if (!user.password) {
-        console.log(`[Auth] No password set for: ${normalizedEmail}`);
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
-
-      console.log(`[Auth] Comparing password for ${normalizedEmail}...`);
-      const isPasswordMatch = await bcrypt.compare(password, user.password);
-      console.log(`[Auth] Password match result: ${isPasswordMatch}`);
+      const passwordHash = await bcrypt.hash(password, 12);
+      const user = await storage.createUser({ email, password, passwordHash });
       
-      if (!isPasswordMatch) {
-        console.log(`[Auth] Password mismatch for: ${normalizedEmail}. Input length: ${password.length}, Hash starts with: ${user.password.substring(0, 10)}`);
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
+      const verificationToken = uuidv4();
+      const tokenHash = await bcrypt.hash(verificationToken, 10);
+      await storage.createEmailVerificationToken(user.id, tokenHash, new Date(Date.now() + 24 * 60 * 60 * 1000));
 
-      req.session.userId = user.userId;
-      req.session.role = user.role;
-
-      res.json(user);
+      // Mock email sending
+      console.log(`[Verification] Token for ${email}: ${verificationToken}`);
+      
+      res.status(201).json({ message: "Registration successful. Please check your email." });
     } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Login failed" });
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Registration failed" } });
     }
   });
 
-  app.post("/api/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Logout failed" });
+  app.post("/auth/login", authLimiter, async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+        return res.status(401).json({ error: { code: "AUTH_INVALID_CREDENTIALS", message: "Invalid email or password" } });
       }
-      res.clearCookie("connect.sid");
-      res.json({ success: true });
-    });
-  });
 
-  app.get("/api/user", async (req, res) => {
-    if (!req.session.userId) {
-      console.log(`[Auth] GET /api/user: No session userId found`);
-      return res.status(401).json({ message: "Not authenticated" });
+      if (!user.emailVerified) {
+        return res.status(403).json({ error: { code: "AUTH_EMAIL_NOT_VERIFIED", message: "Please verify your email" } });
+      }
+
+      if (user.status !== "active") {
+        return res.status(403).json({ error: { code: "AUTH_ACCOUNT_SUSPENDED", message: "Account is not active" } });
+      }
+
+      const accessToken = jwt.sign(
+        { sub: user.id, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      await storage.updateUser(user.id, { lastLoginAt: new Date() });
+
+      res.json({ accessToken });
+    } catch (error) {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Login failed" } });
     }
-    const user = await storage.getUserRole(req.session.userId);
-    console.log(`[Auth] GET /api/user: Found user ${req.session.userId}, Role=${user?.role}`);
-    res.json(user);
   });
 
-  app.get("/api/paypal/setup", requireAuth, async (req, res) => {
+  app.post("/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.body;
+      const t = await storage.getVerificationToken(token);
+      if (!t || new Date() > t.expiresAt || t.usedAt) {
+        return res.status(400).json({ error: { code: "INVALID_TOKEN", message: "Token invalid or expired" } });
+      }
+      await storage.consumeVerificationToken(t.id);
+      await storage.updateUser(t.userId, { emailVerified: true });
+      res.json({ message: "Email verified successfully" });
+    } catch (error) {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Verification failed" } });
+    }
+  });
+
+  // Protect all /api routes
+  app.use("/api", authenticateToken);
+
+  app.post("/auth/reset-password-request", async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await storage.getUserByEmail(email);
+      // Always return success to prevent user enumeration
+      if (user) {
+        const resetToken = uuidv4();
+        const tokenHash = await bcrypt.hash(resetToken, 10);
+        await storage.createPasswordResetToken(user.id, tokenHash, new Date(Date.now() + 1 * 60 * 60 * 1000));
+        console.log(`[PasswordReset] Token for ${email}: ${resetToken}`);
+      }
+      res.json({ message: "If an account exists, a reset link has been sent." });
+    } catch (error) {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to process request" } });
+    }
+  });
+
+  app.post("/auth/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      const t = await storage.getPasswordResetToken(token);
+      if (!t || new Date() > t.expiresAt || t.usedAt) {
+        return res.status(400).json({ error: { code: "INVALID_TOKEN", message: "Token invalid or expired" } });
+      }
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await storage.updateUser(t.userId, { passwordHash });
+      await storage.consumePasswordResetToken(t.id);
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to reset password" } });
+    }
+  });
+
+  app.get("/api/paypal/setup", authenticateToken, async (req, res) => {
     await loadPaypalDefault(req, res);
   });
 
-  app.post("/api/paypal/order", requireAuth, async (req, res) => {
+  app.post("/api/paypal/order", authenticateToken, async (req, res) => {
     await createPaypalOrder(req, res);
   });
 
-  app.post("/api/paypal/order/:orderID/capture", requireAuth, async (req, res) => {
+  app.post("/api/paypal/order/:orderID/capture", authenticateToken, async (req, res) => {
     await capturePaypalOrder(req, res);
   });
 
