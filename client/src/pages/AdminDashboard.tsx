@@ -53,39 +53,39 @@ function AdminAccessTab() {
   });
 
   return (
-    <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
+    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
       <div>
         <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
           <Shield /> Team Access Control
         </h1>
-        <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Manage Admin Permissions</p>
+        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Manage Admin Permissions</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="bg-[#0b1120] border-slate-800 h-fit lg:sticky lg:top-8">
+        <Card className="bg-card border-border h-fit lg:sticky lg:top-8">
           <CardHeader>
             <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
               <Plus size={16} className="text-emerald-500" /> Grant New Access
             </CardTitle>
-            <CardDescription className="text-xs text-slate-500">Add team members to the Ops Console.</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground">Add team members to the Ops Console.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Team Member Email</label>
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Team Member Email</label>
               <Input 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@tradify.io" 
-                className="bg-slate-900 border-slate-800 text-sm"
+                className="bg-muted border-border text-sm"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Internal Label</label>
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Internal Label</label>
               <Input 
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="e.g. Support Lead" 
-                className="bg-slate-900 border-slate-800 text-sm"
+                className="bg-muted border-border text-sm"
               />
             </div>
             <Button 
@@ -98,21 +98,21 @@ function AdminAccessTab() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2 bg-[#0b1120] border-slate-800 overflow-hidden">
+        <Card className="lg:col-span-2 bg-card border-border overflow-hidden">
           <Table>
-            <TableHeader className="bg-slate-900/50">
-              <TableRow className="border-slate-800">
-                <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Admin Identity</TableHead>
-                <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Generated Key</TableHead>
-                <TableHead className="text-right text-slate-500 font-bold uppercase text-[10px] tracking-widest">Revoke</TableHead>
+            <TableHeader className="bg-muted/50">
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Admin Identity</TableHead>
+                <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Generated Key</TableHead>
+                <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Revoke</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {admins?.map((admin) => (
-                <TableRow key={admin.id} className="border-slate-800 hover:bg-slate-900/40">
+                <TableRow key={admin.id} className="border-border hover:bg-muted/40">
                   <TableCell>
-                    <div className="font-bold text-slate-200">{admin.label}</div>
-                    <div className="text-[10px] text-slate-500 font-mono">{admin.email}</div>
+                    <div className="font-bold text-foreground">{admin.label}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono">{admin.email}</div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 font-mono text-[10px] text-emerald-500 bg-emerald-500/5 px-2 py-1 rounded border border-emerald-500/10 w-fit">
@@ -123,7 +123,7 @@ function AdminAccessTab() {
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-8 w-8 text-slate-600 hover:text-rose-500"
+                      className="h-8 w-8 text-muted-foreground hover:text-rose-500"
                       onClick={() => deleteMutation.mutate(admin.id)}
                     >
                       <Trash2 size={14} />
@@ -133,7 +133,7 @@ function AdminAccessTab() {
               ))}
               {admins?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-32 text-center text-slate-600 italic text-sm border-0">
+                  <TableCell colSpan={3} className="h-32 text-center text-muted-foreground italic text-sm border-0">
                     No team members added yet.
                   </TableCell>
                 </TableRow>
@@ -154,35 +154,35 @@ function AuditLogsTab() {
   if (isLoading) return <div className="p-8 text-emerald-500 font-mono">RETRIEVING AUDIT TRAIL...</div>;
 
   return (
-    <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
+    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
       <div>
         <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
           <History /> Operational Audit Log
         </h1>
-        <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Trace Admin Interventions</p>
+        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Trace Admin Interventions</p>
       </div>
 
-      <Card className="bg-[#0b1120] border-slate-800 overflow-hidden">
+      <Card className="bg-card border-border overflow-hidden">
         <Table>
-          <TableHeader className="bg-slate-900/50">
-            <TableRow className="border-slate-800">
-              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Admin</TableHead>
-              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Action</TableHead>
-              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Target User</TableHead>
-              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Timestamp</TableHead>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="border-border">
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Admin</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Action</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Target User</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Timestamp</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {logs?.map((log) => (
-              <TableRow key={log.id} className="border-slate-800 hover:bg-slate-900/40">
-                <TableCell className="font-bold text-slate-300 text-xs">{log.adminId}</TableCell>
+              <TableRow key={log.id} className="border-border hover:bg-muted/40">
+                <TableCell className="font-bold text-foreground text-xs">{log.adminId}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-emerald-500/20 text-emerald-500">
                     {log.actionType}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-slate-400 text-xs font-mono">{log.targetUserId}</TableCell>
-                <TableCell className="text-slate-500 text-[10px] font-mono">
+                <TableCell className="text-muted-foreground text-xs font-mono">{log.targetUserId}</TableCell>
+                <TableCell className="text-muted-foreground text-[10px] font-mono">
                   {log.timestamp ? format(new Date(log.timestamp), "MMM d, HH:mm:ss") : "N/A"}
                 </TableCell>
               </TableRow>
@@ -218,31 +218,31 @@ function CreatorApplicationsTab() {
   if (isLoading) return <div className="p-8 text-emerald-500 font-mono">RETRIEVING APPLICATIONS...</div>;
 
   return (
-    <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
+    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
       <div>
         <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
           <ShieldAlert /> Creator Applications
         </h1>
-        <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Approve or Reject Creator Requests</p>
+        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Approve or Reject Creator Requests</p>
       </div>
 
-      <Card className="bg-[#0b1120] border-slate-800 overflow-hidden">
+      <Card className="bg-card border-border overflow-hidden">
         <Table>
-          <TableHeader className="bg-slate-900/50">
-            <TableRow className="border-slate-800">
-              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">User ID</TableHead>
-              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Background</TableHead>
-              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Focus</TableHead>
-              <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Status</TableHead>
-              <TableHead className="text-right text-slate-500 font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="border-border">
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">User ID</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Background</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Focus</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Status</TableHead>
+              <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {apps?.map((app) => (
-              <TableRow key={app.id} className="border-slate-800 hover:bg-slate-900/40">
-                <TableCell className="font-bold text-slate-300 text-xs">{app.userId}</TableCell>
-                <TableCell className="text-slate-400 text-xs max-w-xs truncate">{app.background}</TableCell>
-                <TableCell className="text-slate-400 text-xs">{app.contentFocus}</TableCell>
+              <TableRow key={app.id} className="border-border hover:bg-muted/40">
+                <TableCell className="font-bold text-foreground text-xs">{app.userId}</TableCell>
+                <TableCell className="text-muted-foreground text-xs max-w-xs truncate">{app.background}</TableCell>
+                <TableCell className="text-muted-foreground text-xs">{app.contentFocus}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className={cn(
                     "text-[9px] font-black uppercase tracking-widest",
@@ -310,28 +310,28 @@ export default function AdminDashboard() {
   // --- 1. OVERVIEW PAGE ---
   if (location === "/admin/overview") {
     return (
-      <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
+      <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
             <LayoutDashboard /> Admin Overview
           </h1>
-          <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Business & System Health</p>
+          <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Business & System Health</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-[#0b1120] border-slate-800">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Users size={12} /> Total Users
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-white">{users?.length || 0}</div>
+              <div className="text-3xl font-black text-foreground">{users?.length || 0}</div>
             </CardContent>
           </Card>
-          <Card className="bg-[#0b1120] border-slate-800">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <CreditCard size={12} /> Active Pro
               </CardTitle>
             </CardHeader>
@@ -341,9 +341,9 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-[#0b1120] border-slate-800">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Zap size={12} /> MT5 Connectors
               </CardTitle>
             </CardHeader>
@@ -353,9 +353,9 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-[#0b1120] border-slate-800">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <ShieldAlert size={12} /> API Status
               </CardTitle>
             </CardHeader>
@@ -373,43 +373,43 @@ export default function AdminDashboard() {
   // --- 2. USERS MANAGEMENT PAGE ---
   if (location === "/admin/users") {
     return (
-      <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
+      <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
               <Users /> User Management
             </h1>
-            <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Control Access & Tiers</p>
+            <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Control Access & Tiers</p>
           </div>
           <Input 
             placeholder="Search by email..." 
             value={searchEmail}
             onChange={(e) => setSearchEmail(e.target.value)}
-            className="bg-slate-900 border-slate-800 text-xs w-full md:w-64"
+            className="bg-muted border-border text-xs w-full md:w-64"
           />
         </div>
 
-        <Card className="bg-[#0b1120] border-slate-800 overflow-hidden">
+        <Card className="bg-card border-border overflow-hidden">
           <CardContent className="p-0">
             <Table>
-              <TableHeader className="bg-slate-900/30">
-                <TableRow className="border-slate-800">
-                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Email/ID</TableHead>
-                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Plan</TableHead>
-                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Account Status</TableHead>
-                  <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Registered</TableHead>
-                  <TableHead className="text-right text-slate-500 font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
+              <TableHeader className="bg-muted/30">
+                <TableRow className="border-border">
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Email/ID</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Plan</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Account Status</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Registered</TableHead>
+                  <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
-                  <TableRow key={user.id} className="border-slate-800 hover:bg-slate-900/40">
+                  <TableRow key={user.id} className="border-border hover:bg-muted/40">
                     <TableCell>
-                      <div className="font-mono text-xs text-white">{user.userId}</div>
-                      <div className="text-[9px] text-slate-500 uppercase tracking-tighter">{user.role}</div>
+                      <div className="font-mono text-xs text-foreground">{user.userId}</div>
+                      <div className="text-[9px] text-muted-foreground uppercase tracking-tighter">{user.role}</div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={user.subscriptionTier === "PRO" ? "bg-emerald-500 text-slate-950" : "bg-slate-800 text-slate-400"}>
+                      <Badge className={user.subscriptionTier === "PRO" ? "bg-emerald-500 text-slate-950" : "bg-muted text-muted-foreground"}>
                         {user.subscriptionTier}
                       </Badge>
                     </TableCell>
@@ -418,11 +418,11 @@ export default function AdminDashboard() {
                         {user.role === "DEACTIVATED" ? "DEACTIVATED" : "ACTIVE"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-[10px] font-mono text-slate-500">
+                    <TableCell className="text-[10px] font-mono text-muted-foreground">
                       {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "N/A"}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button size="sm" variant="outline" className="h-7 text-[10px]" 
+                      <Button size="sm" variant="outline" className="h-7 text-[10px] border-border hover:bg-muted" 
                         onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { subscriptionTier: user.subscriptionTier === "PRO" ? "FREE" : "PRO" } })}>
                         {user.subscriptionTier === "PRO" ? "Set FREE" : "Grant PRO"}
                       </Button>
@@ -458,16 +458,16 @@ export default function AdminDashboard() {
 
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)
   return (
-    <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-slate-50">
+    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
       <div>
         <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
           <Activity /> {location.split('/').pop()?.toUpperCase()}
         </h1>
-        <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Module Under Construction</p>
+        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Module Under Construction</p>
       </div>
-      <Card className="bg-[#0b1120] border-slate-800 p-12 text-center">
-        <Activity size={48} className="mx-auto text-slate-800 mb-4 animate-pulse" />
-        <p className="text-slate-500">Full specifications for this tab are being finalized.</p>
+      <Card className="bg-card border-border p-12 text-center">
+        <Activity size={48} className="mx-auto text-muted-foreground mb-4 animate-pulse" />
+        <p className="text-muted-foreground">Full specifications for this tab are being finalized.</p>
       </Card>
     </div>
   );
