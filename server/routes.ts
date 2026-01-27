@@ -516,6 +516,7 @@ export async function registerRoutes(
   app.get("/api/performance/intelligence/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
+      // SINGLE SOURCE OF TRUTH: All metrics derive from the unified Trade Journal
       const trades = await storage.getTrades(userId);
       
       const normalizedTrades = trades.map(t => ({

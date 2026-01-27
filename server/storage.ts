@@ -332,17 +332,22 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
       const isPro = user?.subscriptionTier === "PRO";
       
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      // Get manual trades
+      let journalQuery = db.select().from(tradeJournal).where(eq(tradeJournal.userId, userId));
       if (!isPro) {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        return await db.select().from(tradeJournal)
-          .where(and(eq(tradeJournal.userId, userId), sql`${tradeJournal.createdAt} >= ${thirtyDaysAgo}`))
-          .orderBy(desc(tradeJournal.createdAt));
+        journalQuery = journalQuery.where(sql`${tradeJournal.createdAt} >= ${thirtyDaysAgo}`);
       }
+      const journalTrades = await journalQuery.orderBy(desc(tradeJournal.createdAt));
+
+      // Get MT5 history and ensure they are represented in the journal
+      const mt5HistoryTrades = await this.getMT5History(userId);
       
-      return await db.select().from(tradeJournal)
-        .where(eq(tradeJournal.userId, userId))
-        .orderBy(desc(tradeJournal.createdAt));
+      // The current syncMT5History already creates journal entries for new MT5 trades.
+      // We return the journalTrades as the single source of truth for the UI.
+      return journalTrades;
     }
     return await db.select().from(tradeJournal).orderBy(desc(tradeJournal.createdAt));
   }
