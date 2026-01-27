@@ -257,10 +257,10 @@ function Router() {
           <div className="max-w-7xl mx-auto px-6 py-20">
             <div className="text-center mb-16">
               <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic text-foreground mb-6">
-                Intelligence & Support
+                Intelligence & Guidance
               </h1>
               <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-                Resources designed to help traders understand markets, behavior, and risk with clarity and objectivity.
+                Resources designed to help traders understand markets, behavior, and risk — with clarity, structure, and objectivity.
               </p>
             </div>
 
@@ -272,54 +272,59 @@ function Router() {
                 <CardContent className="space-y-4">
                   <p className="text-sm text-muted-foreground italic">Clear, structured explanations covering:</p>
                   <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Risk management principles</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Trading psychology and discipline</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Market structure concepts</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Performance evaluation methods</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Risk management frameworks used by professionals</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Trading psychology and decision-making under uncertainty</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Market structure and price behavior</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Objective methods for evaluating trading performance</li>
                   </ul>
-                  <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground/50 pt-4">Written without hype or promises.</p>
+                  <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground/50 pt-4">Written to inform and educate — never to persuade or promise.</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-card border-border">
                 <CardHeader>
-                  <CardTitle className="text-xs font-black uppercase tracking-widest text-emerald-500">Discipline Guides</CardTitle>
+                  <CardTitle className="text-xs font-black uppercase tracking-widest text-emerald-500">Discipline & Process</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground italic">Practical guides focused on:</p>
+                  <p className="text-sm text-muted-foreground italic">Practical guidance focused on:</p>
                   <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Avoiding overtrading</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Managing drawdowns</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Improving consistency</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Conducting trade reviews</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Reducing overtrading and impulsive behavior</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Managing drawdowns and volatility exposure</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Improving execution consistency over time</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Conducting structured, unbiased trade reviews</li>
                   </ul>
-                  <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground/50 pt-4">Built for long-term improvement.</p>
+                  <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground/50 pt-4">Built to support long-term process improvement.</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-card border-border">
                 <CardHeader>
-                  <CardTitle className="text-xs font-black uppercase tracking-widest text-emerald-500">FAQ & Support</CardTitle>
+                  <CardTitle className="text-xs font-black uppercase tracking-widest text-emerald-500">Platform Principles</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground italic">Common inquiries about:</p>
+                  <p className="text-sm text-muted-foreground italic">Transparent explanations of:</p>
                   <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Account connections</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Data privacy and security</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> AI usage boundaries</li>
-                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Plans and pricing</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> How account connections and data access work</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Read-only integration boundaries</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> AI capabilities, limitations, and guardrails</li>
+                    <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Plans, access levels, and usage scope</li>
                   </ul>
-                  <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground/50 pt-4">Transparency is a priority.</p>
+                  <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground/50 pt-4">Clarity over complexity. Transparency by design.</p>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="p-8 bg-muted rounded-2xl border border-border">
-                <h3 className="text-xl font-bold text-foreground mb-4">Security & Data Transparency</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Learn how Tradify protects user data, enforces read-only integrations, handles AI responsibly, and avoids conflicts of interest. Support is focused on clarity, accuracy, and trust.
-                </p>
+            <div className="mt-16 flex justify-center">
+              <div className="p-8 bg-muted rounded-2xl border border-border max-w-2xl text-center">
+                <h3 className="text-xl font-bold text-foreground mb-4 uppercase tracking-tight italic">Security & Data Transparency</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed italic mb-4">Learn how Tradify:</p>
+                <ul className="text-sm text-muted-foreground space-y-2 mb-6 inline-block text-left">
+                  <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Protects and isolates user data</li>
+                  <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Enforces strict read-only integrations</li>
+                  <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Applies AI responsibly and conservatively</li>
+                  <li className="flex items-center gap-2"><div className="w-1 h-1 bg-emerald-500 rounded-full" /> Avoids conflicts of interest by design</li>
+                </ul>
+                <p className="text-[10px] uppercase tracking-widest font-black text-emerald-500">Accuracy, integrity, and trust are non-negotiable.</p>
               </div>
             </div>
           </div>
