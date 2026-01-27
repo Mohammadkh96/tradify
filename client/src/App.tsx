@@ -33,6 +33,7 @@ function Router() {
   const isPricingPage = location === "/pricing";
   const isAuthPage = location === "/login" || location === "/signup";
   const isAdminRoute = location.startsWith("/admin");
+  const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer";
 
   const isPublicPage = isLandingPage || isPricingPage || isAuthPage || isPublicLegalPage || 
                        location === "/features" || location === "/how-it-works" || location === "/resources";
@@ -45,10 +46,6 @@ function Router() {
 
   const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
   const isUserLoggedIn = !!userRole;
-
-  // Only show loading screen for protected routes or if we haven't decided if it's public yet
-  const isPublicPage = isLandingPage || isPricingPage || isAuthPage || isPublicLegalPage || 
-                       location === "/features" || location === "/how-it-works" || location === "/resources";
 
   if (isRoleLoading && !isPublicPage) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
@@ -391,7 +388,12 @@ function Router() {
     </Switch>
   );
 
-  if (isPublicPage) return content;
+  if (isPublicPage) {
+    if (isUserLoggedIn && (isAuthPage || location === "/")) {
+      return <Redirect to="/dashboard" />;
+    }
+    return content;
+  }
 
   if (isAdminRoute) {
     return <AdminLayout>{content}</AdminLayout>;
