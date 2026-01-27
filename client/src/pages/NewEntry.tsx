@@ -3,23 +3,21 @@ import { useCreateTrade } from "@/hooks/use-trades";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { insertTradeSchema, type ValidationResult } from "@shared/schema";
+import { insertTradeSchema } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { 
-  AlertTriangle, 
   CheckCircle2, 
   XCircle, 
-  ChevronRight, 
-  ShieldAlert, 
-  Image as ImageIcon,
   Loader2,
   TrendingUp,
   TrendingDown,
   Upload,
-  X
+  X,
+  ShieldAlert,
+  Image as ImageIcon
 } from "lucide-react";
 import { useLocation } from "wouter";
-import { api, buildUrl } from "@shared/routes";
+import { api } from "@shared/routes";
 
 const formSchema = insertTradeSchema.extend({
   entryPrice: z.string().optional(),
@@ -33,7 +31,7 @@ type FormValues = z.infer<typeof formSchema>;
 export default function NewEntry() {
   const [, setLocation] = useLocation();
   const createTrade = useCreateTrade();
-  const [validation, setValidation] = useState<ValidationResult | null>(null);
+  const [validation, setValidation] = useState<any>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,8 +83,6 @@ export default function NewEntry() {
     if (file) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      // In a real app, we'd upload the file here and set the URL in the form
-      // form.setValue("chartImageUrl", uploadedUrl);
     }
   };
 
@@ -105,19 +101,19 @@ export default function NewEntry() {
   };
 
   return (
-    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
+    <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-6xl mx-auto">
         <header className="mb-8 flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">New Trade Entry</h1>
-            <p className="text-slate-400 mt-1">Rule-based execution engine v1.0</p>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">New Trade Entry</h1>
+            <p className="text-muted-foreground mt-1">Rule-based execution engine v1.0</p>
           </div>
           <div className="hidden lg:block">
             <div className={cn(
               "px-4 py-2 rounded-lg border flex items-center gap-3 transition-all duration-500",
               validation?.valid 
                 ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500" 
-                : "bg-rose-500/10 border-rose-500/50 text-rose-500"
+                : "bg-destructive/10 border-destructive/50 text-destructive"
             )}>
               {isValidating ? (
                 <Loader2 size={18} className="animate-spin" />
@@ -134,26 +130,24 @@ export default function NewEntry() {
         </header>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Form Content */}
           <div className="lg:col-span-8 space-y-8">
-            
             {/* Core Parameters */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Asset Pair</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Asset Pair</label>
                   <input 
                     {...form.register("pair")}
                     placeholder="EURUSD" 
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 font-mono uppercase"
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono uppercase"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Timeframe</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Timeframe</label>
                   <select 
                     {...form.register("timeframe")}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     {["M1", "M5", "M15", "H1", "H4", "D1"].map(tf => (
                       <option key={tf} value={tf}>{tf}</option>
@@ -162,7 +156,7 @@ export default function NewEntry() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Direction</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Direction</label>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -170,8 +164,8 @@ export default function NewEntry() {
                       className={cn(
                         "flex-1 py-2.5 rounded-lg font-bold transition-all border flex items-center justify-center gap-2",
                         form.watch("direction") === "Long"
-                          ? "bg-emerald-500 text-white border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-                          : "bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-700"
+                          ? "bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20"
+                          : "bg-background text-muted-foreground border-border hover:border-muted-foreground/30"
                       )}
                     >
                       <TrendingUp size={16} /> LONG
@@ -182,8 +176,8 @@ export default function NewEntry() {
                       className={cn(
                         "flex-1 py-2.5 rounded-lg font-bold transition-all border flex items-center justify-center gap-2",
                         form.watch("direction") === "Short"
-                          ? "bg-rose-500 text-white border-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-                          : "bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-700"
+                          ? "bg-destructive text-white border-destructive shadow-lg shadow-destructive/20"
+                          : "bg-background text-muted-foreground border-border hover:border-muted-foreground/30"
                       )}
                     >
                       <TrendingDown size={16} /> SHORT
@@ -194,7 +188,7 @@ export default function NewEntry() {
             </div>
 
             {/* Layer 2: Detection Rules */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
               <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-6 flex items-center gap-2">
                 <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
                 Layer 2: Detection Rules (Inputs)
@@ -203,7 +197,7 @@ export default function NewEntry() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-slate-400">HTF Trend / Bias</label>
+                    <label className="text-xs font-medium text-muted-foreground">HTF Trend / Bias</label>
                     <div className="grid grid-cols-3 gap-2">
                       {["Bullish", "Bearish", "Range"].map(val => (
                         <button
@@ -213,8 +207,8 @@ export default function NewEntry() {
                           className={cn(
                             "py-2 text-xs font-bold rounded border transition-colors",
                             form.watch("htfBias") === val 
-                              ? "bg-slate-800 border-slate-600 text-white" 
-                              : "bg-slate-950 border-slate-800 text-slate-500"
+                              ? "bg-accent border-accent-foreground/20 text-foreground" 
+                              : "bg-background border-border text-muted-foreground hover:bg-muted/50"
                           )}
                         >
                           {val}
@@ -224,7 +218,7 @@ export default function NewEntry() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-slate-400">Structure State</label>
+                    <label className="text-xs font-medium text-muted-foreground">Structure State</label>
                     <div className="grid grid-cols-3 gap-2">
                       {["BOS", "CHOCH", "None"].map(val => (
                         <button
@@ -234,8 +228,8 @@ export default function NewEntry() {
                           className={cn(
                             "py-2 text-xs font-bold rounded border transition-colors",
                             form.watch("structureState") === val 
-                              ? "bg-slate-800 border-slate-600 text-white" 
-                              : "bg-slate-950 border-slate-800 text-slate-500"
+                              ? "bg-accent border-accent-foreground/20 text-foreground" 
+                              : "bg-background border-border text-muted-foreground hover:bg-muted/50"
                           )}
                         >
                           {val}
@@ -247,7 +241,7 @@ export default function NewEntry() {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-slate-400">Liquidity Status</label>
+                    <label className="text-xs font-medium text-muted-foreground">Liquidity Status</label>
                     <div className="grid grid-cols-3 gap-2">
                       {["Taken", "Pending", "None"].map(val => (
                         <button
@@ -257,8 +251,8 @@ export default function NewEntry() {
                           className={cn(
                             "py-2 text-xs font-bold rounded border transition-colors",
                             form.watch("liquidityStatus") === val 
-                              ? "bg-slate-800 border-slate-600 text-white" 
-                              : "bg-slate-950 border-slate-800 text-slate-500"
+                              ? "bg-accent border-accent-foreground/20 text-foreground" 
+                              : "bg-background border-border text-muted-foreground hover:bg-muted/50"
                           )}
                         >
                           {val}
@@ -268,7 +262,7 @@ export default function NewEntry() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-slate-400">Zone Validity</label>
+                    <label className="text-xs font-medium text-muted-foreground">Zone Validity</label>
                     <div className="grid grid-cols-2 gap-2">
                       {["Valid", "Invalid"].map(val => (
                         <button
@@ -278,8 +272,8 @@ export default function NewEntry() {
                           className={cn(
                             "py-2 text-xs font-bold rounded border transition-colors",
                             form.watch("zoneValidity") === val 
-                              ? "bg-slate-800 border-slate-600 text-white" 
-                              : "bg-slate-950 border-slate-800 text-slate-500"
+                              ? "bg-accent border-accent-foreground/20 text-foreground" 
+                              : "bg-background border-border text-muted-foreground hover:bg-muted/50"
                           )}
                         >
                           {val}
@@ -292,7 +286,7 @@ export default function NewEntry() {
             </div>
 
             {/* Execution Checklist */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
               <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-6 flex items-center gap-2">
                 <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
                 Execution Checklist (Non-negotiables)
@@ -308,49 +302,44 @@ export default function NewEntry() {
                 ].map((item) => (
                   <label 
                     key={item.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition-colors group"
+                    className="flex items-center justify-between p-3 rounded-lg bg-background border border-border hover:border-muted-foreground/30 cursor-pointer transition-colors group"
                   >
-                    <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{item.label}</span>
+                    <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">{item.label}</span>
                     <div className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                       <input 
                         type="checkbox"
                         {...form.register(item.id as any)}
                         className="peer sr-only"
                       />
-                      <div className="peer h-6 w-11 rounded-full bg-slate-800 transition-colors peer-checked:bg-emerald-600" />
-                      <div className="absolute left-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
+                      <div className="peer h-6 w-11 rounded-full bg-muted transition-colors peer-checked:bg-emerald-600" />
+                      <div className="absolute left-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5 shadow-sm" />
                     </div>
                   </label>
                 ))}
               </div>
             </div>
 
-            {/* Trade Details */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest mb-6">Trade Parameters</h3>
+            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+              <h3 className="text-sm font-bold text-foreground uppercase tracking-widest mb-6">Trade Parameters</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Entry</label>
-                  <input type="number" step="0.00001" {...form.register("entryPrice")} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Stop Loss</label>
-                  <input type="number" step="0.00001" {...form.register("stopLoss")} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Take Profit</label>
-                  <input type="number" step="0.00001" {...form.register("takeProfit")} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">R:R</label>
-                  <input type="number" step="0.1" {...form.register("riskReward")} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono" />
-                </div>
+                {["entryPrice", "stopLoss", "takeProfit", "riskReward"].map((field) => (
+                  <div key={field} className="space-y-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      {field.replace(/([A-Z])/g, ' $1').trim()}
+                    </label>
+                    <input 
+                      type="number" 
+                      step="0.00001" 
+                      {...form.register(field as any)} 
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Screenshot Upload */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-              <label className="text-sm font-bold text-slate-100 uppercase tracking-widest mb-4 block">Screenshot Reference</label>
+            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+              <label className="text-sm font-bold text-foreground uppercase tracking-widest mb-4 block">Screenshot Reference</label>
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -364,34 +353,26 @@ export default function NewEntry() {
                   "border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer group relative overflow-hidden",
                   previewUrl 
                     ? "border-emerald-500/50 bg-emerald-500/5" 
-                    : "border-slate-800 bg-slate-950/50 hover:border-emerald-500/50 hover:bg-emerald-500/5"
+                    : "border-border bg-background hover:border-emerald-500/50 hover:bg-muted/30"
                 )}
               >
                 {previewUrl ? (
-                  <div className="relative aspect-video w-full max-w-md mx-auto rounded-lg overflow-hidden border border-emerald-500/20">
+                  <div className="relative aspect-video w-full max-w-md mx-auto rounded-lg overflow-hidden border border-emerald-500/20 shadow-lg">
                     <img src={previewUrl} alt="Chart preview" className="w-full h-full object-cover" />
                     <button 
                       onClick={clearImage}
-                      className="absolute top-2 right-2 bg-rose-500 text-white p-1 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
+                      className="absolute top-2 right-2 bg-destructive text-white p-1 rounded-full shadow-lg hover:bg-destructive/90 transition-colors"
                     >
                       <X size={16} />
                     </button>
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <p className="text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                        <Upload size={14} /> Change Image
-                      </p>
-                    </div>
                   </div>
                 ) : (
                   <>
-                    <ImageIcon className="mx-auto text-slate-600 group-hover:text-emerald-500 transition-colors mb-4" size={48} />
+                    <ImageIcon className="mx-auto text-muted-foreground group-hover:text-emerald-500 transition-colors mb-4" size={48} />
                     <div className="space-y-1">
-                      <p className="text-sm text-slate-200 font-bold">Click to upload chart screenshot</p>
-                      <p className="text-xs text-slate-500">Supports JPG, PNG, WEBP (Max 5MB)</p>
+                      <p className="text-sm text-foreground font-bold">Click to upload chart screenshot</p>
+                      <p className="text-xs text-muted-foreground">Supports JPG, PNG, WEBP (Max 5MB)</p>
                     </div>
-                    <p className="text-[10px] text-slate-600 mt-6 uppercase tracking-widest font-bold border-t border-slate-800/50 pt-4">
-                      Internal reference only • No AI analysis
-                    </p>
                   </>
                 )}
               </div>
@@ -403,8 +384,8 @@ export default function NewEntry() {
               className={cn(
                 "w-full py-5 rounded-xl font-bold text-xl shadow-2xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-3",
                 validation?.valid
-                  ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:shadow-emerald-900/40"
-                  : "bg-slate-800 text-slate-500 border border-slate-700"
+                  ? "bg-primary text-primary-foreground hover:shadow-primary/40"
+                  : "bg-muted text-muted-foreground border border-border"
               )}
             >
               {createTrade.isPending ? <Loader2 className="animate-spin" /> : null}
@@ -412,78 +393,65 @@ export default function NewEntry() {
             </button>
           </div>
 
-          {/* Right Sidebar - Rule Engine Output */}
           <div className="lg:col-span-4 space-y-6">
             <div className={cn(
               "sticky top-10 border rounded-xl p-6 shadow-2xl transition-all duration-500",
               validation?.valid 
-                ? "bg-emerald-950/20 border-emerald-500/30" 
-                : "bg-rose-950/20 border-rose-500/30"
+                ? "bg-emerald-500/5 border-emerald-500/30" 
+                : "bg-destructive/5 border-destructive/30"
             )}>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-xs uppercase tracking-[0.2em] text-slate-400">Rule Engine v1.0</h3>
+                <h3 className="font-bold text-xs uppercase tracking-[0.2em] text-muted-foreground">Rule Engine v1.0</h3>
                 <div className={cn(
                   "w-2 h-2 rounded-full animate-pulse",
-                  validation?.valid ? "bg-emerald-500" : "bg-rose-500"
+                  validation?.valid ? "bg-emerald-500" : "bg-destructive"
                 )} />
               </div>
 
               <div className="mb-8">
                 <div className={cn(
                   "text-4xl font-black mb-2",
-                  validation?.valid ? "text-emerald-500" : "text-rose-500"
+                  validation?.valid ? "text-emerald-500" : "text-destructive"
                 )}>
                   {isValidating ? "..." : validation?.valid ? "TRADE" : "NO TRADE"}
                 </div>
-                <p className="text-xs text-slate-400 font-mono">
+                <p className="text-xs text-muted-foreground font-mono">
                   {isValidating ? "Processing inputs..." : validation?.valid ? "All criteria satisfied" : "Global hard rules violated"}
                 </p>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-xs font-bold border-b border-slate-800 pb-2">
-                  <span className="text-slate-500 uppercase tracking-widest">Strategy Match</span>
-                  <span className="text-white">{validation?.matchedSetup || "None"}</span>
+                <div className="flex items-center justify-between text-xs font-bold border-b border-border pb-2">
+                  <span className="text-muted-foreground uppercase tracking-widest">Strategy Match</span>
+                  <span className="text-foreground">{validation?.matchedSetup || "None"}</span>
                 </div>
 
                 <div className="space-y-3 pt-2">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Violations ({validation?.violations?.length || 0})</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Violations ({validation?.violations?.length || 0})</span>
                   {validation?.violations && validation.violations.length > 0 ? (
-                    validation.violations.map((v, i) => (
-                      <div key={i} className="flex items-start gap-2 p-3 bg-slate-950/50 border border-rose-500/20 rounded-lg">
-                        <XCircle size={14} className="text-rose-500 shrink-0 mt-0.5" />
-                        <span className="text-xs text-rose-200/70 font-mono leading-tight">{v}</span>
+                    validation.violations.map((v: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 p-3 bg-background border border-destructive/20 rounded-lg">
+                        <XCircle size={14} className="text-destructive shrink-0 mt-0.5" />
+                        <span className="text-xs text-destructive font-mono leading-tight">{v}</span>
                       </div>
                     ))
                   ) : (
-                    <div className="flex items-center gap-2 p-3 bg-slate-950/50 border border-emerald-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 p-3 bg-background border border-emerald-500/20 rounded-lg">
                       <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
-                      <span className="text-xs text-emerald-200/70 font-mono leading-tight">Zero violations detected.</span>
+                      <span className="text-xs text-emerald-500 font-mono leading-tight">Zero violations detected.</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="mt-8 p-4 bg-slate-950/50 rounded-lg border border-slate-800">
+              <div className="mt-8 p-4 bg-background rounded-lg border border-border shadow-inner">
                 <div className="flex items-center gap-2 text-amber-500 mb-2">
                   <ShieldAlert size={14} />
                   <span className="text-[10px] font-bold uppercase tracking-widest">Compliance Audit</span>
                 </div>
-                <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                <p className="text-[10px] text-muted-foreground leading-relaxed italic">
                   Deterministic engine output based on current market knowledge ruleset. No AI probabilistic guessing involved.
                 </p>
-              </div>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Mental Pre-Check</h4>
-              <div className="space-y-3">
-                {["Am I trading FOMO?", "Is this revenge for last loss?", "Am I accepting the SL full?", "Am I trading what I SEE?"].map((q, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                    <span className="text-xs text-slate-400">{q}</span>
-                  </div>
-                ))}
               </div>
             </div>
           </div>

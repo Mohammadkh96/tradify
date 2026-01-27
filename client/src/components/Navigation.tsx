@@ -163,7 +163,7 @@ export function Navigation() {
           <button
             onClick={() => upgradeMutation.mutate()}
             disabled={upgradeMutation.isPending}
-            className="w-full bg-secondary hover:bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 rounded-lg p-3 transition-all flex items-center justify-center gap-2 group mb-2"
+            className="w-full bg-secondary hover:bg-primary/10 text-primary border border-primary/30 rounded-lg p-3 transition-all flex items-center justify-center gap-2 group mb-2"
           >
             <ShieldCheck size={14} className="group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-black uppercase tracking-widest">
@@ -173,13 +173,13 @@ export function Navigation() {
         )}
         <div className="bg-secondary rounded-lg p-4 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase">MT5 Status</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">MT5 Status</h4>
             <div className={cn(
               "w-1.5 h-1.5 rounded-full",
-              isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+              isConnected ? "bg-emerald-500 animate-pulse" : "bg-destructive"
             )} />
           </div>
-          <p className="text-[11px] text-foreground">
+          <p className="text-[11px] text-foreground font-bold">
             {isConnected ? "CONNECTED" : "OFFLINE"}
           </p>
         </div>

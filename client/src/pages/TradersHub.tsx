@@ -10,12 +10,9 @@ import {
   Flag, 
   Trash2, 
   Info,
-  ChevronDown,
-  ChevronUp,
   Image as ImageIcon,
   AlertTriangle,
   UserCheck,
-  ExternalLink,
   ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,11 +25,10 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
+  DialogTrigger, 
   DialogFooter
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 export default function TradersHub() {
@@ -117,18 +113,18 @@ export default function TradersHub() {
     }
   });
 
-  if (isLoading) return <div className="p-8 text-slate-500 uppercase font-black animate-pulse">Synchronizing Hub...</div>;
+  if (isLoading) return <div className="p-8 text-muted-foreground uppercase font-black animate-pulse">Synchronizing Hub...</div>;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 bg-background text-foreground min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tighter uppercase flex items-center gap-3">
+          <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase flex items-center gap-3">
             <Users className="text-emerald-500" size={32} />
             Trader Hub
           </h1>
-          <p className="text-slate-400 mt-1 uppercase text-xs font-bold tracking-widest">Community Learning & Research</p>
-          <p className="text-[10px] text-slate-600 uppercase font-bold tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
+          <p className="text-muted-foreground mt-1 uppercase text-xs font-bold tracking-widest">Community Learning & Research</p>
+          <p className="text-[10px] text-muted-foreground/70 uppercase font-bold tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
             Community content reflects personal opinions and is not financial advice. 
             <Link href="/risk-disclaimer" className="ml-2 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
           </p>
@@ -143,46 +139,43 @@ export default function TradersHub() {
                   Creator Profile
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-lg">
+              <DialogContent className="bg-card border-border text-foreground max-w-lg">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-black uppercase tracking-tighter">Edit Creator Profile</DialogTitle>
-                  <CardDescription className="text-[10px] uppercase font-bold text-slate-400">
+                  <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground">
                     This is your public presence on the platform.
                   </CardDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Display Name</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Display Name</label>
                     <Input 
-                      className="bg-slate-900 border-slate-800"
+                      className="bg-background border-border"
                       value={profileData.displayName || creatorProfile.displayName}
                       onChange={(e) => setProfileData({...profileData, displayName: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Bio</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Bio</label>
                     <Textarea 
-                      className="bg-slate-900 border-slate-800"
+                      className="bg-background border-border"
                       value={profileData.bio || creatorProfile.bio || ""}
                       onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">External Link (Telegram/Discord)</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">External Link (Telegram/Discord)</label>
                     <Input 
-                      className="bg-slate-900 border-slate-800"
+                      className="bg-background border-border"
                       placeholder="https://t.me/yourchannel"
                       value={profileData.externalLink || creatorProfile.externalLink || ""}
                       onChange={(e) => setProfileData({...profileData, externalLink: e.target.value})}
                     />
-                    <p className="text-[9px] text-slate-600 italic font-bold uppercase leading-tight mt-1">
-                      Tradify is not affiliated and does not endorse external content.
-                    </p>
                   </div>
                 </div>
                 <DialogFooter>
                   <Button 
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter"
+                    className="w-full font-black uppercase tracking-tighter"
                     onClick={() => updateProfileMutation.mutate(profileData)}
                   >
                     Save Profile
@@ -193,33 +186,33 @@ export default function TradersHub() {
           ) : (
             <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="border-slate-800 text-slate-400 font-bold uppercase text-xs tracking-widest hover:bg-slate-900">
+                <Button variant="outline" className="border-border text-muted-foreground font-bold uppercase text-xs tracking-widest hover:bg-muted">
                   <ShieldCheck className="mr-2" size={16} />
                   Become a Creator
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-lg">
+              <DialogContent className="bg-card border-border text-foreground max-w-lg">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-black uppercase tracking-tighter">Creator Program Application</DialogTitle>
-                  <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-tight">
+                  <CardDescription className="text-xs font-bold text-muted-foreground uppercase tracking-tight">
                     Creators share ideas and educational content. This is not a signal service.
                   </CardDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Trading Background</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Trading Background</label>
                     <Textarea 
                       placeholder="Briefly describe your experience..."
-                      className="bg-slate-900 border-slate-800"
+                      className="bg-background border-border"
                       value={applyData.background}
                       onChange={(e) => setApplyData({...applyData, background: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Content Focus</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Content Focus</label>
                     <Input 
                       placeholder="e.g. Price Action, Macro Analysis, Education"
-                      className="bg-slate-900 border-slate-800"
+                      className="bg-background border-border"
                       value={applyData.contentFocus}
                       onChange={(e) => setApplyData({...applyData, contentFocus: e.target.value})}
                     />
@@ -227,7 +220,7 @@ export default function TradersHub() {
                 </div>
                 <DialogFooter>
                   <Button 
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter"
+                    className="w-full font-black uppercase tracking-tighter"
                     disabled={applyMutation.isPending || !applyData.background || !applyData.contentFocus}
                     onClick={() => applyMutation.mutate(applyData)}
                   >
@@ -240,27 +233,27 @@ export default function TradersHub() {
 
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter">
+              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-tighter">
                 <Plus className="mr-2" size={18} />
                 Share Reasoning
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-2xl">
+            <DialogContent className="bg-card border-border text-foreground max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="text-xl font-black uppercase tracking-tighter">New Community Post</DialogTitle>
-                <CardDescription className="text-slate-400 font-bold uppercase text-[10px]">
+                <CardDescription className="text-muted-foreground font-bold uppercase text-[10px]">
                   Focus on reasoning and learning. No signals or advisory content.
                 </CardDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Post Type</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Post Type</label>
                     <Select value={newPost.type} onValueChange={(v) => setNewPost({...newPost, type: v})}>
-                      <SelectTrigger className="bg-slate-900 border-slate-800">
+                      <SelectTrigger className="bg-background border-border">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      <SelectContent className="bg-card border-border">
                         <SelectItem value="Idea">Market Idea</SelectItem>
                         <SelectItem value="Review">Post-Trade Review</SelectItem>
                         <SelectItem value="Commentary">Session Commentary</SelectItem>
@@ -269,40 +262,40 @@ export default function TradersHub() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Symbol (Optional)</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Symbol (Optional)</label>
                     <Input 
                       placeholder="e.g. XAUUSD"
-                      className="bg-slate-900 border-slate-800"
+                      className="bg-background border-border"
                       value={newPost.symbol}
                       onChange={(e) => setNewPost({...newPost, symbol: e.target.value})}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Title</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Title</label>
                   <Input 
                     placeholder="The core reasoning behind this observation..."
-                    className="bg-slate-900 border-slate-800"
+                    className="bg-background border-border"
                     value={newPost.title}
                     onChange={(e) => setNewPost({...newPost, title: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Reasoning / Commentary</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Reasoning / Commentary</label>
                   <Textarea 
                     placeholder="Describe your observations, market context, and the 'why' behind this post..."
-                    className="bg-slate-900 border-slate-800 min-h-[150px]"
+                    className="bg-background border-border min-h-[150px]"
                     value={newPost.content}
                     onChange={(e) => setNewPost({...newPost, content: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
                     <ImageIcon size={14} /> Image URL (Static Charts Only)
                   </label>
                   <Input 
                     placeholder="https://example.com/chart-screenshot.png"
-                    className="bg-slate-900 border-slate-800"
+                    className="bg-background border-border"
                     value={newPost.imageUrl}
                     onChange={(e) => setNewPost({...newPost, imageUrl: e.target.value})}
                   />
@@ -312,12 +305,12 @@ export default function TradersHub() {
                 <div className="flex flex-col w-full gap-4">
                   <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex gap-3">
                     <AlertTriangle className="text-amber-500 shrink-0" size={18} />
-                    <p className="text-[10px] text-amber-200 leading-relaxed uppercase font-bold italic">
+                    <p className="text-[10px] text-amber-700 dark:text-amber-200 leading-relaxed uppercase font-bold italic">
                       I confirm this post is for educational reasoning only. No "Buy/Sell" commands, guarantees, or investment advice.
                     </p>
                   </div>
                   <Button 
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase tracking-tighter py-6"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-tighter py-6"
                     disabled={createMutation.isPending || !newPost.title || !newPost.content}
                     onClick={() => createMutation.mutate(newPost)}
                   >
@@ -333,26 +326,26 @@ export default function TradersHub() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {posts?.map((post) => (
-            <Card key={post.id} className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-all">
+            <Card key={post.id} className="bg-card border-border hover:border-primary/20 shadow-sm transition-all overflow-hidden">
               <CardHeader className="flex flex-row items-start justify-between space-y-0 gap-4">
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline" className="bg-slate-950 border-slate-800 text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                    <Badge variant="outline" className="bg-background border-border text-[9px] font-black uppercase tracking-widest text-emerald-500">
                       {post.type}
                     </Badge>
                     {post.symbol && (
-                      <Badge variant="outline" className="bg-slate-950 border-slate-800 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      <Badge variant="outline" className="bg-background border-border text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                         {post.symbol}
                       </Badge>
                     )}
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
                       • {format(new Date(post.createdAt), "MMM d, HH:mm")}
                     </span>
                   </div>
-                  <CardTitle className="text-xl font-black text-white tracking-tight uppercase group-hover:text-emerald-400 transition-colors">
+                  <CardTitle className="text-xl font-black text-foreground tracking-tight uppercase">
                     {post.title}
                   </CardTitle>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-2">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter flex items-center gap-2">
                     Shared by <span className="text-emerald-500">{post.user?.userId || "Unknown"}</span>
                     {post.user?.role === "OWNER" && (
                       <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px] font-black h-4 uppercase">Verified</Badge>
@@ -363,7 +356,7 @@ export default function TradersHub() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="text-slate-500 hover:text-rose-500 h-8 w-8"
+                    className="text-muted-foreground hover:text-destructive h-8 w-8"
                     onClick={() => {
                       if (window.confirm("Delete this post?")) deleteMutation.mutate(post.id);
                     }}
@@ -373,19 +366,19 @@ export default function TradersHub() {
                 )}
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
                   {post.content}
                 </p>
                 {post.imageUrl && (
-                  <div className="rounded-lg border border-slate-800 overflow-hidden bg-slate-950">
+                  <div className="rounded-lg border border-border overflow-hidden bg-background">
                     <img src={post.imageUrl} alt="Market Reasoning Chart" className="w-full h-auto object-contain max-h-[400px]" />
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="border-t border-slate-800/50 pt-4 flex flex-col items-stretch gap-4">
+              <CardFooter className="border-t border-border/50 pt-4 flex flex-col items-stretch gap-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 hover:text-emerald-500 transition-colors uppercase">
+                    <button className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground hover:text-emerald-500 transition-colors uppercase">
                       <MessageSquare size={14} />
                       {post.commentCount} Discussions
                     </button>
@@ -393,7 +386,7 @@ export default function TradersHub() {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-7 text-[10px] font-bold text-slate-600 hover:text-amber-500 uppercase gap-1.5"
+                    className="h-7 text-[10px] font-bold text-muted-foreground hover:text-amber-500 uppercase gap-1.5"
                     onClick={() => reportMutation.mutate(post.id)}
                   >
                     <Flag size={12} />
@@ -407,19 +400,10 @@ export default function TradersHub() {
               </CardFooter>
             </Card>
           ))}
-          {posts?.length === 0 && (
-            <div className="p-12 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-center">
-              <Users size={48} className="text-slate-800 mb-4" />
-              <h3 className="text-slate-400 font-black uppercase text-xl">The Hub is Quiet</h3>
-              <p className="text-slate-600 text-sm mt-2 max-w-xs uppercase font-bold italic">
-                Be the first to share your market reasoning or session commentary.
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-950 border-emerald-500/20 shadow-2xl shadow-emerald-500/5 sticky top-24">
+          <Card className="bg-card border-border shadow-md sticky top-24">
             <CardHeader>
               <CardTitle className="text-sm font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
                 <span className="shrink-0"><Info size={16} /></span>
@@ -435,16 +419,10 @@ export default function TradersHub() {
                   { label: "BE FACTUAL", desc: "Use data and charts to support your reasoning." }
                 ].map((item, i) => (
                   <div key={i} className="space-y-1">
-                    <h5 className="text-[10px] font-black text-white tracking-tight uppercase italic">{item.label}</h5>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase leading-tight">{item.desc}</p>
+                    <h5 className="text-[10px] font-black text-foreground tracking-tight uppercase italic">{item.label}</h5>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase leading-tight">{item.desc}</p>
                   </div>
                 ))}
-              </div>
-              <div className="pt-4 border-t border-slate-800">
-                <p className="text-[9px] text-slate-600 italic font-bold uppercase leading-relaxed text-center">
-                  All content shared here reflects personal opinions and experiences. 
-                  It is for educational discussion only and does not constitute financial advice.
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -463,29 +441,14 @@ function CreatorInfo({ userId }: { userId: string }) {
   if (!profile || profile.status !== "APPROVED") return null;
 
   return (
-    <div className="p-3 bg-slate-950 rounded-lg border border-slate-800/50 flex items-center justify-between gap-4 group">
+    <div className="p-3 bg-background rounded-lg border border-border flex items-center justify-between gap-4 group">
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black text-white uppercase truncate flex items-center gap-2">
+        <p className="text-[10px] font-black text-foreground uppercase truncate flex items-center gap-2">
           {profile.displayName}
-          {profile.isVerified && <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[7px] h-3 uppercase">Verified Identity</Badge>}
+          {profile.isVerified && <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[7px] h-3 uppercase">Verified</Badge>}
         </p>
-        <p className="text-[9px] text-slate-500 font-bold uppercase truncate mt-0.5">{profile.bio || "No bio provided"}</p>
+        <p className="text-[9px] text-muted-foreground font-bold uppercase truncate mt-0.5">{profile.bio || "No bio provided"}</p>
       </div>
-      {profile.externalLink && (
-        <div className="flex flex-col items-end gap-1">
-          <a 
-            href={profile.externalLink} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-[10px] font-black text-emerald-500 hover:text-emerald-400 flex items-center gap-1 uppercase tracking-tighter"
-          >
-            Connect <ExternalLink size={10} />
-          </a>
-          <span className="text-[7px] text-slate-700 font-black uppercase text-right leading-none">
-            Not Affiliated
-          </span>
-        </div>
-      )}
     </div>
   );
 }
