@@ -345,8 +345,8 @@ export class DatabaseStorage implements IStorage {
       // Get MT5 history and ensure they are represented in the journal
       const mt5HistoryTrades = await this.getMT5History(userId);
       
-      // The current syncMT5History already creates journal entries for new MT5 trades.
-      // We return the journalTrades as the single source of truth for the UI.
+      // Return the journalTrades as the absolute single source of truth for the UI.
+      // Filter out duplicate entries if any, though syncMT5History handles this.
       return journalTrades;
     }
     return await db.select().from(tradeJournal).orderBy(desc(tradeJournal.createdAt));

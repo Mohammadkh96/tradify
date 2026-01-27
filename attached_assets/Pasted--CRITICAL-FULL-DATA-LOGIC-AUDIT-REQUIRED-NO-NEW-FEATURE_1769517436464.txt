@@ -1,0 +1,147 @@
+🚨 CRITICAL: FULL DATA & LOGIC AUDIT REQUIRED (NO NEW FEATURES)
+
+The platform is currently incorrect and inconsistent. This is not a UI issue and not an enhancement request. It is a data correctness failure.
+
+What is broken (symptoms)
+
+Equity Curve is incorrect and not aligned with trades
+
+Total P&L does not equal the sum of journal trades
+
+AI Performance Insights report different trade counts than the Journal
+
+Performance Intelligence metrics contradict Journal data
+
+Recent Entries do not match Journal
+
+Account Health mixes live MT5 data with historical performance incorrectly
+
+Login, MT5 sync, and journal behavior have regressed compared to earlier working versions
+
+These contradictions mean there is no single source of truth.
+
+🔒 ABSOLUTE RULE (NON-NEGOTIABLE)
+
+ALL of the following MUST be derived from the SAME normalized trade dataset:
+
+Journal
+
+Recent Entries
+
+Performance Intelligence
+
+Equity Curve
+
+Total P&L
+
+Win rate / stats
+
+AI Performance Insights
+
+If Journal shows N trades, everything else must use exactly N trades.
+Any mismatch is a bug.
+
+REQUIRED ACTIONS (STEP BY STEP)
+1. Full codebase review (mandatory)
+
+Review everything, not parts:
+
+Database tables (raw MT5, normalized trades, journal, aggregates, AI data)
+
+MT5 ingestion logic (deduplication, lot size, contract size, currency scaling)
+
+Backend aggregation logic
+
+Frontend data sources
+
+AI insight inputs
+
+Webhooks, background jobs, caches
+
+2. Enforce a single data flow
+
+You must enforce this exact flow with no bypasses:
+
+MT5 raw trades + manual entries
+→ normalized trades table (single source of truth)
+→ performance aggregation layer
+→ Journal / Recent Entries / Performance Intelligence / Equity Curve
+→ AI Performance Insights (read-only consumer)
+
+
+No component may calculate independently.
+
+3. Fix calculations (do not approximate)
+
+Explicitly verify and correct:
+
+XAUUSD contract size and lot scaling
+
+Currency normalization
+
+Timestamp normalization (UTC)
+
+Duplicate trade prevention
+
+Backfill logic (no double counting)
+
+4. Equity Curve rules
+
+Must be cumulative P&L from normalized trades
+
+Must respect time filters (All / Today / Week / Month)
+
+Must NOT use raw MT5 balance snapshots
+
+5. AI Performance Insights rules
+
+AI must consume ONLY aggregated performance data
+
+AI must NEVER count trades independently
+
+If data is insufficient, AI must say so
+
+AI trade count MUST equal Journal trade count
+
+6. Account Health separation
+
+You must clearly separate:
+
+Live MT5 account state (balance, equity, margin, open positions)
+
+Historical performance (journal, P&L, equity curve)
+
+No silent mixing.
+
+WHAT YOU MUST NOT DO
+
+❌ Do NOT add new features
+
+❌ Do NOT redesign UI
+
+❌ Do NOT rename metrics
+
+❌ Do NOT change product behavior
+
+❌ Do NOT hide or “smooth” incorrect values
+
+This task is correctness and restoration only.
+
+REQUIRED CONFIRMATION FROM YOU
+
+After completing this audit, confirm:
+
+Journal trade count == analytics trade count == AI trade count
+
+Total P&L == sum of journal trade P&L
+
+Equity curve end value == Total P&L
+
+Recent Entries ⊆ Journal
+
+All metrics are deterministic and auditable
+
+Until these are true, the platform is not acceptable.
+
+This is a regression and data integrity audit.
+Stability and correctness take priority over all other work.
