@@ -202,6 +202,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true, 
   updatedAt: true,
   lastLoginAt: true 
+}).extend({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  country: z.string().min(1, "Country is required"),
+  timezone: z.string().min(1, "Timezone is required"),
+  phoneNumber: z.string().optional().nullable(),
 });
 export const insertTradeSchema = createInsertSchema(trades).omit({ id: true, createdAt: true });
 

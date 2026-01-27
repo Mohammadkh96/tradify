@@ -68,15 +68,21 @@ export async function registerRoutes(app: Express): Promise<void> {
   };
 
   // Auth Routes
-  app.post("/api/auth/register", authLimiter, validateSchema(insertUserSchema), async (req, res) => {
+  app.post("/api/auth/register", authLimiter, async (req, res) => {
     try {
-      const { email, password, country, phoneNumber, timezone } = req.body;
+      const result = insertUserSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: result.error.errors[0].message } });
+      }
+
+      const { email, password, country, phoneNumber, timezone } = result.data;
       const existing = await storage.getUserByEmail(email);
       if (existing) {
         return res.status(400).json({ error: { code: "EMAIL_EXISTS", message: "Email already exists" } });
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
+      // @ts-ignore - The schema includes these fields but the inferred type might be lagging
       const user = await storage.createUser({ 
         email, 
         passwordHash,

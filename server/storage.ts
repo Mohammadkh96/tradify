@@ -66,9 +66,9 @@ export class DatabaseStorage implements IStorage {
       passwordHash: user.passwordHash,
       role: "user",
       status: "active",
-      country: user.country,
-      phoneNumber: user.phoneNumber,
-      timezone: user.timezone,
+      country: user.country || null,
+      phoneNumber: user.phoneNumber || null,
+      timezone: user.timezone || null,
     }).returning();
     
     // Create default settings
