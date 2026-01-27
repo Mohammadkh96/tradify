@@ -22,6 +22,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import RiskDisclaimer from "@/pages/RiskDisclaimer";
+import { useQuery } from "@tanstack/react-query";
 import { ThemeProvider } from "@/hooks/use-theme";
 
 function Router() {
