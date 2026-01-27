@@ -32,8 +32,10 @@ function Router() {
   const isLandingPage = location === "/";
   const isPricingPage = location === "/pricing";
   const isAuthPage = location === "/login" || location === "/signup";
-  const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer";
   const isAdminRoute = location.startsWith("/admin");
+
+  const isPublicPage = isLandingPage || isPricingPage || isAuthPage || isPublicLegalPage || 
+                       location === "/features" || location === "/how-it-works" || location === "/resources";
 
   const { data: userRole, isLoading: isRoleLoading, isError: isRoleError } = useQuery<any>({
     queryKey: ["/api/user"],
@@ -389,7 +391,7 @@ function Router() {
     </Switch>
   );
 
-  if (isAuthPage || isLandingPage || isPublicLegalPage) return content;
+  if (isPublicPage) return content;
 
   if (isAdminRoute) {
     return <AdminLayout>{content}</AdminLayout>;
