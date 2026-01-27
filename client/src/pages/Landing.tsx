@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
@@ -31,6 +33,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="flex items-center gap-6">
+            <ThemeToggle />
             <Link href="/login">
               <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-bold uppercase tracking-widest text-xs">
                 Login
