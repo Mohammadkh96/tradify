@@ -84,7 +84,7 @@ export default function Auth() {
     if (!isFormValid) return;
     
     try {
-      const endpoint = isLogin ? "/api/login" : "/api/register";
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const payload = isLogin 
         ? { email, password }
         : { email, password, country, phoneNumber, timezone };
@@ -126,8 +126,9 @@ export default function Auth() {
         localStorage.setItem("user_id", data.user.id);
         queryClient.setQueryData(["/api/user"], data.user);
         
-        // Redirect based on role
-        if (data.user.role === "OWNER" || data.user.role === "ADMIN") {
+        // Use user.role from the data.user object
+        const role = data.user.role;
+        if (role === "OWNER" || role === "ADMIN") {
           window.location.replace("/admin/overview");
         } else {
           window.location.replace("/dashboard");
