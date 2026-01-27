@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History, Sun, Moon } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 function AdminAccessTab() {
   const { toast } = useToast();
@@ -336,14 +337,7 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Business & System Health</p>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 border-border"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          >
-            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-          </Button>
+          <ThemeToggle />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -410,14 +404,7 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Control Access & Tiers</p>
           </div>
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 border-border"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            >
-              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-            </Button>
+            <ThemeToggle />
             <Input 
               placeholder="Search by email..." 
               value={searchEmail}
