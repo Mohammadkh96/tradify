@@ -7,7 +7,6 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 
 const app = express();
-app.set("trust proxy", 1);
 const httpServer = createServer(app);
 
 async function initStripe() {

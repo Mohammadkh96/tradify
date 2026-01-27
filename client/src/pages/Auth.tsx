@@ -84,7 +84,7 @@ export default function Auth() {
     if (!isFormValid) return;
     
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+      const endpoint = isLogin ? "/api/login" : "/api/register";
       const payload = isLogin 
         ? { email, password }
         : { email, password, country, phoneNumber, timezone };
@@ -95,46 +95,20 @@ export default function Auth() {
         body: JSON.stringify(payload),
       });
 
-      const contentType = response.headers.get("content-type");
-      let data;
-
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-        console.log("Auth response data:", data);
-      } else {
-        const text = await response.text();
-        console.error("Non-JSON auth response:", text);
-        if (response.status === 429) {
-          throw new Error("Too many attempts. Please try again later.");
-        }
-        throw new Error("Unexpected response format from server");
-      }
+      const data = await response.json();
 
       if (!response.ok) {
-        const message = data?.error?.message || data?.message || "Authentication failed";
-        throw new Error(message);
+        throw new Error(data.message || "Authentication failed");
       }
-
-      if (!data || typeof data !== 'object') {
-        throw new Error("Invalid response data from server");
-      }
-
-      // Success logic
-      const token = data.token || data.accessToken;
-      if (token && data.user) {
-        localStorage.setItem("user_token", token);
-        localStorage.setItem("user_id", data.user.id);
-        queryClient.setQueryData(["/api/user"], data.user);
-        
-        // Use user.role from the data.user object
-        const role = data.user.role;
-        if (role === "OWNER" || role === "ADMIN") {
-          window.location.href = "/admin/overview";
-        } else {
-          window.location.href = "/dashboard";
-        }
+      
+      localStorage.setItem("user_id", data.userId);
+      queryClient.setQueryData(["/api/user"], data);
+      
+      // Redirect based on role
+      if (data.role === "OWNER" || data.role === "ADMIN") {
+        window.location.replace("/admin/overview");
       } else {
-        throw new Error("Authentication succeeded but session data is missing");
+        window.location.replace("/dashboard");
       }
       
       toast({
@@ -159,30 +133,17 @@ export default function Auth() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resetEmail }),
       });
-
-      if (!response.ok) {
-        let message = "Reset request failed";
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await response.json();
-          message = errorData.message || errorData.error?.message || message;
-        } else {
-          const text = await response.text();
-          if (text && text.length < 200) message = text;
-        }
-        throw new Error(message);
-      }
       const data = await response.json();
       toast({
         title: "Reset Link Sent",
         description: data.message,
       });
       setShowForgot(false);
-    } catch (err: any) {
+    } catch (err) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: err.message || "Failed to process reset request.",
+        description: "Failed to process reset request.",
       });
     }
   };

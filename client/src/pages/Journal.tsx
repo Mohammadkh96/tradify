@@ -15,7 +15,7 @@ export default function Journal() {
 
   const { data: manualTrades, isLoading: isLoadingManual } = useTrades();
   const { data: mt5History, isLoading: isLoadingHistory } = useQuery<any[]>({
-    queryKey: user?.id ? [`/api/mt5/history/${user.id}`] : ["/api/mt5/history/demo"],
+    queryKey: user?.userId ? [`/api/mt5/history/${user.userId}`] : ["/api/mt5/history/demo"],
     enabled: true,
   });
 
@@ -30,25 +30,23 @@ export default function Journal() {
   const combinedTrades = useMemo(() => {
     const manual = (manualTrades || []).map(t => ({
       ...t,
-      pair: t.symbol,
       source: "Manual",
-      netPl: Number(t.profit) || 0,
-      closeTime: t.createdAt,
-      outcome: Number(t.profit) >= 0 ? "Win" : "Loss"
+      netPl: 0, 
+      closeTime: t.createdAt
     }));
     
     const mt5 = (mt5History || []).map(t => ({
       id: t.id,
-      ticket: t.ticketId,
+      ticket: t.ticket,
       pair: t.symbol,
       direction: t.direction,
       timeframe: "MT5",
       createdAt: t.openTime,
       closeTime: t.closeTime,
-      outcome: Number(t.profit) >= 0 ? "Win" : "Loss",
-      netPl: Number(t.profit),
+      outcome: parseFloat(t.netPl) >= 0 ? "Win" : "Loss",
+      netPl: parseFloat(t.netPl),
       riskReward: "N/A",
-      notes: t.notes || `Ticket: ${t.ticketId}`,
+      notes: t.notes || `Ticket: ${t.ticket}`,
       tags: t.tags || [],
       source: "MT5",
       isMT5: true
@@ -61,7 +59,7 @@ export default function Journal() {
 
   const filteredTrades = useMemo(() => {
     let base = combinedTrades.filter(trade => {
-      const matchesSearch = (trade.pair || "").toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = trade.pair.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesOutcome = filterOutcome === "all" || trade.outcome === filterOutcome;
       
       let matchesDate = true;
@@ -152,11 +150,11 @@ export default function Journal() {
                     "w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs border",
                     trade.outcome === "Win" ? "bg-primary/10 text-primary border-primary/20" : "bg-destructive/10 text-destructive border-destructive/20"
                   )}>
-                    {trade.pair ? trade.pair.substring(0, 3) : "???"}
+                    {trade.pair.substring(0, 3)}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-lg font-black text-foreground group-hover:text-primary transition-colors">{trade.pair || "Unknown"}</span>
+                      <span className="text-lg font-black text-foreground group-hover:text-primary transition-colors">{trade.pair}</span>
                     </div>
                     <div className="text-[10px] text-muted-foreground font-mono mt-0.5 uppercase flex items-center gap-2">
                       {trade.source === "MT5" ? <span className="text-primary font-bold">MT5 SYNCED</span> : <span className="opacity-50 text-muted-foreground">MANUAL</span>}

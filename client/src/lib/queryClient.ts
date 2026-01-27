@@ -2,32 +2,8 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    let message = res.statusText;
-    const contentType = res.headers.get("content-type");
-    
-    if (contentType && contentType.includes("application/json")) {
-      try {
-        const data = await res.json();
-        message = data.error?.message || data.message || message;
-      } catch (e) {
-        // Fallback if JSON parsing fails despite content-type
-      }
-    } else {
-      try {
-        const text = await res.text();
-        if (text && text.length < 200) { // Only use short text responses as messages
-          message = text;
-        }
-      } catch (e) {
-        // Fallback
-      }
-    }
-    
-    if (res.status === 429) {
-      message = "Too many requests. Please wait a moment.";
-    }
-    
-    throw new Error(`${res.status}: ${message}`);
+    const text = (await res.text()) || res.statusText;
+    throw new Error(`${res.status}: ${text}`);
   }
 }
 
@@ -36,15 +12,9 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const token = localStorage.getItem("user_token");
-  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const res = await fetch(url, {
     method,
-    headers,
+    headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -59,14 +29,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const token = localStorage.getItem("user_token");
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
     const res = await fetch(queryKey.join("/") as string, {
-      headers,
       credentials: "include",
     });
 

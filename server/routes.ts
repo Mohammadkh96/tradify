@@ -4,15 +4,12 @@ import { storage } from "./storage";
 import { 
   insertUserSchema, 
   insertTradeSchema,
-  passwordResetTokens,
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import rateLimit from "express-rate-limit";
-import { eq, desc } from "drizzle-orm";
-import { db } from "./db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fintech_ultra_secret_2026";
 
@@ -46,7 +43,7 @@ const logger = (req: Request, res: Response, next: NextFunction) => {
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500, // Increased for polling and MT5 sync
+  max: 100,
   message: { error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests" } }
 });
 
@@ -70,6 +67,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   };
 
+  // Auth Routes
   app.post("/api/auth/register", authLimiter, validateSchema(insertUserSchema), async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -91,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         ipAddress: req.ip
       });
 
-      res.status(201).json({ success: true, token, user: { id: user.id, email: user.email, role: user.role } });
+      res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (error) {
       res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Registration failed" } });
     }
@@ -103,13 +101,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const user = await storage.getUserByEmail(email);
       
       if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-        return res.status(401).json({ 
-          success: false,
-          error: { 
-            code: "AUTH_INVALID_CREDENTIALS", 
-            message: "Invalid email or password" 
-          } 
-        });
+        return res.status(401).json({ error: { code: "AUTH_INVALID_CREDENTIALS", message: "Invalid email or password" } });
       }
 
       const accessToken = jwt.sign(
@@ -120,23 +112,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       await storage.updateUser(user.id, { lastLoginAt: new Date() });
 
-      res.json({ 
-        success: true, 
-        accessToken, 
-        user: { 
-          id: user.id, 
-          email: user.email, 
-          role: user.role 
-        } 
-      });
+      res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role } });
     } catch (error) {
-      res.status(500).json({ 
-        success: false,
-        error: { 
-          code: "INTERNAL_ERROR", 
-          message: "Login failed" 
-        } 
-      });
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Login failed" } });
     }
   });
 
@@ -148,65 +126,31 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.json(safeUser);
   });
 
-  app.post("/api/traders-hub/generate-token", authenticateToken, async (req: any, res) => {
+  // Trades API
+  app.get("/api/trades", authenticateToken, async (req: any, res) => {
     try {
-      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24);
-
-      // Use a dedicated table or reuse existing for sync tokens
-      // Based on frontend code, it expects a token back
-      await storage.createPasswordResetToken(req.user.sub, token, expiresAt);
-
-      res.json({ token });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to generate token" });
+      const tradeList = await storage.getTrades(req.user.sub);
+      res.json(tradeList);
+    } catch (err) {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to fetch trades" } });
     }
   });
 
-  app.post("/api/mt5/sync", async (req, res) => {
+  app.post("/api/trades", authenticateToken, validateSchema(insertTradeSchema), async (req: any, res) => {
     try {
-      const { token, userId, ...data } = req.body;
-      const [resetToken] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token)).limit(1);
-
-      if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
-        return res.status(403).json({ error: "Invalid or expired token" });
-      }
-
-      console.log(`[MT5 SYNC] Received data for user ${userId}`);
-      // Process sync data...
+      const trade = await storage.createTrade({ ...req.body, userId: req.user.sub });
       
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Sync failed" });
-    }
-  });
-
-  app.get("/api/mt5/status/:userId", authenticateToken, async (req, res) => {
-    try {
-      // Mock status for now to maintain contract
-      res.json({ status: "CONNECTED" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch status" });
-    }
-  });
-
-  app.get("/api/traders-hub/user-role/:userId", authenticateToken, async (req, res) => {
-    try {
-      const user = await storage.getUserById(req.params.userId);
-      const [token] = await db.select().from(passwordResetTokens)
-        .where(eq(passwordResetTokens.userId, req.params.userId))
-        .orderBy(desc(passwordResetTokens.id))
-        .limit(1);
-        
-      res.json({ 
-        userId: user?.id,
-        role: user?.role,
-        syncToken: token?.token,
-        subscriptionTier: "PRO" // Defaulting to maintain access
+      await storage.createAuditLog({
+        userId: req.user.sub,
+        action: "TRADE_CREATED",
+        entityType: "trades",
+        entityId: trade.id,
+        ipAddress: req.ip
       });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch user role" });
+
+      res.status(201).json(trade);
+    } catch (err) {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to create trade" } });
     }
   });
 }

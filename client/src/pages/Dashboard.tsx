@@ -1,6 +1,6 @@
 import { useTrades } from "@/hooks/use-trades";
 import { StatCard } from "@/components/StatCard";
-import { TradingChart } from "@/components/TradingChart";
+import { Navigation, MobileNav } from "@/components/Navigation";
 import { 
   TrendingUp, 
   Activity, 
@@ -36,7 +36,7 @@ export default function Dashboard() {
     staleTime: 0,
   });
   
-  const userId = user?.id; // Fixed: user schema now uses 'id' not 'userId'
+  const userId = user?.userId;
   
   const { data: mt5, refetch: refetchStatus } = useQuery<any>({
     queryKey: [`/api/mt5/status/${userId}`],
@@ -47,18 +47,19 @@ export default function Dashboard() {
 
   const { data: intelligence } = useQuery<any>({
     queryKey: [`/api/performance/intelligence/${userId}`],
-    enabled: !!userId,
     staleTime: 0,
   });
 
   const { data: snapshots } = useQuery<any[]>({
     queryKey: [`/api/mt5/snapshots/${userId}`],
-    enabled: !!userId,
     staleTime: 0,
   });
 
-  // Fixed: subscription info now comes from user object or separate subscription query
-  const subscription = user?.subscriptionTier || "FREE";
+  const { data: userRoleData } = useQuery<any>({
+    queryKey: [`/api/traders-hub/user-role/${localStorage.getItem("user_id") || "demo_user"}`],
+  });
+
+  const subscription = userRoleData?.subscriptionTier || "FREE";
   const isPro = subscription === "PRO";
 
   const { data: insights, isLoading: isInsightsLoading } = useQuery<any>({
@@ -75,8 +76,8 @@ export default function Dashboard() {
   }
 
   const allTrades = trades || [];
-  const wins = allTrades.filter(t => Number(t.profit) > 0).length;
-  const losses = allTrades.filter(t => Number(t.profit) < 0).length;
+  const wins = allTrades.filter(t => t.outcome === "Win").length;
+  const losses = allTrades.filter(t => t.outcome === "Loss").length;
   const total = allTrades.length;
   
   const winRate = total >= 5 ? ((wins / total) * 100).toFixed(1) : "N/A";
@@ -188,10 +189,6 @@ export default function Dashboard() {
               trend={stat.trend}
             />
           ))}
-        </div>
-
-        <div className="mb-8">
-          <TradingChart symbol="BTC/USD" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -379,10 +376,8 @@ export default function Dashboard() {
               {recentTrades.map((trade) => (
                 <div key={trade.id} className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-border">
                   <div>
-                    <div className="text-xs font-bold text-foreground">{trade.symbol || "N/A"}</div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {Number(trade.profit) >= 0 ? "Win" : "Loss"}
-                    </div>
+                    <div className="text-xs font-bold text-foreground">{trade.pair}</div>
+                    <div className="text-[10px] text-muted-foreground">{trade.outcome}</div>
                   </div>
                 </div>
               ))}
