@@ -173,9 +173,11 @@ export async function registerRoutes(
 
   app.get("/api/user", async (req, res) => {
     if (!req.session.userId) {
+      console.log(`[Auth] GET /api/user: No session userId found`);
       return res.status(401).json({ message: "Not authenticated" });
     }
     const user = await storage.getUserRole(req.session.userId);
+    console.log(`[Auth] GET /api/user: Found user ${req.session.userId}, Role=${user?.role}`);
     res.json(user);
   });
 
