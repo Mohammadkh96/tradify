@@ -84,7 +84,7 @@ export default function Auth() {
     if (!isFormValid) return;
     
     try {
-      const endpoint = isLogin ? "/api/login" : "/api/register";
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const payload = isLogin 
         ? { email, password }
         : { email, password, country, phoneNumber, timezone };
@@ -101,11 +101,12 @@ export default function Auth() {
         throw new Error(data.message || "Authentication failed");
       }
       
-      localStorage.setItem("user_id", data.userId);
-      queryClient.setQueryData(["/api/user"], data);
+      localStorage.setItem("user_id", data.user.id);
+      localStorage.setItem("accessToken", data.accessToken);
+      queryClient.setQueryData(["/api/user"], data.user);
       
       // Redirect based on role
-      if (data.role === "OWNER" || data.role === "ADMIN") {
+      if (data.user.role === "OWNER" || data.user.role === "ADMIN") {
         window.location.replace("/admin/overview");
       } else {
         window.location.replace("/dashboard");
