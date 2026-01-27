@@ -181,7 +181,7 @@ export class DatabaseStorage implements IStorage {
     for (const trade of trades) {
       try {
         const ticketStr = trade.ticket.toString();
-        // 1. Strict Deduplication: Check for existing ticket
+        // 1. Strict Deduplication: Check for existing ticket in mt5History
         const [existing] = await db.select().from(mt5History)
           .where(and(eq(mt5History.userId, userId), eq(mt5History.ticket, ticketStr)))
           .limit(1);
@@ -195,7 +195,8 @@ export class DatabaseStorage implements IStorage {
           const commission = parseFloat(trade.commission || 0);
           const swap = parseFloat(trade.swap || 0);
           const profit = parseFloat(trade.profit || 0);
-          const netPl = (profit + commission + swap).toFixed(2);
+          const netPlNum = profit + commission + swap;
+          const netPl = netPlNum.toFixed(2);
           
           await db.insert(mt5History).values({
             userId,
@@ -216,30 +217,35 @@ export class DatabaseStorage implements IStorage {
             netPl,
           });
 
-          // 3. Journal Integration: Only for verified wins/losses
-          const existingJournal = await db.select().from(tradeJournal)
+          // 3. Journal Integration: Check if already exists in trade_journal
+          const [existingJournal] = await db.select().from(tradeJournal)
             .where(and(eq(tradeJournal.userId, userId), eq(tradeJournal.notes, `MT5_TICKET_${ticketStr}`)))
             .limit(1);
 
-          if (existingJournal.length === 0) {
+          if (!existingJournal) {
+            console.log(`[MT5 Sync] Auto-journaling Ticket ${ticketStr} for ${userId}`);
+            const direction = (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Long" : "Short";
+            
             await this.createTrade({
               userId,
               pair: trade.symbol,
-              direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Long" : "Short",
+              direction,
               timeframe: "MT5_SYNC",
-              entryPrice: trade.price?.toString() || "0",
-              outcome: parseFloat(netPl) >= 0 ? "Win" : "Loss",
-              notes: `MT5_TICKET_${ticketStr}`,
+              htfBias: "Bullish", // Default for auto-sync, can be edited
               htfBiasClear: true,
               zoneValid: true,
-              entryConfirmed: true,
-              riskReward: "0",
-              htfBias: "Bullish",
-              structureState: "None",
-              liquidityStatus: "None",
               zoneValidity: "Valid",
               liquidityTaken: true,
+              liquidityStatus: "Taken",
               structureConfirmed: true,
+              structureState: "BOS",
+              entryConfirmed: true,
+              entryPrice: trade.price?.toString() || "0",
+              stopLoss: trade.sl?.toString() || null,
+              takeProfit: trade.tp?.toString() || null,
+              riskReward: "0",
+              outcome: netPlNum >= 0 ? "Win" : "Loss",
+              notes: `MT5_TICKET_${ticketStr}`,
             });
           }
         }

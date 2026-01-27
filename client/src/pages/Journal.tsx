@@ -27,12 +27,15 @@ export default function Journal() {
   const [dateFilter, setDateFilter] = useState<string>("all");
 
   const combinedTrades = useMemo(() => {
-    const manual = (manualTrades || []).map(t => ({
-      ...t,
-      source: "Manual",
-      netPl: 0, 
-      closeTime: t.createdAt
-    }));
+    // Only show manual trades that are NOT MT5 sync duplicates
+    const manual = (manualTrades || [])
+      .filter(t => !t.notes?.startsWith("MT5_TICKET_"))
+      .map(t => ({
+        ...t,
+        source: "Manual",
+        netPl: 0, 
+        closeTime: t.createdAt
+      }));
     
     const mt5 = (mt5History || []).map(t => ({
       id: t.id,
