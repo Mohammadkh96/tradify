@@ -97,12 +97,21 @@ export class DatabaseStorage implements IStorage {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
     currentPeriodEnd?: Date;
+    syncToken?: string;
   }) {
     const [user] = await db.update(userRole)
       .set({ ...info, updatedAt: new Date() })
       .where(eq(userRole.userId, userId))
       .returning();
     return user;
+  }
+
+  async updateCreatorProfile(userId: string, updates: any): Promise<CreatorProfile> {
+    const [updated] = await db.update(creatorProfiles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(creatorProfiles.userId, userId))
+      .returning();
+    return updated;
   }
 
   async updateUserSubscription(userId: string, tier: string): Promise<void> {
@@ -259,15 +268,17 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
     const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
     
-    let query = db.select().from(mt5History).where(eq(mt5History.userId, userId));
-    
     if (!isPro) {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      query = query.where(sql`${mt5History.closeTime} >= ${thirtyDaysAgo}`);
+      return await db.select().from(mt5History)
+        .where(and(eq(mt5History.userId, userId), sql`${mt5History.closeTime} >= ${thirtyDaysAgo}`))
+        .orderBy(desc(mt5History.closeTime));
     }
     
-    return await query.orderBy(desc(mt5History.closeTime));
+    return await db.select().from(mt5History)
+      .where(eq(mt5History.userId, userId))
+      .orderBy(desc(mt5History.closeTime));
   }
 
   async getDailySnapshots(userId: string): Promise<any[]> {
@@ -316,22 +327,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTrades(userId?: string): Promise<Trade[]> {
-    const query = db.select().from(tradeJournal);
     if (userId) {
       const [user] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
       const isPro = user?.subscriptionTier === "PRO";
       
-      let q = query.where(eq(tradeJournal.userId, userId));
-      
       if (!isPro) {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        q = q.where(sql`${tradeJournal.createdAt} >= ${thirtyDaysAgo}`);
+        return await db.select().from(tradeJournal)
+          .where(and(eq(tradeJournal.userId, userId), sql`${tradeJournal.createdAt} >= ${thirtyDaysAgo}`))
+          .orderBy(desc(tradeJournal.createdAt));
       }
       
-      return await q.orderBy(desc(tradeJournal.createdAt));
+      return await db.select().from(tradeJournal)
+        .where(eq(tradeJournal.userId, userId))
+        .orderBy(desc(tradeJournal.createdAt));
     }
-    return await query.orderBy(desc(tradeJournal.createdAt));
+    return await db.select().from(tradeJournal).orderBy(desc(tradeJournal.createdAt));
   }
 
   async getTrade(id: number): Promise<Trade | undefined> {
@@ -460,12 +472,21 @@ export class DatabaseStorage implements IStorage {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
     currentPeriodEnd?: Date;
+    syncToken?: string;
   }) {
     const [user] = await db.update(userRole)
       .set({ ...info, updatedAt: new Date() })
       .where(eq(userRole.userId, userId))
       .returning();
     return user;
+  }
+
+  async updateCreatorProfile(userId: string, updates: any): Promise<CreatorProfile> {
+    const [updated] = await db.update(creatorProfiles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(creatorProfiles.userId, userId))
+      .returning();
+    return updated;
   }
 
   async updateUserStripeInfo(userId: string, stripeInfo: {

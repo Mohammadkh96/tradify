@@ -168,4 +168,20 @@ router.get("/user-role/:userId", async (req, res) => {
   }
 });
 
+router.post("/generate-token", async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    await storage.updateUserSubscriptionInfo(userId, { syncToken: newToken });
+    
+    // Explicitly update the session if needed, but the client should refetch
+    res.json({ token: newToken });
+  } catch (error) {
+    console.error("Token generation error:", error);
+    res.status(500).json({ message: "Failed to generate token" });
+  }
+});
+
 export default router;

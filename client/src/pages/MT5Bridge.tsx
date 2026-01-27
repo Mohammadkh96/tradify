@@ -48,6 +48,8 @@ export default function MT5Bridge() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate both user and user-role to ensure UI updates everywhere
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: [`/api/traders-hub/user-role/${currentUserId}`] });
       toast({
         title: "Token Generated",
