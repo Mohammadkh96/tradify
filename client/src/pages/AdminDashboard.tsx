@@ -337,7 +337,6 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Business & System Health</p>
           </div>
-          <ThemeToggle />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -404,7 +403,6 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Control Access & Tiers</p>
           </div>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <Input 
               placeholder="Search by email..." 
               value={searchEmail}
