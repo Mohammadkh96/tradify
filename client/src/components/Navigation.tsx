@@ -26,7 +26,7 @@ const navItems = [
   { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
   { href: "/traders-hub", label: "Traders Hub", icon: Users },
   { href: "/knowledge-base", label: "Education", icon: BookOpen },
-  { href: "/risk", label: "Calculator", icon: Calculator },
+  { href: "/calculator", label: "Calculator", icon: Calculator },
   { href: "/pricing", label: "Plans", icon: CreditCard },
   { href: "/profile", label: "Profile", icon: User },
 ];

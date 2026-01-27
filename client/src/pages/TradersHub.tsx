@@ -130,7 +130,7 @@ export default function TradersHub() {
           <p className="text-slate-400 mt-1 uppercase text-xs font-bold tracking-widest">Community Learning & Research</p>
           <p className="text-[10px] text-slate-600 uppercase font-bold tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
             Community content reflects personal opinions and is not financial advice. 
-            <Link href="/risk" className="ml-2 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
+            <Link href="/risk-disclaimer" className="ml-2 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
           </p>
         </div>
 

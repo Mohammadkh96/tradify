@@ -29,7 +29,7 @@ function Router() {
   const isLandingPage = location === "/";
   const isPricingPage = location === "/pricing";
   const isAuthPage = location === "/login" || location === "/signup";
-  const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk";
+  const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer";
   const isAdminRoute = location.startsWith("/admin");
 
   const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
@@ -58,7 +58,7 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
-      <Route path="/risk" component={RiskDisclaimer} />
+      <Route path="/risk-disclaimer" component={RiskDisclaimer} />
 
       {/* Protected Routes */}
       <Route path="/dashboard">
@@ -73,7 +73,7 @@ function Router() {
       <Route path="/knowledge-base">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <KnowledgeBase />}
       </Route>
-      <Route path="/risk">
+      <Route path="/calculator">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <RiskCalculator />}
       </Route>
       <Route path="/mt5-bridge">
