@@ -577,10 +577,11 @@ export async function registerRoutes(
         const dd = peak - currentEquity;
         if (dd > maxDrawdown) maxDrawdown = dd;
 
-        // Session classification
+        // Session classification (London: 8-16 UTC, NY: 13-21 UTC, Asia: 0-8 UTC)
         let session: "London" | "NY" | "Asia";
-        if (hour >= 8 && hour < 16) session = "London";
-        else if (hour >= 13 && hour < 21) session = "NY";
+        if (hour >= 8 && hour < 13) session = "London"; // Pure London
+        else if (hour >= 13 && hour < 16) session = "NY"; // London/NY Overlap (Classified as NY for intensity)
+        else if (hour >= 16 && hour < 21) session = "NY"; // Pure NY
         else session = "Asia";
 
         sessions[session].pl += pl;
