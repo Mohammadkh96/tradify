@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle } from "lucide-react";
+import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { UserRole } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 const countries = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
@@ -241,8 +242,17 @@ export default function Profile() {
                       <li className="flex items-center gap-2 text-xs text-slate-400">
                         <CheckCircle2 size={12} className="text-emerald-500" /> MT5 Integration
                       </li>
+                      <li className="flex items-center gap-2 text-xs text-slate-400">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Educational Hub
+                      </li>
                       <li className="flex items-center gap-2 text-xs text-slate-400 opacity-50">
                         <XCircle size={12} className="text-rose-500" /> Advanced Analytics
+                      </li>
+                      <li className="flex items-center gap-2 text-xs text-slate-400 opacity-50">
+                        <XCircle size={12} className="text-rose-500" /> Unlimited History
+                      </li>
+                      <li className="flex items-center gap-2 text-xs text-slate-400 opacity-50">
+                        <XCircle size={12} className="text-rose-500" /> AI Insights Layer
                       </li>
                     </>
                   ) : (
@@ -251,7 +261,10 @@ export default function Profile() {
                         <CheckCircle2 size={12} className="text-emerald-500" /> Full Intelligence Suite
                       </li>
                       <li className="flex items-center gap-2 text-xs text-slate-400">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Priority Support
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Unlimited Journal Storage
+                      </li>
+                      <li className="flex items-center gap-2 text-xs text-slate-400">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Advanced Risk Analytics
                       </li>
                     </>
                   )}
@@ -259,9 +272,12 @@ export default function Profile() {
               </div>
 
               {user?.subscriptionTier === "FREE" && (
-                <Button className="w-full bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-emerald-500/20">
-                  Upgrade to PRO
-                </Button>
+                <Link href="/pricing">
+                  <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-emerald-500/20 group">
+                    Upgrade to PRO
+                    <ArrowRight size={14} className="ml-2 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </Link>
               )}
             </CardContent>
           </Card>
