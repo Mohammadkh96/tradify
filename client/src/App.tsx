@@ -20,6 +20,7 @@ import TradersHub from "@/pages/TradersHub";
 import Auth from "@/pages/Auth";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
+import { PublicNavbar } from "@/components/PublicNavbar";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import RiskDisclaimer from "@/pages/RiskDisclaimer";
@@ -60,6 +61,33 @@ function Router() {
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/risk-disclaimer" component={RiskDisclaimer} />
+      <Route path="/features" component={() => (
+        <div className="min-h-screen bg-background pt-20">
+          <PublicNavbar />
+          <div className="max-w-7xl mx-auto px-6 py-20 text-center">
+            <h1 className="text-4xl font-black uppercase tracking-tighter italic text-foreground mb-8">System Capabilities</h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto">Discover the institutional-grade features that power your trading discipline.</p>
+          </div>
+        </div>
+      )} />
+      <Route path="/how-it-works" component={() => (
+        <div className="min-h-screen bg-background pt-20">
+          <PublicNavbar />
+          <div className="max-w-7xl mx-auto px-6 py-20 text-center">
+            <h1 className="text-4xl font-black uppercase tracking-tighter italic text-foreground mb-8">Workflow Architecture</h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto">Connect your terminal, ingest data, and validate your execution logic.</p>
+          </div>
+        </div>
+      )} />
+      <Route path="/resources" component={() => (
+        <div className="min-h-screen bg-background pt-20">
+          <PublicNavbar />
+          <div className="max-w-7xl mx-auto px-6 py-20 text-center">
+            <h1 className="text-4xl font-black uppercase tracking-tighter italic text-foreground mb-8">Intelligence Resources</h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto">Educational content and FAQs to master your trading performance.</p>
+          </div>
+        </div>
+      )} />
 
       {/* Protected Routes */}
       <Route path="/dashboard">

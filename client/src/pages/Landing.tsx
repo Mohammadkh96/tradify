@@ -15,39 +15,13 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { PublicNavbar } from "@/components/PublicNavbar";
 
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
-              <TrendingUp size={24} strokeWidth={3} />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black text-xl tracking-tighter text-foreground uppercase italic leading-none">Tradify</span>
-              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">Terminal</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <ThemeToggle />
-            <Link href="/login">
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-bold uppercase tracking-widest text-xs">
-                Login
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold uppercase tracking-widest text-xs px-6">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
+      <PublicNavbar />
+      
       {/* Hero Section */}
       <section className="relative pt-40 pb-24 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl">
