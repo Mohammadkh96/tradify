@@ -132,50 +132,50 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex-1 text-slate-50 pb-20 md:pb-0">
+    <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
         <header className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-2">
               <LayoutDashboard className="text-emerald-500" />
               Trader Dashboard
             </h1>
             <div className="flex items-center gap-2 mt-1">
-              <p className="text-slate-400 text-sm">Market Overview & Performance Metrics</p>
-              <Link href="/risk" className="text-[10px] text-slate-600 hover:text-emerald-500 uppercase font-bold tracking-widest transition-colors">Risk Disclaimer</Link>
+              <p className="text-muted-foreground text-sm">Market Overview & Performance Metrics</p>
+              <Link href="/risk-disclaimer" className="text-[10px] text-muted-foreground hover:text-emerald-500 uppercase font-bold tracking-widest transition-colors">Risk Disclaimer</Link>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full h-10 w-10 border-slate-800 bg-slate-900/50 hover:bg-slate-800 text-slate-400"
+              className="rounded-full h-10 w-10 border-border bg-card hover:bg-accent text-muted-foreground"
               onClick={() => refetchStatus()}
             >
               <RefreshCw size={16} />
             </Button>
             {mt5?.status === "CONNECTED" ? (
-              <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 rounded-full px-5 py-2.5 backdrop-blur-sm">
+              <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                   <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">MT5 Live Sync</span>
                 </div>
-                <div className="w-px h-5 bg-slate-800" />
-                <div className="text-[10px] text-slate-400 font-mono font-bold uppercase">
+                <div className="w-px h-5 bg-border" />
+                <div className="text-[10px] text-muted-foreground font-mono font-bold uppercase">
                   ACTIVE
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-end gap-1">
-                <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 rounded-full px-5 py-2.5 backdrop-blur-sm">
+                <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                     <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">Terminal Offline</span>
                   </div>
                   {mt5?.lastSync && (
                     <>
-                      <div className="w-px h-5 bg-slate-800" />
-                      <div className="text-[10px] text-slate-400 font-mono font-bold">
+                      <div className="w-px h-5 bg-border" />
+                      <div className="text-[10px] text-muted-foreground font-mono font-bold">
                         Last: {format(new Date(mt5.lastSync), 'MMM d, HH:mm')}
                       </div>
                     </>

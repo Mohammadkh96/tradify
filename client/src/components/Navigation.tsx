@@ -94,13 +94,13 @@ export function Navigation() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-800 bg-slate-950 text-slate-300 hidden md:flex flex-col">
-      <div className="flex items-center gap-3 px-6 h-20 border-b border-slate-800">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-sidebar text-sidebar-foreground hidden md:flex flex-col">
+      <div className="flex items-center gap-3 px-6 h-20 border-b border-border">
         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
           <TrendingUp size={24} strokeWidth={3} />
         </div>
         <div className="flex flex-col">
-          <span className="font-black text-xl tracking-tighter text-white uppercase italic leading-none">Tradify</span>
+          <span className="font-black text-xl tracking-tighter text-foreground uppercase italic leading-none">Tradify</span>
           <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">Terminal</span>
         </div>
       </div>
@@ -116,8 +116,8 @@ export function Navigation() {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
                   isActive 
-                    ? "bg-slate-900 text-emerald-500 shadow-sm border border-slate-800" 
-                    : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/50"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-border" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
                 )}
               >
                 <Icon 
@@ -158,12 +158,12 @@ export function Navigation() {
         </button>
       </nav>
 
-      <div className="p-4 border-t border-slate-800 space-y-2">
+      <div className="p-4 border-t border-border space-y-2">
         {isAdmin && !isPro && (
           <button
             onClick={() => upgradeMutation.mutate()}
             disabled={upgradeMutation.isPending}
-            className="w-full bg-slate-900 hover:bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 rounded-lg p-3 transition-all flex items-center justify-center gap-2 group mb-2"
+            className="w-full bg-secondary hover:bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 rounded-lg p-3 transition-all flex items-center justify-center gap-2 group mb-2"
           >
             <ShieldCheck size={14} className="group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-black uppercase tracking-widest">
@@ -171,15 +171,15 @@ export function Navigation() {
             </span>
           </button>
         )}
-        <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
+        <div className="bg-secondary rounded-lg p-4 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-slate-500 uppercase">MT5 Status</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase">MT5 Status</h4>
             <div className={cn(
               "w-1.5 h-1.5 rounded-full",
               isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
             )} />
           </div>
-          <p className="text-[11px] text-slate-300">
+          <p className="text-[11px] text-foreground">
             {isConnected ? "CONNECTED" : "OFFLINE"}
           </p>
         </div>
@@ -192,7 +192,7 @@ export function MobileNav() {
   const [location] = useLocation();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 border-t border-slate-800 bg-slate-950 z-50 md:hidden flex justify-around p-3 pb-6">
+    <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background z-50 md:hidden flex justify-around p-3 pb-6">
       {navItems.slice(0, 4).map((item) => {
         const isActive = location === item.href;
         const Icon = item.icon;
@@ -201,7 +201,7 @@ export function MobileNav() {
           <Link key={item.href} href={item.href}>
             <div className={cn(
               "flex flex-col items-center gap-1 cursor-pointer",
-              isActive ? "text-emerald-500" : "text-slate-500"
+              isActive ? "text-emerald-500" : "text-muted-foreground"
             )}>
               <Icon size={24} />
               <span className="text-[10px] font-medium">{item.label}</span>
