@@ -36,7 +36,6 @@ function Router() {
   const { data: userRole, isLoading: isRoleLoading } = useQuery<any>({
     queryKey: ["/api/user"],
     retry: false,
-    staleTime: 0, // Ensure we check every time on refresh
   });
 
   const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";

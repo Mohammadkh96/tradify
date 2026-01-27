@@ -121,17 +121,14 @@ export default function Auth() {
 
       // Success logic
       const token = data.token || data.accessToken;
-      const user = data.user;
-      
-      if (token && user) {
+      if (token && data.user) {
         localStorage.setItem("user_token", token);
-        localStorage.setItem("user_id", user.id);
-        queryClient.setQueryData(["/api/user"], user);
+        localStorage.setItem("user_id", data.user.id);
+        queryClient.setQueryData(["/api/user"], data.user);
         
-        console.log("Login successful, redirecting based on role:", user.role);
-        
-        // Redirect based on role
-        if (user.role === "OWNER" || user.role === "ADMIN") {
+        // Use user.role from the data.user object
+        const role = data.user.role;
+        if (role === "OWNER" || role === "ADMIN") {
           window.location.href = "/admin/overview";
         } else {
           window.location.href = "/dashboard";
