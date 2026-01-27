@@ -51,7 +51,7 @@ export default function Checkout() {
 
   if (isUserLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#020617]">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
       </div>
     );
@@ -62,46 +62,46 @@ export default function Checkout() {
   const monthlyPrice = proProduct?.prices?.find((p: any) => p.recurring?.interval === 'month');
 
   return (
-    <div className="flex-1 bg-[#020617] text-slate-50 min-h-screen p-6 lg:p-10">
+    <div className="flex-1 bg-background text-foreground min-h-screen p-6 lg:p-10">
       <div className="max-w-4xl mx-auto space-y-8">
         <header>
-          <h1 className="text-3xl font-black text-white tracking-tighter uppercase italic mb-2">
+          <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase italic mb-2">
             Billing & <span className="text-emerald-500">Subscription</span>
           </h1>
-          <p className="text-slate-400">Manage your payment methods and subscription status.</p>
+          <p className="text-muted-foreground font-medium">Manage your payment methods and subscription status.</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Current Status */}
-          <Card className="bg-slate-950 border-slate-800 shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold text-white uppercase tracking-widest text-slate-400">Current Plan</CardTitle>
-              <CardDescription>Your current subscription tier and billing cycle.</CardDescription>
+          <Card className="bg-card border-border shadow-2xl overflow-hidden">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="text-lg font-black text-foreground uppercase tracking-widest">Current Plan</CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">Your subscription tier and cycle.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-800">
+            <CardContent className="pt-6 space-y-6">
+              <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
                 <div>
-                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Plan</p>
-                  <p className="text-xl font-bold text-white uppercase">{user?.subscriptionTier || "FREE"}</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Plan</p>
+                  <p className="text-xl font-black text-foreground uppercase tracking-tight italic">{user?.subscriptionTier || "FREE"}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Status</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Status</p>
                   <p className={cn(
-                    "text-sm font-bold uppercase",
-                    isPro ? "text-emerald-500" : "text-slate-400"
+                    "text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
+                    isPro ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
                   )}>
-                    {isPro ? "Active" : "No Active Subscription"}
+                    {isPro ? "Active" : "INACTIVE"}
                   </p>
                 </div>
               </div>
 
               {isPro && (
-                <div className="p-4 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
                   <div className="flex items-start gap-3">
                     <ShieldCheck className="text-emerald-500 w-5 h-5 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold text-white">Pro Features Enabled</p>
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight">Pro Features Enabled</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 font-bold leading-tight">
                         You have full access to performance intelligence, unlimited journal history, and priority MT5 sync.
                       </p>
                     </div>
@@ -119,7 +119,7 @@ export default function Checkout() {
                     }
                   }}
                   disabled={portalMutation.isPending}
-                  className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-xs"
+                  className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20"
                 >
                   {portalMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
                     <>
@@ -129,54 +129,54 @@ export default function Checkout() {
                   )}
                 </Button>
               ) : (
-                <p className="text-xs text-slate-500 text-center italic">
-                  Upgrade to unlock professional trading tools and deep performance analytics.
+                <p className="text-[10px] text-muted-foreground text-center font-black uppercase tracking-widest opacity-50">
+                  Upgrade to unlock institutional tools.
                 </p>
               )}
             </CardContent>
           </Card>
 
           {/* Payment Method / Upgrade */}
-          <Card className="bg-slate-950 border-slate-800 shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold text-white uppercase tracking-widest text-slate-400">
+          <Card className="bg-card border-border shadow-2xl overflow-hidden">
+            <CardHeader className="bg-muted/30 border-b border-border">
+              <CardTitle className="text-lg font-black text-foreground uppercase tracking-widest">
                 {isPro ? "Subscription Details" : "Upgrade to Pro"}
               </CardTitle>
-              <CardDescription>
-                {isPro ? "Details of your current provider." : "Select your preferred payment method."}
+              <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
+                {isPro ? "Current provider info." : "Select your payment method."}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="pt-6 space-y-6">
               {isPro ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-4 bg-slate-900/50 rounded-lg border border-slate-800">
+                  <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
                     {user?.subscriptionProvider === 'paypal' ? (
                       <SiPaypal className="text-[#0070ba] w-6 h-6" />
                     ) : (
                       <CreditCard className="text-emerald-500 w-6 h-6" />
                     )}
                     <div>
-                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Provider</p>
-                      <p className="text-sm font-bold text-white uppercase">{user?.subscriptionProvider || "Stripe"}</p>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Provider</p>
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">{user?.subscriptionProvider || "Stripe"}</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] leading-relaxed">
-                    Subscription management is handled securely through the provider's official portal.
+                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-relaxed text-center opacity-50 italic">
+                    Secure institutional billing.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex gap-2 p-1 bg-slate-900/50 rounded-lg border border-slate-800">
+                  <div className="flex gap-2 p-1 bg-background rounded-xl border border-border">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setPaymentMethod("stripe")}
                       className={cn(
-                        "flex-1 gap-2 text-[10px] font-bold uppercase tracking-widest h-8",
-                        paymentMethod === "stripe" ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "text-slate-400"
+                        "flex-1 gap-2 text-[10px] font-black uppercase tracking-widest h-10 transition-all",
+                        paymentMethod === "stripe" ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" : "text-muted-foreground hover:bg-muted"
                       )}
                     >
-                      <CreditCard size={12} />
+                      <CreditCard size={14} />
                       Stripe
                     </Button>
                     <Button
@@ -184,11 +184,11 @@ export default function Checkout() {
                       size="sm"
                       onClick={() => setPaymentMethod("paypal")}
                       className={cn(
-                        "flex-1 gap-2 text-[10px] font-bold uppercase tracking-widest h-8",
-                        paymentMethod === "paypal" ? "bg-[#0070ba] text-white hover:bg-[#005ea6]" : "text-slate-400"
+                        "flex-1 gap-2 text-[10px] font-black uppercase tracking-widest h-10 transition-all",
+                        paymentMethod === "paypal" ? "bg-[#0070ba] text-white shadow-md" : "text-muted-foreground hover:bg-muted"
                       )}
                     >
-                      <SiPaypal size={12} />
+                      <SiPaypal size={14} />
                       PayPal
                     </Button>
                   </div>
@@ -197,19 +197,19 @@ export default function Checkout() {
                     <Button 
                       onClick={() => monthlyPrice && checkoutMutation.mutate(monthlyPrice.id)}
                       disabled={checkoutMutation.isPending || !monthlyPrice}
-                      className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-xs"
+                      className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20"
                     >
                       {checkoutMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : "Subscribe with Stripe"}
                     </Button>
                   ) : (
-                    <div className="w-full bg-white rounded-md p-1">
+                    <div className="w-full bg-white rounded-xl p-2 shadow-inner border border-border">
                       <PayPalButton amount="19.00" currency="USD" intent="subscription" />
                     </div>
                   )}
 
-                  <div className="flex items-start gap-2 text-[10px] text-slate-500 uppercase tracking-widest bg-slate-900/30 p-3 rounded border border-slate-800/50">
+                  <div className="flex items-start gap-2 text-[9px] text-muted-foreground font-black uppercase tracking-widest bg-muted/30 p-3 rounded-lg border border-border/50 italic">
                     <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
-                    <span>Subscriptions automatically renew. Cancel anytime in your billing settings.</span>
+                    <span>Auto-renew active. Cancel anytime.</span>
                   </div>
                 </div>
               )}
