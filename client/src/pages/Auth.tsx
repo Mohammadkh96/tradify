@@ -106,7 +106,7 @@ export default function Auth() {
       queryClient.setQueryData(["/api/user"], data.user);
       
       // Redirect based on role
-      if (data.user.role === "OWNER" || data.user.role === "ADMIN") {
+      if (data.user.role === "admin") {
         window.location.replace("/admin/overview");
       } else {
         window.location.replace("/dashboard");

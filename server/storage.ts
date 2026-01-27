@@ -66,13 +66,16 @@ export class DatabaseStorage implements IStorage {
       passwordHash: user.passwordHash,
       role: "user",
       status: "active",
+      country: user.country,
+      phoneNumber: user.phoneNumber,
+      timezone: user.timezone,
     }).returning();
     
     // Create default settings
     await db.insert(accountSettings).values({
       userId: newUser.id,
       theme: "dark",
-      timezone: "UTC",
+      timezone: user.timezone || "UTC",
     });
     
     return newUser;
