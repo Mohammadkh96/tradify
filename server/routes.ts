@@ -655,23 +655,13 @@ export async function registerRoutes(
         return res.json(existing[0]);
       }
 
-      // AI Performance Insights rules: Must consume ONLY aggregated performance data
-      const metadata = {
-        totalTrades: intelligenceData.totalTrades,
-        winRate: intelligenceData.winRate,
-        profitFactor: intelligenceData.profitFactor,
-        bestSession: intelligenceData.bestSession,
-        totalPl: intelligenceData.totalPl
-      };
+      // Generate new insight
+      const intelligenceRes = await fetch(`${req.protocol}://${req.get('host')}/api/performance/intelligence/${userId}`, {
+        headers: { cookie: req.headers.cookie || "" }
+      });
+      const intelligenceData = await intelligenceRes.json();
 
-      const prompt = `As a professional trading analyst, provide a concise performance insight based on these metrics:
-        Total Trades: ${metadata.totalTrades}
-        Win Rate: ${metadata.winRate}%
-        Profit Factor: ${metadata.profitFactor}
-        Best Session: ${metadata.bestSession}
-        Total P&L: $${metadata.totalPl}
-        
-        Analyze the relationship between session performance and profitability. Keep it under 3 paragraphs. Focus on discipline and rules.`;
+      if (intelligenceData.message === "No data available" || (intelligenceData.totalTrades || 0) < 5) {
         return res.json({ insightText: "Insufficient data for AI analysis. Continue trading to unlock insights." });
       }
 
