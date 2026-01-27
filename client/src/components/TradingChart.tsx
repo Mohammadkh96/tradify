@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { createChart, ColorType, IChartApi, ISeriesApi } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickSeries, LineSeries } from 'lightweight-charts';
 import { Card } from '@/components/ui/card';
 
 interface TradingChartProps {
@@ -9,8 +9,8 @@ interface TradingChartProps {
 export function TradingChart({ symbol = 'BTC/USD' }: TradingChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
-  const smaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | any>(null);
+  const smaSeriesRef = useRef<ISeriesApi<'Line'> | any>(null);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -34,21 +34,21 @@ export function TradingChart({ symbol = 'BTC/USD' }: TradingChartProps) {
 
     chartRef.current = chart;
 
-    const candlestickSeries = chart.addCandlestickSeries({
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#10b981',
       downColor: '#ef4444',
       borderVisible: false,
       wickUpColor: '#10b981',
       wickDownColor: '#ef4444',
-    }) as any;
-    candleSeriesRef.current = candlestickSeries;
+    });
+    candleSeriesRef.current = candlestickSeries as any;
 
-    const smaSeries = chart.addLineSeries({
+    const smaSeries = chart.addSeries(LineSeries, {
       color: '#3b82f6',
       lineWidth: 2,
       title: 'SMA 20',
-    }) as any;
-    smaSeriesRef.current = smaSeries;
+    });
+    smaSeriesRef.current = smaSeries as any;
 
     // Generate mock data
     const generateData = () => {
