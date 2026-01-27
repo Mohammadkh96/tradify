@@ -140,7 +140,7 @@ export function Navigation() {
                 "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group mt-4",
                 location.startsWith("/admin")
                   ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                  : "text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/10"
+                  : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/10"
               )}
             >
               <Shield size={18} className={location.startsWith("/admin") ? "text-emerald-500" : "text-slate-500 group-hover:text-emerald-400"} />
