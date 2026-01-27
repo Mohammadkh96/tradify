@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { api } from "@shared/routes";
+import { Card } from "@/components/ui/card";
 
 const formSchema = insertTradeSchema.extend({
   entryPrice: z.string().optional(),

@@ -197,6 +197,9 @@ export const validationResultSchema = z.object({
   violations: z.array(z.string()).optional(),
   matchedSetup: z.string().optional(),
 });
+
+export type ValidationResult = z.infer<typeof validationResultSchema>;
+
 export const adminAuditLog = pgTable("admin_audit_log", {
   id: serial("id").primaryKey(),
   adminId: text("admin_id").notNull(),

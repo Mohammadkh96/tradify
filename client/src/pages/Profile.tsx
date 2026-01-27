@@ -92,49 +92,49 @@ export default function Profile() {
   if (isLoading) return <div className="p-8 text-emerald-500 font-mono">LOADING PROFILE...</div>;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
+    <div className="p-8 max-w-4xl mx-auto space-y-8 text-foreground">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter">Terminal Settings</h1>
-          <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Manage your institutional account</p>
+          <h1 className="text-3xl font-black text-foreground uppercase italic tracking-tighter">Terminal Settings</h1>
+          <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Manage your institutional account</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg">
-          <CreditCard size={16} className="text-emerald-500" />
-          <span className="text-xs font-black text-white uppercase tracking-widest">{user?.subscriptionTier} PLAN</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg">
+          <CreditCard size={16} className="text-primary" />
+          <span className="text-xs font-black text-foreground uppercase tracking-widest">{user?.subscriptionTier} PLAN</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
-          <Card className="bg-slate-950 border-slate-800 shadow-2xl">
-            <CardHeader className="border-b border-slate-900/50">
+          <Card className="bg-card border-border shadow-2xl">
+            <CardHeader className="border-b border-border/50">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                  <User size={20} className="text-emerald-500" />
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <User size={20} className="text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-white uppercase italic tracking-tight">Personal Information</CardTitle>
-                  <CardDescription className="text-slate-500 uppercase text-[10px] font-bold tracking-widest">Identity and localization</CardDescription>
+                  <CardTitle className="text-foreground uppercase italic tracking-tight">Personal Information</CardTitle>
+                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest">Identity and localization</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Terminal (Read-only)</label>
-                  <Input value={user?.userId} disabled className="bg-slate-900/50 border-slate-800 text-slate-400 h-11" />
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Terminal (Read-only)</label>
+                  <Input value={user?.userId} disabled className="bg-muted border-border text-muted-foreground h-11" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
                     <Globe size={10} /> Country
                   </label>
                   <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger className="bg-slate-900 border-slate-800 text-white h-11 uppercase text-[10px] tracking-widest">
+                    <SelectTrigger className="bg-background border-border text-foreground h-11 uppercase text-[10px] tracking-widest">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                    <SelectContent className="bg-card border-border text-foreground">
                       {countries.map((c) => (
-                        <SelectItem key={c} value={c} className="focus:bg-emerald-500 focus:text-slate-950 text-[10px] uppercase tracking-widest">
+                        <SelectItem key={c} value={c} className="focus:bg-primary focus:text-primary-foreground text-[10px] uppercase tracking-widest">
                           {c}
                         </SelectItem>
                       ))}
@@ -142,16 +142,16 @@ export default function Profile() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
                     <Clock size={10} /> Time Zone
                   </label>
                   <Select value={timezone} onValueChange={setTimezone}>
-                    <SelectTrigger className="bg-slate-900 border-slate-800 text-white h-11 uppercase text-[10px] tracking-widest">
+                    <SelectTrigger className="bg-background border-border text-foreground h-11 uppercase text-[10px] tracking-widest">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 h-64">
+                    <SelectContent className="bg-card border-border text-foreground h-64">
                       {timezones.map((tz) => (
-                        <SelectItem key={tz} value={tz} className="focus:bg-emerald-500 focus:text-slate-950 text-[10px] uppercase tracking-widest">
+                        <SelectItem key={tz} value={tz} className="focus:bg-primary focus:text-primary-foreground text-[10px] uppercase tracking-widest">
                           {tz.replace(/_/g, ' ')}
                         </SelectItem>
                       ))}
@@ -159,22 +159,22 @@ export default function Profile() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
                     <Phone size={10} /> Phone (Optional)
                   </label>
                   <Input 
                     value={phoneNumber} 
                     onChange={(e) => setPhoneNumber(e.target.value)} 
                     placeholder="+1 234 567 890"
-                    className="bg-slate-900 border-slate-800 text-white h-11 focus:ring-emerald-500/20 focus:border-emerald-500/50" 
+                    className="bg-background border-border text-foreground h-11 focus:ring-primary/20 focus:border-primary/50" 
                   />
                 </div>
               </div>
-              <div className="pt-4 border-t border-slate-900 flex justify-end">
+              <div className="pt-4 border-t border-border flex justify-end">
                 <Button 
                   onClick={() => updateMutation.mutate()}
                   disabled={updateMutation.isPending}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs h-11 px-8"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-xs h-11 px-8"
                 >
                   <Save size={16} className="mr-2" />
                   {updateMutation.isPending ? "Syncing..." : "Save Changes"}
@@ -183,23 +183,23 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-950 border-slate-800 shadow-2xl border-rose-500/20">
-            <CardHeader className="border-b border-slate-900/50">
+          <Card className="bg-card border-border shadow-2xl border-destructive/20">
+            <CardHeader className="border-b border-border/50">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-rose-500/10 rounded-lg">
-                  <AlertTriangle size={20} className="text-rose-500" />
+                <div className="p-2 bg-destructive/10 rounded-lg">
+                  <AlertTriangle size={20} className="text-destructive" />
                 </div>
                 <div>
-                  <CardTitle className="text-white uppercase italic tracking-tight">Danger Zone</CardTitle>
-                  <CardDescription className="text-slate-500 uppercase text-[10px] font-bold tracking-widest">Irreversible account actions</CardDescription>
+                  <CardTitle className="text-foreground uppercase italic tracking-tight">Danger Zone</CardTitle>
+                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest">Irreversible account actions</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-200">Deactivate Account</h4>
-                  <p className="text-xs text-slate-500 mt-1">Temporarily disable your terminal access. Data is retained.</p>
+                  <h4 className="text-sm font-bold text-foreground">Deactivate Account</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Temporarily disable your terminal access. Data is retained.</p>
                 </div>
                 <Button 
                   variant="outline" 
@@ -208,7 +208,7 @@ export default function Profile() {
                       deactivateMutation.mutate();
                     }
                   }}
-                  className="border-rose-500/50 text-rose-500 hover:bg-rose-500/10 uppercase font-bold text-[10px] tracking-widest"
+                  className="border-destructive/50 text-destructive hover:bg-destructive/10 uppercase font-bold text-[10px] tracking-widest"
                 >
                   Deactivate
                 </Button>
@@ -218,53 +218,53 @@ export default function Profile() {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-950 border-slate-800 shadow-2xl">
-            <CardHeader className="border-b border-slate-900/50">
-              <CardTitle className="text-white uppercase italic tracking-tight text-lg">Plan Overview</CardTitle>
+          <Card className="bg-card border-border shadow-2xl">
+            <CardHeader className="border-b border-border/50">
+              <CardTitle className="text-foreground uppercase italic tracking-tight text-lg">Plan Overview</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
+              <div className="p-4 bg-muted rounded-xl border border-border">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Current Plan</span>
-                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-full">Active</span>
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Current Plan</span>
+                  <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded-full">Active</span>
                 </div>
-                <div className="text-2xl font-black text-white uppercase italic tracking-tighter">{user?.subscriptionTier}</div>
+                <div className="text-2xl font-black text-foreground uppercase italic tracking-tighter">{user?.subscriptionTier}</div>
               </div>
               
               <div className="space-y-2">
-                <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Included Features</h5>
+                <h5 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Included Features</h5>
                 <ul className="space-y-2">
                   {user?.subscriptionTier === "FREE" ? (
                     <>
-                      <li className="flex items-center gap-2 text-xs text-slate-400">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Basic Journaling
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 size={12} className="text-primary" /> Basic Journaling
                       </li>
-                      <li className="flex items-center gap-2 text-xs text-slate-400">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> MT5 Integration
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 size={12} className="text-primary" /> MT5 Integration
                       </li>
-                      <li className="flex items-center gap-2 text-xs text-slate-400">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Educational Hub
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 size={12} className="text-primary" /> Educational Hub
                       </li>
-                      <li className="flex items-center gap-2 text-xs text-slate-400 opacity-50">
-                        <XCircle size={12} className="text-rose-500" /> Advanced Analytics
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground opacity-50">
+                        <XCircle size={12} className="text-destructive" /> Advanced Analytics
                       </li>
-                      <li className="flex items-center gap-2 text-xs text-slate-400 opacity-50">
-                        <XCircle size={12} className="text-rose-500" /> Unlimited History
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground opacity-50">
+                        <XCircle size={12} className="text-destructive" /> Unlimited History
                       </li>
-                      <li className="flex items-center gap-2 text-xs text-slate-400 opacity-50">
-                        <XCircle size={12} className="text-rose-500" /> AI Insights Layer
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground opacity-50">
+                        <XCircle size={12} className="text-destructive" /> AI Insights Layer
                       </li>
                     </>
                   ) : (
                     <>
-                      <li className="flex items-center gap-2 text-xs text-slate-400">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Full Intelligence Suite
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 size={12} className="text-primary" /> Full Intelligence Suite
                       </li>
-                      <li className="flex items-center gap-2 text-xs text-slate-400">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Unlimited Journal Storage
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 size={12} className="text-primary" /> Unlimited Journal Storage
                       </li>
-                      <li className="flex items-center gap-2 text-xs text-slate-400">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Advanced Risk Analytics
+                      <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 size={12} className="text-primary" /> Advanced Risk Analytics
                       </li>
                     </>
                   )}
@@ -273,7 +273,7 @@ export default function Profile() {
 
               {user?.subscriptionTier === "FREE" && (
                 <Link href="/pricing">
-                  <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-emerald-500/20 group">
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-primary/20 group">
                     Upgrade to PRO
                     <ArrowRight size={14} className="ml-2 transition-transform group-hover:translate-x-1" />
                   </Button>
