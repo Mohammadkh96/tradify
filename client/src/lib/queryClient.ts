@@ -3,16 +3,24 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let message = res.statusText;
-    try {
-      const text = await res.text();
+    const contentType = res.headers.get("content-type");
+    
+    if (contentType && contentType.includes("application/json")) {
       try {
-        const data = JSON.parse(text);
-        message = data.error?.message || data.message || text || message;
-      } catch {
-        message = text || message;
+        const data = await res.json();
+        message = data.error?.message || data.message || message;
+      } catch (e) {
+        // Fallback if JSON parsing fails despite content-type
       }
-    } catch {
-      // Fallback
+    } else {
+      try {
+        const text = await res.text();
+        if (text && text.length < 200) { // Only use short text responses as messages
+          message = text;
+        }
+      } catch (e) {
+        // Fallback
+      }
     }
     
     if (res.status === 429) {
