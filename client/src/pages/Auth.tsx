@@ -137,6 +137,12 @@ export default function Auth() {
   const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const response = await fetch("/api/user/reset-password-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+
       if (!response.ok) {
         let message = "Reset request failed";
         const contentType = response.headers.get("content-type");
@@ -155,11 +161,11 @@ export default function Auth() {
         description: data.message,
       });
       setShowForgot(false);
-    } catch (err) {
+    } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to process reset request.",
+        description: err.message || "Failed to process reset request.",
       });
     }
   };
