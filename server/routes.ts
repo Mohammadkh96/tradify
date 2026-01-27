@@ -118,15 +118,35 @@ export async function registerRoutes(
   app.post("/api/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      const normalizedEmail = email.toLowerCase();
+      const normalizedEmail = email.trim().toLowerCase();
       
-      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail)).limit(1);
+      console.log(`[Auth] Login attempt for: ${normalizedEmail}`);
       
-      if (!user || user.role === "DEACTIVATED") {
-        return res.status(401).json({ message: "Account disabled or not found" });
+      const users = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail));
+      console.log(`[Auth] Found ${users.length} users with this email`);
+      
+      if (users.length === 0) {
+        console.log(`[Auth] User not found: ${normalizedEmail}`);
+        return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      if (!user.password || !(await bcrypt.compare(password, user.password))) {
+      const user = users[0];
+
+      if (user.role === "DEACTIVATED") {
+        return res.status(401).json({ message: "Account disabled" });
+      }
+
+      if (!user.password) {
+        console.log(`[Auth] No password set for: ${normalizedEmail}`);
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      console.log(`[Auth] Comparing password for ${normalizedEmail}...`);
+      const isPasswordMatch = await bcrypt.compare(password, user.password);
+      console.log(`[Auth] Password match result: ${isPasswordMatch}`);
+      
+      if (!isPasswordMatch) {
+        console.log(`[Auth] Password mismatch for: ${normalizedEmail}`);
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
