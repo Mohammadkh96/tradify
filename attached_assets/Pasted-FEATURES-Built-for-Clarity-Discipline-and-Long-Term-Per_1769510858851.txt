@@ -1,0 +1,199 @@
+FEATURES
+Built for Clarity, Discipline, and Long-Term Performance
+
+Tradify helps traders understand how they trade, why results change, and where discipline breaks down — without signals, predictions, or execution.
+
+Trade Visualization
+
+Entries & Exits on Price Charts
+Review every executed trade directly on price charts to evaluate timing, execution quality, and structure.
+
+P&L Calendar
+Track profit and loss by day, week, and month to uncover performance patterns and behavioral cycles.
+
+Performance Analytics
+
+Advanced Performance Analytics
+Analyze results across key dimensions:
+
+Win rate and expectancy
+
+Drawdowns and volatility
+
+Risk-to-reward consistency
+
+Performance over time
+
+Designed to reveal patterns, not promises.
+
+Session & Context Analysis
+Understand how performance varies across trading sessions and market conditions.
+
+Behavioral & Discipline Insights (AI)
+
+Behavioral Pattern Detection
+Identify behaviors that impact performance, such as:
+
+Overtrading
+
+Risk escalation
+
+Inconsistent position sizing
+
+Discipline breakdowns
+
+Insights are explanatory, never predictive or directive.
+
+Smart Journaling
+
+Automated Trading Journal
+Trades are logged automatically, with support for:
+
+Notes and reflections
+
+Strategy and session tags
+
+Contextual review
+
+Trade Sharing & Exports
+Export or share trade summaries and performance snapshots when needed.
+
+Market Context & Learning
+
+Institutional Knowledge Base
+Access clear explanations of professional trading concepts, risk frameworks, and market behavior — written to improve understanding, not encourage speculation.
+
+HOW IT WORKS
+A Simple Workflow That Fits Your Trading Process
+
+Tradify integrates into your existing workflow without changing how you trade.
+
+1. Connect Your Trading Account
+
+Securely connect your trading account to Tradify.
+
+Tradify is read-only.
+It never places trades, modifies orders, or interferes with execution.
+
+2. Your Trading Data Is Analyzed
+
+Tradify processes your activity to evaluate:
+
+Performance metrics
+
+Risk behavior
+
+Consistency and discipline
+
+Session and contextual impact
+
+There are no signals, recommendations, or forecasts.
+
+3. Insights Are Generated
+
+Tradify highlights:
+
+What contributes positively to performance
+
+What introduces unnecessary risk
+
+Where discipline weakens over time
+
+Each insight focuses on cause and effect, not future price direction.
+
+4. Review, Reflect, Improve
+
+Use analytics, charts, and journaling to review performance objectively and improve decision-making gradually.
+
+Progress is measured, not assumed.
+
+What Tradify Is Not
+
+Not a signal service
+
+Not copy trading
+
+Not automated execution
+
+Tradify is a decision-support and discipline platform.
+
+RESOURCES
+Knowledge and Support for Serious Traders
+
+Resources are designed to help traders understand markets, behavior, and risk with clarity and objectivity.
+
+Knowledge Base
+
+Clear, structured explanations covering:
+
+Risk management principles
+
+Trading psychology and discipline
+
+Market structure concepts
+
+Performance evaluation methods
+
+Written without hype or promises.
+
+Trading Discipline Guides
+
+Practical guides focused on:
+
+Avoiding overtrading
+
+Managing drawdowns
+
+Improving consistency
+
+Conducting effective trade reviews
+
+Built for long-term improvement.
+
+Frequently Asked Questions
+
+Answers to common questions about:
+
+Account connections
+
+Data privacy and security
+
+AI usage boundaries
+
+Plans and pricing
+
+Transparency is a priority.
+
+Security & Data Transparency
+
+Learn how Tradify:
+
+Protects user data
+
+Enforces read-only integrations
+
+Handles AI responsibly
+
+Avoids conflicts of interest
+
+Support & Contact
+
+Access:
+
+Help articles
+
+Platform updates
+
+Contact options
+
+Support is focused on clarity, accuracy, and trust.
+
+Final positioning note (important)
+
+No profit guarantees
+
+No predictive language
+
+No exaggerated claims
+
+This content is intentionally calm, professional, and credible — aligned with Tradify’s long-term vision.
