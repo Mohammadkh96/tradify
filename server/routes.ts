@@ -131,6 +131,7 @@ export async function registerRoutes(
       }
 
       const user = users[0];
+      console.log(`[Auth] Debug info for ${normalizedEmail}: Role=${user.role}, HasPassword=${!!user.password}`);
 
       if (user.role === "DEACTIVATED") {
         return res.status(401).json({ message: "Account disabled" });
@@ -146,7 +147,7 @@ export async function registerRoutes(
       console.log(`[Auth] Password match result: ${isPasswordMatch}`);
       
       if (!isPasswordMatch) {
-        console.log(`[Auth] Password mismatch for: ${normalizedEmail}`);
+        console.log(`[Auth] Password mismatch for: ${normalizedEmail}. Input length: ${password.length}, Hash starts with: ${user.password.substring(0, 10)}`);
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
