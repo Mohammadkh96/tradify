@@ -100,8 +100,10 @@ export default function Auth() {
 
       if (contentType && contentType.includes("application/json")) {
         data = await response.json();
+        console.log("Auth response data:", data);
       } else {
         const text = await response.text();
+        console.error("Non-JSON auth response:", text);
         if (response.status === 429) {
           throw new Error("Too many attempts. Please try again later.");
         }
@@ -118,18 +120,20 @@ export default function Auth() {
       }
 
       // Success logic
-      if (data.token || data.accessToken) {
-        const token = data.token || data.accessToken;
+      const token = data.token || data.accessToken;
+      if (token && data.user) {
         localStorage.setItem("user_token", token);
-        localStorage.setItem("user_id", data.user?.id);
+        localStorage.setItem("user_id", data.user.id);
         queryClient.setQueryData(["/api/user"], data.user);
-      }
-      
-      // Redirect based on role
-      if (data.role === "OWNER" || data.role === "ADMIN") {
-        window.location.replace("/admin/overview");
+        
+        // Redirect based on role
+        if (data.user.role === "OWNER" || data.user.role === "ADMIN") {
+          window.location.replace("/admin/overview");
+        } else {
+          window.location.replace("/dashboard");
+        }
       } else {
-        window.location.replace("/dashboard");
+        throw new Error("Authentication succeeded but session data is missing");
       }
       
       toast({

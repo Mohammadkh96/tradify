@@ -101,7 +101,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       const user = await storage.getUserByEmail(email);
       
       if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-        return res.status(401).json({ error: { code: "AUTH_INVALID_CREDENTIALS", message: "Invalid email or password" } });
+        return res.status(401).json({ 
+          success: false,
+          error: { 
+            code: "AUTH_INVALID_CREDENTIALS", 
+            message: "Invalid email or password" 
+          } 
+        });
       }
 
       const accessToken = jwt.sign(
@@ -112,9 +118,23 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       await storage.updateUser(user.id, { lastLoginAt: new Date() });
 
-      res.json({ success: true, accessToken, user: { id: user.id, email: user.email, role: user.role } });
+      res.json({ 
+        success: true, 
+        accessToken, 
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          role: user.role 
+        } 
+      });
     } catch (error) {
-      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Login failed" } });
+      res.status(500).json({ 
+        success: false,
+        error: { 
+          code: "INTERNAL_ERROR", 
+          message: "Login failed" 
+        } 
+      });
     }
   });
 
