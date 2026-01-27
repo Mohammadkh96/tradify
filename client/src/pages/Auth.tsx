@@ -103,7 +103,11 @@ export default function Auth() {
           message = errorData.message || errorData.error?.message || message;
         } else {
           const text = await response.text();
-          if (text && text.length < 200) message = text;
+          if (text && text.length < 200) {
+            message = text;
+          } else if (response.status === 429) {
+            message = "Too many attempts. Please try again later.";
+          }
         }
         throw new Error(message);
       }
