@@ -67,17 +67,22 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   };
 
-  // Auth Routes
   app.post("/api/auth/register", authLimiter, validateSchema(insertUserSchema), async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log(`[AUTH] Registration attempt for: ${email}`);
       const existing = await storage.getUserByEmail(email);
       if (existing) {
-        return res.status(400).json({ error: { code: "EMAIL_EXISTS", message: "Email already exists" } });
+        console.log(`[AUTH] Registration failed: Email ${email} already exists`);
+        return res.status(400).json({ 
+          success: false,
+          error: { code: "EMAIL_EXISTS", message: "Email already exists" } 
+        });
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await storage.createUser({ email, passwordHash });
+      console.log(`[AUTH] User created successfully: ${user.id}`);
       
       const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
       
@@ -90,17 +95,35 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
 
       res.status(201).json({ success: true, token, user: { id: user.id, email: user.email, role: user.role } });
-    } catch (error) {
-      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Registration failed" } });
+    } catch (error: any) {
+      console.error(`[AUTH] Registration error:`, error);
+      res.status(500).json({ 
+        success: false,
+        error: { code: "INTERNAL_ERROR", message: "Registration failed: " + error.message } 
+      });
     }
   });
 
   app.post("/api/auth/login", authLimiter, async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log(`[AUTH] Login attempt for: ${email}`);
       const user = await storage.getUserByEmail(email);
       
-      if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      if (!user) {
+        console.log(`[AUTH] Login failed: User not found for ${email}`);
+        return res.status(401).json({ 
+          success: false,
+          error: { 
+            code: "AUTH_INVALID_CREDENTIALS", 
+            message: "Invalid email or password" 
+          } 
+        });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.passwordHash);
+      if (!isMatch) {
+        console.log(`[AUTH] Login failed: Incorrect password for ${email}`);
         return res.status(401).json({ 
           success: false,
           error: { 
@@ -117,6 +140,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       );
 
       await storage.updateUser(user.id, { lastLoginAt: new Date() });
+      console.log(`[AUTH] Login successful for: ${email}`);
 
       res.json({ 
         success: true, 
@@ -127,12 +151,13 @@ export async function registerRoutes(app: Express): Promise<void> {
           role: user.role 
         } 
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error(`[AUTH] Login error:`, error);
       res.status(500).json({ 
         success: false,
         error: { 
           code: "INTERNAL_ERROR", 
-          message: "Login failed" 
+          message: "Login failed: " + error.message 
         } 
       });
     }

@@ -121,17 +121,20 @@ export default function Auth() {
 
       // Success logic
       const token = data.token || data.accessToken;
-      if (token && data.user) {
+      const user = data.user;
+      
+      if (token && user) {
         localStorage.setItem("user_token", token);
-        localStorage.setItem("user_id", data.user.id);
-        queryClient.setQueryData(["/api/user"], data.user);
+        localStorage.setItem("user_id", user.id);
+        queryClient.setQueryData(["/api/user"], user);
         
-        // Use user.role from the data.user object
-        const role = data.user.role;
-        if (role === "OWNER" || role === "ADMIN") {
-          window.location.replace("/admin/overview");
+        console.log("Login successful, redirecting based on role:", user.role);
+        
+        // Redirect based on role
+        if (user.role === "OWNER" || user.role === "ADMIN") {
+          window.location.href = "/admin/overview";
         } else {
-          window.location.replace("/dashboard");
+          window.location.href = "/dashboard";
         }
       } else {
         throw new Error("Authentication succeeded but session data is missing");
