@@ -15,7 +15,10 @@ export default function PayPalSubscriptionButton() {
       const response = await apiRequest("POST", "/api/paypal/subscribe");
       const data = await response.json();
       
-      if (data.approvalUrl) {
+      if (data.approvalUrl && data.subscriptionId) {
+        // Store subscription ID before redirecting to PayPal
+        // This ensures we can activate even if PayPal doesn't pass it in URL
+        sessionStorage.setItem('pending_paypal_subscription_id', data.subscriptionId);
         window.location.href = data.approvalUrl;
       } else {
         throw new Error("No approval URL received");

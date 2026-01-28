@@ -17,11 +17,18 @@ export default function Checkout() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const subscriptionStatus = params.get('subscription');
-    const subscriptionId = params.get('subscription_id');
+    // Try to get subscription_id from URL first, then from sessionStorage
+    let subscriptionId = params.get('subscription_id');
+    if (!subscriptionId) {
+      subscriptionId = sessionStorage.getItem('pending_paypal_subscription_id');
+    }
     
     const activateSubscription = async () => {
       if (subscriptionStatus === 'success' && subscriptionId && !isActivating) {
         setIsActivating(true);
+        // Clear the stored subscription ID
+        sessionStorage.removeItem('pending_paypal_subscription_id');
+        
         try {
           // Call server to activate subscription (fetches details from PayPal and updates user)
           const res = await apiRequest("POST", "/api/paypal/subscription/activate", { subscriptionId });
@@ -53,7 +60,7 @@ export default function Checkout() {
         // Clean URL
         window.history.replaceState({}, '', '/checkout');
       } else if (subscriptionStatus === 'success' && !subscriptionId) {
-        // No subscription_id in URL, just refresh and show message
+        // No subscription_id available, just refresh and show message
         toast({
           title: "Subscription Processing",
           description: "Your subscription is being processed. Please wait a moment.",
@@ -61,6 +68,8 @@ export default function Checkout() {
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         window.history.replaceState({}, '', '/checkout');
       } else if (subscriptionStatus === 'cancelled') {
+        // Clear any pending subscription ID on cancel
+        sessionStorage.removeItem('pending_paypal_subscription_id');
         toast({
           title: "Subscription Cancelled",
           description: "You cancelled the subscription process.",
