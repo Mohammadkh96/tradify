@@ -440,29 +440,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserSubscriptionInfo(userId: string, info: {
-    subscriptionStatus?: string;
-    subscriptionTier?: string;
-    currentPlan?: string;
-    renewalDate?: Date;
-    paypalSubscriptionId?: string;
-    syncToken?: string;
-  }) {
-    const [user] = await db.update(userRole)
-      .set({ ...info, updatedAt: new Date() })
-      .where(eq(userRole.userId, userId))
-      .returning();
-    return user;
-  }
-
-  async updateCreatorProfile(userId: string, updates: any): Promise<CreatorProfile> {
-    const [updated] = await db.update(creatorProfiles)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(creatorProfiles.userId, userId))
-      .returning();
-    return updated;
-  }
-
   async updateUserStripeInfo(userId: string, stripeInfo: any) {
     // Removed Stripe integration
   }
