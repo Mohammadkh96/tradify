@@ -69,7 +69,7 @@ export async function registerRoutes(
   }));
 
   // Add body parser limits for MT5 payloads
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   
   // Registration Endpoint
