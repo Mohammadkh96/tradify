@@ -13,6 +13,7 @@ import Journal from "@/pages/Journal";
 import Strategies from "@/pages/Strategies";
 import CreateStrategy from "@/pages/CreateStrategy";
 import EditStrategy from "@/pages/EditStrategy";
+import StrategyValidator from "@/pages/StrategyValidator";
 import KnowledgeBase from "@/pages/KnowledgeBase";
 import RiskCalculator from "@/pages/RiskCalculator";
 import MT5Bridge from "@/pages/MT5Bridge";
@@ -348,6 +349,9 @@ function Router() {
       </Route>
       <Route path="/strategies/:id/edit">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <EditStrategy />}
+      </Route>
+      <Route path="/strategies/validate">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <StrategyValidator />}
       </Route>
       <Route path="/knowledge-base">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <KnowledgeBase />}

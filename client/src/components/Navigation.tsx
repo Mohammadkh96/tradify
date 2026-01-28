@@ -17,7 +17,8 @@ import {
   ChevronDown,
   ChevronRight,
   FolderOpen,
-  Plus
+  Plus,
+  ClipboardCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -38,6 +39,7 @@ const navItems = [
 const strategiesSubNav = [
   { href: "/strategies", label: "My Strategies", icon: FolderOpen },
   { href: "/strategies/create", label: "Create Strategy", icon: Plus },
+  { href: "/strategies/validate", label: "Validate Trade", icon: ClipboardCheck },
 ];
 
 export function Navigation() {

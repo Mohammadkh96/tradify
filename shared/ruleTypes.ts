@@ -22,6 +22,8 @@ export const RuleType = {
 
 export type RuleTypeKey = typeof RuleType[keyof typeof RuleType];
 
+export type NumberComparator = 'gte' | 'lte' | 'eq';
+
 export interface RuleTypeDefinition {
   key: RuleTypeKey;
   label: string;
@@ -35,6 +37,10 @@ export interface RuleTypeDefinition {
     max?: number;
     step?: number;
   };
+  numberComparator?: NumberComparator;
+  displayPrefix?: string;
+  displaySuffix?: string;
+  inputPlaceholder?: string;
 }
 
 export const RULE_TYPE_CATALOG: Record<RuleTypeKey, RuleTypeDefinition> = {
@@ -90,6 +96,10 @@ export const RULE_TYPE_CATALOG: Record<RuleTypeKey, RuleTypeDefinition> = {
       max: 10,
       step: 0.1,
     },
+    numberComparator: 'lte',
+    displayPrefix: 'Max:',
+    displaySuffix: '%',
+    inputPlaceholder: 'Risk %',
   },
   [RuleType.MIN_RISK_REWARD]: {
     key: RuleType.MIN_RISK_REWARD,
@@ -103,6 +113,10 @@ export const RULE_TYPE_CATALOG: Record<RuleTypeKey, RuleTypeDefinition> = {
       max: 10,
       step: 0.5,
     },
+    numberComparator: 'gte',
+    displayPrefix: 'Min:',
+    displaySuffix: ':1',
+    inputPlaceholder: 'R:R ratio',
   },
   [RuleType.MAX_TRADES_PER_DAY]: {
     key: RuleType.MAX_TRADES_PER_DAY,
@@ -116,6 +130,9 @@ export const RULE_TYPE_CATALOG: Record<RuleTypeKey, RuleTypeDefinition> = {
       max: 20,
       step: 1,
     },
+    numberComparator: 'lte',
+    displayPrefix: 'Max:',
+    inputPlaceholder: 'Trades',
   },
   [RuleType.SESSION_ALLOWED]: {
     key: RuleType.SESSION_ALLOWED,
@@ -129,6 +146,7 @@ export const RULE_TYPE_CATALOG: Record<RuleTypeKey, RuleTypeDefinition> = {
       { value: 'new_york', label: 'New York Session' },
       { value: 'overlap', label: 'London/NY Overlap' },
     ],
+    inputPlaceholder: 'Select option...',
   },
   [RuleType.TIME_WINDOW_ALLOWED]: {
     key: RuleType.TIME_WINDOW_ALLOWED,
