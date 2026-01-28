@@ -183,13 +183,108 @@ export async function registerRoutes(
     await capturePaypalOrder(req, res);
   });
 
-  app.post("/api/paypal/webhook", express.json(), async (req, res) => {
+  app.post("/api/paypal/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
     try {
-      await paypalService.handleWebhook(req.body);
+      const rawBody = req.body.toString();
+      const payload = JSON.parse(rawBody);
+      await paypalService.handleWebhook(payload, req.headers, rawBody);
       res.sendStatus(200);
     } catch (error) {
       console.error("PayPal webhook error:", error);
       res.sendStatus(500);
+    }
+  });
+
+  // Activate subscription after PayPal redirect (called from Checkout page)
+  app.post("/api/paypal/subscription/activate", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { subscriptionId } = req.body;
+      
+      if (!subscriptionId) {
+        return res.status(400).json({ error: "Subscription ID required" });
+      }
+
+      const activated = await paypalService.activateSubscriptionByUser(userId, subscriptionId);
+      
+      if (activated) {
+        res.json({ success: true, message: "Subscription activated" });
+      } else {
+        res.status(400).json({ error: "Failed to activate subscription" });
+      }
+    } catch (error) {
+      console.error("Subscription activation error:", error);
+      res.status(500).json({ error: "Failed to activate subscription" });
+    }
+  });
+
+  // PayPal Subscription endpoints
+  app.post("/api/paypal/subscribe", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const protocol = req.get('x-forwarded-proto') || req.protocol;
+      const host = req.get('host');
+      const baseUrl = `${protocol}://${host}`;
+      
+      const result = await paypalService.createSubscription(
+        userId,
+        `${baseUrl}/checkout?subscription=success`,
+        `${baseUrl}/checkout?subscription=cancelled`
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("PayPal subscription error:", error);
+      res.status(500).json({ error: error.message || "Failed to create subscription" });
+    }
+  });
+
+  app.get("/api/paypal/subscription", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUserRole(userId);
+      
+      if (!user?.paypalSubscriptionId) {
+        return res.status(404).json({ error: "No active subscription found" });
+      }
+      
+      const details = await paypalService.getSubscriptionDetails(user.paypalSubscriptionId);
+      res.json({
+        subscriptionId: details.id,
+        status: details.status,
+        startTime: details.start_time,
+        nextBillingTime: details.billing_info?.next_billing_time,
+        lastPayment: details.billing_info?.last_payment,
+        planName: details.plan_id,
+      });
+    } catch (error: any) {
+      console.error("Get subscription error:", error);
+      res.status(500).json({ error: error.message || "Failed to get subscription details" });
+    }
+  });
+
+  app.post("/api/paypal/subscription/cancel", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUserRole(userId);
+      
+      if (!user?.paypalSubscriptionId) {
+        return res.status(404).json({ error: "No active subscription found" });
+      }
+      
+      await paypalService.cancelSubscription(user.paypalSubscriptionId, req.body.reason || 'User requested cancellation');
+      
+      // Only update status to cancelled - user keeps PRO access until billing period ends
+      // The actual downgrade to FREE happens when PayPal sends BILLING.SUBSCRIPTION.EXPIRED webhook
+      await storage.updateUserSubscriptionInfo(userId, {
+        subscriptionStatus: 'cancelled',
+        // Keep subscriptionTier as PRO - user retains access until billing period ends
+      });
+      
+      res.json({ success: true, message: "Subscription cancelled successfully" });
+    } catch (error: any) {
+      console.error("Cancel subscription error:", error);
+      res.status(500).json({ error: error.message || "Failed to cancel subscription" });
     }
   });
 

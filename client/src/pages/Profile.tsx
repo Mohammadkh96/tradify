@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { UserRole } from "@shared/schema";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { SiPaypal } from "react-icons/si";
 import { Link } from "wouter";
 
 const countries = [
@@ -52,6 +62,13 @@ export default function Profile() {
     queryKey: ["/api/user"],
   });
 
+  const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+
+  const { data: subscription, isLoading: isLoadingSubscription } = useQuery<any>({
+    queryKey: ["/api/paypal/subscription"],
+    enabled: isPro && !!user?.paypalSubscriptionId,
+  });
+
   const [country, setCountry] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [timezone, setTimezone] = useState("");
@@ -63,6 +80,25 @@ export default function Profile() {
       setTimezone(user.timezone || "");
     }
   }, [user]);
+
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/paypal/subscription/cancel", { reason: "User cancelled from profile" });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/paypal/subscription"] });
+      toast({ title: "Subscription Cancelled", description: "Your subscription has been cancelled. You'll retain Pro access until the end of your billing period." });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Cancellation Failed", 
+        description: error.message || "Failed to cancel subscription. Please try again.", 
+        variant: "destructive" 
+      });
+    },
+  });
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -275,6 +311,98 @@ export default function Profile() {
               )}
             </CardContent>
           </Card>
+
+          {/* Subscription Management - Only for Pro users */}
+          {isPro && (
+            <Card className="bg-card border-border shadow-2xl overflow-hidden">
+              <CardHeader className="border-b border-border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#0070ba]/10 rounded-lg">
+                    <SiPaypal size={20} className="text-[#0070ba]" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">Subscription</CardTitle>
+                    <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Manage your billing</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                {isLoadingSubscription ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 text-emerald-500 animate-spin" />
+                  </div>
+                ) : subscription ? (
+                  <>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 size={14} className="text-emerald-500" />
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Status</span>
+                        </div>
+                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{subscription.status}</span>
+                      </div>
+                      
+                      {subscription.nextBillingTime && (
+                        <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-muted-foreground" />
+                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Next Billing</span>
+                          </div>
+                          <span className="text-[10px] font-black text-foreground uppercase tracking-widest">
+                            {new Date(subscription.nextBillingTime).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+                        <div className="flex items-center gap-2">
+                          <DollarSign size={14} className="text-muted-foreground" />
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Amount</span>
+                        </div>
+                        <span className="text-[10px] font-black text-foreground uppercase tracking-widest">$19.00/month</span>
+                      </div>
+                    </div>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 uppercase font-black text-[10px] tracking-widest mt-2"
+                          data-testid="button-cancel-subscription"
+                        >
+                          Cancel Subscription
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card border-border">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-foreground font-black uppercase tracking-tight">Cancel Subscription?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-muted-foreground">
+                            Are you sure you want to cancel your Pro subscription? You'll retain access until the end of your current billing period, then your account will be downgraded to Free.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="uppercase font-black text-[10px] tracking-widest">Keep Subscription</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => cancelSubscriptionMutation.mutate()}
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground uppercase font-black text-[10px] tracking-widest"
+                            disabled={cancelSubscriptionMutation.isPending}
+                          >
+                            {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Yes, Cancel"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                      Subscription details unavailable
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

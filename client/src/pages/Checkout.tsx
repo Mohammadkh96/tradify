@@ -1,12 +1,77 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
+import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
-import PayPalButton from "@/components/PayPalButton";
+import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function Checkout() {
+  const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useQuery<any>({ queryKey: ["/api/user"] });
+  const [isActivating, setIsActivating] = useState(false);
+
+  // Handle subscription return URLs
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const subscriptionStatus = params.get('subscription');
+    const subscriptionId = params.get('subscription_id');
+    
+    const activateSubscription = async () => {
+      if (subscriptionStatus === 'success' && subscriptionId && !isActivating) {
+        setIsActivating(true);
+        try {
+          // Call server to activate subscription (fetches details from PayPal and updates user)
+          const res = await apiRequest("POST", "/api/paypal/subscription/activate", { subscriptionId });
+          const result = await res.json();
+          
+          if (result.success) {
+            toast({
+              title: "Subscription Activated!",
+              description: "Welcome to Tradify Pro! Your subscription is now active.",
+            });
+          } else {
+            toast({
+              title: "Subscription Pending",
+              description: "Your subscription is being processed. It may take a moment to activate.",
+            });
+          }
+          // Refresh user data
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        } catch (error) {
+          console.error("Activation error:", error);
+          toast({
+            title: "Subscription Processing",
+            description: "Your subscription is being set up. Please refresh in a moment.",
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        } finally {
+          setIsActivating(false);
+        }
+        // Clean URL
+        window.history.replaceState({}, '', '/checkout');
+      } else if (subscriptionStatus === 'success' && !subscriptionId) {
+        // No subscription_id in URL, just refresh and show message
+        toast({
+          title: "Subscription Processing",
+          description: "Your subscription is being processed. Please wait a moment.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        window.history.replaceState({}, '', '/checkout');
+      } else if (subscriptionStatus === 'cancelled') {
+        toast({
+          title: "Subscription Cancelled",
+          description: "You cancelled the subscription process.",
+          variant: "destructive",
+        });
+        window.history.replaceState({}, '', '/checkout');
+      }
+    };
+    
+    activateSubscription();
+  }, [toast, isActivating]);
 
   if (isUserLoading) {
     return (
@@ -67,11 +132,11 @@ export default function Checkout() {
 
               {isPro ? (
                 <Button 
-                  onClick={() => window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank')}
+                  onClick={() => window.location.href = '/profile'}
                   className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20"
                   data-testid="button-manage-subscription"
                 >
-                  Manage on PayPal
+                  Manage Subscription in Profile
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
@@ -89,7 +154,7 @@ export default function Checkout() {
                 {isPro ? "Subscription Details" : "Upgrade to Pro"}
               </CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
-                {isPro ? "Current provider info." : "Subscribe via PayPal."}
+                {isPro ? "Current provider info." : "$19/month - Cancel anytime."}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
@@ -102,8 +167,12 @@ export default function Checkout() {
                       <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">PayPal</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2 p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                    <CheckCircle2 className="text-emerald-500 w-4 h-4" />
+                    <span className="text-xs text-emerald-500 font-bold">Subscription Active</span>
+                  </div>
                   <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-relaxed text-center opacity-50 italic">
-                    Secure institutional billing.
+                    Manage your subscription in Profile.
                   </p>
                 </div>
               ) : (
@@ -112,17 +181,15 @@ export default function Checkout() {
                     <SiPaypal className="text-[#0070ba] w-6 h-6" />
                     <div>
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Payment Method</p>
-                      <p className="text-sm font-black text-foreground uppercase tracking-tight">PayPal</p>
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight">PayPal Subscription</p>
                     </div>
                   </div>
 
-                  <div className="w-full bg-white rounded-xl p-2 shadow-inner border border-border">
-                    <PayPalButton amount="19.00" currency="USD" intent="CAPTURE" />
-                  </div>
+                  <PayPalSubscriptionButton />
 
                   <div className="flex items-start gap-2 text-[9px] text-muted-foreground font-black uppercase tracking-widest bg-muted/30 p-3 rounded-lg border border-border/50 italic">
                     <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
-                    <span>Auto-renew active. Cancel anytime via PayPal.</span>
+                    <span>Recurring monthly billing. Cancel anytime via Profile.</span>
                   </div>
                 </div>
               )}
