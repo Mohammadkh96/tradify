@@ -1236,10 +1236,20 @@ Output exactly 1-3 bullet points.`;
         return res.status(404).json({ message: "Trade not found" });
       }
 
+      // Verify trade ownership
+      if (trade.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to evaluate this trade" });
+      }
+
       // Get the strategy and its rules
       const strategy = await storage.getStrategy(strategyId);
       if (!strategy) {
         return res.status(404).json({ message: "Strategy not found" });
+      }
+
+      // Verify strategy ownership
+      if (strategy.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to use this strategy" });
       }
 
       const rules = await storage.getStrategyRules(strategyId);
@@ -1297,10 +1307,17 @@ Output exactly 1-3 bullet points.`;
   app.get("/api/compliance/trade/:tradeId", requireAuth, async (req, res) => {
     try {
       const tradeId = parseInt(req.params.tradeId);
+      const userId = req.session.userId!;
+      
       const result = await storage.getTradeComplianceResult(tradeId);
       
       if (!result) {
         return res.status(404).json({ message: "No compliance evaluation found for this trade" });
+      }
+      
+      // Verify ownership
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to view this compliance result" });
       }
       
       res.json(result);

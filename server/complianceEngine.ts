@@ -69,7 +69,8 @@ function evaluateMultiselectRule(
   actualValue: string | undefined,
   expectedValues: string[]
 ): boolean {
-  if (!actualValue || expectedValues.length === 0) return true;
+  if (expectedValues.length === 0) return true;
+  if (!actualValue) return false;
   return expectedValues.includes(actualValue);
 }
 
@@ -77,8 +78,8 @@ function evaluateTimeRangeRule(
   tradeTime: string | undefined,
   timeRange: { start: string; end: string } | string
 ): boolean {
-  if (!tradeTime) return true;
   if (typeof timeRange === "string" && timeRange === "") return true;
+  if (!tradeTime) return false;
   
   let start: string, end: string;
   if (typeof timeRange === "object" && timeRange !== null) {
@@ -95,7 +96,7 @@ function evaluateTimeRangeRule(
   const endMinutes = parseTimeToMinutes(end);
   
   if (tradeMinutes === null || startMinutes === null || endMinutes === null) {
-    return true;
+    return false;
   }
   
   return tradeMinutes >= startMinutes && tradeMinutes <= endMinutes;
@@ -118,8 +119,6 @@ export function evaluateTradeCompliance(
   
   for (const rule of rules) {
     const ruleDefinition = RULE_TYPE_CATALOG[rule.ruleType as RuleTypeKey];
-    if (!ruleDefinition) continue;
-    
     const expectedValue = parseRuleValue(rule.options);
     let actualValue: unknown;
     let passed = false;
@@ -197,7 +196,8 @@ export function evaluateTradeCompliance(
         break;
         
       default:
-        passed = true;
+        passed = false;
+        violationReason = `Unknown rule type: ${rule.ruleType}`;
     }
     
     ruleEvaluations.push({
