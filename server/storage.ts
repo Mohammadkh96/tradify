@@ -262,17 +262,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]> {
-    const [user] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
-    const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
-    
-    if (!isPro) {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return await db.select().from(mt5History)
-        .where(and(eq(mt5History.userId, userId), sql`${mt5History.closeTime} >= ${thirtyDaysAgo}`))
-        .orderBy(desc(mt5History.closeTime));
-    }
-    
     return await db.select().from(mt5History)
       .where(eq(mt5History.userId, userId))
       .orderBy(desc(mt5History.closeTime));
@@ -325,25 +314,11 @@ export class DatabaseStorage implements IStorage {
 
   async getTrades(userId?: string): Promise<Trade[]> {
     if (userId) {
-      const [user] = await db.select().from(userRole).where(eq(userRole.userId, userId)).limit(1);
-      const isPro = user?.subscriptionTier === "PRO";
-      
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      // Get manual trades
-      let journalQuery = db.select().from(tradeJournal).where(eq(tradeJournal.userId, userId));
-      if (!isPro) {
-        journalQuery = journalQuery.where(sql`${tradeJournal.createdAt} >= ${thirtyDaysAgo}`);
-      }
-      const journalTrades = await journalQuery.orderBy(desc(tradeJournal.createdAt));
-
-      // Get MT5 history and ensure they are represented in the journal
-      const mt5HistoryTrades = await this.getMT5History(userId);
-      
-      // Return the journalTrades as the absolute single source of truth for the UI.
-      // Filter out duplicate entries if any, though syncMT5History handles this.
-      return journalTrades;
+      // Return ALL journal trades for this user. 
+      // Removed the 30-day filter to ensure 100% visibility of all MT5 synced trades.
+      return await db.select().from(tradeJournal)
+        .where(eq(tradeJournal.userId, userId))
+        .orderBy(desc(tradeJournal.createdAt));
     }
     return await db.select().from(tradeJournal).orderBy(desc(tradeJournal.createdAt));
   }
