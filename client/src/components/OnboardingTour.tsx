@@ -217,116 +217,150 @@ export function OnboardingTour() {
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Dark overlay without blur so highlighted items are clearly visible */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-slate-950/90 z-[100]"
             onClick={skipTour}
           />
 
+          {/* Professional tour card with gradient border and glow */}
           <motion.div
             ref={panelRef}
             tabIndex={-1}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
+            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className={cn(
-              "fixed z-[101] w-[90vw] max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden outline-none",
+              "fixed z-[101] w-[90vw] max-w-lg outline-none",
               step.position === "center" && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
               step.position === "right" && "top-1/2 left-1/2 md:left-[calc(256px+2rem)] -translate-y-1/2 md:translate-x-0 -translate-x-1/2",
               step.position === "left" && "top-1/2 right-8 -translate-y-1/2"
             )}
           >
-            <div className="h-1 bg-muted">
-              <motion.div
-                className="h-full bg-emerald-500"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                    <Icon size={24} className="text-emerald-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-lg text-foreground uppercase tracking-tight">
-                      {step.title}
-                    </h3>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                      Step {currentStep + 1} of {tourSteps.length}
-                    </span>
-                  </div>
+            {/* Outer glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-emerald-400/10 to-emerald-500/20 rounded-2xl blur-xl" />
+            
+            {/* Gradient border wrapper */}
+            <div className="relative p-[1px] rounded-2xl bg-gradient-to-b from-emerald-500/50 via-emerald-500/20 to-transparent">
+              <div className="relative bg-slate-900 rounded-2xl overflow-hidden">
+                
+                {/* Animated progress bar */}
+                <div className="h-1 bg-slate-800">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                  />
                 </div>
-                <button
-                  onClick={skipTour}
-                  data-testid="button-skip-tour"
-                  className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                >
-                  <X size={18} />
-                </button>
-              </div>
 
-              <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                {step.description}
-              </p>
-
-              <div className="flex items-center justify-between gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className="gap-1"
-                  data-testid="button-tour-prev"
-                >
-                  <ChevronLeft size={16} />
-                  Back
-                </Button>
-
-                <div className="flex gap-1.5">
-                  {tourSteps.map((_, i) => (
+                {/* Header section */}
+                <div className="p-6 pb-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      {/* Icon with gradient background */}
+                      <motion.div 
+                        className="relative h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center border border-emerald-500/30"
+                        animate={{ 
+                          boxShadow: ["0 0 20px rgba(16, 185, 129, 0.2)", "0 0 30px rgba(16, 185, 129, 0.4)", "0 0 20px rgba(16, 185, 129, 0.2)"]
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <Icon size={26} className="text-emerald-400" />
+                      </motion.div>
+                      <div>
+                        <h3 className="font-black text-xl text-white uppercase tracking-wide">
+                          {step.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-widest">
+                            Step {currentStep + 1}
+                          </span>
+                          <span className="text-slate-600">/</span>
+                          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">
+                            {tourSteps.length}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                     <button
-                      key={i}
-                      onClick={() => setCurrentStep(i)}
-                      className={cn(
-                        "w-2 h-2 rounded-full transition-all",
-                        i === currentStep
-                          ? "bg-emerald-500 w-6"
-                          : i < currentStep
-                          ? "bg-emerald-500/50"
-                          : "bg-muted-foreground/30"
-                      )}
-                      data-testid={`button-tour-dot-${i}`}
-                    />
-                  ))}
+                      onClick={skipTour}
+                      data-testid="button-skip-tour"
+                      className="p-2.5 hover:bg-slate-800 rounded-xl transition-all text-slate-500 hover:text-slate-300 border border-transparent hover:border-slate-700"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
                 </div>
 
-                <Button
-                  size="sm"
-                  onClick={nextStep}
-                  className="gap-1"
-                  data-testid="button-tour-next"
-                >
-                  {currentStep === tourSteps.length - 1 ? "Finish" : "Next"}
-                  <ChevronRight size={16} />
-                </Button>
-              </div>
-            </div>
+                {/* Content section */}
+                <div className="px-6 py-5">
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
 
-            <div className="px-6 pb-4">
-              <button
-                onClick={skipTour}
-                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest font-bold"
-                data-testid="button-skip-tour-link"
-              >
-                Skip tour
-              </button>
+                {/* Navigation section */}
+                <div className="px-6 pb-5">
+                  <div className="flex items-center justify-between gap-4 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={prevStep}
+                      disabled={currentStep === 0}
+                      className="gap-1.5 text-slate-400 hover:text-white disabled:opacity-30"
+                      data-testid="button-tour-prev"
+                    >
+                      <ChevronLeft size={16} />
+                      Back
+                    </Button>
+
+                    {/* Step indicators */}
+                    <div className="flex gap-2">
+                      {tourSteps.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentStep(i)}
+                          className={cn(
+                            "h-2 rounded-full transition-all duration-300",
+                            i === currentStep
+                              ? "w-8 bg-gradient-to-r from-emerald-400 to-emerald-500"
+                              : i < currentStep
+                              ? "w-2 bg-emerald-500/60"
+                              : "w-2 bg-slate-600"
+                          )}
+                          data-testid={`button-tour-dot-${i}`}
+                        />
+                      ))}
+                    </div>
+
+                    <Button
+                      size="sm"
+                      onClick={nextStep}
+                      className="gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold shadow-lg shadow-emerald-500/20"
+                      data-testid="button-tour-next"
+                    >
+                      {currentStep === tourSteps.length - 1 ? "Finish" : "Next"}
+                      <ChevronRight size={16} />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 pb-4 flex justify-center">
+                  <button
+                    onClick={skipTour}
+                    className="text-[10px] text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-widest font-medium"
+                    data-testid="button-skip-tour-link"
+                  >
+                    Skip tour
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         </>
