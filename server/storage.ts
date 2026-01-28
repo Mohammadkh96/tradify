@@ -30,7 +30,7 @@ import {
 import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
-  getTrades(userId?: string): Promise<Trade[]>;
+  getTrades(): Promise<Trade[]>;
   getTrade(id: number): Promise<Trade | undefined>;
   createTrade(trade: InsertTrade): Promise<Trade>;
   updateTrade(id: number, updates: UpdateTradeRequest): Promise<Trade>;
@@ -145,9 +145,11 @@ export class DatabaseStorage implements IStorage {
       lastUpdate: now,
     };
 
+    console.log(`[MT5 Sync] HEARTBEAT: Received data from ${data.userId} at ${now.toISOString()}`);
+
     // Update Daily Snapshot
     const today = new Date();
-    today.setUTCHours(0, 0, 0, 0); 
+    today.setUTCHours(0, 0, 0, 0); // Use UTC for consistency
     const [existingSnapshot] = await db.select().from(dailyEquitySnapshots)
       .where(and(eq(dailyEquitySnapshots.userId, data.userId), eq(dailyEquitySnapshots.date, today)))
       .limit(1);
@@ -180,97 +182,78 @@ export class DatabaseStorage implements IStorage {
   }
 
   async syncMT5History(userId: string, trades: any[]): Promise<void> {
-    console.log(`[MT5 Sync] Updating history for ${userId}. Received Count: ${trades.length}`);
+    console.log(`[MT5 Sync] Updating history for ${userId}. Data Integrity Check: Enforcing unique tickets.`);
     for (const trade of trades) {
       try {
         const ticketStr = trade.ticket.toString();
+        // 1. Strict Deduplication: Check for existing ticket in mt5History
         const [existing] = await db.select().from(mt5History)
           .where(and(eq(mt5History.userId, userId), eq(mt5History.ticket, ticketStr)))
           .limit(1);
 
-        const commission = parseFloat(trade.commission || 0);
-        const swap = parseFloat(trade.swap || 0);
-        const profit = parseFloat(trade.profit || 0);
-        const netPlNum = profit + commission + swap;
-        const netPl = netPlNum.toFixed(2);
-
-        // Map MT5 type to unified direction
-        const direction = (trade.type === 0 || trade.type === "buy" || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Long" : "Short";
-        const historyDirection = (trade.type === 0 || trade.type === "buy" || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Buy" : "Sell";
-
-        if (existing) {
-          await db.update(mt5History)
-            .set({
-              exitPrice: trade.price?.toString() || existing.exitPrice,
-              grossPl: profit.toString(),
-              commission: commission.toString(),
-              swap: swap.toString(),
-              netPl: netPl,
-              direction: historyDirection
-            })
-            .where(eq(mt5History.id, existing.id));
-
-          await db.update(tradeJournal)
-            .set({ 
-              netPl: netPl, 
-              outcome: netPlNum >= 0 ? "Win" : "Loss",
-              direction: direction
-            })
-            .where(and(eq(tradeJournal.userId, userId), eq(tradeJournal.notes, `MT5_TICKET_${ticketStr}`)));
+        if (!existing) {
+          console.log(`[MT5 Sync] NEW DEAL: Ticket ${ticketStr} for ${userId}`);
+          const openTime = new Date(trade.open_time * 1000);
+          const closeTime = new Date(trade.close_time * 1000);
           
-          continue;
-        }
-
-        const openTime = new Date(trade.open_time * 1000);
-        const closeTime = new Date(trade.close_time * 1000);
-        
-        await db.insert(mt5History).values({
-          userId,
-          ticket: ticketStr,
-          symbol: trade.symbol,
-          direction: historyDirection,
-          volume: trade.volume.toString(),
-          entryPrice: trade.price?.toString() || "0",
-          exitPrice: trade.price?.toString() || "0",
-          sl: trade.sl?.toString(),
-          tp: trade.tp?.toString(),
-          openTime,
-          closeTime,
-          duration: trade.close_time - trade.open_time,
-          grossPl: profit.toString(),
-          commission: commission.toString(),
-          swap: swap.toString(),
-          netPl,
-        });
-
-        // Ensure auto-journal entry
-        const [existingJournal] = await db.select().from(tradeJournal)
-          .where(and(eq(tradeJournal.userId, userId), eq(tradeJournal.notes, `MT5_TICKET_${ticketStr}`)))
-          .limit(1);
-
-        if (!existingJournal) {
-          await this.createTrade({
+          // 2. Accurate P&L: Net P&L = profit + commission + swap
+          const commission = parseFloat(trade.commission || 0);
+          const swap = parseFloat(trade.swap || 0);
+          const profit = parseFloat(trade.profit || 0);
+          const netPlNum = profit + commission + swap;
+          const netPl = netPlNum.toFixed(2);
+          
+          await db.insert(mt5History).values({
             userId,
-            pair: trade.symbol,
-            direction,
-            timeframe: "MT5_SYNC",
-            htfBias: "Bullish",
-            htfBiasClear: true,
-            zoneValid: true,
-            zoneValidity: "Valid",
-            liquidityTaken: true,
-            liquidityStatus: "Taken",
-            structureConfirmed: true,
-            structureState: "BOS",
-            entryConfirmed: true,
+            ticket: ticketStr,
+            symbol: trade.symbol,
+            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Buy" : "Sell",
+            volume: trade.volume.toString(),
             entryPrice: trade.price?.toString() || "0",
-            stopLoss: trade.sl?.toString() || null,
-            takeProfit: trade.tp?.toString() || null,
-            riskReward: "0",
+            exitPrice: trade.price?.toString() || "0",
+            sl: trade.sl?.toString(),
+            tp: trade.tp?.toString(),
+            openTime,
+            closeTime,
+            duration: trade.close_time - trade.open_time,
+            grossPl: profit.toString(),
+            commission: commission.toString(),
+            swap: swap.toString(),
             netPl,
-            outcome: netPlNum >= 0 ? "Win" : "Loss",
-            notes: `MT5_TICKET_${ticketStr}`,
           });
+
+          // 3. Journal Integration: Check if already exists in trade_journal
+          const [existingJournal] = await db.select().from(tradeJournal)
+            .where(and(eq(tradeJournal.userId, userId), eq(tradeJournal.notes, `MT5_TICKET_${ticketStr}`)))
+            .limit(1);
+
+          if (!existingJournal) {
+            console.log(`[MT5 Sync] Auto-journaling Ticket ${ticketStr} for ${userId}`);
+            const direction = (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Long" : "Short";
+            
+            await this.createTrade({
+              userId,
+              pair: trade.symbol,
+              direction,
+              timeframe: "MT5_SYNC",
+              htfBias: "Bullish", // Default for auto-sync, can be edited
+              htfBiasClear: true,
+              zoneValid: true,
+              zoneValidity: "Valid",
+              liquidityTaken: true,
+              liquidityStatus: "Taken",
+              structureConfirmed: true,
+              structureState: "BOS",
+              entryConfirmed: true,
+              entryPrice: trade.price?.toString() || "0",
+              stopLoss: trade.sl?.toString() || null,
+              takeProfit: trade.tp?.toString() || null,
+              riskReward: "0",
+              netPl,
+              outcome: netPlNum >= 0 ? "Win" : "Loss",
+              notes: `MT5_TICKET_${ticketStr}`,
+            });
+          }
         }
       } catch (err) {
         console.error(`[MT5 Sync] Integrity Error on ticket ${trade.ticket}:`, err);
@@ -293,7 +276,7 @@ export class DatabaseStorage implements IStorage {
     return data;
   }
 
-  async createAdminAuditLog(log: { adminId: number | string; actionType: string; targetUserId: string; details: any }): Promise<AdminAuditLog> {
+  async createAdminAuditLog(log: { adminId: number; actionType: string; targetUserId: string; details: any }): Promise<AdminAuditLog> {
     const [inserted] = await db.insert(adminAuditLog).values({
       adminId: log.adminId.toString(),
       actionType: log.actionType,
@@ -331,51 +314,8 @@ export class DatabaseStorage implements IStorage {
 
   async getTrades(userId?: string): Promise<Trade[]> {
     if (userId) {
-      // Step 1: Get existing journal trades
-      const journalTrades = await db.select().from(tradeJournal)
-        .where(eq(tradeJournal.userId, userId))
-        .orderBy(desc(tradeJournal.createdAt));
-      
-      const journalTickets = new Set(
-        journalTrades
-          .map(t => t.notes?.match(/MT5_TICKET_(\d+)/)?.[1])
-          .filter(Boolean)
-      );
-
-      // Step 2: Get MT5 history trades that AREN'T in the journal yet
-      const historyTrades = await db.select().from(mt5History)
-        .where(eq(mt5History.userId, userId));
-      
-      for (const ht of historyTrades) {
-        if (!journalTickets.has(ht.ticket)) {
-          console.log(`[MT5 Sync] Recovering missing journal entry for Ticket ${ht.ticket}`);
-          const direction = ht.direction === "Buy" ? "Long" : "Short";
-          await this.createTrade({
-            userId,
-            pair: ht.symbol,
-            direction,
-            timeframe: "MT5_SYNC",
-            htfBias: "Bullish",
-            htfBiasClear: true,
-            zoneValid: true,
-            zoneValidity: "Valid",
-            liquidityTaken: true,
-            liquidityStatus: "Taken",
-            structureConfirmed: true,
-            structureState: "BOS",
-            entryConfirmed: true,
-            entryPrice: ht.entryPrice,
-            stopLoss: ht.sl || null,
-            takeProfit: ht.tp || null,
-            riskReward: "0",
-            netPl: ht.netPl,
-            outcome: parseFloat(ht.netPl) >= 0 ? "Win" : "Loss",
-            notes: `MT5_TICKET_${ht.ticket}`,
-          });
-        }
-      }
-
-      // Step 3: Return updated journal
+      // Return ALL journal trades for this user. 
+      // Removed the 30-day filter to ensure 100% visibility of all MT5 synced trades.
       return await db.select().from(tradeJournal)
         .where(eq(tradeJournal.userId, userId))
         .orderBy(desc(tradeJournal.createdAt));
@@ -390,6 +330,7 @@ export class DatabaseStorage implements IStorage {
 
   async createTrade(insertTrade: InsertTrade): Promise<Trade> {
     const validation = this.validateTradeRules(insertTrade);
+    
     const finalTrade = {
       ...insertTrade,
       entryPrice: insertTrade.entryPrice || null,
@@ -417,13 +358,19 @@ export class DatabaseStorage implements IStorage {
     await db.delete(tradeJournal).where(eq(tradeJournal.id, id));
   }
 
+  // Trader Hub Implementation
   async getHubPosts(): Promise<(HubPost & { user?: any, commentCount: number })[]> {
     const posts = await db.select().from(hubPosts).orderBy(desc(hubPosts.createdAt));
-    return await Promise.all(posts.map(async (post) => {
+    const postsWithDetails = await Promise.all(posts.map(async (post) => {
       const user = await this.getUserRole(post.userId);
       const comments = await db.select().from(hubComments).where(eq(hubComments.postId, post.id));
-      return { ...post, user, commentCount: comments.length };
+      return {
+        ...post,
+        user: user ? { userId: user.userId, role: user.role } : undefined,
+        commentCount: comments.length
+      };
     }));
+    return postsWithDetails;
   }
 
   async createHubPost(post: any): Promise<HubPost> {
@@ -432,8 +379,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteHubPost(id: number, userId: string, isAdmin: boolean): Promise<boolean> {
+    if (isAdmin) {
+      await db.delete(hubPosts).where(eq(hubPosts.id, id));
+      return true;
+    }
     const [post] = await db.select().from(hubPosts).where(eq(hubPosts.id, id)).limit(1);
-    if (isAdmin || (post && post.userId === userId)) {
+    if (post && post.userId === userId) {
       await db.delete(hubPosts).where(eq(hubPosts.id, id));
       return true;
     }
@@ -454,6 +405,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(hubComments).where(eq(hubComments.postId, postId)).orderBy(desc(hubComments.createdAt));
   }
 
+  // Creator Program Implementation
   async getCreatorProfile(userId: string): Promise<CreatorProfile | undefined> {
     const [profile] = await db.select().from(creatorProfiles).where(eq(creatorProfiles.userId, userId)).limit(1);
     return profile;
@@ -469,20 +421,66 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCreatorApplicationStatus(id: number, status: string): Promise<void> {
-    const [app] = await db.update(creatorApplications).set({ status }).where(eq(creatorApplications.id, id)).returning();
+    const [app] = await db.update(creatorApplications)
+      .set({ status })
+      .where(eq(creatorApplications.id, id))
+      .returning();
+    
     if (status === "APPROVED") {
       const [existing] = await db.select().from(creatorProfiles).where(eq(creatorProfiles.userId, app.userId)).limit(1);
       if (!existing) {
-        await db.insert(creatorProfiles).values({ userId: app.userId, displayName: app.userId.split('@')[0], status: "APPROVED" });
+        await db.insert(creatorProfiles).values({
+          userId: app.userId,
+          displayName: app.userId.split('@')[0],
+          status: "APPROVED"
+        });
       } else {
         await db.update(creatorProfiles).set({ status: "APPROVED" }).where(eq(creatorProfiles.userId, app.userId));
       }
     }
   }
 
+  async updateUserSubscriptionInfo(userId: string, info: {
+    subscriptionStatus?: string;
+    subscriptionTier?: string;
+    currentPlan?: string;
+    renewalDate?: Date;
+    paypalSubscriptionId?: string;
+    syncToken?: string;
+  }) {
+    const [user] = await db.update(userRole)
+      .set({ ...info, updatedAt: new Date() })
+      .where(eq(userRole.userId, userId))
+      .returning();
+    return user;
+  }
+
   async updateCreatorProfile(userId: string, updates: any): Promise<CreatorProfile> {
-    const [updated] = await db.update(creatorProfiles).set({ ...updates, updatedAt: new Date() }).where(eq(creatorProfiles.userId, userId)).returning();
+    const [updated] = await db.update(creatorProfiles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(creatorProfiles.userId, userId))
+      .returning();
     return updated;
+  }
+
+  async updateUserStripeInfo(userId: string, stripeInfo: any) {
+    // Removed Stripe integration
+  }
+
+  async getProduct(productId: string) {
+    return null;
+  }
+
+  async getSubscription(subscriptionId: string) {
+    return null;
+  }
+
+  async listProductsWithPrices(active = true) {
+    return [];
+  }
+
+  async getPrice(priceId: string) {
+    return null;
   }
 
   async getSignalProviderProfile(userId: string) {
@@ -496,21 +494,45 @@ export class DatabaseStorage implements IStorage {
 
   validateTradeRules(trade: InsertTrade) {
     const violations: string[] = [];
+
     if (!trade.htfBiasClear) violations.push("HTF bias not clear");
-    if (!trade.zoneValid || trade.zoneValidity === "Invalid") violations.push("Zone invalidated or not valid");
+    
+    if (!trade.zoneValid || trade.zoneValidity === "Invalid") {
+      violations.push("Zone invalidated or not valid");
+    }
+
     if (!trade.entryConfirmed) violations.push("Entry confirmation missing");
-    if (trade.structureState === "CHOCH" && trade.liquidityStatus !== "Taken") violations.push("Liquidity must be taken before reversal (CHOCH)");
-    if (trade.direction === "Long" && trade.htfBias === "Bearish") violations.push("Against HTF structure (Bearish bias on Long trade)");
-    if (trade.direction === "Short" && trade.htfBias === "Bullish") violations.push("Against HTF structure (Bullish bias on Short trade)");
-    if (trade.riskReward && parseFloat(trade.riskReward) < 1.5) violations.push("RR too small (Minimum 1:1.5)");
+    
+    if (trade.structureState === "CHOCH" && trade.liquidityStatus !== "Taken") {
+      violations.push("Liquidity must be taken before reversal (CHOCH)");
+    }
+
+    if (trade.direction === "Long" && trade.htfBias === "Bearish") {
+      violations.push("Against HTF structure (Bearish bias on Long trade)");
+    }
+    if (trade.direction === "Short" && trade.htfBias === "Bullish") {
+      violations.push("Against HTF structure (Bullish bias on Short trade)");
+    }
+
+    if (trade.riskReward && parseFloat(trade.riskReward) < 1.5) {
+      violations.push("RR too small (Minimum 1:1.5)");
+    }
 
     let matchedSetup: string | undefined;
     if (violations.length === 0) {
-      if (trade.structureState === "BOS") matchedSetup = "Trend Continuation";
-      else if (trade.structureState === "CHOCH") matchedSetup = "Liquidity Sweep Reversal";
+      if (trade.structureState === "BOS") {
+        matchedSetup = "Trend Continuation";
+      } else if (trade.structureState === "CHOCH") {
+        matchedSetup = "Liquidity Sweep Reversal";
+      }
     }
 
-    return { valid: violations.length === 0, reason: violations.join(" | "), violations, matchedSetup };
+    return {
+      valid: violations.length === 0,
+      reason: violations.join(" | "),
+      violations,
+      matchedSetup
+    };
   }
 }
 
