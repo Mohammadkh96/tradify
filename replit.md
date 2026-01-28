@@ -14,16 +14,16 @@ Key features:
   - Equity curve shows cumulative P&L filtered by selected date range
 - Trade journal with chronological trade feed
 - **Strategies section** (formerly "New Entry")
-  - My Strategies: View and manage your trading frameworks
-  - Create Strategy: Define rules and validate trade alignment
-  - Real-time rule validation (4 hard-coded global rules)
+  - My Strategies: View, edit, duplicate, and delete trading frameworks
+  - Create Strategy: Define rules from RULE_TYPE_CATALOG
+  - Strategy Validator: Check trade alignment against selected strategy's rules
 - Knowledge base with trading education modules
 - Risk/position size calculator
 - MT5 Bridge for MetaTrader 5 integration
 
 **Navigation Structure:**
 - Collapsible "Strategies" menu in sidebar with sub-items
-- Routes: `/strategies` (My Strategies), `/strategies/create` (Create Strategy)
+- Routes: `/strategies` (My Strategies), `/strategies/create` (Create Strategy), `/strategies/validate` (Strategy Validator)
 - Auto-expands when navigating to strategies routes
 
 ## User Preferences
@@ -57,17 +57,16 @@ Preferred communication style: Simple, everyday language.
   - `trade_journal` - Trade records with compliance tracking
 
 ### Rule Engine Design
-The trade validation system uses a structured rule engine (not AI):
-1. Detection Rules - How to recognize market conditions
-2. Validation Rules - When conditions are valid
-3. Execution Rules - When to allow trades
-4. Invalidation Rules - When to reject trades
+The validation system uses a metadata-driven rule engine defined in `shared/ruleTypes.ts`:
+- **RULE_TYPE_CATALOG**: Central catalog of all available rule types with metadata
+- **Metadata fields**: displayPrefix, displaySuffix, inputPlaceholder, numberComparator
+- **Input types**: boolean, number, select, multiselect, time_range
+- **Categories**: detection, validation, execution, invalidation
 
-Four global hard rules enforced:
-- GR-02: HTF Bias Alignment
-- GR-03: Valid Supply/Demand Zone
-- GR-05: Entry Confirmation (OB/FVG or liquidity sweep)
-- GR-08: Risk/Reward Ratio minimum
+Strategy Validator uses metadata to:
+- Dynamically render inputs based on rule type
+- Display helper text and labels without hardcoded rule-specific logic
+- Compare user inputs against strategy values using metadata-defined comparators
 
 ### Project Structure
 ```
