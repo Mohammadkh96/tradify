@@ -51,6 +51,10 @@ Preferred communication style: Simple, everyday language.
 - **Database:** PostgreSQL with Drizzle ORM
 - **Schema Location:** `shared/schema.ts`
 - **Migrations:** Drizzle Kit (`drizzle-kit push`)
+- **Key Tables:**
+  - `strategies` - User-defined trading frameworks (userId, name, description, isActive)
+  - `strategy_rules` - Dynamic rules per strategy (category, ruleType, options JSONB)
+  - `trade_journal` - Trade records with compliance tracking
 
 ### Rule Engine Design
 The trade validation system uses a structured rule engine (not AI):
