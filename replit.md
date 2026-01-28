@@ -103,6 +103,18 @@ shared/           # Shared code
 - Polling from client every 2 seconds for live updates
 - Note: MT5 WebRequest has SSL/certificate limitations
 
+### PayPal Subscriptions
+- **Exclusive payment provider** - PayPal recurring subscriptions only (no Stripe)
+- **Plan ID persistence** - Use `PAYPAL_PLAN_ID` env var to avoid recreating plans on restart
+- **Webhook verification** - Uses `PAYPAL_WEBHOOK_ID` for signature verification
+- **Smart cancellation** - Users retain PRO access until billing period ends
+- **Subscription flow**:
+  1. User clicks subscribe button → redirected to PayPal approval
+  2. On return, client calls `/api/paypal/subscription/activate` with subscription_id
+  3. Server fetches subscription details from PayPal and updates user
+  4. Webhooks handle ongoing status updates (activated, cancelled, expired)
+- **Profile management** - Users can view subscription details and cancel from Profile page
+
 ### AI Integrations (Optional)
 - OpenAI integration via Replit AI Integrations
 - Audio/voice chat capabilities
