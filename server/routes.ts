@@ -1339,6 +1339,32 @@ Output exactly 1-3 bullet points.`;
     }
   });
 
+  // Get compliance score for user's active strategy
+  app.get("/api/compliance/score", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      let tradeCount = parseInt(req.query.trades as string) || 10;
+      tradeCount = Math.max(1, Math.min(100, isNaN(tradeCount) ? 10 : tradeCount));
+      
+      // Get user's active strategy
+      const activeStrategy = await storage.getActiveStrategy(userId);
+      if (!activeStrategy) {
+        return res.status(404).json({ message: "No active strategy found" });
+      }
+      
+      const score = await storage.getComplianceScore(userId, activeStrategy.id, tradeCount);
+      
+      res.json({
+        strategyId: activeStrategy.id,
+        strategyName: activeStrategy.name,
+        ...score
+      });
+    } catch (error) {
+      console.error("Error calculating compliance score:", error);
+      res.status(500).json({ message: "Failed to calculate compliance score" });
+    }
+  });
+
   return httpServer;
 }
 

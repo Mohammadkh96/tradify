@@ -104,6 +104,12 @@ export interface IStorage {
   saveRuleEvaluations(evaluations: InsertTradeRuleEvaluation[]): Promise<TradeRuleEvaluation[]>;
   getTradeComplianceResult(tradeId: number): Promise<(TradeComplianceResult & { evaluations: TradeRuleEvaluation[] }) | undefined>;
   getTradeComplianceHistory(userId: string): Promise<TradeComplianceResult[]>;
+  getComplianceScore(userId: string, strategyId: number, tradeCount?: number): Promise<{
+    compliancePercent: number;
+    violationsCount: number;
+    trendDirection: 'improving' | 'declining' | 'stable';
+    tradesEvaluated: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -645,6 +651,59 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(tradeComplianceResults)
       .where(eq(tradeComplianceResults.userId, userId))
       .orderBy(desc(tradeComplianceResults.evaluatedAt));
+  }
+
+  async getComplianceScore(userId: string, strategyId: number, tradeCount: number = 10): Promise<{
+    compliancePercent: number;
+    violationsCount: number;
+    trendDirection: 'improving' | 'declining' | 'stable';
+    tradesEvaluated: number;
+  }> {
+    const results = await db.select().from(tradeComplianceResults)
+      .where(and(
+        eq(tradeComplianceResults.userId, userId),
+        eq(tradeComplianceResults.strategyId, strategyId)
+      ))
+      .orderBy(desc(tradeComplianceResults.evaluatedAt))
+      .limit(tradeCount);
+
+    if (results.length === 0) {
+      return {
+        compliancePercent: 0,
+        violationsCount: 0,
+        trendDirection: 'stable',
+        tradesEvaluated: 0
+      };
+    }
+
+    const compliantCount = results.filter(r => r.overallCompliant).length;
+    const violationsCount = results.length - compliantCount;
+    const compliancePercent = Math.round((compliantCount / results.length) * 100);
+
+    let trendDirection: 'improving' | 'declining' | 'stable' = 'stable';
+    
+    if (results.length >= 4) {
+      const halfPoint = Math.floor(results.length / 2);
+      const recentHalf = results.slice(0, halfPoint);
+      const olderHalf = results.slice(halfPoint);
+      
+      const recentCompliance = recentHalf.filter(r => r.overallCompliant).length / recentHalf.length;
+      const olderCompliance = olderHalf.filter(r => r.overallCompliant).length / olderHalf.length;
+      
+      const difference = recentCompliance - olderCompliance;
+      if (difference > 0.1) {
+        trendDirection = 'improving';
+      } else if (difference < -0.1) {
+        trendDirection = 'declining';
+      }
+    }
+
+    return {
+      compliancePercent,
+      violationsCount,
+      trendDirection,
+      tradesEvaluated: results.length
+    };
   }
 }
 
