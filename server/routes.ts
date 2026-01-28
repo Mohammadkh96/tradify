@@ -1222,6 +1222,106 @@ Output exactly 1-3 bullet points.`;
     }
   });
 
+  // ==================== COMPLIANCE EVALUATION ENDPOINTS ====================
+
+  // Evaluate trade compliance against a strategy
+  app.post("/api/compliance/evaluate", requireAuth, async (req, res) => {
+    try {
+      const { tradeId, strategyId, tradeInputs } = req.body;
+      const userId = req.session.userId!;
+
+      // Get the trade
+      const trade = await storage.getTrade(tradeId);
+      if (!trade) {
+        return res.status(404).json({ message: "Trade not found" });
+      }
+
+      // Get the strategy and its rules
+      const strategy = await storage.getStrategy(strategyId);
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+
+      const rules = await storage.getStrategyRules(strategyId);
+      if (rules.length === 0) {
+        return res.status(400).json({ message: "Strategy has no rules to evaluate" });
+      }
+
+      // Import and run the compliance engine
+      const { evaluateTradeCompliance } = await import("./complianceEngine");
+      const result = evaluateTradeCompliance(trade, rules, tradeInputs || {});
+
+      // Save compliance result
+      const complianceResult = await storage.saveComplianceResult({
+        tradeId,
+        strategyId,
+        userId,
+        overallCompliant: result.overallCompliant,
+      });
+
+      // Save rule evaluations
+      const evaluationsToSave = result.ruleEvaluations.map((ruleEval) => ({
+        complianceResultId: complianceResult.id,
+        ruleId: ruleEval.ruleId,
+        ruleType: ruleEval.ruleType,
+        ruleLabel: ruleEval.ruleLabel,
+        expectedValue: ruleEval.expectedValue as Record<string, unknown> | null,
+        actualValue: ruleEval.actualValue as Record<string, unknown> | null,
+        passed: ruleEval.passed,
+        violationReason: ruleEval.violationReason,
+      }));
+
+      await storage.saveRuleEvaluations(evaluationsToSave);
+
+      // Update trade compliance status
+      await storage.updateTrade(tradeId, {
+        isRuleCompliant: result.overallCompliant,
+        violationReason: result.violations.length > 0
+          ? result.violations.map(v => v.violationReason).join("; ")
+          : null,
+      });
+
+      res.json({
+        complianceResultId: complianceResult.id,
+        overallCompliant: result.overallCompliant,
+        ruleEvaluations: result.ruleEvaluations,
+        violations: result.violations,
+      });
+    } catch (error) {
+      console.error("Error evaluating compliance:", error);
+      res.status(500).json({ message: "Failed to evaluate compliance" });
+    }
+  });
+
+  // Get compliance result for a trade
+  app.get("/api/compliance/trade/:tradeId", requireAuth, async (req, res) => {
+    try {
+      const tradeId = parseInt(req.params.tradeId);
+      const result = await storage.getTradeComplianceResult(tradeId);
+      
+      if (!result) {
+        return res.status(404).json({ message: "No compliance evaluation found for this trade" });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching compliance result:", error);
+      res.status(500).json({ message: "Failed to fetch compliance result" });
+    }
+  });
+
+  // Get compliance history for user
+  app.get("/api/compliance/history", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const history = await storage.getTradeComplianceHistory(userId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching compliance history:", error);
+      res.status(500).json({ message: "Failed to fetch compliance history" });
+    }
+  });
+
   return httpServer;
 }
 

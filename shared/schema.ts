@@ -319,3 +319,35 @@ export type Strategy = typeof strategies.$inferSelect;
 export type InsertStrategy = z.infer<typeof insertStrategySchema>;
 export type StrategyRule = typeof strategyRules.$inferSelect;
 export type InsertStrategyRule = z.infer<typeof insertStrategyRuleSchema>;
+
+// ==================== COMPLIANCE EVALUATION ====================
+// Deterministic rule evaluation results per trade
+
+export const tradeComplianceResults = pgTable("trade_compliance_results", {
+  id: serial("id").primaryKey(),
+  tradeId: integer("trade_id").notNull(),
+  strategyId: integer("strategy_id").notNull(),
+  userId: text("user_id").notNull(),
+  overallCompliant: boolean("overall_compliant").notNull(),
+  evaluatedAt: timestamp("evaluated_at").defaultNow(),
+});
+
+export const tradeRuleEvaluations = pgTable("trade_rule_evaluations", {
+  id: serial("id").primaryKey(),
+  complianceResultId: integer("compliance_result_id").notNull(),
+  ruleId: integer("rule_id").notNull(),
+  ruleType: text("rule_type").notNull(),
+  ruleLabel: text("rule_label").notNull(),
+  expectedValue: jsonb("expected_value"),
+  actualValue: jsonb("actual_value"),
+  passed: boolean("passed").notNull(),
+  violationReason: text("violation_reason"),
+});
+
+export const insertTradeComplianceResultSchema = createInsertSchema(tradeComplianceResults).omit({ id: true, evaluatedAt: true });
+export const insertTradeRuleEvaluationSchema = createInsertSchema(tradeRuleEvaluations).omit({ id: true });
+
+export type TradeComplianceResult = typeof tradeComplianceResults.$inferSelect;
+export type InsertTradeComplianceResult = z.infer<typeof insertTradeComplianceResultSchema>;
+export type TradeRuleEvaluation = typeof tradeRuleEvaluations.$inferSelect;
+export type InsertTradeRuleEvaluation = z.infer<typeof insertTradeRuleEvaluationSchema>;

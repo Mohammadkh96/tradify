@@ -16,6 +16,8 @@ import {
   signalProviderProfile,
   strategies,
   strategyRules,
+  tradeComplianceResults,
+  tradeRuleEvaluations,
   type HubPost,
   type HubComment,
   type HubReport,
@@ -31,7 +33,11 @@ import {
   type Strategy,
   type InsertStrategy,
   type StrategyRule,
-  type InsertStrategyRule
+  type InsertStrategyRule,
+  type TradeComplianceResult,
+  type InsertTradeComplianceResult,
+  type TradeRuleEvaluation,
+  type InsertTradeRuleEvaluation
 } from "@shared/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -93,6 +99,11 @@ export interface IStorage {
   updateStrategyRule(id: number, updates: Partial<InsertStrategyRule>): Promise<StrategyRule>;
   deleteStrategyRule(id: number): Promise<void>;
   deleteStrategyRules(strategyId: number): Promise<void>;
+  // Compliance Evaluation Methods
+  saveComplianceResult(result: InsertTradeComplianceResult): Promise<TradeComplianceResult>;
+  saveRuleEvaluations(evaluations: InsertTradeRuleEvaluation[]): Promise<TradeRuleEvaluation[]>;
+  getTradeComplianceResult(tradeId: number): Promise<(TradeComplianceResult & { evaluations: TradeRuleEvaluation[] }) | undefined>;
+  getTradeComplianceHistory(userId: string): Promise<TradeComplianceResult[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -602,6 +613,38 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStrategyRules(strategyId: number): Promise<void> {
     await db.delete(strategyRules).where(eq(strategyRules.strategyId, strategyId));
+  }
+
+  async saveComplianceResult(result: InsertTradeComplianceResult): Promise<TradeComplianceResult> {
+    await db.delete(tradeComplianceResults).where(eq(tradeComplianceResults.tradeId, result.tradeId));
+    const [created] = await db.insert(tradeComplianceResults).values(result).returning();
+    return created;
+  }
+
+  async saveRuleEvaluations(evaluations: InsertTradeRuleEvaluation[]): Promise<TradeRuleEvaluation[]> {
+    if (evaluations.length === 0) return [];
+    const created = await db.insert(tradeRuleEvaluations).values(evaluations).returning();
+    return created;
+  }
+
+  async getTradeComplianceResult(tradeId: number): Promise<(TradeComplianceResult & { evaluations: TradeRuleEvaluation[] }) | undefined> {
+    const [result] = await db.select().from(tradeComplianceResults)
+      .where(eq(tradeComplianceResults.tradeId, tradeId))
+      .orderBy(desc(tradeComplianceResults.evaluatedAt))
+      .limit(1);
+    
+    if (!result) return undefined;
+    
+    const evaluations = await db.select().from(tradeRuleEvaluations)
+      .where(eq(tradeRuleEvaluations.complianceResultId, result.id));
+    
+    return { ...result, evaluations };
+  }
+
+  async getTradeComplianceHistory(userId: string): Promise<TradeComplianceResult[]> {
+    return db.select().from(tradeComplianceResults)
+      .where(eq(tradeComplianceResults.userId, userId))
+      .orderBy(desc(tradeComplianceResults.evaluatedAt));
   }
 }
 
