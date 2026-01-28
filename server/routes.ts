@@ -435,6 +435,63 @@ export async function registerRoutes(
     }
   });
 
+  // Equity curve from cumulative trade P&L (SINGLE SOURCE OF TRUTH)
+  // Combines both MT5 history and manual trades (excluding MT5 duplicates)
+  app.get("/api/equity-curve/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const mt5History = await storage.getMT5History(userId);
+      const manualTrades = await storage.getTrades(userId);
+      
+      // Combine MT5 history and manual trades (excluding MT5 sync duplicates)
+      const mt5Trades = (mt5History || []).map(t => ({
+        date: t.closeTime,
+        netPl: parseFloat(t.netPl || "0"),
+        symbol: t.symbol,
+        source: "MT5"
+      }));
+      
+      // Only include manual trades that are NOT MT5 sync duplicates
+      const manualTradesFiltered = (manualTrades || [])
+        .filter(t => !t.notes?.startsWith("MT5_TICKET_"))
+        .map(t => ({
+          date: t.createdAt,
+          netPl: parseFloat(t.netPl || "0"),
+          symbol: t.pair,
+          source: "Manual"
+        }));
+      
+      const allTrades = [...mt5Trades, ...manualTradesFiltered];
+      
+      if (allTrades.length === 0) {
+        return res.json([]);
+      }
+
+      // Sort trades chronologically
+      const sortedTrades = allTrades.sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      // Calculate cumulative P&L
+      let cumulativePl = 0;
+      const equityCurve = sortedTrades.map(trade => {
+        cumulativePl += trade.netPl;
+        return {
+          date: trade.date,
+          equity: cumulativePl,
+          netPl: trade.netPl,
+          symbol: trade.symbol,
+          source: trade.source
+        };
+      });
+
+      res.json(equityCurve);
+    } catch (error) {
+      console.error("Equity curve error:", error);
+      res.status(500).json({ message: "Failed to generate equity curve" });
+    }
+  });
+
   app.get("/api/mt5/history/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
@@ -454,17 +511,36 @@ export async function registerRoutes(
   app.get("/api/performance/intelligence/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
-      // SINGLE SOURCE OF TRUTH: All metrics derive from the unified Trade Journal
-      const trades = await storage.getTrades(userId);
+      // SINGLE SOURCE OF TRUTH: Combine MT5 history + manual trades (excluding duplicates)
+      const mt5History = await storage.getMT5History(userId);
+      const manualTrades = await storage.getTrades(userId);
       
-      const normalizedTrades = trades.map(t => ({
-        netPl: parseFloat(t.netPl || "0"),
-        outcome: t.outcome,
-        direction: t.direction,
-        createdAt: t.createdAt,
-        riskReward: parseFloat(t.riskReward || "0"),
-        setup: t.matchedSetup || (t.timeframe === "MT5_SYNC" ? "MT5 Sync" : "Manual Entry")
-      }));
+      // MT5 trades
+      const mt5Normalized = (mt5History || []).map(t => {
+        const pl = parseFloat(t.netPl || "0");
+        return {
+          netPl: pl,
+          outcome: pl > 0 ? "Win" : pl < 0 ? "Loss" : "Break-even",
+          direction: t.direction,
+          createdAt: t.closeTime,
+          riskReward: 0,
+          setup: "MT5 Sync"
+        };
+      });
+      
+      // Manual trades (excluding MT5 sync duplicates)
+      const manualNormalized = (manualTrades || [])
+        .filter(t => !t.notes?.startsWith("MT5_TICKET_"))
+        .map(t => ({
+          netPl: parseFloat(t.netPl || "0"),
+          outcome: t.outcome,
+          direction: t.direction,
+          createdAt: t.createdAt,
+          riskReward: parseFloat(t.riskReward || "0"),
+          setup: t.matchedSetup || "Manual Entry"
+        }));
+      
+      const normalizedTrades = [...mt5Normalized, ...manualNormalized];
 
       if (normalizedTrades.length === 0) {
         return res.json({ message: "No data available" });
@@ -479,6 +555,8 @@ export async function registerRoutes(
       let totalGrossProfit = 0;
       let totalGrossLoss = 0;
       let wins = 0;
+      let losses = 0;
+      let breakeven = 0;
       let totalTradesCount = normalizedTrades.length;
       let totalRR = 0;
       let rrCount = 0;
@@ -528,7 +606,10 @@ export async function registerRoutes(
         
         days[day as keyof typeof days] += pl;
 
-        if (t.outcome === "Win") wins++;
+        // Proper outcome classification
+        if (pl > 0) wins++;
+        else if (pl < 0) losses++;
+        else breakeven++;
 
         if (t.riskReward > 0) {
           totalRR += t.riskReward;
@@ -553,9 +634,22 @@ export async function registerRoutes(
       }));
       const bestSetup = setupStats.length ? setupStats.reduce((a, b) => a.winRate > b.winRate ? a : b).name : "N/A";
 
-      const profitFactor = totalGrossLoss > 0 ? totalGrossProfit / totalGrossLoss : 1;
-      const winRateVal = totalTradesCount ? (wins / totalTradesCount) * 100 : 0;
-      const expectancy = totalTradesCount ? totalPl / totalTradesCount : 0;
+      const profitFactor = totalGrossLoss > 0 ? totalGrossProfit / totalGrossLoss : totalGrossProfit > 0 ? Infinity : 0;
+      
+      // Win rate excludes break-even trades (only count decisive trades)
+      const decisiveTrades = wins + losses;
+      const winRateVal = decisiveTrades > 0 ? (wins / decisiveTrades) * 100 : 0;
+      const lossRateVal = decisiveTrades > 0 ? (losses / decisiveTrades) * 100 : 0;
+      
+      // Average Win / Average Loss
+      const avgWin = wins > 0 ? totalGrossProfit / wins : 0;
+      const avgLoss = losses > 0 ? totalGrossLoss / losses : 0;
+      
+      // Expectancy = (Win Rate × Avg Win) − (Loss Rate × Avg Loss)
+      const winRateDecimal = decisiveTrades > 0 ? wins / decisiveTrades : 0;
+      const lossRateDecimal = decisiveTrades > 0 ? losses / decisiveTrades : 0;
+      const expectancy = (winRateDecimal * avgWin) - (lossRateDecimal * avgLoss);
+      
       const recoveryFactor = maxDrawdown > 0 ? totalPl / maxDrawdown : totalPl > 0 ? 1 : 0;
 
       res.json({
@@ -563,14 +657,20 @@ export async function registerRoutes(
         bestDay,
         bestSetup,
         winRate: winRateVal.toFixed(1),
+        lossRate: lossRateVal.toFixed(1),
+        avgWin: avgWin.toFixed(2),
+        avgLoss: avgLoss.toFixed(2),
         avgRR: rrCount ? (totalRR / rrCount).toFixed(2) : "0.00",
         expectancy: expectancy.toFixed(2),
-        profitFactor: profitFactor.toFixed(2),
+        profitFactor: isFinite(profitFactor) ? profitFactor.toFixed(2) : "∞",
         maxDrawdown: maxDrawdown.toFixed(2),
         maxDrawdownPercent: peak > 0 ? ((maxDrawdown / peak) * 100).toFixed(2) : "0.00",
         recoveryFactor: recoveryFactor.toFixed(2),
         totalPl: totalPl.toFixed(2),
         totalTrades: totalTradesCount,
+        wins,
+        losses,
+        breakeven,
         violations,
         sessionMetrics: sessions
       });

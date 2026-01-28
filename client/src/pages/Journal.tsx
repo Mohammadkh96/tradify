@@ -41,23 +41,31 @@ export default function Journal() {
         closeTime: t.createdAt
       }));
     
-    const mt5 = (mt5History || []).map(t => ({
-      id: t.id,
-      ticket: t.ticket,
-      pair: t.symbol,
-      direction: t.direction,
-      timeframe: "MT5",
-      createdAt: t.openTime,
-      closeTime: t.closeTime,
-      duration: t.duration,
-      outcome: parseFloat(t.netPl) >= 0 ? "Win" : "Loss",
-      netPl: parseFloat(t.netPl),
-      riskReward: "N/A",
-      notes: t.notes || `Ticket: ${t.ticket}`,
-      tags: t.tags || [],
-      source: "MT5",
-      isMT5: true
-    }));
+    const mt5 = (mt5History || []).map(t => {
+      const pl = parseFloat(t.netPl);
+      let outcome: string;
+      if (pl > 0) outcome = "Win";
+      else if (pl < 0) outcome = "Loss";
+      else outcome = "Break-even";
+      
+      return {
+        id: t.id,
+        ticket: t.ticket,
+        pair: t.symbol,
+        direction: t.direction,
+        timeframe: "MT5",
+        createdAt: t.openTime,
+        closeTime: t.closeTime,
+        duration: t.duration,
+        outcome,
+        netPl: pl,
+        riskReward: "N/A",
+        notes: t.notes || `Ticket: ${t.ticket}`,
+        tags: t.tags || [],
+        source: "MT5",
+        isMT5: true
+      };
+    });
 
     return [...manual, ...mt5].sort((a, b) => 
       new Date(b.closeTime!).getTime() - new Date(a.closeTime!).getTime()
@@ -100,11 +108,34 @@ export default function Journal() {
     const total = filteredTrades.length;
     const wins = filteredTrades.filter(t => t.outcome === "Win").length;
     const losses = filteredTrades.filter(t => t.outcome === "Loss").length;
+    const breakeven = filteredTrades.filter(t => t.outcome === "Break-even").length;
     const netPl = filteredTrades.reduce((acc, t) => acc + (typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0)), 0);
-    const winRate = total > 0 ? (wins / total * 100).toFixed(1) : "0.0";
-    const profitFactor = losses === 0 ? "∞" : (wins / losses).toFixed(2);
     
-    return { total, winRate, netPl, wins, losses, profitFactor };
+    // Win rate excludes break-even trades (only count decisive trades)
+    const decisiveTrades = wins + losses;
+    const winRate = decisiveTrades > 0 ? (wins / decisiveTrades * 100).toFixed(1) : "0.0";
+    
+    // Average Win / Average Loss
+    const winningTrades = filteredTrades.filter(t => t.outcome === "Win");
+    const losingTrades = filteredTrades.filter(t => t.outcome === "Loss");
+    const avgWin = winningTrades.length > 0 
+      ? winningTrades.reduce((acc, t) => acc + (typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0)), 0) / winningTrades.length 
+      : 0;
+    const avgLoss = losingTrades.length > 0 
+      ? Math.abs(losingTrades.reduce((acc, t) => acc + (typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0)), 0)) / losingTrades.length 
+      : 0;
+    
+    // Expectancy = (Win Rate × Avg Win) − (Loss Rate × Avg Loss)
+    const winRateDecimal = decisiveTrades > 0 ? wins / decisiveTrades : 0;
+    const lossRateDecimal = decisiveTrades > 0 ? losses / decisiveTrades : 0;
+    const expectancy = (winRateDecimal * avgWin) - (lossRateDecimal * avgLoss);
+    
+    // Profit Factor = Gross Profit / Gross Loss
+    const grossProfit = winningTrades.reduce((acc, t) => acc + (typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0)), 0);
+    const grossLoss = Math.abs(losingTrades.reduce((acc, t) => acc + (typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0)), 0));
+    const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : grossProfit > 0 ? "∞" : "0.00";
+    
+    return { total, winRate, netPl, wins, losses, breakeven, profitFactor, avgWin, avgLoss, expectancy };
   }, [filteredTrades]);
 
   const statsDerivedLabel = "Derived from history";

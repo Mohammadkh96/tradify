@@ -42,9 +42,11 @@ export default function Dashboard() {
     staleTime: 0,
   });
 
-  const { data: snapshots } = useQuery<any[]>({
-    queryKey: [`/api/mt5/snapshots/${userId}`],
+  // Equity curve from cumulative trade P&L (SINGLE SOURCE OF TRUTH)
+  const { data: equityCurveData } = useQuery<any[]>({
+    queryKey: [`/api/equity-curve/${userId}`],
     staleTime: 0,
+    enabled: !!userId,
   });
 
   const { data: userRoleData } = useQuery<any>({
@@ -70,10 +72,11 @@ export default function Dashboard() {
   const allTrades = trades || [];
   const total = allTrades.length;
   
-  const chartData = snapshots?.map(s => ({
-    date: format(new Date(s.date), 'MMM d'),
-    equity: parseFloat(s.equity),
-    balance: parseFloat(s.balance)
+  // Equity curve from cumulative trade P&L - final value should equal Net P&L
+  const chartData = equityCurveData?.map(point => ({
+    date: format(new Date(point.date), 'MMM d'),
+    equity: point.equity,
+    tradePl: point.netPl
   })) || [];
 
   const stats = [
@@ -204,8 +207,8 @@ export default function Dashboard() {
               {chartData.length < 2 && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/20 backdrop-blur-[1px] rounded-xl border border-dashed border-border/50">
                   <Activity className="text-muted-foreground/30 mb-2 animate-pulse" size={32} />
-                  <p className="text-xs text-muted-foreground font-bold uppercase tracking-tighter">Awaiting historical equity snapshots</p>
-                  <span className="text-[9px] text-muted-foreground/50 mt-1 italic">Curve populates after periodic sync intervals</span>
+                  <p className="text-xs text-muted-foreground font-bold uppercase tracking-tighter">Awaiting trade history</p>
+                  <span className="text-[9px] text-muted-foreground/50 mt-1 italic">Curve populates from cumulative trade P&L</span>
                 </div>
               )}
               {!isPro && chartData.length >= 30 && (
@@ -230,7 +233,7 @@ export default function Dashboard() {
                     fontSize={10} 
                     tickLine={false} 
                     axisLine={false} 
-                    tickFormatter={(v) => `$${v/1000}k`}
+                    tickFormatter={(v) => v >= 1000 || v <= -1000 ? `$${(v/1000).toFixed(1)}k` : `$${v.toFixed(0)}`}
                   />
                   <Tooltip 
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px' }}
@@ -243,16 +246,7 @@ export default function Dashboard() {
                     strokeWidth={3}
                     fillOpacity={1} 
                     fill="url(#colorEquity)" 
-                    name="Equity"
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="balance" 
-                    stroke="hsl(var(--muted-foreground))" 
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    fill="none" 
-                    name="Balance"
+                    name="Cumulative P&L"
                   />
                 </AreaChart>
               </ResponsiveContainer>
