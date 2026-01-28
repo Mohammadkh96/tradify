@@ -1,8 +1,9 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
   BookOpen, 
-  PenTool, 
+  Target,
   History as HistoryIcon, 
   Calculator,
   TrendingUp,
@@ -12,7 +13,11 @@ import {
   ShieldCheck,
   Shield,
   User,
-  CreditCard
+  CreditCard,
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -22,7 +27,6 @@ import { useToast } from "@/hooks/use-toast";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/journal", label: "Journal", icon: HistoryIcon },
-  { href: "/new-entry", label: "New Entry", icon: PenTool },
   { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
   { href: "/traders-hub", label: "Traders Hub", icon: Users },
   { href: "/knowledge-base", label: "Education", icon: BookOpen },
@@ -31,9 +35,21 @@ const navItems = [
   { href: "/profile", label: "Profile", icon: User },
 ];
 
+const strategiesSubNav = [
+  { href: "/strategies", label: "My Strategies", icon: FolderOpen },
+  { href: "/strategies/create", label: "Create Strategy", icon: Plus },
+];
+
 export function Navigation() {
   const [location] = useLocation();
   const { toast } = useToast();
+  const [strategiesExpanded, setStrategiesExpanded] = useState(() => location.startsWith("/strategies"));
+
+  useEffect(() => {
+    if (location.startsWith("/strategies")) {
+      setStrategiesExpanded(true);
+    }
+  }, [location]);
 
   const { data: user } = useQuery<any>({ 
     queryKey: ["/api/user"],
@@ -106,13 +122,103 @@ export function Navigation() {
       </div>
 
       <nav className="flex-1 space-y-1 p-4">
-        {navItems.map((item) => {
+        {navItems.slice(0, 2).map((item) => {
           const isActive = location === item.href;
           const Icon = item.icon;
           
           return (
             <Link key={item.href} href={item.href}>
               <div
+                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
+                  isActive 
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-border" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+                )}
+              >
+                <Icon 
+                  size={18} 
+                  className={cn(
+                    "transition-colors",
+                    isActive ? "text-emerald-500" : "text-slate-500 group-hover:text-slate-300"
+                  )} 
+                />
+                {item.label}
+              </div>
+            </Link>
+          );
+        })}
+
+        <div className="space-y-1">
+          <button
+            data-testid="nav-strategies-toggle"
+            onClick={() => setStrategiesExpanded(!strategiesExpanded)}
+            className={cn(
+              "w-full flex items-center justify-between gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
+              location.startsWith("/strategies")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-border"
+                : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <Target 
+                size={18} 
+                className={cn(
+                  "transition-colors",
+                  location.startsWith("/strategies") ? "text-emerald-500" : "text-slate-500 group-hover:text-slate-300"
+                )} 
+              />
+              Strategies
+            </div>
+            {strategiesExpanded ? (
+              <ChevronDown size={16} className="text-slate-500" />
+            ) : (
+              <ChevronRight size={16} className="text-slate-500" />
+            )}
+          </button>
+
+          {strategiesExpanded && (
+            <div className="ml-4 space-y-1 border-l border-border pl-2">
+              {strategiesSubNav.map((item) => {
+                const isActive = location === item.href;
+                const Icon = item.icon;
+                
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <div
+                      data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
+                        isActive 
+                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+                      )}
+                    >
+                      <Icon 
+                        size={16} 
+                        className={cn(
+                          "transition-colors",
+                          isActive ? "text-emerald-500" : "text-slate-500 group-hover:text-slate-300"
+                        )} 
+                      />
+                      {item.label}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {navItems.slice(2).map((item) => {
+          const isActive = location === item.href;
+          const Icon = item.icon;
+          
+          return (
+            <Link key={item.href} href={item.href}>
+              <div
+                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
                   isActive 
@@ -188,21 +294,31 @@ export function Navigation() {
   );
 }
 
+const mobileNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/journal", label: "Journal", icon: HistoryIcon },
+  { href: "/strategies", label: "Strategies", icon: Target },
+  { href: "/mt5-bridge", label: "MT5", icon: Zap },
+];
+
 export function MobileNav() {
   const [location] = useLocation();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background z-50 md:hidden flex justify-around p-3 pb-6">
-      {navItems.slice(0, 4).map((item) => {
-        const isActive = location === item.href;
+      {mobileNavItems.map((item) => {
+        const isActive = location === item.href || (item.href === "/strategies" && location.startsWith("/strategies"));
         const Icon = item.icon;
         
         return (
           <Link key={item.href} href={item.href}>
-            <div className={cn(
-              "flex flex-col items-center gap-1 cursor-pointer",
-              isActive ? "text-emerald-500" : "text-muted-foreground"
-            )}>
+            <div 
+              data-testid={`mobile-nav-${item.label.toLowerCase()}`}
+              className={cn(
+                "flex flex-col items-center gap-1 cursor-pointer",
+                isActive ? "text-emerald-500" : "text-muted-foreground"
+              )}
+            >
               <Icon size={24} />
               <span className="text-[10px] font-medium">{item.label}</span>
             </div>

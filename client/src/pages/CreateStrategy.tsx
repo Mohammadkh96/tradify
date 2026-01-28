@@ -28,7 +28,7 @@ const formSchema = insertTradeSchema.extend({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function NewEntry() {
+export default function CreateStrategy() {
   const [, setLocation] = useLocation();
   const createTrade = useCreateTrade();
   const [validation, setValidation] = useState<any>(null);

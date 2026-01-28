@@ -1,0 +1,228 @@
+1️⃣ What the current “New Entry” tab actually is (truth)
+
+From the screenshot, New Entry is NOT an entry tool.
+
+It is:
+
+A rule evaluation engine
+
+A pre-trade validation framework
+
+A compliance checker
+
+It does not:
+
+Place trades
+
+Suggest trades
+
+Recommend entries
+
+So calling it “New Entry” is misleading — both technically and psychologically.
+
+2️⃣ What it SHOULD be called: Strategies
+
+Renaming New Entry → Strategies is the correct move.
+
+Because what the trader is actually doing there is:
+
+“Define the rules I believe in, and check whether a potential trade aligns with them.”
+
+That is a strategy builder, not an entry form.
+
+3️⃣ What “Strategies” should mean in Tradify (very important)
+A Strategy in Tradify =
+
+A user-defined rule framework that the trader voluntarily follows.
+
+Not:
+
+AI rules
+
+Platform rules
+
+Generic education rules
+
+But:
+
+The trader’s own logic, explicitly defined
+
+4️⃣ Correct mental model (this will guide everything)
+❌ Wrong mental model
+
+“Tradify tells me when to trade.”
+
+✅ Correct mental model
+
+“I define how I trade. Tradify checks whether I am respecting that.”
+
+This keeps Tradify:
+
+Non-advisory
+
+Non-signal
+
+High-trust
+
+Institutional in mindset
+
+5️⃣ How the “Strategies” tab should be structured
+1️⃣ Strategy Builder (core)
+
+The trader can:
+
+Create a strategy
+
+Name it
+
+Define rules
+
+Save it
+
+Example:
+
+Strategy Name: London Liquidity Sweep Reversal
+
+2️⃣ Rule Categories (what you already have)
+
+You are already very close — just reframe them.
+
+🔹 Market Context Rules (Detection Rules)
+
+HTF Bias (Bullish / Bearish / Range)
+
+Liquidity status (Taken / Pending)
+
+Structure state (BOS / CHOCH)
+
+Zone validity (Valid / Invalid)
+
+These are context rules, not signals.
+
+🔹 Execution Rules (Non-Negotiables)
+
+HTF bias confirmed
+
+Price in valid S/D zone
+
+Liquidity swept prior to entry
+
+LTF structure shift confirmed
+
+Entry model printed
+
+These are self-imposed execution constraints.
+
+3️⃣ Strategy Evaluation Output (already correct)
+
+The right-side panel is excellent, conceptually.
+
+It should say:
+
+✅ Strategy compliant
+
+❌ Strategy violated
+
+List which rules failed
+
+Not:
+
+“No Trade” (sounds advisory)
+
+Instead:
+
+Strategy Not Aligned
+
+This wording matters a lot.
+
+6️⃣ How this connects to Rule Compliance Score (cleanly)
+
+This is where everything clicks.
+
+Flow:
+
+Trader defines Strategy A
+
+Trader takes real trades (MT5 / manual)
+
+Each trade is evaluated after the fact:
+
+Did it comply with Strategy A?
+
+Rule Compliance Score is calculated:
+
+Last 10 trades
+
+% aligned
+
+Violations count
+
+Improvement trend
+
+Now:
+
+Strategy Builder → Intent
+
+Journal → Reality
+
+Compliance Score → Discipline
+
+This is a beautiful, coherent loop.
+
+7️⃣ Very important: What AI’s role is here (guardrails)
+AI must NOT:
+
+Define strategies
+
+Decide rules
+
+Override user rules
+
+Suggest entries
+
+AI CAN:
+
+Explain violations
+
+Detect patterns in non-compliance
+
+Summarize behavioral drift
+
+Example:
+
+“Most violations occurred after consecutive losses, with increased risk size.”
+
+AI = explanation layer, not authority.
+
+8️⃣ What to rename (concrete recommendations)
+Current	Change to
+New Entry	Strategies
+No Trade	Strategy Not Aligned
+Entry Confirmation	Execution Confirmation
+Detection Rules	Market Context Rules
+Execution Checklist	Execution Rules
+
+These are semantic fixes that massively improve clarity.
+
+9️⃣ Should traders “follow” the strategy?
+
+Yes — but voluntarily.
+
+The platform should never say:
+
+“You must do this”
+
+Instead:
+
+“This trade does / does not align with the strategy you defined.”
+
+This keeps responsibility with the trader, which is crucial.
+
+10️⃣ Final answer (very clear)
+
+✅ Yes — you should change New Entry → Strategies
+✅ Yes — the trader builds their own strategy
+✅ Yes — the platform evaluates alignment, not entries
+❌ No — the platform must not give trade advice
+
+You’re not just renaming a tab — you’re fixing the product’s conceptual spine.

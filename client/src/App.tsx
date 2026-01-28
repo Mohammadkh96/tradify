@@ -10,7 +10,8 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Pricing from "@/pages/Pricing";
 import Landing from "@/pages/Landing";
 import Journal from "@/pages/Journal";
-import NewEntry from "@/pages/NewEntry";
+import Strategies from "@/pages/Strategies";
+import CreateStrategy from "@/pages/CreateStrategy";
 import KnowledgeBase from "@/pages/KnowledgeBase";
 import RiskCalculator from "@/pages/RiskCalculator";
 import MT5Bridge from "@/pages/MT5Bridge";
@@ -338,8 +339,11 @@ function Router() {
       <Route path="/journal">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Journal />}
       </Route>
-      <Route path="/new-entry">
-        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <NewEntry />}
+      <Route path="/strategies">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Strategies />}
+      </Route>
+      <Route path="/strategies/create">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <CreateStrategy />}
       </Route>
       <Route path="/knowledge-base">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <KnowledgeBase />}
