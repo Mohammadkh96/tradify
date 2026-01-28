@@ -1169,6 +1169,24 @@ Output exactly 1-3 bullet points.`;
         return res.status(400).json({ message: "Strategy name is required" });
       }
       
+      // Check strategy limit for Free users
+      const user = await storage.getUserRole(userId);
+      const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+      
+      if (!isPro) {
+        const existingStrategies = await storage.getStrategies(userId);
+        const FREE_STRATEGY_LIMIT = 1;
+        
+        if (existingStrategies.length >= FREE_STRATEGY_LIMIT) {
+          return res.status(403).json({ 
+            message: "Strategy limit reached",
+            error: "FREE_LIMIT_REACHED",
+            limit: FREE_STRATEGY_LIMIT,
+            current: existingStrategies.length
+          });
+        }
+      }
+      
       // Create strategy
       const strategy = await storage.createStrategy({
         userId,
@@ -1295,6 +1313,24 @@ Output exactly 1-3 bullet points.`;
       }
       if (strategy.userId !== userId) {
         return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Check strategy limit for Free users
+      const user = await storage.getUserRole(userId);
+      const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+      
+      if (!isPro) {
+        const existingStrategies = await storage.getStrategies(userId);
+        const FREE_STRATEGY_LIMIT = 1;
+        
+        if (existingStrategies.length >= FREE_STRATEGY_LIMIT) {
+          return res.status(403).json({ 
+            message: "Strategy limit reached",
+            error: "FREE_LIMIT_REACHED",
+            limit: FREE_STRATEGY_LIMIT,
+            current: existingStrategies.length
+          });
+        }
       }
       
       // Get original rules

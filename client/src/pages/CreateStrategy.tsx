@@ -74,6 +74,13 @@ export default function CreateStrategy() {
       rules: SelectedRule[];
     }) => {
       const response = await apiRequest("POST", "/api/strategies", data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === "FREE_LIMIT_REACHED") {
+          throw new Error("LIMIT_REACHED");
+        }
+        throw new Error(errorData.message || "Failed to create strategy");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -85,11 +92,20 @@ export default function CreateStrategy() {
       setLocation("/strategies");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create strategy",
-        variant: "destructive",
-      });
+      if (error.message === "LIMIT_REACHED") {
+        toast({
+          title: "Strategy Limit Reached",
+          description: "Free accounts are limited to 1 strategy. Upgrade to Pro for unlimited strategies.",
+          variant: "destructive",
+        });
+        setLocation("/pricing");
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create strategy",
+          variant: "destructive",
+        });
+      }
     },
   });
 

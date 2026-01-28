@@ -36,8 +36,12 @@ import {
   ListChecks,
   Sparkles,
   AlertCircle,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const FREE_STRATEGY_LIMIT = 1;
 
 interface Strategy {
   id: number;
@@ -60,6 +64,14 @@ export default function Strategies() {
     queryKey: ["/api/strategies"],
   });
 
+  const { data: user } = useQuery<any>({
+    queryKey: ["/api/user"],
+  });
+
+  const isUserLoaded = user !== undefined;
+  const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+  const isAtLimit = isUserLoaded && !isPro && strategies.length >= FREE_STRATEGY_LIMIT;
+
   const activateMutation = useMutation({
     mutationFn: async (strategyId: number) => {
       await apiRequest("POST", `/api/strategies/${strategyId}/activate`);
@@ -76,6 +88,13 @@ export default function Strategies() {
   const duplicateMutation = useMutation({
     mutationFn: async (strategyId: number) => {
       const response = await apiRequest("POST", `/api/strategies/${strategyId}/duplicate`);
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.error === "FREE_LIMIT_REACHED") {
+          throw new Error("LIMIT_REACHED");
+        }
+        throw new Error(data.message || "Failed to duplicate strategy");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -83,7 +102,15 @@ export default function Strategies() {
       toast({ title: "Strategy duplicated" });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      if (error.message === "LIMIT_REACHED") {
+        toast({ 
+          title: "Strategy Limit Reached", 
+          description: "Upgrade to Pro for unlimited strategies.", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
     },
   });
 
@@ -129,14 +156,54 @@ export default function Strategies() {
             <p className="text-muted-foreground text-sm mt-1">
               Define your trading rules. Tradify checks whether you respect them.
             </p>
+            {isUserLoaded && !isPro && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {strategies.length}/{FREE_STRATEGY_LIMIT} strategies used (Free plan)
+              </p>
+            )}
           </div>
-          <Link href="/strategies/create">
-            <Button data-testid="button-create-strategy" className="gap-2">
-              <Plus size={18} />
-              Create Strategy
-            </Button>
-          </Link>
+          {isAtLimit ? (
+            <Link href="/pricing">
+              <Button data-testid="button-upgrade-pro" className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 border-amber-600">
+                <Crown size={18} />
+                Upgrade for Unlimited
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/strategies/create">
+              <Button data-testid="button-create-strategy" className="gap-2">
+                <Plus size={18} />
+                Create Strategy
+              </Button>
+            </Link>
+          )}
         </div>
+
+        {isAtLimit && (
+          <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Lock size={20} className="text-amber-500" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">Strategy Limit Reached</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Free accounts are limited to {FREE_STRATEGY_LIMIT} strategy. Upgrade to Pro for unlimited strategies.
+                  </p>
+                </div>
+                <Link href="/pricing">
+                  <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 border-amber-600">
+                    <Crown size={14} className="mr-1" />
+                    Upgrade
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {activeStrategy && (
           <Card className="bg-emerald-500/5 border-emerald-500/30">
