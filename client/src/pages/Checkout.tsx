@@ -117,7 +117,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="w-full bg-white rounded-xl p-2 shadow-inner border border-border">
-                    <PayPalButton amount="19.00" currency="USD" intent="subscription" />
+                    <PayPalButton amount="19.00" currency="USD" intent="CAPTURE" />
                   </div>
 
                   <div className="flex items-start gap-2 text-[9px] text-muted-foreground font-black uppercase tracking-widest bg-muted/30 p-3 rounded-lg border border-border/50 italic">

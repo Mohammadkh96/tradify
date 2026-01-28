@@ -166,6 +166,20 @@ export async function registerRoutes(
   });
 
   app.post("/api/paypal/order/:orderID/capture", requireAuth, async (req, res) => {
+    // Store the original json function to intercept the response
+    const originalJson = res.json.bind(res);
+    res.json = function(data: any) {
+      // If capture was successful (status COMPLETED), upgrade the user
+      if (data && data.status === 'COMPLETED') {
+        const userId = req.session.userId!;
+        storage.updateUserSubscriptionInfo(userId, {
+          subscriptionTier: 'PRO',
+          subscriptionProvider: 'paypal',
+          paypalSubscriptionId: data.id || null,
+        }).catch(err => console.error('Failed to upgrade user after PayPal payment:', err));
+      }
+      return originalJson(data);
+    };
     await capturePaypalOrder(req, res);
   });
 

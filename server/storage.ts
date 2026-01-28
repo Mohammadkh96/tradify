@@ -136,6 +136,7 @@ export class DatabaseStorage implements IStorage {
   async updateUserSubscriptionInfo(userId: string, info: {
     subscriptionStatus?: string;
     subscriptionTier?: string;
+    subscriptionProvider?: string;
     currentPlan?: string;
     renewalDate?: Date;
     paypalSubscriptionId?: string;
