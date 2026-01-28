@@ -212,9 +212,7 @@ export default function Dashboard() {
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm rounded-xl">
                   <Lock className="text-emerald-500 mb-2" size={24} />
                   <p className="text-sm font-bold text-foreground uppercase tracking-widest">30-Day Limit (FREE)</p>
-                  <Button variant="ghost" asChild className="text-emerald-500 text-xs h-auto p-0 mt-1 hover:bg-transparent">
-                    <Link href="/pricing">Upgrade to PRO for full history</Link>
-                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1 uppercase font-bold">Upgrade to PRO for full history</p>
                 </div>
               )}
               <ResponsiveContainer width="100%" height="100%">
@@ -306,10 +304,7 @@ export default function Dashboard() {
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
                 <Lock className="text-emerald-500 mb-3" size={24} />
                 <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">AI Analyst Locked</h4>
-                <p className="text-[10px] text-muted-foreground mb-4">Upgrade to PRO to unlock contextual AI performance insights.</p>
-                <Link href="/pricing">
-                  <Button className="bg-emerald-500 text-slate-950 font-black text-[10px] uppercase h-8 px-4">Unlock AI Insights</Button>
-                </Link>
+                <p className="text-[10px] text-muted-foreground mb-4">Subscribe to PRO to unlock contextual AI performance insights.</p>
               </div>
             )}
           </div>
@@ -378,10 +373,7 @@ export default function Dashboard() {
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
                 <Lock className="text-emerald-500 mb-3" size={24} />
                 <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">Intelligence Layer Locked</h4>
-                <p className="text-[10px] text-muted-foreground mb-4">Upgrade to PRO to unlock advanced session and expectancy analytics.</p>
-                <Link href="/pricing">
-                  <Button className="bg-emerald-500 text-slate-950 font-black text-[10px] uppercase h-8 px-4">Unlock Intelligence</Button>
-                </Link>
+                <p className="text-[10px] text-muted-foreground mb-4">Subscribe to PRO to unlock advanced session and expectancy analytics.</p>
               </div>
             )}
           </div>

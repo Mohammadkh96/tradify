@@ -88,15 +88,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserSubscriptionInfo(userId: string, info: {
-    subscriptionProvider?: string;
     subscriptionStatus?: string;
     subscriptionTier?: string;
     currentPlan?: string;
     renewalDate?: Date;
     paypalSubscriptionId?: string;
-    stripeCustomerId?: string;
-    stripeSubscriptionId?: string;
-    currentPeriodEnd?: Date;
     syncToken?: string;
   }) {
     const [user] = await db.update(userRole)
@@ -470,15 +466,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserSubscriptionInfo(userId: string, info: {
-    subscriptionProvider?: string;
     subscriptionStatus?: string;
     subscriptionTier?: string;
     currentPlan?: string;
     renewalDate?: Date;
     paypalSubscriptionId?: string;
-    stripeCustomerId?: string;
-    stripeSubscriptionId?: string;
-    currentPeriodEnd?: Date;
     syncToken?: string;
   }) {
     const [user] = await db.update(userRole)
@@ -496,56 +488,24 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async updateUserStripeInfo(userId: string, stripeInfo: {
-    stripeCustomerId?: string;
-    stripeSubscriptionId?: string;
-    subscriptionStatus?: string;
-    subscriptionTier?: string;
-    currentPeriodEnd?: Date;
-  }) {
-    return this.updateUserSubscriptionInfo(userId, { ...stripeInfo, subscriptionProvider: 'stripe' });
+  async updateUserStripeInfo(userId: string, stripeInfo: any) {
+    // Removed Stripe integration
   }
 
   async getProduct(productId: string) {
-    const result = await db.execute(
-      sql`SELECT * FROM stripe.products WHERE id = ${productId}`
-    );
-    return result.rows[0] || null;
+    return null;
   }
 
   async getSubscription(subscriptionId: string) {
-    const result = await db.execute(
-      sql`SELECT * FROM stripe.subscriptions WHERE id = ${subscriptionId}`
-    );
-    return result.rows[0] || null;
+    return null;
   }
 
   async listProductsWithPrices(active = true) {
-    const result = await db.execute(
-      sql`
-        SELECT 
-          p.id as product_id,
-          p.name as product_name,
-          p.description as product_description,
-          p.metadata as product_metadata,
-          pr.id as price_id,
-          pr.unit_amount,
-          pr.currency,
-          pr.recurring
-        FROM stripe.products p
-        LEFT JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
-        WHERE p.active = ${active}
-        ORDER BY p.id, pr.unit_amount
-      `
-    );
-    return result.rows;
+    return [];
   }
 
   async getPrice(priceId: string) {
-    const result = await db.execute(
-      sql`SELECT * FROM stripe.prices WHERE id = ${priceId}`
-    );
-    return result.rows[0] || null;
+    return null;
   }
 
   async getSignalProviderProfile(userId: string) {
