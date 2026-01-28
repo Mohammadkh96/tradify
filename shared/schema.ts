@@ -283,3 +283,39 @@ export const insertCreatorApplicationSchema = createInsertSchema(creatorApplicat
 
 export type CreatorProfile = typeof creatorProfiles.$inferSelect;
 export type CreatorApplication = typeof creatorApplications.$inferSelect;
+
+// ==================== STRATEGIES ====================
+// User-defined trading frameworks with custom rules
+
+export const strategies = pgTable("strategies", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const strategyRules = pgTable("strategy_rules", {
+  id: serial("id").primaryKey(),
+  strategyId: integer("strategy_id").notNull(),
+  category: text("category").notNull(), // 'market_context' | 'execution' | 'risk'
+  label: text("label").notNull(),
+  description: text("description"),
+  ruleType: text("rule_type").notNull(), // 'boolean' | 'select' | 'number' | 'text'
+  options: jsonb("options"), // For select type: ["Option1", "Option2"]
+  defaultValue: text("default_value"),
+  isRequired: boolean("is_required").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertStrategySchema = createInsertSchema(strategies).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateStrategySchema = insertStrategySchema.partial();
+export const insertStrategyRuleSchema = createInsertSchema(strategyRules).omit({ id: true, createdAt: true });
+
+export type Strategy = typeof strategies.$inferSelect;
+export type InsertStrategy = z.infer<typeof insertStrategySchema>;
+export type StrategyRule = typeof strategyRules.$inferSelect;
+export type InsertStrategyRule = z.infer<typeof insertStrategyRuleSchema>;

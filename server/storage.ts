@@ -14,6 +14,8 @@ import {
   creatorProfiles,
   creatorApplications,
   signalProviderProfile,
+  strategies,
+  strategyRules,
   type HubPost,
   type HubComment,
   type HubReport,
@@ -25,7 +27,11 @@ import {
   type MT5Data,
   type AdminAuditLog,
   type AIPerformanceInsight,
-  type AIInsightLog
+  type AIInsightLog,
+  type Strategy,
+  type InsertStrategy,
+  type StrategyRule,
+  type InsertStrategyRule
 } from "@shared/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -74,6 +80,19 @@ export interface IStorage {
   updateCreatorApplicationStatus(id: number, status: string): Promise<void>;
   updateCreatorProfile(userId: string, updates: any): Promise<CreatorProfile>;
   getAllApprovedCreators(): Promise<CreatorProfile[]>;
+  // Strategy Methods
+  getStrategies(userId: string): Promise<Strategy[]>;
+  getStrategy(id: number): Promise<Strategy | undefined>;
+  getActiveStrategy(userId: string): Promise<Strategy | undefined>;
+  createStrategy(strategy: InsertStrategy): Promise<Strategy>;
+  updateStrategy(id: number, updates: Partial<InsertStrategy>): Promise<Strategy>;
+  deleteStrategy(id: number): Promise<void>;
+  setActiveStrategy(userId: string, strategyId: number): Promise<void>;
+  getStrategyRules(strategyId: number): Promise<StrategyRule[]>;
+  createStrategyRule(rule: InsertStrategyRule): Promise<StrategyRule>;
+  updateStrategyRule(id: number, updates: Partial<InsertStrategyRule>): Promise<StrategyRule>;
+  deleteStrategyRule(id: number): Promise<void>;
+  deleteStrategyRules(strategyId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -510,6 +529,79 @@ export class DatabaseStorage implements IStorage {
       violations,
       matchedSetup
     };
+  }
+
+  // ==================== STRATEGY METHODS ====================
+
+  async getStrategies(userId: string): Promise<Strategy[]> {
+    return db.select().from(strategies).where(eq(strategies.userId, userId)).orderBy(desc(strategies.createdAt));
+  }
+
+  async getStrategy(id: number): Promise<Strategy | undefined> {
+    const [strategy] = await db.select().from(strategies).where(eq(strategies.id, id)).limit(1);
+    return strategy;
+  }
+
+  async getActiveStrategy(userId: string): Promise<Strategy | undefined> {
+    const [strategy] = await db.select().from(strategies)
+      .where(and(eq(strategies.userId, userId), eq(strategies.isActive, true)))
+      .limit(1);
+    return strategy;
+  }
+
+  async createStrategy(strategy: InsertStrategy): Promise<Strategy> {
+    const [created] = await db.insert(strategies).values(strategy).returning();
+    return created;
+  }
+
+  async updateStrategy(id: number, updates: Partial<InsertStrategy>): Promise<Strategy> {
+    const [updated] = await db.update(strategies)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(strategies.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteStrategy(id: number): Promise<void> {
+    await this.deleteStrategyRules(id);
+    await db.delete(strategies).where(eq(strategies.id, id));
+  }
+
+  async setActiveStrategy(userId: string, strategyId: number): Promise<void> {
+    await db.update(strategies)
+      .set({ isActive: false })
+      .where(eq(strategies.userId, userId));
+    
+    await db.update(strategies)
+      .set({ isActive: true, updatedAt: new Date() })
+      .where(eq(strategies.id, strategyId));
+  }
+
+  async getStrategyRules(strategyId: number): Promise<StrategyRule[]> {
+    return db.select().from(strategyRules)
+      .where(eq(strategyRules.strategyId, strategyId))
+      .orderBy(strategyRules.sortOrder);
+  }
+
+  async createStrategyRule(rule: InsertStrategyRule): Promise<StrategyRule> {
+    const [created] = await db.insert(strategyRules).values(rule).returning();
+    return created;
+  }
+
+  async updateStrategyRule(id: number, updates: Partial<InsertStrategyRule>): Promise<StrategyRule> {
+    const [updated] = await db.update(strategyRules)
+      .set(updates)
+      .where(eq(strategyRules.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteStrategyRule(id: number): Promise<void> {
+    await db.delete(strategyRules).where(eq(strategyRules.id, id));
+  }
+
+  async deleteStrategyRules(strategyId: number): Promise<void> {
+    await db.delete(strategyRules).where(eq(strategyRules.strategyId, strategyId));
   }
 }
 
