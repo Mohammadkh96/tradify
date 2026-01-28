@@ -435,6 +435,22 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/mt5/history/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      if (userId === "demo") {
+        return res.json([]);
+      }
+      
+      const history = await storage.getMT5History(userId);
+      res.json(history);
+    } catch (error) {
+      console.error("MT5 History Error:", error);
+      res.status(500).json({ message: "Failed to fetch MT5 history" });
+    }
+  });
+
   app.get("/api/performance/intelligence/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
