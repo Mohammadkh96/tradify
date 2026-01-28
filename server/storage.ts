@@ -67,6 +67,7 @@ export interface IStorage {
   getMT5Data(userId: string): Promise<MT5Data | undefined>;
   getUserRole(userId: string): Promise<any>;
   updateUserSubscription(userId: string, tier: string): Promise<void>;
+  updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<void>;
   createAdminAuditLog(log: { adminId: number | string; actionType: string; targetUserId: string; details: any }): Promise<AdminAuditLog>;
   getAdminAuditLogs(userId?: string): Promise<AdminAuditLog[]>;
   getAIInsights(userId: string, timeframe: string): Promise<AIPerformanceInsight[]>;
@@ -158,6 +159,12 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserSubscription(userId: string, tier: string): Promise<void> {
     await this.updateUserSubscriptionInfo(userId, { subscriptionTier: tier });
+  }
+
+  async updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<void> {
+    await db.update(userRole)
+      .set({ stripeCustomerId, updatedAt: new Date() })
+      .where(eq(userRole.userId, userId));
   }
 
   async updateMT5Data(data: { 

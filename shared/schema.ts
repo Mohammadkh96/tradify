@@ -88,6 +88,9 @@ export const userRole = pgTable("user_role", {
   currentPlan: text("current_plan"),
   renewalDate: timestamp("renewal_date"),
   paypalSubscriptionId: text("paypal_subscription_id"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionProvider: text("subscription_provider"), // 'stripe' or 'paypal'
   syncToken: text("sync_token"),
   country: text("country"), // ISO country name or code as per spec
   phoneNumber: text("phone_number"),
