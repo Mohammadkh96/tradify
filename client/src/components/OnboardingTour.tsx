@@ -184,6 +184,18 @@ export function OnboardingTour() {
     }
   }, [isOpen]);
 
+  // Add tour-active class to body when tour is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("tour-active");
+    } else {
+      document.body.classList.remove("tour-active");
+    }
+    return () => {
+      document.body.classList.remove("tour-active");
+    };
+  }, [isOpen]);
+
   if (hasCompletedTour && !isOpen) {
     return (
       <button
