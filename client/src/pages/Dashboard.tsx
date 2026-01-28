@@ -15,7 +15,12 @@ import {
   Percent,
   TrendingUp,
   TrendingDown,
-  Target
+  Target,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowUp,
+  ArrowDown,
+  Minus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +74,20 @@ export default function Dashboard() {
   const { data: insights, isLoading: isInsightsLoading } = useQuery<any>({
     queryKey: [`/api/ai/insights/${userId}`],
     enabled: !!userId && isPro,
+  });
+
+  // Compliance score for active strategy (aggregated, no rule evaluation)
+  const { data: complianceScore, isLoading: isComplianceLoading } = useQuery<{
+    strategyId: number;
+    strategyName: string;
+    compliancePercent: number;
+    violationsCount: number;
+    trendDirection: 'improving' | 'declining' | 'stable';
+    tradesEvaluated: number;
+  }>({
+    queryKey: ['/api/compliance/score'],
+    enabled: !!userId,
+    staleTime: 30000,
   });
 
   const allTrades = trades || [];
@@ -517,6 +536,114 @@ export default function Dashboard() {
                 <Lock className="text-emerald-500 mb-3" size={24} />
                 <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">Intelligence Layer Locked</h4>
                 <p className="text-[10px] text-muted-foreground mb-4">Subscribe to PRO to unlock advanced session and expectancy analytics.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Strategy Compliance Card - Aggregated results only */}
+          <div className="bg-card border border-emerald-500/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <CheckCircle2 size={80} className="text-emerald-500" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+              <CheckCircle2 size={18} className="text-emerald-500" />
+              Strategy Compliance
+            </h3>
+            
+            {isComplianceLoading ? (
+              <div className="flex flex-col items-center justify-center py-8 space-y-2">
+                <div className="animate-spin text-emerald-500"><RefreshCw size={24} /></div>
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Loading...</p>
+              </div>
+            ) : complianceScore ? (
+              <div className="space-y-4">
+                {/* Active Strategy Name */}
+                <div className="bg-background/50 p-3 rounded-xl border border-border">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Active Strategy</span>
+                  <span className="text-sm font-bold text-foreground truncate block" data-testid="text-active-strategy-name">
+                    {complianceScore.strategyName}
+                  </span>
+                </div>
+
+                {/* Compliance Score */}
+                <div className="bg-background/50 p-3 rounded-xl border border-border">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Compliance Score</span>
+                  <div className="flex items-center justify-between">
+                    <span className={cn(
+                      "text-2xl font-black",
+                      complianceScore.compliancePercent >= 80 ? "text-emerald-500" :
+                      complianceScore.compliancePercent >= 60 ? "text-amber-500" : "text-rose-500"
+                    )} data-testid="text-compliance-score">
+                      {complianceScore.compliancePercent.toFixed(1)}%
+                    </span>
+                    <div className="h-2 w-24 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className={cn(
+                          "h-full transition-all",
+                          complianceScore.compliancePercent >= 80 ? "bg-emerald-500" :
+                          complianceScore.compliancePercent >= 60 ? "bg-amber-500" : "bg-rose-500"
+                        )} 
+                        style={{ width: `${complianceScore.compliancePercent}%` }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Violations & Trend */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-background/50 p-3 rounded-xl border border-border">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Violations</span>
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={12} className={complianceScore.violationsCount > 0 ? "text-rose-500" : "text-emerald-500"} />
+                      <span className={cn(
+                        "text-sm font-bold",
+                        complianceScore.violationsCount > 0 ? "text-rose-500" : "text-emerald-500"
+                      )} data-testid="text-violations-count">
+                        {complianceScore.violationsCount}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-background/50 p-3 rounded-xl border border-border">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Trend</span>
+                    <div className="flex items-center gap-2">
+                      {complianceScore.trendDirection === 'improving' && (
+                        <>
+                          <ArrowUp size={12} className="text-emerald-500" />
+                          <span className="text-sm font-bold text-emerald-500" data-testid="text-compliance-trend">Improving</span>
+                        </>
+                      )}
+                      {complianceScore.trendDirection === 'declining' && (
+                        <>
+                          <ArrowDown size={12} className="text-rose-500" />
+                          <span className="text-sm font-bold text-rose-500" data-testid="text-compliance-trend">Declining</span>
+                        </>
+                      )}
+                      {complianceScore.trendDirection === 'stable' && (
+                        <>
+                          <Minus size={12} className="text-muted-foreground" />
+                          <span className="text-sm font-bold text-muted-foreground" data-testid="text-compliance-trend">Stable</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trades Evaluated */}
+                <div className="text-center pt-2 border-t border-border">
+                  <span className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">
+                    Based on last {complianceScore.tradesEvaluated} evaluated trades
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center space-y-2">
+                <CheckCircle2 size={32} className="mx-auto text-muted-foreground/30" />
+                <p className="text-xs text-muted-foreground">No active strategy found</p>
+                <Link href="/strategies">
+                  <Button variant="ghost" className="text-[10px] font-bold uppercase text-emerald-500 hover:bg-transparent" data-testid="link-create-strategy">
+                    Create Strategy
+                  </Button>
+                </Link>
               </div>
             )}
           </div>
