@@ -1339,6 +1339,141 @@ Output exactly 1-3 bullet points.`;
     }
   });
 
+  // AI explanation for compliance trends (read-only)
+  app.get("/api/compliance/explain", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      let tradeCount = parseInt(req.query.trades as string) || 20;
+      tradeCount = Math.max(1, Math.min(50, isNaN(tradeCount) ? 20 : tradeCount));
+      
+      // Get user's active strategy
+      const activeStrategy = await storage.getActiveStrategy(userId);
+      if (!activeStrategy) {
+        return res.status(404).json({ message: "No active strategy found" });
+      }
+      
+      // Get detailed violation data
+      const { results, violationsByRule, patterns } = await storage.getDetailedViolations(
+        userId, 
+        activeStrategy.id, 
+        tradeCount
+      );
+      
+      // Check for insufficient data
+      if (results.length < 3) {
+        return res.json({
+          explanation: "Insufficient data for meaningful analysis. At least 3 evaluated trades are needed to identify patterns. Continue trading and evaluating your compliance to build up your history.",
+          insufficientData: true,
+          tradesAnalyzed: results.length
+        });
+      }
+      
+      // Calculate compliance stats
+      const compliantCount = results.filter(r => r.overallCompliant).length;
+      const compliancePercent = Math.round((compliantCount / results.length) * 100);
+      const totalViolations = Object.values(violationsByRule).reduce((sum, v) => sum + v.count, 0);
+      
+      // Build context for AI
+      const violationSummary = Object.entries(violationsByRule)
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([ruleType, data]) => `- ${data.ruleLabel}: ${data.count} violations (${data.reasons.slice(0, 3).join('; ')})`)
+        .join('\n');
+      
+      // Build time pattern summary
+      const timePatterns = Object.entries(patterns.byTimeOfDay)
+        .filter(([_, data]) => data.total > 0)
+        .map(([slot, data]) => {
+          const rate = data.total > 0 ? Math.round((data.violations / data.total) * 100) : 0;
+          return `- ${slot}: ${data.total} trades, ${rate}% violation rate`;
+        })
+        .join('\n');
+      
+      // Build day pattern summary
+      const dayPatterns = Object.entries(patterns.byDayOfWeek)
+        .filter(([_, data]) => data.total > 0)
+        .map(([day, data]) => {
+          const rate = data.total > 0 ? Math.round((data.violations / data.total) * 100) : 0;
+          return `- ${day}: ${data.total} trades, ${rate}% violation rate`;
+        })
+        .join('\n');
+      
+      // Use pre-calculated values
+      const recentViolationRate = patterns.riskDrift.recentViolationRate;
+      const olderViolationRate = patterns.riskDrift.olderViolationRate;
+      const recentCompliance = 100 - recentViolationRate;
+      const olderCompliance = 100 - olderViolationRate;
+      
+      const prompt = `You are a trading journal assistant analyzing a trader's rule compliance data. Your role is STRICTLY READ-ONLY:
+- You CANNOT create rules
+- You CANNOT change scores  
+- You CANNOT suggest trades
+- You can ONLY explain patterns in the existing compliance data
+
+Analyze this compliance data and provide a brief, factual summary:
+
+Strategy: ${activeStrategy.name}
+Trades Analyzed: ${results.length}
+Overall Compliance: ${compliancePercent}%
+Total Violations: ${totalViolations}
+
+TREND (Risk Drift):
+- Recent violation rate: ${recentViolationRate}%
+- Older violation rate: ${olderViolationRate}%
+- Direction: ${recentViolationRate < olderViolationRate ? 'Improving' : recentViolationRate > olderViolationRate ? 'Declining' : 'Stable'}
+
+TIME-OF-DAY PATTERNS:
+${timePatterns || 'No time data available'}
+
+DAY-OF-WEEK PATTERNS:
+${dayPatterns || 'No day data available'}
+
+VIOLATION BREAKDOWN BY RULE:
+${violationSummary || 'No violations recorded'}
+
+Provide a 3-4 sentence factual summary that:
+1. States the overall compliance rate and trend direction
+2. Identifies the most frequently violated rule (if any)
+3. Notes any time-of-day or day-of-week patterns where violations are concentrated
+4. Describes risk drift if recent behavior differs from older behavior
+
+IMPORTANT: Only state facts from the data above. Do not recommend trades or suggest rule changes.`;
+
+      const OpenAI = (await import('openai')).default;
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_completion_tokens: 300,
+      });
+      
+      const explanation = response.choices[0]?.message?.content || "Unable to generate explanation.";
+      
+      res.json({
+        explanation,
+        insufficientData: false,
+        tradesAnalyzed: results.length,
+        compliancePercent,
+        totalViolations,
+        trendComparison: {
+          recent: recentCompliance,
+          older: olderCompliance
+        },
+        patterns: {
+          byTimeOfDay: patterns.byTimeOfDay,
+          byDayOfWeek: patterns.byDayOfWeek,
+          riskDrift: patterns.riskDrift
+        }
+      });
+    } catch (error) {
+      console.error("Error generating compliance explanation:", error);
+      res.status(500).json({ message: "Failed to generate compliance explanation" });
+    }
+  });
+
   // Get compliance score for user's active strategy
   app.get("/api/compliance/score", requireAuth, async (req, res) => {
     try {

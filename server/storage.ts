@@ -110,6 +110,15 @@ export interface IStorage {
     trendDirection: 'improving' | 'declining' | 'stable';
     tradesEvaluated: number;
   }>;
+  getDetailedViolations(userId: string, strategyId: number, tradeCount?: number): Promise<{
+    results: (TradeComplianceResult & { evaluations: TradeRuleEvaluation[] })[];
+    violationsByRule: Record<string, { count: number; ruleLabel: string; reasons: string[] }>;
+    patterns: {
+      byTimeOfDay: Record<string, { total: number; violations: number }>;
+      byDayOfWeek: Record<string, { total: number; violations: number }>;
+      riskDrift: { recentViolationRate: number; olderViolationRate: number };
+    };
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -703,6 +712,106 @@ export class DatabaseStorage implements IStorage {
       violationsCount,
       trendDirection,
       tradesEvaluated: results.length
+    };
+  }
+
+  async getDetailedViolations(userId: string, strategyId: number, tradeCount: number = 20): Promise<{
+    results: (TradeComplianceResult & { evaluations: TradeRuleEvaluation[] })[];
+    violationsByRule: Record<string, { count: number; ruleLabel: string; reasons: string[] }>;
+    patterns: {
+      byTimeOfDay: Record<string, { total: number; violations: number }>;
+      byDayOfWeek: Record<string, { total: number; violations: number }>;
+      riskDrift: { recentViolationRate: number; olderViolationRate: number };
+    };
+  }> {
+    const complianceResults = await db.select().from(tradeComplianceResults)
+      .where(and(
+        eq(tradeComplianceResults.userId, userId),
+        eq(tradeComplianceResults.strategyId, strategyId)
+      ))
+      .orderBy(desc(tradeComplianceResults.evaluatedAt))
+      .limit(tradeCount);
+
+    const resultsWithEvaluations: (TradeComplianceResult & { evaluations: TradeRuleEvaluation[] })[] = [];
+    const violationsByRule: Record<string, { count: number; ruleLabel: string; reasons: string[] }> = {};
+    const byTimeOfDay: Record<string, { total: number; violations: number }> = {
+      'Morning (6-12)': { total: 0, violations: 0 },
+      'Afternoon (12-18)': { total: 0, violations: 0 },
+      'Evening (18-24)': { total: 0, violations: 0 },
+      'Night (0-6)': { total: 0, violations: 0 }
+    };
+    const byDayOfWeek: Record<string, { total: number; violations: number }> = {
+      'Monday': { total: 0, violations: 0 },
+      'Tuesday': { total: 0, violations: 0 },
+      'Wednesday': { total: 0, violations: 0 },
+      'Thursday': { total: 0, violations: 0 },
+      'Friday': { total: 0, violations: 0 }
+    };
+
+    for (const result of complianceResults) {
+      const evaluations = await db.select().from(tradeRuleEvaluations)
+        .where(eq(tradeRuleEvaluations.complianceResultId, result.id));
+      
+      resultsWithEvaluations.push({ ...result, evaluations });
+      
+      // Analyze time patterns
+      if (result.evaluatedAt) {
+        const date = new Date(result.evaluatedAt);
+        const hour = date.getHours();
+        const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()];
+        
+        let timeSlot: string;
+        if (hour >= 6 && hour < 12) timeSlot = 'Morning (6-12)';
+        else if (hour >= 12 && hour < 18) timeSlot = 'Afternoon (12-18)';
+        else if (hour >= 18 && hour < 24) timeSlot = 'Evening (18-24)';
+        else timeSlot = 'Night (0-6)';
+        
+        byTimeOfDay[timeSlot].total++;
+        if (!result.overallCompliant) byTimeOfDay[timeSlot].violations++;
+        
+        if (byDayOfWeek[dayOfWeek]) {
+          byDayOfWeek[dayOfWeek].total++;
+          if (!result.overallCompliant) byDayOfWeek[dayOfWeek].violations++;
+        }
+      }
+      
+      for (const evaluation of evaluations) {
+        if (!evaluation.passed) {
+          if (!violationsByRule[evaluation.ruleType]) {
+            violationsByRule[evaluation.ruleType] = {
+              count: 0,
+              ruleLabel: evaluation.ruleLabel,
+              reasons: []
+            };
+          }
+          violationsByRule[evaluation.ruleType].count++;
+          if (evaluation.violationReason && !violationsByRule[evaluation.ruleType].reasons.includes(evaluation.violationReason)) {
+            violationsByRule[evaluation.ruleType].reasons.push(evaluation.violationReason);
+          }
+        }
+      }
+    }
+
+    // Calculate risk drift (recent vs older violation rates)
+    const halfPoint = Math.floor(resultsWithEvaluations.length / 2);
+    const recentHalf = resultsWithEvaluations.slice(0, Math.max(1, halfPoint));
+    const olderHalf = resultsWithEvaluations.slice(halfPoint);
+    
+    const recentViolationRate = recentHalf.length > 0 
+      ? Math.round((recentHalf.filter(r => !r.overallCompliant).length / recentHalf.length) * 100) 
+      : 0;
+    const olderViolationRate = olderHalf.length > 0 
+      ? Math.round((olderHalf.filter(r => !r.overallCompliant).length / olderHalf.length) * 100) 
+      : 0;
+
+    return { 
+      results: resultsWithEvaluations, 
+      violationsByRule,
+      patterns: {
+        byTimeOfDay,
+        byDayOfWeek,
+        riskDrift: { recentViolationRate, olderViolationRate }
+      }
     };
   }
 }
