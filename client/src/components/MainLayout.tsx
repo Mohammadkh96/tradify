@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Navigation, MobileNav } from "./Navigation";
 import { ChatAssistant } from "./ChatAssistant";
 import { ThemeToggle } from "./ThemeToggle";
+import { OnboardingTour } from "./OnboardingTour";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -19,6 +20,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         {children}
       </main>
       <ChatAssistant />
+      <OnboardingTour />
     </div>
   );
 }

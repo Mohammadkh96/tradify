@@ -18,8 +18,13 @@ Key features:
   - Create Strategy: Define rules from RULE_TYPE_CATALOG
   - Strategy Validator: Check trade alignment against selected strategy's rules
 - Knowledge base with trading education modules
-- Risk/position size calculator
+- Risk/position size calculator (5 calculators in 3 category tabs)
 - MT5 Bridge for MetaTrader 5 integration
+- **Onboarding Tour**: Interactive step-by-step guide for new users
+  - Auto-launches for first-time users (localStorage tracking)
+  - 8-step walkthrough of main features (Dashboard, Strategies, Calculator, MT5, Education, Traders Hub, Profile)
+  - Keyboard navigation support (arrows, Escape)
+  - Restart button available after completion
 
 **Navigation Structure:**
 - Collapsible "Strategies" menu in sidebar with sub-items

@@ -98,3 +98,21 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-muted rounded hover:bg-muted-foreground/30;
 }
+
+/* Onboarding Tour Highlight */
+.tour-highlight {
+  position: relative;
+  z-index: 102;
+  animation: tour-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3);
+  border-radius: 0.5rem;
+}
+
+@keyframes tour-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.2), 0 0 30px rgba(16, 185, 129, 0.4);
+  }
+}
