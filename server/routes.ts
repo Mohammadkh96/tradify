@@ -991,6 +991,180 @@ Output exactly 1-3 bullet points.`;
     res.json({ message: "If an account exists, a reset link has been sent." });
   });
 
+  // ===== STRATEGY ROUTES =====
+
+  // Get all strategies for user
+  app.get("/api/strategies", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const strategies = await storage.getStrategies(userId);
+      res.json(strategies);
+    } catch (error) {
+      console.error("Error fetching strategies:", error);
+      res.status(500).json({ message: "Failed to fetch strategies" });
+    }
+  });
+
+  // Get active strategy for user
+  app.get("/api/strategies/active", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const strategy = await storage.getActiveStrategy(userId);
+      res.json(strategy || null);
+    } catch (error) {
+      console.error("Error fetching active strategy:", error);
+      res.status(500).json({ message: "Failed to fetch active strategy" });
+    }
+  });
+
+  // Get single strategy by ID
+  app.get("/api/strategies/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const strategyId = parseInt(req.params.id);
+      const strategy = await storage.getStrategy(strategyId);
+      
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      
+      // Ownership check
+      if (strategy.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const rules = await storage.getStrategyRules(strategyId);
+      res.json({ ...strategy, rules });
+    } catch (error) {
+      console.error("Error fetching strategy:", error);
+      res.status(500).json({ message: "Failed to fetch strategy" });
+    }
+  });
+
+  // Create new strategy
+  app.post("/api/strategies", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { name, description, isActive, rules } = req.body;
+      
+      if (!name || typeof name !== "string" || name.trim().length === 0) {
+        return res.status(400).json({ message: "Strategy name is required" });
+      }
+      
+      // Create strategy
+      const strategy = await storage.createStrategy({
+        userId,
+        name: name.trim(),
+        description: description?.trim() || null,
+        isActive: false, // Will set active separately if needed
+      });
+      
+      // Create rules
+      if (rules && Array.isArray(rules)) {
+        for (let i = 0; i < rules.length; i++) {
+          const rule = rules[i];
+          await storage.createStrategyRule({
+            strategyId: strategy.id,
+            category: rule.definition.category,
+            label: rule.customLabel || rule.definition.label,
+            description: rule.definition.description || null,
+            ruleType: rule.ruleType,
+            options: {
+              inputType: rule.definition.inputType,
+              value: rule.value,
+              validation: rule.definition.validation,
+            },
+            defaultValue: String(rule.definition.defaultValue ?? ""),
+            isRequired: rule.definition.inputType === "boolean" ? rule.value === true : true,
+            sortOrder: i,
+          });
+        }
+      }
+      
+      // Set as active if requested
+      if (isActive) {
+        await storage.setActiveStrategy(userId, strategy.id);
+      }
+      
+      const createdRules = await storage.getStrategyRules(strategy.id);
+      res.status(201).json({ ...strategy, rules: createdRules, isActive });
+    } catch (error) {
+      console.error("Error creating strategy:", error);
+      res.status(500).json({ message: "Failed to create strategy" });
+    }
+  });
+
+  // Update strategy
+  app.patch("/api/strategies/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const strategyId = parseInt(req.params.id);
+      const { name, description } = req.body;
+      
+      const strategy = await storage.getStrategy(strategyId);
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      if (strategy.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const updated = await storage.updateStrategy(strategyId, {
+        name: name?.trim(),
+        description: description?.trim(),
+      });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating strategy:", error);
+      res.status(500).json({ message: "Failed to update strategy" });
+    }
+  });
+
+  // Delete strategy
+  app.delete("/api/strategies/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const strategyId = parseInt(req.params.id);
+      
+      const strategy = await storage.getStrategy(strategyId);
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      if (strategy.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.deleteStrategy(strategyId);
+      res.json({ message: "Strategy deleted" });
+    } catch (error) {
+      console.error("Error deleting strategy:", error);
+      res.status(500).json({ message: "Failed to delete strategy" });
+    }
+  });
+
+  // Set active strategy
+  app.post("/api/strategies/:id/activate", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const strategyId = parseInt(req.params.id);
+      
+      const strategy = await storage.getStrategy(strategyId);
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      if (strategy.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.setActiveStrategy(userId, strategyId);
+      res.json({ message: "Strategy activated" });
+    } catch (error) {
+      console.error("Error activating strategy:", error);
+      res.status(500).json({ message: "Failed to activate strategy" });
+    }
+  });
+
   return httpServer;
 }
 
