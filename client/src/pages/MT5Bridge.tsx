@@ -117,8 +117,10 @@ def get_account_data():
                 "tp": p.tp
             })
             
-    # Sync last 24 hours of deals by default
-    history = mt5.history_deals_get(time.time() - 86400, time.time())
+    # Sync ALL history (from January 1, 2020 to now)
+    from datetime import datetime
+    start_time = datetime(2020, 1, 1).timestamp()
+    history = mt5.history_deals_get(start_time, time.time())
     hist_list = []
     if history:
         for d in history:
