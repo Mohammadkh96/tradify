@@ -13,10 +13,18 @@ Key features:
   - Performance Intelligence panel (profit factor, total trades, expectancy)
   - Equity curve shows cumulative P&L filtered by selected date range
 - Trade journal with chronological trade feed
-- New entry form with real-time rule validation (4 hard-coded global rules)
+- **Strategies section** (formerly "New Entry")
+  - My Strategies: View and manage your trading frameworks
+  - Create Strategy: Define rules and validate trade alignment
+  - Real-time rule validation (4 hard-coded global rules)
 - Knowledge base with trading education modules
 - Risk/position size calculator
 - MT5 Bridge for MetaTrader 5 integration
+
+**Navigation Structure:**
+- Collapsible "Strategies" menu in sidebar with sub-items
+- Routes: `/strategies` (My Strategies), `/strategies/create` (Create Strategy)
+- Auto-expands when navigating to strategies routes
 
 ## User Preferences
 
