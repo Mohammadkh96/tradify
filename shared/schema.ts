@@ -327,8 +327,11 @@ export const tradeComplianceResults = pgTable("trade_compliance_results", {
   id: serial("id").primaryKey(),
   tradeId: integer("trade_id").notNull(),
   strategyId: integer("strategy_id").notNull(),
+  strategyName: text("strategy_name").notNull(),
   userId: text("user_id").notNull(),
   overallCompliant: boolean("overall_compliant").notNull(),
+  rulesEvaluated: integer("rules_evaluated").default(0),
+  rulesPassed: integer("rules_passed").default(0),
   evaluatedAt: timestamp("evaluated_at").defaultNow(),
 });
 

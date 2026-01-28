@@ -103,7 +103,8 @@ export interface IStorage {
   saveComplianceResult(result: InsertTradeComplianceResult): Promise<TradeComplianceResult>;
   saveRuleEvaluations(evaluations: InsertTradeRuleEvaluation[]): Promise<TradeRuleEvaluation[]>;
   getTradeComplianceResult(tradeId: number): Promise<(TradeComplianceResult & { evaluations: TradeRuleEvaluation[] }) | undefined>;
-  getTradeComplianceHistory(userId: string): Promise<TradeComplianceResult[]>;
+  getTradeComplianceHistory(userId: string, limit?: number, strategyId?: number): Promise<TradeComplianceResult[]>;
+  getTradeComplianceResultsByTrade(tradeId: number): Promise<(TradeComplianceResult & { evaluations: TradeRuleEvaluation[] })[]>;
   getComplianceScore(userId: string, strategyId: number, tradeCount?: number): Promise<{
     compliancePercent: number;
     violationsCount: number;
@@ -631,7 +632,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async saveComplianceResult(result: InsertTradeComplianceResult): Promise<TradeComplianceResult> {
-    await db.delete(tradeComplianceResults).where(eq(tradeComplianceResults.tradeId, result.tradeId));
+    // Preserve history - do not delete old results, just add new ones
     const [created] = await db.insert(tradeComplianceResults).values(result).returning();
     return created;
   }
@@ -656,10 +657,31 @@ export class DatabaseStorage implements IStorage {
     return { ...result, evaluations };
   }
 
-  async getTradeComplianceHistory(userId: string): Promise<TradeComplianceResult[]> {
+  async getTradeComplianceHistory(userId: string, limit: number = 50, strategyId?: number): Promise<TradeComplianceResult[]> {
+    const conditions = [eq(tradeComplianceResults.userId, userId)];
+    if (strategyId) {
+      conditions.push(eq(tradeComplianceResults.strategyId, strategyId));
+    }
     return db.select().from(tradeComplianceResults)
-      .where(eq(tradeComplianceResults.userId, userId))
+      .where(and(...conditions))
+      .orderBy(desc(tradeComplianceResults.evaluatedAt))
+      .limit(limit);
+  }
+
+  async getTradeComplianceResultsByTrade(tradeId: number): Promise<(TradeComplianceResult & { evaluations: TradeRuleEvaluation[] })[]> {
+    const results = await db.select().from(tradeComplianceResults)
+      .where(eq(tradeComplianceResults.tradeId, tradeId))
       .orderBy(desc(tradeComplianceResults.evaluatedAt));
+    
+    const resultsWithEvaluations: (TradeComplianceResult & { evaluations: TradeRuleEvaluation[] })[] = [];
+    
+    for (const result of results) {
+      const evaluations = await db.select().from(tradeRuleEvaluations)
+        .where(eq(tradeRuleEvaluations.complianceResultId, result.id));
+      resultsWithEvaluations.push({ ...result, evaluations });
+    }
+    
+    return resultsWithEvaluations;
   }
 
   async getComplianceScore(userId: string, strategyId: number, tradeCount: number = 10): Promise<{

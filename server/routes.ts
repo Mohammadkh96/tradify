@@ -1261,12 +1261,16 @@ Output exactly 1-3 bullet points.`;
       const { evaluateTradeCompliance } = await import("./complianceEngine");
       const result = evaluateTradeCompliance(trade, rules, tradeInputs || {});
 
-      // Save compliance result
+      // Save compliance result with strategy name for historical tracking
+      const passedCount = result.ruleEvaluations.filter(e => e.passed).length;
       const complianceResult = await storage.saveComplianceResult({
         tradeId,
         strategyId,
+        strategyName: strategy.name,
         userId,
         overallCompliant: result.overallCompliant,
+        rulesEvaluated: result.ruleEvaluations.length,
+        rulesPassed: passedCount,
       });
 
       // Save rule evaluations
@@ -1327,15 +1331,42 @@ Output exactly 1-3 bullet points.`;
     }
   });
 
-  // Get compliance history for user
+  // Get compliance history for user (with strategy context preserved)
   app.get("/api/compliance/history", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
-      const history = await storage.getTradeComplianceHistory(userId);
+      let limit = parseInt(req.query.limit as string) || 50;
+      limit = Math.max(1, Math.min(200, isNaN(limit) ? 50 : limit));
+      const strategyId = req.query.strategyId ? parseInt(req.query.strategyId as string) : undefined;
+      
+      const history = await storage.getTradeComplianceHistory(userId, limit, strategyId);
       res.json(history);
     } catch (error) {
       console.error("Error fetching compliance history:", error);
       res.status(500).json({ message: "Failed to fetch compliance history" });
+    }
+  });
+
+  // Get all compliance evaluations for a specific trade
+  app.get("/api/compliance/trade/:tradeId/history", requireAuth, async (req, res) => {
+    try {
+      const tradeId = parseInt(req.params.tradeId);
+      const userId = req.session.userId!;
+      
+      const trade = await storage.getTrade(tradeId);
+      if (!trade) {
+        return res.status(404).json({ message: "Trade not found" });
+      }
+      
+      if (trade.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to view this trade's history" });
+      }
+      
+      const history = await storage.getTradeComplianceResultsByTrade(tradeId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching trade compliance history:", error);
+      res.status(500).json({ message: "Failed to fetch trade compliance history" });
     }
   });
 
