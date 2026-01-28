@@ -1,0 +1,262 @@
+🎯 PRINCIPLE (IMPORTANT)
+
+Tradify calculators should:
+
+Help traders quantify risk, discipline, and exposure
+
+Never suggest entries or direction
+
+Be deterministic and explainable
+
+Integrate naturally with Strategies & Compliance
+
+✅ CORE CALCULATORS YOU SHOULD BUILD (V1)
+
+These are non-negotiable. Every serious trader uses them.
+
+1️⃣ Position Size Calculator (You already have it) ✅
+
+Purpose:
+Calculate lot size based on risk.
+
+Inputs
+
+Account balance
+
+Risk %
+
+Stop loss (pips / points)
+
+(Later: symbol, pip value auto-detect)
+
+Outputs
+
+Risk amount
+
+Position size (lots)
+
+📌 This is foundational — keep it simple and accurate.
+
+2️⃣ Risk–Reward (R:R) Calculator
+
+Purpose:
+Help traders understand expectancy before execution.
+
+Inputs
+
+Entry price
+
+Stop loss
+
+Take profit
+
+Outputs
+
+Risk (points / $)
+
+Reward (points / $)
+
+R:R ratio
+
+Why it fits Tradify
+
+Encourages discipline
+
+Connects directly to strategy rules (e.g. RR ≥ 1.5)
+
+3️⃣ Trade Outcome Calculator (P&L Simulator)
+
+Purpose:
+Answer: “If I take this trade, what happens?”
+
+Inputs
+
+Position size
+
+Entry price
+
+Exit price
+
+Outputs
+
+Profit / loss
+
+% of account gained / lost
+
+📌 No direction advice — just math.
+
+4️⃣ Drawdown Calculator (VERY IMPORTANT)
+
+Purpose:
+Show traders how damaging losses compound.
+
+Inputs
+
+Account balance
+
+Drawdown %
+
+Outputs
+
+Remaining balance
+
+% gain required to recover
+
+Example Insight
+
+“A 20% drawdown requires a 25% gain to recover.”
+
+This is one of the most powerful discipline tools you can add.
+
+5️⃣ Risk of Ruin Calculator (Simplified)
+
+Purpose:
+Quantify long-term survival.
+
+Inputs
+
+Win rate
+
+Risk per trade
+
+Number of trades
+
+Outputs
+
+Probability of ruin (approximate)
+
+Survival likelihood
+
+📌 Keep it educational, not predictive.
+
+⭐ STRATEGY-CONNECTED CALCULATORS (HIGH VALUE)
+
+These directly connect calculators to your Strategy system.
+
+6️⃣ Strategy Risk Profile Calculator
+
+Purpose:
+Evaluate whether a strategy is structurally survivable.
+
+Inputs
+
+Risk per trade
+
+Max trades per day
+
+Expected RR
+
+Historical win rate (optional)
+
+Outputs
+
+Expected drawdown range
+
+Capital volatility estimate
+
+This reinforces:
+
+“Good strategy ≠ good discipline if risk is wrong.”
+
+7️⃣ Rule Violation Cost Calculator (VERY UNIQUE)
+
+Purpose:
+Show the cost of breaking rules.
+
+Inputs
+
+Average loss
+
+Number of violations per month
+
+Outputs
+
+Monthly discipline cost
+
+Annual cost projection
+
+Example:
+
+“Breaking your max risk rule 4 times/month costs ~$1,200/year.”
+
+This aligns perfectly with Tradify’s mission.
+
+🧠 EDUCATIONAL / OPTIONAL CALCULATORS (V2)
+
+Build later — not required for MVP.
+
+8️⃣ Compounding Calculator
+
+Growth over time
+
+Reinforces patience
+
+9️⃣ Session Performance Calculator
+
+Session-based expectancy
+
+Pulls from journal data
+
+❌ CALCULATORS YOU SHOULD NOT ADD
+
+Avoid these — they dilute trust.
+
+❌ “Best lot size”
+❌ “Optimal leverage”
+❌ “What should I risk?”
+❌ Signal-like calculators
+❌ Indicator-based calculators
+
+Anything that decides for the trader is off-brand.
+
+🧱 HOW TO STRUCTURE THE CALCULATORS PAGE
+Sidebar
+
+Calculators
+
+Categories (Tabs or List)
+
+Risk & Positioning
+
+Trade Planning
+
+Strategy & Discipline
+
+Education
+
+Each calculator:
+
+Small
+
+Focused
+
+One job only
+
+🔗 HOW CALCULATORS SHOULD INTEGRATE WITH STRATEGIES
+
+This is key.
+
+Examples:
+
+Strategy rule: Max Risk ≤ 1%
+→ Calculator highlights when risk exceeds rule
+
+Strategy rule: RR ≥ 2
+→ RR calculator flags non-compliant setups
+
+📌 Calculators support decisions, they don’t enforce them.
+
+🧠 FINAL RECOMMENDATION (CLEAR)
+Build in this order:
+
+Position Size
+
+Risk–Reward
+
+Drawdown
+
+Trade Outcome
+
+Rule Violation Cost
+
+That alone makes Tradify more professional than 90% of platforms.
