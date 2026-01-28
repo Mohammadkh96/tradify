@@ -1,53 +1,12 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Loader2, CreditCard, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
+import { Loader2, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
 import PayPalButton from "@/components/PayPalButton";
 
 export default function Checkout() {
-  const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useQuery<any>({ queryKey: ["/api/user"] });
-  const { data: products } = useQuery<any[]>({ queryKey: ["/api/billing/products"] });
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
-
-  const portalMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/billing/portal");
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      window.location.href = data.url;
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Portal Error",
-        description: error.message || "Failed to open billing portal",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const checkoutMutation = useMutation({
-    mutationFn: async (priceId: string) => {
-      const res = await apiRequest("POST", "/api/billing/checkout", { priceId });
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      window.location.href = data.url;
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Checkout Error",
-        description: error.message || "Failed to initiate checkout",
-        variant: "destructive",
-      });
-    }
-  });
 
   if (isUserLoading) {
     return (
@@ -58,8 +17,6 @@ export default function Checkout() {
   }
 
   const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
-  const proProduct = products?.find(p => p.metadata?.plan === 'PRO' || p.name === 'Pro Plan');
-  const monthlyPrice = proProduct?.prices?.find((p: any) => p.recurring?.interval === 'month');
 
   return (
     <div className="flex-1 bg-background text-foreground min-h-screen p-6 lg:p-10">
@@ -86,10 +43,9 @@ export default function Checkout() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Status</p>
-                  <p className={cn(
-                    "text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
+                  <p className={`text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
                     isPro ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
-                  )}>
+                  }`}>
                     {isPro ? "Active" : "INACTIVE"}
                   </p>
                 </div>
@@ -111,22 +67,12 @@ export default function Checkout() {
 
               {isPro ? (
                 <Button 
-                  onClick={() => {
-                    if (user?.subscriptionProvider === 'paypal') {
-                      window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
-                    } else {
-                      portalMutation.mutate();
-                    }
-                  }}
-                  disabled={portalMutation.isPending}
+                  onClick={() => window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank')}
                   className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20"
+                  data-testid="button-manage-subscription"
                 >
-                  {portalMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
-                    <>
-                      {user?.subscriptionProvider === 'paypal' ? "Manage on PayPal" : "Manage Billing Portal"}
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    </>
-                  )}
+                  Manage on PayPal
+                  <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
                 <p className="text-[10px] text-muted-foreground text-center font-black uppercase tracking-widest opacity-50">
@@ -143,21 +89,17 @@ export default function Checkout() {
                 {isPro ? "Subscription Details" : "Upgrade to Pro"}
               </CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
-                {isPro ? "Current provider info." : "Select your payment method."}
+                {isPro ? "Current provider info." : "Subscribe via PayPal."}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               {isPro ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
-                    {user?.subscriptionProvider === 'paypal' ? (
-                      <SiPaypal className="text-[#0070ba] w-6 h-6" />
-                    ) : (
-                      <CreditCard className="text-emerald-500 w-6 h-6" />
-                    )}
+                    <SiPaypal className="text-[#0070ba] w-6 h-6" />
                     <div>
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Provider</p>
-                      <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">{user?.subscriptionProvider || "Stripe"}</p>
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">PayPal</p>
                     </div>
                   </div>
                   <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-relaxed text-center opacity-50 italic">
@@ -166,50 +108,21 @@ export default function Checkout() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex gap-2 p-1 bg-background rounded-xl border border-border">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPaymentMethod("stripe")}
-                      className={cn(
-                        "flex-1 gap-2 text-[10px] font-black uppercase tracking-widest h-10 transition-all",
-                        paymentMethod === "stripe" ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" : "text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      <CreditCard size={14} />
-                      Stripe
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPaymentMethod("paypal")}
-                      className={cn(
-                        "flex-1 gap-2 text-[10px] font-black uppercase tracking-widest h-10 transition-all",
-                        paymentMethod === "paypal" ? "bg-[#0070ba] text-white shadow-md" : "text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      <SiPaypal size={14} />
-                      PayPal
-                    </Button>
+                  <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
+                    <SiPaypal className="text-[#0070ba] w-6 h-6" />
+                    <div>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Payment Method</p>
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight">PayPal</p>
+                    </div>
                   </div>
 
-                  {paymentMethod === "stripe" ? (
-                    <Button 
-                      onClick={() => monthlyPrice && checkoutMutation.mutate(monthlyPrice.id)}
-                      disabled={checkoutMutation.isPending || !monthlyPrice}
-                      className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20"
-                    >
-                      {checkoutMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : "Subscribe with Stripe"}
-                    </Button>
-                  ) : (
-                    <div className="w-full bg-white rounded-xl p-2 shadow-inner border border-border">
-                      <PayPalButton amount="19.00" currency="USD" intent="subscription" />
-                    </div>
-                  )}
+                  <div className="w-full bg-white rounded-xl p-2 shadow-inner border border-border">
+                    <PayPalButton amount="19.00" currency="USD" intent="subscription" />
+                  </div>
 
                   <div className="flex items-start gap-2 text-[9px] text-muted-foreground font-black uppercase tracking-widest bg-muted/30 p-3 rounded-lg border border-border/50 italic">
                     <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
-                    <span>Auto-renew active. Cancel anytime.</span>
+                    <span>Auto-renew active. Cancel anytime via PayPal.</span>
                   </div>
                 </div>
               )}
