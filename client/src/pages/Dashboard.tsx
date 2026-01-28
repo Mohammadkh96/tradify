@@ -12,16 +12,26 @@ import {
   ShieldCheck,
   RefreshCw,
   Sparkles,
-  Percent
+  Percent,
+  TrendingUp,
+  TrendingDown,
+  Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Link } from "wouter";
-import { format } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 
 export default function Dashboard() {
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+  
   const { data: trades, isLoading } = useTrades();
   const { data: user } = useQuery<any>({ 
     queryKey: ["/api/user"],
@@ -61,23 +71,81 @@ export default function Dashboard() {
     enabled: !!userId && isPro,
   });
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin text-emerald-500"><Activity size={32} /></div>
-      </div>
-    );
-  }
-
   const allTrades = trades || [];
-  const total = allTrades.length;
   
-  // Equity curve from cumulative trade P&L - final value should equal Net P&L
-  const chartData = equityCurveData?.map(point => ({
-    date: format(new Date(point.date), 'MMM d'),
-    equity: point.equity,
-    tradePl: point.netPl
-  })) || [];
+  // Date filtering helper - define as a callback for useMemo to use
+  const isWithinDateRange = (dateStr: string | Date | null) => {
+    if (!dateStr) return true;
+    if (dateFilter === "all") return true;
+    
+    const tradeDate = new Date(dateStr);
+    const now = new Date();
+    
+    if (dateFilter === "today") {
+      return isWithinInterval(tradeDate, { start: startOfDay(now), end: endOfDay(now) });
+    } else if (dateFilter === "week") {
+      return isWithinInterval(tradeDate, { start: startOfWeek(now), end: endOfDay(now) });
+    } else if (dateFilter === "month") {
+      return isWithinInterval(tradeDate, { start: startOfMonth(now), end: endOfDay(now) });
+    } else if (dateFilter === "custom" && customStartDate && customEndDate) {
+      const start = startOfDay(parseISO(customStartDate));
+      const end = endOfDay(parseISO(customEndDate));
+      return isWithinInterval(tradeDate, { start, end });
+    }
+    return true;
+  };
+  
+  // Filter equity curve data by date
+  const filteredEquityCurve = useMemo(() => {
+    if (!equityCurveData) return [];
+    const filtered = equityCurveData.filter(point => isWithinDateRange(point.date));
+    
+    // Recalculate cumulative P&L for filtered data
+    let cumulative = 0;
+    return filtered.map(point => {
+      cumulative += point.netPl;
+      return {
+        date: format(new Date(point.date), 'MMM d'),
+        equity: cumulative,
+        tradePl: point.netPl
+      };
+    });
+  }, [equityCurveData, dateFilter, customStartDate, customEndDate]);
+  
+  // Calculate filtered stats
+  const filteredStats = useMemo(() => {
+    if (!equityCurveData) return { totalPl: 0, wins: 0, losses: 0, breakeven: 0, total: 0, winRate: "0.0", avgWin: 0, avgLoss: 0, expectancy: 0, profitFactor: "0.00", bestTrade: 0, worstTrade: 0 };
+    
+    const filtered = equityCurveData.filter(point => isWithinDateRange(point.date));
+    const total = filtered.length;
+    const wins = filtered.filter(t => t.netPl > 0).length;
+    const losses = filtered.filter(t => t.netPl < 0).length;
+    const breakeven = filtered.filter(t => t.netPl === 0).length;
+    const totalPl = filtered.reduce((acc, t) => acc + t.netPl, 0);
+    
+    const decisiveTrades = wins + losses;
+    const winRate = decisiveTrades > 0 ? (wins / decisiveTrades * 100).toFixed(1) : "0.0";
+    
+    const winningTrades = filtered.filter(t => t.netPl > 0);
+    const losingTrades = filtered.filter(t => t.netPl < 0);
+    const avgWin = winningTrades.length > 0 ? winningTrades.reduce((acc, t) => acc + t.netPl, 0) / winningTrades.length : 0;
+    const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((acc, t) => acc + t.netPl, 0)) / losingTrades.length : 0;
+    
+    const winRateDecimal = decisiveTrades > 0 ? wins / decisiveTrades : 0;
+    const lossRateDecimal = decisiveTrades > 0 ? losses / decisiveTrades : 0;
+    const expectancy = (winRateDecimal * avgWin) - (lossRateDecimal * avgLoss);
+    
+    const grossProfit = winningTrades.reduce((acc, t) => acc + t.netPl, 0);
+    const grossLoss = Math.abs(losingTrades.reduce((acc, t) => acc + t.netPl, 0));
+    const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : grossProfit > 0 ? "∞" : "0.00";
+    
+    const bestTrade = filtered.length > 0 ? Math.max(...filtered.map(t => t.netPl)) : 0;
+    const worstTrade = filtered.length > 0 ? Math.min(...filtered.map(t => t.netPl)) : 0;
+    
+    return { totalPl, wins, losses, breakeven, total, winRate, avgWin, avgLoss, expectancy, profitFactor, bestTrade, worstTrade };
+  }, [equityCurveData, dateFilter, customStartDate, customEndDate]);
+  
+  const chartData = filteredEquityCurve;
 
   const stats = [
     { 
@@ -95,24 +163,44 @@ export default function Dashboard() {
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Total P&L", 
-      value: intelligence?.totalPl ? `$${parseFloat(intelligence.totalPl).toLocaleString()}` : "$0", 
+      label: "Period P&L", 
+      value: `$${filteredStats.totalPl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: <DollarSign size={18} />, 
-      subtext: "GROSS NET",
-      trend: parseFloat(intelligence?.totalPl || "0") >= 0 ? "up" : "down" as "up" | "down"
+      subtext: dateFilter === "all" ? "ALL TIME" : dateFilter.toUpperCase(),
+      trend: filteredStats.totalPl >= 0 ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Profit Factor", 
-      value: intelligence?.profitFactor || "0.00", 
+      label: "Win Rate", 
+      value: `${filteredStats.winRate}%`, 
       icon: <Percent size={18} />, 
-      subtext: "RELIABILITY",
-      trend: parseFloat(intelligence?.profitFactor || "0") >= 1.5 ? "up" : "down" as "up" | "down"
+      subtext: `${filteredStats.wins}W / ${filteredStats.losses}L`,
+      trend: parseFloat(filteredStats.winRate) >= 50 ? "up" : "down" as "up" | "down"
     },
   ];
 
-  const recentTrades = [...allTrades].sort((a, b) => 
-    new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-  ).slice(0, 5);
+  // Filter recent trades by date range
+  const recentTrades = useMemo(() => {
+    if (!equityCurveData) return [];
+    return equityCurveData
+      .filter(point => isWithinDateRange(point.date))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5)
+      .map(t => ({
+        symbol: t.symbol,
+        netPl: t.netPl,
+        date: t.date,
+        source: t.source,
+        outcome: t.netPl > 0 ? "Win" : t.netPl < 0 ? "Loss" : "Break-even"
+      }));
+  }, [equityCurveData, dateFilter, customStartDate, customEndDate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin text-emerald-500"><Activity size={32} /></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
@@ -126,6 +214,76 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 mt-1">
               <p className="text-muted-foreground text-sm">Market Overview & Performance Metrics</p>
               <Link href="/risk-disclaimer" className="text-[10px] text-muted-foreground hover:text-emerald-500 uppercase font-bold tracking-widest transition-colors">Risk Disclaimer</Link>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
+              {['all', 'today', 'week', 'month'].map((filter) => (
+                <Button
+                  key={filter}
+                  variant={dateFilter === filter ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setDateFilter(filter)}
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider px-3 rounded-lg",
+                    dateFilter === filter && "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                  )}
+                  data-testid={`dashboard-filter-${filter}`}
+                >
+                  {filter === 'all' ? 'All Time' : filter}
+                </Button>
+              ))}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={dateFilter === "custom" ? "default" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider px-3 rounded-lg",
+                      dateFilter === "custom" && "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                    )}
+                    data-testid="dashboard-filter-custom"
+                  >
+                    <Calendar className="h-3 w-3 mr-1" />
+                    Custom
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4" align="end">
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Date Range</div>
+                    <div className="flex flex-col gap-2">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">From</label>
+                        <Input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          className="text-sm"
+                          data-testid="dashboard-input-start-date"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">To</label>
+                        <Input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          className="text-sm"
+                          data-testid="dashboard-input-end-date"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setDateFilter("custom")}
+                      disabled={!customStartDate || !customEndDate}
+                      className="w-full bg-emerald-500 text-white text-xs font-bold uppercase"
+                      data-testid="dashboard-button-apply-custom-date"
+                    >
+                      Apply Filter
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -333,32 +491,23 @@ export default function Dashboard() {
               <div className="bg-background/50 p-3 rounded-xl border border-border">
                 <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Profit Factor</span>
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-black text-emerald-500">{intelligence?.profitFactor || "0.00"}</span>
+                  <span className="text-lg font-black text-emerald-500">{filteredStats.profitFactor}</span>
                   <div className="h-1.5 w-24 bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500" style={{ width: `${Math.min((parseFloat(intelligence?.profitFactor || "0") / 3) * 100, 100)}%` }} />
+                    <div className="h-full bg-emerald-500" style={{ width: `${Math.min((parseFloat(filteredStats.profitFactor) / 3) * 100, 100)}%` }} />
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Avg R:R</span>
-                  <span className="text-sm font-black text-foreground">{intelligence?.avgRR || "0.00"}</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Total Trades</span>
+                  <span className="text-sm font-black text-foreground">{filteredStats.total}</span>
                 </div>
                 <div className="p-3 text-right">
                   <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Expectancy</span>
-                  <span className="text-sm font-black text-emerald-500">${intelligence?.expectancy || "0.00"}</span>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-4 mt-2">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Max Drawdown</span>
-                  <span className="text-xs font-mono font-bold text-rose-500">${intelligence?.maxDrawdown || "0.00"}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Recovery Factor</span>
-                  <span className="text-xs font-mono font-bold text-blue-500">{intelligence?.recoveryFactor || "0.00"}</span>
+                  <span className={cn("text-sm font-black", filteredStats.expectancy >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                    ${filteredStats.expectancy.toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -370,6 +519,61 @@ export default function Dashboard() {
                 <p className="text-[10px] text-muted-foreground mb-4">Subscribe to PRO to unlock advanced session and expectancy analytics.</p>
               </div>
             )}
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Target size={80} className="text-emerald-500" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+              <Target size={18} className="text-emerald-500" />
+              Trade Statistics
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-background/50 p-3 rounded-xl border border-border">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Avg Win</span>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp size={12} className="text-emerald-500" />
+                    <span className="text-xs font-bold text-emerald-500">+${filteredStats.avgWin.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="bg-background/50 p-3 rounded-xl border border-border">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Avg Loss</span>
+                  <div className="flex items-center gap-2">
+                    <TrendingDown size={12} className="text-rose-500" />
+                    <span className="text-xs font-bold text-rose-500">-${filteredStats.avgLoss.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Best Trade</span>
+                  <span className="text-sm font-black text-emerald-500">+${filteredStats.bestTrade.toFixed(2)}</span>
+                </div>
+                <div className="bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Worst Trade</span>
+                  <span className="text-sm font-black text-rose-500">${filteredStats.worstTrade.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4 mt-2">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Wins</span>
+                  <span className="text-xs font-mono font-bold text-emerald-500">{filteredStats.wins}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Losses</span>
+                  <span className="text-xs font-mono font-bold text-rose-500">{filteredStats.losses}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Break-even</span>
+                  <span className="text-xs font-mono font-bold text-muted-foreground">{filteredStats.breakeven}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -457,28 +661,48 @@ export default function Dashboard() {
           <div className="bg-card border border-border rounded-2xl p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-foreground mb-6">Recent Entries</h3>
             <div className="space-y-4">
-              {recentTrades.map((trade) => (
-                <div key={trade.id} className="flex items-center justify-between p-3 bg-background rounded-xl border border-border group hover:border-emerald-500/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] border",
-                      trade.outcome === "Win" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                    )}>
-                      {trade.pair.substring(0, 3)}
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-foreground">{trade.pair}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">{trade.direction}</div>
-                    </div>
-                  </div>
-                  <div className={cn(
-                    "text-xs font-mono font-bold",
-                    trade.outcome === "Win" ? "text-emerald-500" : "text-rose-500"
-                  )}>
-                    {trade.outcome === "Win" ? "WIN" : "LOSS"}
-                  </div>
+              {recentTrades.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No trades in selected period
                 </div>
-              ))}
+              ) : (
+                recentTrades.map((trade, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-background rounded-xl border border-border group hover:border-emerald-500/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] border",
+                        trade.outcome === "Win" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : 
+                        trade.outcome === "Loss" ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
+                        "bg-muted text-muted-foreground border-border"
+                      )}>
+                        {trade.symbol?.substring(0, 3) || "---"}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-foreground">{trade.symbol || "Unknown"}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">
+                          {trade.source} • {format(new Date(trade.date), 'MMM d')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "text-xs font-mono font-bold",
+                        trade.netPl >= 0 ? "text-emerald-500" : "text-rose-500"
+                      )}>
+                        {trade.netPl >= 0 ? "+" : ""}{trade.netPl.toFixed(2)}
+                      </div>
+                      <div className={cn(
+                        "text-[10px] font-mono font-bold px-2 py-1 rounded",
+                        trade.outcome === "Win" ? "bg-emerald-500/10 text-emerald-500" : 
+                        trade.outcome === "Loss" ? "bg-rose-500/10 text-rose-500" :
+                        "bg-muted text-muted-foreground"
+                      )}>
+                        {trade.outcome.toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
               <Link href="/journal">
                 <Button variant="ghost" className="w-full text-[10px] font-bold uppercase text-muted-foreground hover:text-emerald-500">View Full Journal →</Button>
               </Link>

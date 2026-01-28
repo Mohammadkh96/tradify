@@ -8,6 +8,10 @@ TRADIFY is a rule-based trading journal application designed to enforce discipli
 
 Key features:
 - Dashboard with performance metrics (win rate, profit factor, R:R ratios)
+  - Date filtering (All Time, Today, Week, Month, Custom date range)
+  - Trade Statistics panel (avg win/loss, best/worst trade, win/loss/breakeven counts)
+  - Performance Intelligence panel (profit factor, total trades, expectancy)
+  - Equity curve shows cumulative P&L filtered by selected date range
 - Trade journal with chronological trade feed
 - New entry form with real-time rule validation (4 hard-coded global rules)
 - Knowledge base with trading education modules
