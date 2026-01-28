@@ -1,10 +1,7 @@
-import { ShieldCheck, Check, Zap, BarChart3, History, Lock, ArrowRight, X, Loader2 } from "lucide-react";
+import { ShieldCheck, Check, X, ArrowRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 
 const features = [
@@ -24,38 +21,13 @@ const features = [
 ];
 
 export default function Pricing() {
-  const { toast } = useToast();
   const { data: user } = useQuery<any>({ queryKey: ["/api/user"] });
-  const { data: products, isLoading: isLoadingProducts } = useQuery<any[]>({ 
-    queryKey: ["/api/billing/products"] 
-  });
-
-  const portalMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/billing/portal");
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      window.location.href = data.url;
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Portal Error",
-        description: error.message || "Failed to open billing portal",
-        variant: "destructive",
-      });
-    }
-  });
 
   const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
 
-  if (isLoadingProducts) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
-      </div>
-    );
-  }
+  const handleManageSubscription = () => {
+    window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
+  };
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
@@ -132,24 +104,18 @@ export default function Pricing() {
 
               {isPro ? (
                 <Button 
-                  onClick={() => {
-                    if (user?.subscriptionProvider === 'paypal') {
-                      window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
-                    } else {
-                      portalMutation.mutate();
-                    }
-                  }}
-                  disabled={portalMutation.isPending}
+                  onClick={handleManageSubscription}
                   className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                  data-testid="button-manage-subscription"
                 >
-                  {portalMutation.isPending ? <Loader2 className="animate-spin h-4 w-4" /> : (
-                    user?.subscriptionProvider === 'paypal' ? "Manage on PayPal" : "Manage Subscription"
-                  )}
+                  Manage Subscription
+                  <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
                 <Link href="/checkout">
                   <Button 
                     className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                    data-testid="button-upgrade-pro"
                   >
                     Upgrade to Pro
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -208,21 +174,18 @@ export default function Pricing() {
           <h3 className="text-2xl font-bold text-foreground mb-6">Ready to upgrade your trading edge?</h3>
           {isPro ? (
             <Button 
-              onClick={() => {
-                if (user?.subscriptionProvider === 'paypal') {
-                  window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
-                } else {
-                  portalMutation.mutate();
-                }
-              }}
+              onClick={handleManageSubscription}
               className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+              data-testid="button-manage-account"
             >
               Manage Your Account
+              <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Link href="/checkout">
               <Button 
                 className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                data-testid="button-start-pro-trial"
               >
                 Start Your Pro Trial
               </Button>
