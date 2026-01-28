@@ -998,7 +998,16 @@ Output exactly 1-3 bullet points.`;
     try {
       const userId = req.session.userId!;
       const strategies = await storage.getStrategies(userId);
-      res.json(strategies);
+      
+      // Include rules count for each strategy
+      const strategiesWithRules = await Promise.all(
+        strategies.map(async (strategy) => {
+          const rules = await storage.getStrategyRules(strategy.id);
+          return { ...strategy, rules };
+        })
+      );
+      
+      res.json(strategiesWithRules);
     } catch (error) {
       console.error("Error fetching strategies:", error);
       res.status(500).json({ message: "Failed to fetch strategies" });
@@ -1162,6 +1171,54 @@ Output exactly 1-3 bullet points.`;
     } catch (error) {
       console.error("Error activating strategy:", error);
       res.status(500).json({ message: "Failed to activate strategy" });
+    }
+  });
+
+  // Duplicate strategy
+  app.post("/api/strategies/:id/duplicate", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const strategyId = parseInt(req.params.id);
+      
+      const strategy = await storage.getStrategy(strategyId);
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      if (strategy.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Get original rules
+      const rules = await storage.getStrategyRules(strategyId);
+      
+      // Create new strategy with copied name
+      const newStrategy = await storage.createStrategy({
+        userId,
+        name: `${strategy.name} (Copy)`,
+        description: strategy.description,
+        isActive: false,
+      });
+      
+      // Copy rules to new strategy
+      for (const rule of rules) {
+        await storage.createStrategyRule({
+          strategyId: newStrategy.id,
+          category: rule.category,
+          label: rule.label,
+          description: rule.description,
+          ruleType: rule.ruleType,
+          options: rule.options as Record<string, unknown> | null,
+          defaultValue: rule.defaultValue,
+          isRequired: rule.isRequired,
+          sortOrder: rule.sortOrder,
+        });
+      }
+      
+      const newRules = await storage.getStrategyRules(newStrategy.id);
+      res.status(201).json({ ...newStrategy, rules: newRules });
+    } catch (error) {
+      console.error("Error duplicating strategy:", error);
+      res.status(500).json({ message: "Failed to duplicate strategy" });
     }
   });
 
