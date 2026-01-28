@@ -1,11 +1,13 @@
 import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
-import { format, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Trash2, History as HistoryIcon, Plus } from "lucide-react";
+import { Trash2, History as HistoryIcon, Plus, Calendar } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function Journal() {
   const { data: user } = useQuery<any>({
@@ -25,6 +27,8 @@ export default function Journal() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOutcome, setFilterOutcome] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
 
   const combinedTrades = useMemo(() => {
     // Only show manual trades that are NOT MT5 sync duplicates
@@ -75,6 +79,10 @@ export default function Journal() {
           matchesDate = isWithinInterval(tradeDate, { start: startOfWeek(now), end: endOfDay(now) });
         } else if (dateFilter === "month") {
           matchesDate = isWithinInterval(tradeDate, { start: startOfMonth(now), end: endOfDay(now) });
+        } else if (dateFilter === "custom" && customStartDate && customEndDate) {
+          const start = startOfDay(parseISO(customStartDate));
+          const end = endOfDay(parseISO(customEndDate));
+          matchesDate = isWithinInterval(tradeDate, { start, end });
         }
       }
       return matchesSearch && matchesOutcome && matchesDate;
@@ -86,7 +94,7 @@ export default function Journal() {
     }
 
     return base;
-  }, [combinedTrades, searchTerm, filterOutcome, dateFilter, isPro]);
+  }, [combinedTrades, searchTerm, filterOutcome, dateFilter, customStartDate, customEndDate, isPro]);
 
   const stats = useMemo(() => {
     const total = filteredTrades.length;
@@ -133,10 +141,62 @@ export default function Journal() {
                     "h-8 text-[10px] font-bold uppercase tracking-wider px-4 rounded-lg transition-all",
                     dateFilter === filter ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-muted-foreground hover:text-foreground"
                   )}
+                  data-testid={`filter-${filter}`}
                 >
                   {filter === 'all' ? 'All Time' : filter}
                 </Button>
               ))}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={dateFilter === "custom" ? "default" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "h-8 text-[10px] font-bold uppercase tracking-wider px-4 rounded-lg transition-all",
+                      dateFilter === "custom" ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-muted-foreground hover:text-foreground"
+                    )}
+                    data-testid="filter-custom"
+                  >
+                    <Calendar className="h-3 w-3 mr-1" />
+                    Custom
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4" align="end">
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Date Range</div>
+                    <div className="flex flex-col gap-2">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">From</label>
+                        <Input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          className="h-9 text-sm"
+                          data-testid="input-start-date"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">To</label>
+                        <Input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          className="h-9 text-sm"
+                          data-testid="input-end-date"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setDateFilter("custom")}
+                      disabled={!customStartDate || !customEndDate}
+                      className="w-full bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold uppercase h-9"
+                      data-testid="button-apply-custom-date"
+                    >
+                      Apply Filter
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             <Link href="/new-entry">
               <Button className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs uppercase transition-all shadow-lg shadow-emerald-500/20 px-6 h-10 rounded-xl">
