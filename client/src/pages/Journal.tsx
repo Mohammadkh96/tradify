@@ -33,7 +33,7 @@ export default function Journal() {
       .map(t => ({
         ...t,
         source: "Manual",
-        netPl: 0, 
+        netPl: typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0),
         closeTime: t.createdAt
       }));
     
