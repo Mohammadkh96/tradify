@@ -111,6 +111,11 @@ export default function Checkout() {
   const isElite = subscription === "ELITE";
   const isPaid = isPro || isElite;
   const isElitePlan = selectedTier === 'ELITE';
+  
+  // Pro user trying to upgrade to Elite - show PayPal button instead of subscription details
+  const isUpgradingToElite = isPro && !isElite && isElitePlan;
+  // Show PayPal button for: free users OR Pro users upgrading to Elite
+  const showPayPalButton = !isPaid || isUpgradingToElite;
 
   return (
     <div className="flex-1 bg-background text-foreground min-h-screen p-6 lg:p-10">
@@ -193,47 +198,15 @@ export default function Checkout() {
               <div className="flex items-center gap-2">
                 <PlanIcon className={isElitePlan ? "w-5 h-5 text-amber-500" : "w-5 h-5 text-emerald-500"} />
                 <CardTitle className={isElitePlan ? "text-lg font-black uppercase tracking-widest text-amber-500" : "text-lg font-black uppercase tracking-widest text-emerald-500"}>
-                  {isPaid ? "Subscription Details" : `Upgrade to ${planConfig.name}`}
+                  {showPayPalButton ? (isUpgradingToElite ? "Upgrade to Elite" : `Upgrade to ${planConfig.name}`) : "Subscription Details"}
                 </CardTitle>
               </div>
               <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
-                {isPaid ? "Current provider info." : `$${planConfig.price}/month - Cancel anytime.`}
+                {showPayPalButton ? `$${planConfig.price}/month - Cancel anytime.` : "Current provider info."}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              {isPaid ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
-                    <SiPaypal className="text-[#0070ba] w-6 h-6" />
-                    <div>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Provider</p>
-                      <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">PayPal</p>
-                    </div>
-                  </div>
-                  <div className={`flex items-center gap-2 p-3 rounded-lg border ${
-                    isElite ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20'
-                  }`}>
-                    <CheckCircle2 className={`w-4 h-4 ${isElite ? 'text-amber-500' : 'text-emerald-500'}`} />
-                    <span className={`text-xs font-bold ${isElite ? 'text-amber-500' : 'text-emerald-500'}`}>Subscription Active</span>
-                  </div>
-                  
-                  {/* Upgrade to Elite for Pro users */}
-                  {isPro && !isElite && (
-                    <Button
-                      onClick={() => window.location.href = '/checkout?plan=ELITE'}
-                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20"
-                      data-testid="button-upgrade-to-elite-checkout"
-                    >
-                      <Crown className="w-4 h-4 mr-2" />
-                      Upgrade to Elite
-                    </Button>
-                  )}
-                  
-                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-relaxed text-center opacity-50 italic">
-                    Manage your subscription in Profile.
-                  </p>
-                </div>
-              ) : (
+              {showPayPalButton ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
                     <SiPaypal className="text-[#0070ba] w-6 h-6" />
@@ -271,6 +244,37 @@ export default function Checkout() {
                     <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
                     <span>Recurring monthly billing. Cancel anytime via Profile.</span>
                   </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
+                    <SiPaypal className="text-[#0070ba] w-6 h-6" />
+                    <div>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Provider</p>
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">PayPal</p>
+                    </div>
+                  </div>
+                  <div className={`flex items-center gap-2 p-3 rounded-lg border ${
+                    isElite ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20'
+                  }`}>
+                    <CheckCircle2 className={`w-4 h-4 ${isElite ? 'text-amber-500' : 'text-emerald-500'}`} />
+                    <span className={`text-xs font-bold ${isElite ? 'text-amber-500' : 'text-emerald-500'}`}>Subscription Active</span>
+                  </div>
+                  
+                  {isPro && !isElite && (
+                    <Button
+                      onClick={() => window.location.href = '/checkout?plan=ELITE'}
+                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20"
+                      data-testid="button-upgrade-to-elite-checkout"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade to Elite
+                    </Button>
+                  )}
+                  
+                  <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-relaxed text-center opacity-50 italic">
+                    Manage your subscription in Profile.
+                  </p>
                 </div>
               )}
             </CardContent>
