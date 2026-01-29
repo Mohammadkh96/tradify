@@ -216,6 +216,19 @@ export default function Checkout() {
                     <CheckCircle2 className={`w-4 h-4 ${isElite ? 'text-amber-500' : 'text-emerald-500'}`} />
                     <span className={`text-xs font-bold ${isElite ? 'text-amber-500' : 'text-emerald-500'}`}>Subscription Active</span>
                   </div>
+                  
+                  {/* Upgrade to Elite for Pro users */}
+                  {isPro && !isElite && (
+                    <Button
+                      onClick={() => window.location.href = '/checkout?plan=ELITE'}
+                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20"
+                      data-testid="button-upgrade-to-elite-checkout"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade to Elite
+                    </Button>
+                  )}
+                  
                   <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-relaxed text-center opacity-50 italic">
                     Manage your subscription in Profile.
                   </p>
