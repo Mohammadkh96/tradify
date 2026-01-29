@@ -258,7 +258,7 @@ export default function Journal() {
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Net P&L</span>
             <div className={cn("text-3xl font-black", stats.netPl >= 0 ? "text-emerald-500" : "text-rose-500")}>
-              ${stats.netPl.toLocaleString()}
+              ${stats.netPl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-[9px] text-muted-foreground/50 mt-2 font-bold uppercase tracking-tighter">{statsDerivedLabel}</div>
           </div>
