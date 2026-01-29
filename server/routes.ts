@@ -874,6 +874,7 @@ export async function registerRoutes(
   app.get("/api/session-analytics/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
+      const { dateFilter, startDate, endDate } = req.query;
       
       // Elite tier check - get user from session and verify subscription
       const sessionUserId = req.session.userId!;
@@ -888,6 +889,43 @@ export async function registerRoutes(
       if (tier !== "ELITE") {
         return res.status(403).json({ message: "Session Analytics requires Elite subscription" });
       }
+
+      // Date filter helper function
+      const isWithinDateRange = (tradeDate: Date): boolean => {
+        if (!dateFilter || dateFilter === "all") return true;
+        
+        const now = new Date();
+        const tradeDateStart = new Date(tradeDate);
+        tradeDateStart.setHours(0, 0, 0, 0);
+        
+        if (dateFilter === "today") {
+          const todayStart = new Date(now);
+          todayStart.setHours(0, 0, 0, 0);
+          return tradeDateStart >= todayStart;
+        }
+        
+        if (dateFilter === "week") {
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - now.getDay());
+          weekStart.setHours(0, 0, 0, 0);
+          return tradeDateStart >= weekStart;
+        }
+        
+        if (dateFilter === "month") {
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          return tradeDateStart >= monthStart;
+        }
+        
+        if (dateFilter === "custom" && startDate && endDate) {
+          const start = new Date(startDate as string);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(endDate as string);
+          end.setHours(23, 59, 59, 999);
+          return tradeDateStart >= start && tradeDateStart <= end;
+        }
+        
+        return true;
+      };
 
       const mt5History = await storage.getMT5History(userId);
       const manualTrades = await storage.getTrades(userId);
@@ -921,7 +959,10 @@ export async function registerRoutes(
           entryPrice: t.entryPrice ? parseFloat(t.entryPrice) : null,
         }));
 
-      const allTrades = [...mt5Normalized, ...manualNormalized];
+      // Apply date filter to trades
+      const allTrades = [...mt5Normalized, ...manualNormalized].filter(trade => 
+        isWithinDateRange(trade.openTime)
+      );
 
       if (allTrades.length === 0) {
         return res.json({
@@ -1033,6 +1074,7 @@ export async function registerRoutes(
   app.get("/api/time-patterns/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
+      const { dateFilter, startDate, endDate } = req.query;
       
       // Elite tier check - get user from session and verify subscription
       const sessionUserId = req.session.userId!;
@@ -1047,6 +1089,43 @@ export async function registerRoutes(
       if (tier !== "ELITE") {
         return res.status(403).json({ message: "Time Patterns requires Elite subscription" });
       }
+
+      // Date filter helper function
+      const isWithinDateRange = (tradeDate: Date): boolean => {
+        if (!dateFilter || dateFilter === "all") return true;
+        
+        const now = new Date();
+        const tradeDateStart = new Date(tradeDate);
+        tradeDateStart.setHours(0, 0, 0, 0);
+        
+        if (dateFilter === "today") {
+          const todayStart = new Date(now);
+          todayStart.setHours(0, 0, 0, 0);
+          return tradeDateStart >= todayStart;
+        }
+        
+        if (dateFilter === "week") {
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - now.getDay());
+          weekStart.setHours(0, 0, 0, 0);
+          return tradeDateStart >= weekStart;
+        }
+        
+        if (dateFilter === "month") {
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          return tradeDateStart >= monthStart;
+        }
+        
+        if (dateFilter === "custom" && startDate && endDate) {
+          const start = new Date(startDate as string);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(endDate as string);
+          end.setHours(23, 59, 59, 999);
+          return tradeDateStart >= start && tradeDateStart <= end;
+        }
+        
+        return true;
+      };
 
       const mt5History = await storage.getMT5History(userId);
       const manualTrades = await storage.getTrades(userId);
@@ -1068,7 +1147,10 @@ export async function registerRoutes(
           netPl: parseFloat(t.netPl || "0"),
         }));
 
-      const allTrades = [...mt5Normalized, ...manualNormalized];
+      // Apply date filter to trades
+      const allTrades = [...mt5Normalized, ...manualNormalized].filter(trade => 
+        isWithinDateRange(trade.openTime)
+      );
 
       if (allTrades.length === 0) {
         return res.json({

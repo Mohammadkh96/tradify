@@ -810,14 +810,24 @@ export default function Dashboard() {
         {/* Session Analytics - Elite Only */}
         {userId && (
           <div className="mb-8">
-            <SessionAnalytics userId={userId} />
+            <SessionAnalytics 
+              userId={userId} 
+              dateFilter={dateFilter}
+              startDate={dateFilter === "custom" ? customStartDate : undefined}
+              endDate={dateFilter === "custom" ? customEndDate : undefined}
+            />
           </div>
         )}
 
         {/* Time Patterns - Elite Only */}
         {userId && (
           <div className="mb-8">
-            <TimePatterns userId={userId} />
+            <TimePatterns 
+              userId={userId}
+              dateFilter={dateFilter}
+              startDate={dateFilter === "custom" ? customStartDate : undefined}
+              endDate={dateFilter === "custom" ? customEndDate : undefined}
+            />
           </div>
         )}
 

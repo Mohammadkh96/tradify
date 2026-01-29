@@ -58,16 +58,39 @@ interface TimePatternsData {
 
 interface TimePatternsProps {
   userId: string;
+  dateFilter?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
-export function TimePatterns({ userId }: TimePatternsProps) {
+export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePatternsProps) {
   const { isElite } = usePlan();
 
+  // Build query string for date filtering
+  const queryParams = new URLSearchParams();
+  if (dateFilter && dateFilter !== "all") queryParams.set("dateFilter", dateFilter);
+  if (dateFilter === "custom" && startDate) queryParams.set("startDate", startDate);
+  if (dateFilter === "custom" && endDate) queryParams.set("endDate", endDate);
+  const queryString = queryParams.toString();
+  const apiUrl = `/api/time-patterns/${userId}${queryString ? `?${queryString}` : ""}`;
+
   const { data, isLoading, error } = useQuery<TimePatternsData>({
-    queryKey: [`/api/time-patterns/${userId}`],
+    queryKey: [apiUrl],
     enabled: !!userId && isElite,
     staleTime: 60000,
   });
+
+  // Helper to get date range label
+  const getDateRangeLabel = () => {
+    if (!dateFilter || dateFilter === "all") return "All Time";
+    if (dateFilter === "today") return "Today";
+    if (dateFilter === "week") return "This Week";
+    if (dateFilter === "month") return "This Month";
+    if (dateFilter === "custom" && startDate && endDate) {
+      return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+    }
+    return "All Time";
+  };
 
   if (!isElite) {
     return (
@@ -237,7 +260,13 @@ export function TimePatterns({ userId }: TimePatternsProps) {
               </CardDescription>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-3 flex-wrap text-xs">
+            <span 
+              className="text-[10px] font-black text-cyan-500 uppercase tracking-widest bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20"
+              data-testid="time-patterns-date-range"
+            >
+              {getDateRangeLabel()}
+            </span>
             {bestDay && (
               <div className="flex items-center gap-1.5">
                 <TrendingUp size={14} className="text-emerald-500" />
