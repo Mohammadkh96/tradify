@@ -201,7 +201,7 @@ export function OnboardingTour() {
       <button
         onClick={restartTour}
         data-testid="button-restart-tour"
-        className="fixed bottom-4 right-4 z-50 hidden md:flex items-center gap-2 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
+        className="fixed bottom-4 left-4 z-50 hidden md:flex items-center gap-2 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
       >
         <Sparkles size={14} />
         Tour
