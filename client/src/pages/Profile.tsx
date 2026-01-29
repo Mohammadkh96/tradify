@@ -23,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { usePlan } from "@/hooks/usePlan";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { UserRole } from "@shared/schema";
 import { SiPaypal } from "react-icons/si";
@@ -62,9 +63,7 @@ export default function Profile() {
     queryKey: ["/api/user"],
   });
 
-  const subscription_tier = user?.subscriptionTier?.toUpperCase() || "FREE";
-  const isPro = subscription_tier === "PRO" || subscription_tier === "ELITE";
-  const isElite = subscription_tier === "ELITE";
+  const { isPaid: isPro, isElite, tier, config } = usePlan();
 
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery<any>({
     queryKey: ["/api/paypal/subscription"],

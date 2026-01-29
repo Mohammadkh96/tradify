@@ -32,6 +32,15 @@ Key features:
   - 30-minute cache to limit API calls
   - Server-side PRO subscription enforcement
 
+**Plan System:**
+- Centralized plan configuration in `shared/plans.ts`
+- Three tiers: Free, Pro ($19/mo), Elite ($39/mo)
+- Feature gating via `usePlan()` hook on frontend, plan utilities on backend
+- Key features per tier:
+  - Free: 1 strategy, 30-day history, basic analytics
+  - Pro: Unlimited strategies, 6-month history, AI analysis, CSV export
+  - Elite: Unlimited history, session analytics, time patterns, PDF reports
+
 **Navigation Structure:**
 - Collapsible "Strategies" menu in sidebar with sub-items
 - Routes: `/strategies` (My Strategies), `/strategies/create` (Create Strategy), `/strategies/validate` (Strategy Validator)

@@ -12,6 +12,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { emailService } from "./emailService";
 import { openai } from "./replit_integrations/audio/index";
+import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays } from "@shared/plans";
 
 const PostgresStore = connectPg(session);
 
@@ -962,10 +963,9 @@ Output exactly 1-3 bullet points.`;
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      // PRO/ELITE subscription check
+      // Check AI analysis access based on plan
       const userRole = await storage.getUserRole(userId);
-      const tier = userRole?.subscriptionTier?.toUpperCase();
-      if (!userRole || (tier !== "PRO" && tier !== "ELITE")) {
+      if (!canAccessFeature(userRole?.subscriptionTier, "aiAnalysis")) {
         return res.status(403).json({ message: "Pro or Elite subscription required for AI analysis" });
       }
       
@@ -1374,19 +1374,18 @@ End with: "Check your charts for current price action."`;
         return res.status(400).json({ message: "Strategy name is required" });
       }
       
-      // Check strategy limit for Free users
+      // Check strategy limit based on plan
       const user = await storage.getUserRole(userId);
-      const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+      const maxStrategies = getMaxStrategies(user?.subscriptionTier);
       
-      if (!isPro) {
+      if (maxStrategies !== -1) {
         const existingStrategies = await storage.getStrategies(userId);
-        const FREE_STRATEGY_LIMIT = 1;
         
-        if (existingStrategies.length >= FREE_STRATEGY_LIMIT) {
+        if (existingStrategies.length >= maxStrategies) {
           return res.status(403).json({ 
             message: "Strategy limit reached",
-            error: "FREE_LIMIT_REACHED",
-            limit: FREE_STRATEGY_LIMIT,
+            error: "PLAN_LIMIT_REACHED",
+            limit: maxStrategies,
             current: existingStrategies.length
           });
         }
@@ -1520,19 +1519,18 @@ End with: "Check your charts for current price action."`;
         return res.status(403).json({ message: "Access denied" });
       }
       
-      // Check strategy limit for Free users
+      // Check strategy limit based on plan
       const user = await storage.getUserRole(userId);
-      const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+      const maxStrategies = getMaxStrategies(user?.subscriptionTier);
       
-      if (!isPro) {
+      if (maxStrategies !== -1) {
         const existingStrategies = await storage.getStrategies(userId);
-        const FREE_STRATEGY_LIMIT = 1;
         
-        if (existingStrategies.length >= FREE_STRATEGY_LIMIT) {
+        if (existingStrategies.length >= maxStrategies) {
           return res.status(403).json({ 
             message: "Strategy limit reached",
-            error: "FREE_LIMIT_REACHED",
-            limit: FREE_STRATEGY_LIMIT,
+            error: "PLAN_LIMIT_REACHED",
+            limit: maxStrategies,
             current: existingStrategies.length
           });
         }

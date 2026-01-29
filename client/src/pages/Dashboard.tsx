@@ -1,4 +1,5 @@
 import { useTrades } from "@/hooks/use-trades";
+import { usePlan } from "@/hooks/usePlan";
 import { StatCard } from "@/components/StatCard";
 import { 
   Activity, 
@@ -69,13 +70,7 @@ export default function Dashboard() {
     enabled: !!userId,
   });
 
-  const { data: userRoleData } = useQuery<any>({
-    queryKey: [`/api/traders-hub/user-role/${localStorage.getItem("user_id") || "demo_user"}`],
-  });
-
-  const subscription = userRoleData?.subscriptionTier?.toUpperCase() || "FREE";
-  const isPro = subscription === "PRO" || subscription === "ELITE";
-  const isElite = subscription === "ELITE";
+  const { isPaid: isPro, isElite, canAccess } = usePlan();
 
   const { data: insights, isLoading: isInsightsLoading } = useQuery<any>({
     queryKey: [`/api/ai/insights/${userId}`],

@@ -1,8 +1,9 @@
 import { ShieldCheck, Check, X, ArrowRight, ExternalLink, Crown, Zap, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { usePlan } from "@/hooks/usePlan";
+import { PLAN_CONFIGS } from "@shared/plans";
 
 const features = [
   { name: "Live MT5 Data Connection", free: true, pro: true, elite: true },
@@ -13,23 +14,21 @@ const features = [
   { name: "1 Trading Strategy", free: true, pro: false, elite: false },
   { name: "Unlimited Trading Strategies", free: false, pro: true, elite: true },
   { name: "Performance Intelligence Layer", free: false, pro: true, elite: true },
-  { name: "Full Equity Curve (All-Time)", free: false, pro: true, elite: true },
+  { name: "6-Month Trade History (Pro)", free: false, pro: true, elite: false },
+  { name: "Unlimited Trade History (Elite)", free: false, pro: false, elite: true },
   { name: "AI Instrument Analysis", free: false, pro: true, elite: true },
-  { name: "Unlimited Journal History", free: false, pro: true, elite: true },
-  { name: "CSV / PDF Data Export", free: false, pro: true, elite: true },
-  { name: "Priority MT5 Sync Intervals", free: false, pro: true, elite: true },
-  { name: "Advanced Session Analytics", free: false, pro: false, elite: true },
-  { name: "Elite Member Badge", free: false, pro: false, elite: true },
+  { name: "CSV Data Export", free: false, pro: true, elite: true },
+  { name: "Session Performance Analytics", free: false, pro: false, elite: true },
+  { name: "Time Pattern Analysis", free: false, pro: false, elite: true },
+  { name: "PDF Report Generation", free: false, pro: false, elite: true },
   { name: "Priority Support", free: false, pro: false, elite: true },
+  { name: "Elite Member Badge", free: false, pro: false, elite: true },
 ];
 
 export default function Pricing() {
-  const { data: user } = useQuery<any>({ queryKey: ["/api/user"] });
-
-  const subscription = user?.subscriptionTier?.toUpperCase() || "FREE";
-  const isPro = subscription === "PRO";
-  const isElite = subscription === "ELITE";
-  const isPaid = isPro || isElite;
+  const { isPro, isElite, isPaid, tier } = usePlan();
+  const proConfig = PLAN_CONFIGS.PRO;
+  const eliteConfig = PLAN_CONFIGS.ELITE;
 
   const handleManageSubscription = () => {
     window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
@@ -80,7 +79,7 @@ export default function Pricing() {
                 disabled
                 data-testid="button-current-free"
               >
-                {subscription === "FREE" ? "Current Plan" : "Downgrade"}
+                {tier === "FREE" ? "Current Plan" : "Downgrade"}
               </Button>
             </CardContent>
           </Card>

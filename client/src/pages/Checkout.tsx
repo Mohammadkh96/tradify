@@ -6,13 +6,13 @@ import { SiPaypal } from "react-icons/si";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { usePlan } from "@/hooks/usePlan";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { PLAN_CONFIGS, type PlanTier } from "@shared/plans";
 
-type PlanTier = 'PRO' | 'ELITE';
-
-const PLAN_DETAILS: Record<PlanTier, { name: string; price: string; color: string; icon: any }> = {
-  PRO: { name: 'Pro', price: '$19', color: 'emerald', icon: Star },
-  ELITE: { name: 'Elite', price: '$39', color: 'amber', icon: Crown },
+const PLAN_ICONS: Record<'PRO' | 'ELITE', any> = {
+  PRO: Star,
+  ELITE: Crown,
 };
 
 export default function Checkout() {
@@ -23,8 +23,9 @@ export default function Checkout() {
   // Get plan from URL params
   const params = new URLSearchParams(window.location.search);
   const urlPlan = params.get('plan')?.toUpperCase();
-  const selectedTier: PlanTier = urlPlan === 'ELITE' ? 'ELITE' : 'PRO';
-  const planDetails = PLAN_DETAILS[selectedTier];
+  const selectedTier: 'PRO' | 'ELITE' = urlPlan === 'ELITE' ? 'ELITE' : 'PRO';
+  const planConfig = PLAN_CONFIGS[selectedTier];
+  const PlanIcon = PLAN_ICONS[selectedTier];
 
   // Handle subscription return URLs
   useEffect(() => {
@@ -109,8 +110,6 @@ export default function Checkout() {
   const isPro = subscription === "PRO";
   const isElite = subscription === "ELITE";
   const isPaid = isPro || isElite;
-
-  const PlanIcon = planDetails.icon;
   const isElitePlan = selectedTier === 'ELITE';
 
   return (
@@ -194,11 +193,11 @@ export default function Checkout() {
               <div className="flex items-center gap-2">
                 <PlanIcon className={isElitePlan ? "w-5 h-5 text-amber-500" : "w-5 h-5 text-emerald-500"} />
                 <CardTitle className={isElitePlan ? "text-lg font-black uppercase tracking-widest text-amber-500" : "text-lg font-black uppercase tracking-widest text-emerald-500"}>
-                  {isPaid ? "Subscription Details" : `Upgrade to ${planDetails.name}`}
+                  {isPaid ? "Subscription Details" : `Upgrade to ${planConfig.name}`}
                 </CardTitle>
               </div>
               <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
-                {isPaid ? "Current provider info." : `${planDetails.price}/month - Cancel anytime.`}
+                {isPaid ? "Current provider info." : `$${planConfig.price}/month - Cancel anytime.`}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">

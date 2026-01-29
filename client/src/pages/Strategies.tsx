@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { usePlan } from "@/hooks/usePlan";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   Plus, 
@@ -40,8 +41,6 @@ import {
   Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const FREE_STRATEGY_LIMIT = 1;
 
 interface Strategy {
   id: number;
@@ -64,14 +63,9 @@ export default function Strategies() {
     queryKey: ["/api/strategies"],
   });
 
-  const { data: user } = useQuery<any>({
-    queryKey: ["/api/user"],
-  });
-
-  const isUserLoaded = user !== undefined;
-  const subscription = user?.subscriptionTier?.toUpperCase() || "FREE";
-  const isPro = subscription === "PRO" || subscription === "ELITE";
-  const isAtLimit = isUserLoaded && !isPro && strategies.length >= FREE_STRATEGY_LIMIT;
+  const { isPaid: isPro, maxStrategies, isLoading: isPlanLoading } = usePlan();
+  const isUserLoaded = !isPlanLoading;
+  const isAtLimit = isUserLoaded && maxStrategies !== -1 && strategies.length >= maxStrategies;
 
   const activateMutation = useMutation({
     mutationFn: async (strategyId: number) => {
@@ -91,7 +85,7 @@ export default function Strategies() {
       const response = await apiRequest("POST", `/api/strategies/${strategyId}/duplicate`);
       if (!response.ok) {
         const data = await response.json();
-        if (data.error === "FREE_LIMIT_REACHED") {
+        if (data.error === "PLAN_LIMIT_REACHED" || data.error === "FREE_LIMIT_REACHED") {
           throw new Error("LIMIT_REACHED");
         }
         throw new Error(data.message || "Failed to duplicate strategy");
@@ -157,9 +151,9 @@ export default function Strategies() {
             <p className="text-muted-foreground text-sm mt-1">
               Define your trading rules. Tradify checks whether you respect them.
             </p>
-            {isUserLoaded && !isPro && (
+            {isUserLoaded && !isPro && maxStrategies !== -1 && (
               <p className="text-xs text-muted-foreground mt-1">
-                {strategies.length}/{FREE_STRATEGY_LIMIT} strategies used (Free plan)
+                {strategies.length}/{maxStrategies} strategies used (Free plan)
               </p>
             )}
           </div>
@@ -192,7 +186,7 @@ export default function Strategies() {
                     <span className="font-semibold text-foreground">Strategy Limit Reached</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Free accounts are limited to {FREE_STRATEGY_LIMIT} strategy. Upgrade to Pro for unlimited strategies.
+                    Free accounts are limited to {maxStrategies} strategy. Upgrade to Pro for unlimited strategies.
                   </p>
                 </div>
                 <Link href="/pricing">
