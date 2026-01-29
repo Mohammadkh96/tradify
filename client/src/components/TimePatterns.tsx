@@ -20,7 +20,8 @@ import {
   YAxis, 
   Tooltip, 
   Cell,
-  CartesianGrid
+  CartesianGrid,
+  ReferenceLine
 } from "recharts";
 
 interface DayMetric {
@@ -261,38 +262,53 @@ export function TimePatterns({ userId }: TimePatternsProps) {
               <BarChart3 size={16} className="text-cyan-500" />
               P&L by Day of Week
             </div>
-            <div className="h-48">
+            <div className="h-56 bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={shortDayNames} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <BarChart data={shortDayNames} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="dayProfitGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#059669" stopOpacity={0.8}/>
+                    </linearGradient>
+                    <linearGradient id="dayLossGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#dc2626" stopOpacity={0.8}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
                   <XAxis 
                     dataKey="shortName" 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontWeight: 600 }}
+                    axisLine={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.3 }}
                     tickLine={false}
                   />
                   <YAxis 
                     tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
                     axisLine={false}
                     tickLine={false}
-                    tickFormatter={(value) => `$${value.toFixed(0)}`}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
                   />
+                  <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.4} strokeDasharray="3 3" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
+                      backgroundColor: 'hsl(var(--popover))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      fontSize: '12px'
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4)',
+                      padding: '10px 14px'
                     }}
-                    formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, 'P&L']}
+                    labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
+                    formatter={(value: number, name: string) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'P&L']}
                     labelFormatter={(label) => {
                       const day = shortDayNames.find(d => d.shortName === label);
                       return day ? `${day.dayName} (${day.trades} trades)` : label;
                     }}
+                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                   />
-                  <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="pnl" radius={[6, 6, 0, 0]} maxBarSize={45}>
                     {shortDayNames.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={getBarColor(entry.pnl)} />
+                      <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? 'url(#dayProfitGradient)' : 'url(#dayLossGradient)'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -305,14 +321,20 @@ export function TimePatterns({ userId }: TimePatternsProps) {
               <Hash size={16} className="text-cyan-500" />
               Win Rate by Day
             </div>
-            <div className="h-48">
+            <div className="h-56 bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={shortDayNames} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <BarChart data={shortDayNames} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="winRateGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#06b6d4" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#0891b2" stopOpacity={0.8}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
                   <XAxis 
                     dataKey="shortName" 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontWeight: 600 }}
+                    axisLine={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.3 }}
                     tickLine={false}
                   />
                   <YAxis 
@@ -322,74 +344,100 @@ export function TimePatterns({ userId }: TimePatternsProps) {
                     domain={[0, 100]}
                     tickFormatter={(value) => `${value}%`}
                   />
+                  <ReferenceLine y={50} stroke="#f59e0b" strokeOpacity={0.5} strokeDasharray="5 5" label={{ value: '50%', position: 'right', fontSize: 9, fill: '#f59e0b' }} />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
+                      backgroundColor: 'hsl(var(--popover))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      fontSize: '12px'
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4)',
+                      padding: '10px 14px'
                     }}
+                    labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
                     formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']}
                     labelFormatter={(label) => {
                       const day = shortDayNames.find(d => d.shortName === label);
                       return day ? `${day.dayName} (${day.wins}W / ${day.losses}L)` : label;
                     }}
+                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                   />
-                  <Bar dataKey="winRate" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="winRate" fill="url(#winRateGradient)" radius={[6, 6, 0, 0]} maxBarSize={45} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm font-black text-foreground uppercase tracking-tight">
             <Clock size={16} className="text-cyan-500" />
             Hourly Performance Heatmap (UTC)
           </div>
-          <div className="grid grid-cols-12 gap-1">
-            {byHourOfDay.map((hourData) => {
-              const colorClass = getHeatmapColor(hourData.trades, maxHourTrades, hourData.pnl);
-              return (
-                <div
-                  key={hourData.hour}
-                  className={`relative group ${colorClass} rounded-md p-2 text-center transition-all cursor-pointer`}
-                  data-testid={`heatmap-hour-${hourData.hour}`}
-                  title={`${hourData.hourLabel}: ${hourData.trades} trades, $${hourData.pnl.toFixed(2)} P&L, ${hourData.winRate.toFixed(0)}% win rate`}
-                >
-                  <div className="text-[10px] font-black text-foreground/80">
-                    {hourData.hour}
-                  </div>
-                  <div className="text-[8px] text-muted-foreground">
-                    {hourData.trades > 0 ? hourData.trades : '-'}
-                  </div>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-                    <div className="bg-popover border border-border rounded-lg shadow-xl p-3 text-xs whitespace-nowrap">
-                      <div className="font-black text-foreground mb-1">{hourData.hourLabel} UTC</div>
-                      <div className="space-y-0.5 text-muted-foreground">
-                        <div>Trades: <span className="text-foreground">{hourData.trades}</span></div>
-                        <div>P&L: <span className={hourData.pnl >= 0 ? "text-emerald-500" : "text-red-500"}>${hourData.pnl.toFixed(2)}</span></div>
-                        <div>Win Rate: <span className="text-foreground">{hourData.winRate.toFixed(1)}%</span></div>
-                        <div>Avg P&L: <span className={hourData.avgPnl >= 0 ? "text-emerald-500" : "text-red-500"}>${hourData.avgPnl.toFixed(2)}</span></div>
+          <div className="bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
+            <div className="grid grid-cols-12 gap-1.5">
+              {byHourOfDay.map((hourData) => {
+                const colorClass = getHeatmapColor(hourData.trades, maxHourTrades, hourData.pnl);
+                const intensity = hourData.trades > 0 ? Math.min(hourData.trades / maxHourTrades, 1) : 0;
+                return (
+                  <div
+                    key={hourData.hour}
+                    className={`relative group ${colorClass} rounded-lg p-2.5 text-center transition-all duration-200 cursor-pointer hover:scale-105 hover:shadow-lg hover:z-10`}
+                    data-testid={`heatmap-hour-${hourData.hour}`}
+                    style={{ 
+                      boxShadow: intensity > 0.5 ? `0 0 12px ${hourData.pnl >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` : 'none'
+                    }}
+                  >
+                    <div className="text-[11px] font-black text-foreground/90">
+                      {String(hourData.hour).padStart(2, '0')}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground font-semibold">
+                      {hourData.trades > 0 ? hourData.trades : '-'}
+                    </div>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover:block z-50 pointer-events-none">
+                      <div className="bg-popover border border-border rounded-xl shadow-2xl p-4 text-xs whitespace-nowrap backdrop-blur-sm">
+                        <div className="font-black text-foreground mb-2 text-sm border-b border-border pb-2">{hourData.hourLabel} UTC</div>
+                        <div className="space-y-1.5 text-muted-foreground">
+                          <div className="flex justify-between gap-4">
+                            <span>Trades:</span>
+                            <span className="text-foreground font-bold">{hourData.trades}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span>P&L:</span>
+                            <span className={`font-bold ${hourData.pnl >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                              ${hourData.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span>Win Rate:</span>
+                            <span className="text-foreground font-bold">{hourData.winRate.toFixed(1)}%</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span>Avg P&L:</span>
+                            <span className={`font-bold ${hourData.avgPnl >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                              ${hourData.avgPnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground mt-2">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-muted/20" />
-              <span>No trades</span>
+                );
+              })}
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-emerald-500/40" />
-              <span>Profitable</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-red-500/40" />
-              <span>Loss</span>
+            <div className="flex items-center justify-center gap-6 text-[10px] text-muted-foreground mt-4 pt-3 border-t border-border/30">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-md bg-muted/20 border border-border/30" />
+                <span className="font-medium">No trades</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-md bg-gradient-to-br from-emerald-400/60 to-emerald-600/60" />
+                <span className="font-medium">Profitable</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-md bg-gradient-to-br from-red-400/60 to-red-600/60" />
+                <span className="font-medium">Loss</span>
+              </div>
             </div>
           </div>
         </div>

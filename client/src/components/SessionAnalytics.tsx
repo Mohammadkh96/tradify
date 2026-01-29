@@ -27,7 +27,9 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
-  Legend
+  Legend,
+  CartesianGrid,
+  ReferenceLine
 } from "recharts";
 
 interface SessionMetric {
@@ -244,30 +246,62 @@ export function SessionAnalytics({ userId }: SessionAnalyticsProps) {
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              P&L by Session
-            </h4>
-            <div className="h-48 bg-background rounded-lg border border-border p-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <DollarSign size={14} className="text-amber-500" />
+              <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                P&L by Session
+              </h4>
+            </div>
+            <div className="h-56 bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={pnlChartData} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 10, fill: '#888' }} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: '#888' }} width={80} />
-                  <Tooltip 
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'P&L']}
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }}
+                <BarChart data={pnlChartData} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="profitGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#059669" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="lossGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#dc2626" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#ef4444" stopOpacity={1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} horizontal={false} />
+                  <XAxis 
+                    type="number" 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.3 }}
+                    tickLine={false}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
                   />
-                  <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontWeight: 600 }} 
+                    width={90}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.4} strokeDasharray="3 3" />
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'P&L']}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--popover))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4)',
+                      padding: '10px 14px'
+                    }}
+                    labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
+                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                  />
+                  <Bar dataKey="pnl" radius={[0, 6, 6, 0]} maxBarSize={28}>
                     {pnlChartData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} 
+                        fill={entry.pnl >= 0 ? 'url(#profitGradient)' : 'url(#lossGradient)'} 
                       />
                     ))}
                   </Bar>
@@ -276,28 +310,82 @@ export function SessionAnalytics({ userId }: SessionAnalyticsProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              Win Rate by Session
-            </h4>
-            <div className="h-48 bg-background rounded-lg border border-border p-2">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Percent size={14} className="text-amber-500" />
+              <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                Win Rate by Session
+              </h4>
+            </div>
+            <div className="h-56 bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={winRateChartData} layout="vertical">
-                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#888' }} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: '#888' }} width={80} />
+                <BarChart data={winRateChartData} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="winRateAsian" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#d97706" stopOpacity={0.7}/>
+                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="winRateLondon" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#2563eb" stopOpacity={0.7}/>
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="winRateOverlap" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.7}/>
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="winRateNY" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#059669" stopOpacity={0.7}/>
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="winRateOff" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#4b5563" stopOpacity={0.7}/>
+                      <stop offset="100%" stopColor="#6b7280" stopOpacity={1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} horizontal={false} />
+                  <XAxis 
+                    type="number" 
+                    domain={[0, 100]} 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.3 }}
+                    tickLine={false}
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontWeight: 600 }} 
+                    width={90}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <ReferenceLine x={50} stroke="#f59e0b" strokeOpacity={0.5} strokeDasharray="5 5" label={{ value: '50%', position: 'top', fontSize: 9, fill: '#f59e0b' }} />
                   <Tooltip 
                     formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
+                      backgroundColor: 'hsl(var(--popover))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      fontSize: '12px'
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4)',
+                      padding: '10px 14px'
                     }}
+                    labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
+                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                   />
-                  <Bar dataKey="winRate" radius={[0, 4, 4, 0]}>
-                    {winRateChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                  <Bar dataKey="winRate" radius={[0, 6, 6, 0]} maxBarSize={28}>
+                    {winRateChartData.map((entry, index) => {
+                      const gradientMap: Record<string, string> = {
+                        'Asian': 'url(#winRateAsian)',
+                        'London': 'url(#winRateLondon)',
+                        'London/NY Overlap': 'url(#winRateOverlap)',
+                        'New York': 'url(#winRateNY)',
+                        'Off Hours': 'url(#winRateOff)'
+                      };
+                      return (
+                        <Cell key={`cell-${index}`} fill={gradientMap[entry.name] || entry.color} />
+                      );
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -305,61 +393,72 @@ export function SessionAnalytics({ userId }: SessionAnalyticsProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {data.sessions.map((session) => (
             <div 
               key={session.session}
-              className={`p-3 rounded-lg border ${
+              className={`relative p-4 rounded-xl border transition-all duration-200 hover:scale-[1.02] ${
                 session.session === data.bestSession 
-                  ? 'border-emerald-500/50 bg-emerald-500/5' 
+                  ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 shadow-lg shadow-emerald-500/10' 
                   : session.session === data.worstSession
-                    ? 'border-red-500/50 bg-red-500/5'
-                    : 'border-border bg-background'
+                    ? 'border-red-500/50 bg-gradient-to-br from-red-500/10 to-red-500/5 shadow-lg shadow-red-500/10'
+                    : 'border-border/50 bg-gradient-to-br from-background to-muted/20 hover:border-border'
               }`}
               data-testid={`session-card-${session.session}`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span 
-                  className="text-[10px] font-black uppercase tracking-widest"
-                  style={{ color: session.color }}
-                >
-                  {session.displayName}
-                </span>
-                {session.session === data.bestSession && (
-                  <TrendingUp size={12} className="text-emerald-500" />
-                )}
-                {session.session === data.worstSession && (
-                  <TrendingDown size={12} className="text-red-500" />
-                )}
+              {session.session === data.bestSession && (
+                <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full shadow-lg">
+                  Best
+                </div>
+              )}
+              {session.session === data.worstSession && session.session !== data.bestSession && (
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full shadow-lg">
+                  Needs Work
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: session.color }}
+                  />
+                  <span 
+                    className="text-[10px] font-black uppercase tracking-widest"
+                    style={{ color: session.color }}
+                  >
+                    {session.displayName}
+                  </span>
+                </div>
               </div>
               
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground uppercase">Trades</span>
-                  <span className="text-xs font-black text-foreground">{session.tradeCount}</span>
+                  <span className="text-[9px] text-muted-foreground uppercase font-medium">Trades</span>
+                  <span className="text-sm font-black text-foreground">{session.tradeCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground uppercase">Win Rate</span>
-                  <span className={`text-xs font-black ${
+                  <span className="text-[9px] text-muted-foreground uppercase font-medium">Win Rate</span>
+                  <span className={`text-sm font-black ${
                     session.winRate >= 50 ? 'text-emerald-500' : 'text-red-500'
                   }`}>
                     {session.winRate.toFixed(1)}%
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground uppercase">P&L</span>
-                  <span className={`text-xs font-black ${
+                <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                  <span className="text-[9px] text-muted-foreground uppercase font-medium">P&L</span>
+                  <span className={`text-sm font-black ${
                     session.totalPnL >= 0 ? 'text-emerald-500' : 'text-red-500'
                   }`}>
-                    ${session.totalPnL.toFixed(2)}
+                    ${session.totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground uppercase">Avg P&L</span>
-                  <span className={`text-xs font-black ${
-                    session.avgPnL >= 0 ? 'text-emerald-500' : 'text-red-500'
+                  <span className="text-[9px] text-muted-foreground uppercase font-medium">Avg P&L</span>
+                  <span className={`text-xs font-bold ${
+                    session.avgPnL >= 0 ? 'text-emerald-400' : 'text-red-400'
                   }`}>
-                    ${session.avgPnL.toFixed(2)}
+                    ${session.avgPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
