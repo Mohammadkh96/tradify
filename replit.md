@@ -31,6 +31,17 @@ Key features:
   - AI-generated factual performance analysis (no trade recommendations)
   - 30-minute cache to limit API calls
   - Server-side PRO subscription enforcement
+- **Session Performance Analytics** (ELITE only): Trade performance by market session
+  - Classifies trades into sessions based on UTC entry time:
+    - Asian: 00:00 - 07:00 UTC
+    - London: 07:00 - 12:00 UTC
+    - London/NY Overlap: 12:00 - 16:00 UTC
+    - New York: 16:00 - 21:00 UTC
+    - Off Hours: 21:00 - 00:00 UTC
+  - Shows per-session: win rate, P&L, trade count, avg P&L
+  - Visual bar charts comparing P&L and win rate across sessions
+  - Highlights best and worst performing sessions
+  - Server-side Elite tier enforcement via `/api/session-analytics/:userId`
 
 **Plan System:**
 - Centralized plan configuration in `shared/plans.ts`

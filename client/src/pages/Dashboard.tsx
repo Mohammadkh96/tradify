@@ -1,6 +1,7 @@
 import { useTrades } from "@/hooks/use-trades";
 import { usePlan } from "@/hooks/usePlan";
 import { StatCard } from "@/components/StatCard";
+import { SessionAnalytics } from "@/components/SessionAnalytics";
 import { 
   Activity, 
   Wallet,
@@ -792,6 +793,13 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Session Analytics - Elite Only */}
+        {userId && (
+          <div className="mb-8">
+            <SessionAnalytics userId={userId} />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div className="bg-card border border-border rounded-2xl p-6 shadow-2xl">

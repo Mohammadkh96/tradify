@@ -794,6 +794,159 @@ export async function registerRoutes(
     }
   });
 
+  // Session Performance Analytics (ELITE ONLY)
+  app.get("/api/session-analytics/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Elite tier check - get user from session and verify subscription
+      const sessionUserId = req.session.userId!;
+      const currentUser = await storage.getUserRole(sessionUserId);
+      const tier = currentUser?.subscriptionTier?.toUpperCase();
+      if (tier !== "ELITE") {
+        return res.status(403).json({ message: "Session Analytics requires Elite subscription" });
+      }
+
+      const mt5History = await storage.getMT5History(userId);
+      const manualTrades = await storage.getTrades(userId);
+
+      // Normalize trades from both sources
+      type NormalizedTrade = {
+        openTime: Date;
+        closeTime: Date;
+        netPl: number;
+        volume: number;
+        stopLoss: number | null;
+        entryPrice: number | null;
+      };
+
+      const mt5Normalized: NormalizedTrade[] = (mt5History || []).map(t => ({
+        openTime: new Date(t.openTime),
+        closeTime: new Date(t.closeTime),
+        netPl: parseFloat(t.netPl || "0"),
+        volume: parseFloat(t.volume || "0"),
+        stopLoss: t.sl ? parseFloat(t.sl) : null,
+        entryPrice: t.entryPrice ? parseFloat(t.entryPrice) : null,
+      }));
+
+      const manualNormalized: NormalizedTrade[] = (manualTrades || [])
+        .map(t => ({
+          openTime: new Date(t.createdAt || new Date()),
+          closeTime: new Date(t.createdAt || new Date()),
+          netPl: parseFloat(t.netPl || "0"),
+          volume: 0,
+          stopLoss: t.stopLoss ? parseFloat(t.stopLoss) : null,
+          entryPrice: t.entryPrice ? parseFloat(t.entryPrice) : null,
+        }));
+
+      const allTrades = [...mt5Normalized, ...manualNormalized];
+
+      if (allTrades.length === 0) {
+        return res.json({
+          sessions: [],
+          totalTrades: 0,
+          bestSession: null,
+          worstSession: null,
+        });
+      }
+
+      // Use shared session classification (UTC-based)
+      const classifySession = (date: Date): string => {
+        const hour = date.getUTCHours();
+        if (hour >= 0 && hour < 7) return "asian";
+        if (hour >= 7 && hour < 12) return "london";
+        if (hour >= 12 && hour < 16) return "overlap_london_ny";
+        if (hour >= 16 && hour < 21) return "new_york";
+        return "off_hours";
+      };
+
+      const sessionData: Record<string, {
+        tradeCount: number;
+        wins: number;
+        losses: number;
+        breakeven: number;
+        totalPnL: number;
+        totalVolume: number;
+        totalRisk: number;
+        riskCount: number;
+      }> = {
+        asian: { tradeCount: 0, wins: 0, losses: 0, breakeven: 0, totalPnL: 0, totalVolume: 0, totalRisk: 0, riskCount: 0 },
+        london: { tradeCount: 0, wins: 0, losses: 0, breakeven: 0, totalPnL: 0, totalVolume: 0, totalRisk: 0, riskCount: 0 },
+        overlap_london_ny: { tradeCount: 0, wins: 0, losses: 0, breakeven: 0, totalPnL: 0, totalVolume: 0, totalRisk: 0, riskCount: 0 },
+        new_york: { tradeCount: 0, wins: 0, losses: 0, breakeven: 0, totalPnL: 0, totalVolume: 0, totalRisk: 0, riskCount: 0 },
+        off_hours: { tradeCount: 0, wins: 0, losses: 0, breakeven: 0, totalPnL: 0, totalVolume: 0, totalRisk: 0, riskCount: 0 },
+      };
+
+      allTrades.forEach(trade => {
+        const session = classifySession(trade.openTime);
+        const data = sessionData[session];
+        
+        data.tradeCount++;
+        data.totalPnL += trade.netPl;
+        data.totalVolume += trade.volume;
+        
+        if (trade.netPl > 0) data.wins++;
+        else if (trade.netPl < 0) data.losses++;
+        else data.breakeven++;
+
+        // Calculate risk if stop loss and entry price available
+        if (trade.stopLoss && trade.entryPrice) {
+          const risk = Math.abs(trade.entryPrice - trade.stopLoss);
+          data.totalRisk += risk;
+          data.riskCount++;
+        }
+      });
+
+      const sessionInfo: Record<string, { displayName: string; color: string }> = {
+        asian: { displayName: "Asian", color: "#f59e0b" },
+        london: { displayName: "London", color: "#3b82f6" },
+        overlap_london_ny: { displayName: "London/NY Overlap", color: "#8b5cf6" },
+        new_york: { displayName: "New York", color: "#10b981" },
+        off_hours: { displayName: "Off Hours", color: "#6b7280" },
+      };
+
+      const sessions = Object.entries(sessionData)
+        .filter(([_, data]) => data.tradeCount > 0)
+        .map(([session, data]) => {
+          const decisiveTrades = data.wins + data.losses;
+          return {
+            session,
+            displayName: sessionInfo[session].displayName,
+            color: sessionInfo[session].color,
+            tradeCount: data.tradeCount,
+            winCount: data.wins,
+            lossCount: data.losses,
+            breakEvenCount: data.breakeven,
+            winRate: decisiveTrades > 0 ? (data.wins / decisiveTrades) * 100 : 0,
+            totalPnL: data.totalPnL,
+            avgPnL: data.tradeCount > 0 ? data.totalPnL / data.tradeCount : 0,
+            avgRisk: data.riskCount > 0 ? data.totalRisk / data.riskCount : 0,
+            totalVolume: data.totalVolume,
+          };
+        })
+        .sort((a, b) => b.tradeCount - a.tradeCount);
+
+      // Find best and worst sessions by P&L
+      let bestSession = null;
+      let worstSession = null;
+      if (sessions.length > 0) {
+        const sortedByPnL = [...sessions].sort((a, b) => b.totalPnL - a.totalPnL);
+        bestSession = sortedByPnL[0]?.session || null;
+        worstSession = sortedByPnL[sortedByPnL.length - 1]?.session || null;
+      }
+
+      res.json({
+        sessions,
+        totalTrades: allTrades.length,
+        bestSession,
+        worstSession,
+      });
+    } catch (error) {
+      console.error("Session analytics failure:", error);
+      res.status(500).json({ message: "Session analytics failure" });
+    }
+  });
+
   app.get("/api/ai/insights/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
