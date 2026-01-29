@@ -2,6 +2,7 @@ import { useTrades } from "@/hooks/use-trades";
 import { usePlan } from "@/hooks/usePlan";
 import { StatCard } from "@/components/StatCard";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
+import { TimePatterns } from "@/components/TimePatterns";
 import { 
   Activity, 
   Wallet,
@@ -798,6 +799,13 @@ export default function Dashboard() {
         {userId && (
           <div className="mb-8">
             <SessionAnalytics userId={userId} />
+          </div>
+        )}
+
+        {/* Time Patterns - Elite Only */}
+        {userId && (
+          <div className="mb-8">
+            <TimePatterns userId={userId} />
           </div>
         )}
 

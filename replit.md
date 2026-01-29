@@ -42,6 +42,13 @@ Key features:
   - Visual bar charts comparing P&L and win rate across sessions
   - Highlights best and worst performing sessions
   - Server-side Elite tier enforcement via `/api/session-analytics/:userId`
+- **Time-Based Performance Analysis** (ELITE only): Performance by day and hour
+  - Day of week analysis: P&L and win rate per weekday (Mon-Sun)
+  - Hour of day analysis: 24-hour heatmap showing trade activity and performance (UTC)
+  - Metrics per time period: trade count, wins/losses, P&L, avg P&L, win rate
+  - Visual bar charts for day performance, heatmap grid for hourly patterns
+  - Highlights best/worst trading days and hours
+  - Server-side Elite tier enforcement via `/api/time-patterns/:userId`
 
 **Plan System:**
 - Centralized plan configuration in `shared/plans.ts`

@@ -801,6 +801,12 @@ export async function registerRoutes(
       
       // Elite tier check - get user from session and verify subscription
       const sessionUserId = req.session.userId!;
+      
+      // Access control: ensure user can only access their own data
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied: Can only view your own session analytics" });
+      }
+      
       const currentUser = await storage.getUserRole(sessionUserId);
       const tier = currentUser?.subscriptionTier?.toUpperCase();
       if (tier !== "ELITE") {
@@ -944,6 +950,153 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Session analytics failure:", error);
       res.status(500).json({ message: "Session analytics failure" });
+    }
+  });
+
+  // Time-Based Performance Analysis (ELITE ONLY)
+  app.get("/api/time-patterns/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Elite tier check - get user from session and verify subscription
+      const sessionUserId = req.session.userId!;
+      
+      // Access control: ensure user can only access their own data
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied: Can only view your own time patterns" });
+      }
+      
+      const currentUser = await storage.getUserRole(sessionUserId);
+      const tier = currentUser?.subscriptionTier?.toUpperCase();
+      if (tier !== "ELITE") {
+        return res.status(403).json({ message: "Time Patterns requires Elite subscription" });
+      }
+
+      const mt5History = await storage.getMT5History(userId);
+      const manualTrades = await storage.getTrades(userId);
+
+      // Normalize trades from both sources
+      type NormalizedTrade = {
+        openTime: Date;
+        netPl: number;
+      };
+
+      const mt5Normalized: NormalizedTrade[] = (mt5History || []).map(t => ({
+        openTime: new Date(t.openTime),
+        netPl: parseFloat(t.netPl || "0"),
+      }));
+
+      const manualNormalized: NormalizedTrade[] = (manualTrades || [])
+        .map(t => ({
+          openTime: new Date(t.createdAt || new Date()),
+          netPl: parseFloat(t.netPl || "0"),
+        }));
+
+      const allTrades = [...mt5Normalized, ...manualNormalized];
+
+      if (allTrades.length === 0) {
+        return res.json({
+          byDayOfWeek: [],
+          byHourOfDay: [],
+          totalTrades: 0,
+          bestDay: null,
+          worstDay: null,
+          bestHour: null,
+          worstHour: null,
+        });
+      }
+
+      // Day of week analysis (0 = Sunday, 6 = Saturday)
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const dayData: Record<number, { trades: number; wins: number; losses: number; pnl: number }> = {};
+      for (let i = 0; i < 7; i++) {
+        dayData[i] = { trades: 0, wins: 0, losses: 0, pnl: 0 };
+      }
+
+      // Hour of day analysis (0-23 UTC)
+      const hourData: Record<number, { trades: number; wins: number; losses: number; pnl: number }> = {};
+      for (let i = 0; i < 24; i++) {
+        hourData[i] = { trades: 0, wins: 0, losses: 0, pnl: 0 };
+      }
+
+      allTrades.forEach(trade => {
+        const day = trade.openTime.getUTCDay();
+        const hour = trade.openTime.getUTCHours();
+
+        // Day stats
+        dayData[day].trades++;
+        dayData[day].pnl += trade.netPl;
+        if (trade.netPl > 0) dayData[day].wins++;
+        else if (trade.netPl < 0) dayData[day].losses++;
+
+        // Hour stats
+        hourData[hour].trades++;
+        hourData[hour].pnl += trade.netPl;
+        if (trade.netPl > 0) hourData[hour].wins++;
+        else if (trade.netPl < 0) hourData[hour].losses++;
+      });
+
+      // Format day data
+      const byDayOfWeek = Object.entries(dayData).map(([day, data]) => {
+        const decisiveTrades = data.wins + data.losses;
+        return {
+          day: parseInt(day),
+          dayName: dayNames[parseInt(day)],
+          trades: data.trades,
+          wins: data.wins,
+          losses: data.losses,
+          winRate: decisiveTrades > 0 ? (data.wins / decisiveTrades) * 100 : 0,
+          pnl: data.pnl,
+          avgPnl: data.trades > 0 ? data.pnl / data.trades : 0,
+        };
+      });
+
+      // Format hour data
+      const byHourOfDay = Object.entries(hourData).map(([hour, data]) => {
+        const decisiveTrades = data.wins + data.losses;
+        const hourNum = parseInt(hour);
+        return {
+          hour: hourNum,
+          hourLabel: `${hourNum.toString().padStart(2, '0')}:00`,
+          trades: data.trades,
+          wins: data.wins,
+          losses: data.losses,
+          winRate: decisiveTrades > 0 ? (data.wins / decisiveTrades) * 100 : 0,
+          pnl: data.pnl,
+          avgPnl: data.trades > 0 ? data.pnl / data.trades : 0,
+        };
+      });
+
+      // Find best/worst by P&L (only consider days/hours with trades)
+      const activeDays = byDayOfWeek.filter(d => d.trades > 0);
+      const activeHours = byHourOfDay.filter(h => h.trades > 0);
+
+      let bestDay = null, worstDay = null, bestHour = null, worstHour = null;
+
+      if (activeDays.length > 0) {
+        const sortedDays = [...activeDays].sort((a, b) => b.pnl - a.pnl);
+        bestDay = sortedDays[0].dayName;
+        worstDay = sortedDays[sortedDays.length - 1].dayName;
+      }
+
+      if (activeHours.length > 0) {
+        const sortedHours = [...activeHours].sort((a, b) => b.pnl - a.pnl);
+        bestHour = sortedHours[0].hourLabel;
+        worstHour = sortedHours[sortedHours.length - 1].hourLabel;
+      }
+
+      res.json({
+        byDayOfWeek,
+        byHourOfDay,
+        totalTrades: allTrades.length,
+        bestDay,
+        worstDay,
+        bestHour,
+        worstHour,
+      });
+    } catch (error) {
+      console.error("Time patterns analysis failure:", error);
+      res.status(500).json({ message: "Time patterns analysis failure" });
     }
   });
 
