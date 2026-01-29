@@ -1075,6 +1075,59 @@ End with: "Check your charts for current price action."`;
     res.json(users);
   });
 
+  app.post("/api/admin/create-user", requireAdmin, async (req, res) => {
+    try {
+      const { email, subscriptionTier, role, tempPassword } = req.body;
+      const adminId = req.session.userId!;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Normalize email to lowercase (matches login behavior)
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Validate subscription tier
+      const validTiers = ["FREE", "PRO", "ELITE"];
+      const tier = validTiers.includes(subscriptionTier?.toUpperCase()) 
+        ? subscriptionTier.toUpperCase() 
+        : "FREE";
+
+      // Check if user already exists
+      const [existing] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, normalizedEmail)).limit(1);
+      if (existing) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Generate or use provided temporary password
+      const password = tempPassword || `Tradify${Math.random().toString(36).substring(2, 8)}!`;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create the user with hashed password
+      const newUser = await storage.createUserRole({
+        userId: normalizedEmail,
+        password: hashedPassword,
+        role: role || "USER",
+        subscriptionTier: tier,
+        termsAccepted: true,
+        riskAcknowledged: true,
+      });
+
+      // Audit log
+      await db.insert(schema.adminAuditLog).values({
+        adminId,
+        actionType: "CREATE_USER",
+        targetUserId: normalizedEmail,
+        details: { subscriptionTier: tier, role: role || "USER" }
+      });
+
+      res.json({ success: true, user: newUser, tempPassword: password });
+    } catch (error) {
+      console.error("Create user error:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
   app.post("/api/admin/update-user", requireAdmin, async (req, res) => {
     try {
       const { targetUserId, updates } = req.body;

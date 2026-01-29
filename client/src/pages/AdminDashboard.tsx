@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History, UserPlus, Crown } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
 import { useState } from "react";
@@ -283,9 +284,36 @@ export default function AdminDashboard() {
   const [location] = useLocation();
   const [searchEmail, setSearchEmail] = useState("");
   const { theme, setTheme } = useTheme();
+  
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPlan, setNewUserPlan] = useState<string>("FREE");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createdUserPassword, setCreatedUserPassword] = useState<string | null>(null);
 
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: async (data: { email: string; subscriptionTier: string }) => {
+      const res = await apiRequest("POST", "/api/admin/create-user", data);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to create user");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+      setNewUserEmail("");
+      setNewUserPlan("FREE");
+      setCreatedUserPassword(data.tempPassword);
+      toast({ title: "User Created", description: "New user has been created. Share the temporary password with them." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   });
 
   const deleteUserMutation = useMutation({
@@ -339,7 +367,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -365,11 +393,23 @@ export default function AdminDashboard() {
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Zap size={12} /> MT5 Connectors
+                <Crown size={12} /> Active Elite
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black text-amber-500">
+                {users?.filter(u => u.subscriptionTier === "ELITE").length || 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Zap size={12} /> MT5 Connectors
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-black text-cyan-500">
                 {users?.filter(u => u.syncToken).length || 0}
               </div>
             </CardContent>
@@ -408,9 +448,123 @@ export default function AdminDashboard() {
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
               className="bg-muted border-border text-xs w-full md:w-64"
+              data-testid="input-search-users"
             />
+            <Button 
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs"
+              data-testid="button-create-user"
+            >
+              <UserPlus size={14} className="mr-2" />
+              Create User
+            </Button>
           </div>
         </div>
+
+        {createdUserPassword && (
+          <Card className="bg-emerald-500/10 border-emerald-500/30 border-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-emerald-500">
+                <CheckCircle size={16} /> User Created Successfully
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Share the temporary password below with the new user. They should change it after first login.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-background/50 p-4 rounded-lg border border-border">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Temporary Password</label>
+                <div className="flex items-center gap-3">
+                  <code className="text-lg font-mono font-bold text-foreground bg-muted px-4 py-2 rounded" data-testid="text-temp-password">
+                    {createdUserPassword}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdUserPassword);
+                      toast({ title: "Copied", description: "Password copied to clipboard" });
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                className="text-xs text-muted-foreground"
+                onClick={() => {
+                  setCreatedUserPassword(null);
+                  setShowCreateForm(false);
+                }}
+              >
+                Done
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {showCreateForm && !createdUserPassword && (
+          <Card className="bg-card border-emerald-500/20 border-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                <UserPlus size={16} className="text-emerald-500" /> Create New User
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Manually create a user account for testing, partnerships, or early access.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Email Address</label>
+                  <Input 
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    placeholder="user@example.com" 
+                    className="bg-muted border-border text-sm"
+                    data-testid="input-new-user-email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Plan Tier</label>
+                  <Select value={newUserPlan} onValueChange={setNewUserPlan}>
+                    <SelectTrigger className="bg-muted border-border" data-testid="select-new-user-plan">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FREE">Free</SelectItem>
+                      <SelectItem value="PRO">Pro ($19/mo)</SelectItem>
+                      <SelectItem value="ELITE">Elite ($39/mo)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <Button 
+                  className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs"
+                  onClick={() => createUserMutation.mutate({ email: newUserEmail, subscriptionTier: newUserPlan })}
+                  disabled={createUserMutation.isPending || !newUserEmail}
+                  data-testid="button-submit-create-user"
+                >
+                  {createUserMutation.isPending ? "Creating..." : "Create User"}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="text-xs text-muted-foreground"
+                  onClick={() => {
+                    setShowCreateForm(false);
+                    setNewUserEmail("");
+                    setNewUserPlan("FREE");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-card border-border overflow-hidden">
           <CardContent className="p-0">
@@ -426,13 +580,18 @@ export default function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
-                  <TableRow key={user.id} className="border-border hover:bg-muted/40">
+                  <TableRow key={user.id} className="border-border hover:bg-muted/40" data-testid={`row-user-${user.userId}`}>
                     <TableCell>
                       <div className="font-mono text-xs text-foreground">{user.userId}</div>
                       <div className="text-[9px] text-muted-foreground uppercase tracking-tighter">{user.role}</div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={user.subscriptionTier === "PRO" ? "bg-emerald-500 text-slate-950" : "bg-muted text-muted-foreground"}>
+                      <Badge className={
+                        user.subscriptionTier === "ELITE" ? "bg-amber-500 text-slate-950" :
+                        user.subscriptionTier === "PRO" ? "bg-emerald-500 text-slate-950" : 
+                        "bg-muted text-muted-foreground"
+                      }>
+                        {user.subscriptionTier === "ELITE" && <Crown size={10} className="mr-1" />}
                         {user.subscriptionTier}
                       </Badge>
                     </TableCell>
@@ -444,27 +603,48 @@ export default function AdminDashboard() {
                     <TableCell className="text-[10px] font-mono text-muted-foreground">
                       {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "N/A"}
                     </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button size="sm" variant="outline" className="h-7 text-[10px] border-border hover:bg-muted" 
-                        onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { subscriptionTier: user.subscriptionTier === "PRO" ? "FREE" : "PRO" } })}>
-                        {user.subscriptionTier === "PRO" ? "Set FREE" : "Grant PRO"}
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-[10px] text-rose-500 hover:bg-rose-500/10"
-                        onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { role: user.role === "DEACTIVATED" ? "TRADER" : "DEACTIVATED" } })}>
-                        {user.role === "DEACTIVATED" ? "Reactivate" : "Deactivate"}
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-[10px] text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
-                        onClick={() => {
-                          if (confirm("Are you sure you want to permanently delete this user? This action cannot be undone.")) {
-                            deleteUserMutation.mutate(user.userId);
-                          }
-                        }}>
-                        <Trash2 size={12} className="mr-1" />
-                        Delete
-                      </Button>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Select 
+                          value={user.subscriptionTier} 
+                          onValueChange={(tier) => updateMutation.mutate({ targetUserId: user.userId, updates: { subscriptionTier: tier } })}
+                        >
+                          <SelectTrigger className="h-7 w-24 text-[10px] bg-muted border-border" data-testid={`select-plan-${user.userId}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="FREE">Free</SelectItem>
+                            <SelectItem value="PRO">Pro</SelectItem>
+                            <SelectItem value="ELITE">Elite</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button size="sm" variant="ghost" className="h-7 text-[10px] text-rose-500 hover:bg-rose-500/10"
+                          onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { role: user.role === "DEACTIVATED" ? "TRADER" : "DEACTIVATED" } })}
+                          data-testid={`button-toggle-status-${user.userId}`}
+                        >
+                          {user.role === "DEACTIVATED" ? "Reactivate" : "Deactivate"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-[10px] text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+                          onClick={() => {
+                            if (confirm("Are you sure you want to permanently delete this user? This action cannot be undone.")) {
+                              deleteUserMutation.mutate(user.userId);
+                            }
+                          }}
+                          data-testid={`button-delete-${user.userId}`}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
+                {filteredUsers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground italic text-sm">
+                      No users found matching your search.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

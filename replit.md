@@ -41,6 +41,14 @@ Key features:
   - Pro: Unlimited strategies, 6-month history, AI analysis, CSV export
   - Elite: Unlimited history, session analytics, time patterns, PDF reports
 
+**Admin Panel** (`/admin/users`):
+- Manual user creation with email and plan tier (FREE/PRO/ELITE)
+- Auto-generates temporary password shown to admin after creation
+- Plan tier can be changed anytime via dropdown
+- User deactivation/reactivation and deletion
+- Audit logging of all admin actions
+- Access restricted to OWNER/ADMIN roles
+
 **Navigation Structure:**
 - Collapsible "Strategies" menu in sidebar with sub-items
 - Routes: `/strategies` (My Strategies), `/strategies/create` (Create Strategy), `/strategies/validate` (Strategy Validator)

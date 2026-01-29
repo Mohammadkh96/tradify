@@ -120,6 +120,11 @@ export interface IStorage {
       riskDrift: { recentViolationRate: number; olderViolationRate: number };
     };
   }>;
+  // Admin User Management
+  getAllUsers(): Promise<any[]>;
+  createUserRole(role: any): Promise<any>;
+  updateUserRole(userId: string, updates: any): Promise<any>;
+  deleteUser(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -131,6 +136,23 @@ export class DatabaseStorage implements IStorage {
   async createUserRole(role: any): Promise<any> {
     const [newUserRole] = await db.insert(userRole).values(role).returning();
     return newUserRole;
+  }
+
+  async getAllUsers(): Promise<any[]> {
+    const users = await db.select().from(userRole).orderBy(userRole.createdAt);
+    return users;
+  }
+
+  async updateUserRole(userId: string, updates: any): Promise<any> {
+    const [updated] = await db.update(userRole)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userRole.userId, userId))
+      .returning();
+    return updated;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await db.delete(userRole).where(eq(userRole.userId, userId));
   }
 
   async updateUserSubscriptionInfo(userId: string, info: {
