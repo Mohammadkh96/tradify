@@ -54,6 +54,13 @@ Key features:
 - Centralized plan configuration in `shared/plans.ts`
 - Three tiers: Free, Pro ($19/mo), Elite ($39/mo)
 - Feature gating via `usePlan()` hook on frontend, plan utilities on backend
+- **Trade History Retention by Tier:**
+  - Free: Last 30 days of trade history
+  - Pro: Last 6 months (180 days) of trade history
+  - Elite: Unlimited trade history (no date cutoff)
+  - Filtering applied server-side via `filterByTierDate()` helper function
+  - Affects: equity curve, performance metrics, trade journal, instrument stats
+  - No data is deleted - older trades are simply hidden from view
 - Key features per tier:
   - Free: 1 strategy, 30-day history, basic analytics
   - Pro: Unlimited strategies, 6-month history, AI analysis, CSV export

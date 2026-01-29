@@ -23,6 +23,32 @@ declare module "express-session" {
   }
 }
 
+// Helper function to get date cutoff based on subscription tier
+function getTierDateCutoff(historyDays: number): Date | null {
+  // -1 means unlimited (Elite)
+  if (historyDays === -1) {
+    return null; // No cutoff, return all data
+  }
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - historyDays);
+  return cutoff;
+}
+
+// Filter trades by tier date limits (returns filtered array)
+function filterByTierDate<T extends { closeTime?: Date | string | null; createdAt?: Date | string | null }>(
+  items: T[],
+  historyDays: number
+): T[] {
+  const cutoff = getTierDateCutoff(historyDays);
+  if (!cutoff) return items; // Unlimited access
+  
+  return items.filter(item => {
+    const itemDate = item.closeTime ? new Date(item.closeTime) : 
+                     item.createdAt ? new Date(item.createdAt) : null;
+    return itemDate && itemDate >= cutoff;
+  });
+}
+
 // Authentication middleware
 const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.session.userId) {
@@ -297,14 +323,23 @@ export async function registerRoutes(
   app.use("/api/traders-hub", requireAuth, tradersHubRouter);
   
   app.get(api.trades.list.path, requireAuth, async (req, res) => {
-    const trades = await storage.getTrades(req.session.userId);
-    res.json(trades);
+    const userId = req.session.userId!;
+    const userRole = await storage.getUserRole(userId);
+    const historyDays = getHistoryDays(userRole?.subscriptionTier);
+    
+    const allTrades = await storage.getTrades(userId);
+    const filteredTrades = filterByTierDate(allTrades, historyDays);
+    res.json(filteredTrades);
   });
 
   app.get(api.trades.get.path, requireAuth, async (req, res) => {
     const trade = await storage.getTrade(Number(req.params.id));
     if (!trade) {
       return res.status(404).json({ message: 'Trade not found' });
+    }
+    // Access control: ensure user can only access their own trades
+    if (trade.userId !== req.session.userId) {
+      return res.status(403).json({ message: 'Access denied' });
     }
     res.json(trade);
   });
@@ -551,11 +586,26 @@ export async function registerRoutes(
 
   // Equity curve from cumulative trade P&L (SINGLE SOURCE OF TRUTH)
   // Combines both MT5 history and manual trades (excluding MT5 duplicates)
-  app.get("/api/equity-curve/:userId", async (req, res) => {
+  app.get("/api/equity-curve/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
-      const mt5History = await storage.getMT5History(userId);
-      const manualTrades = await storage.getTrades(userId);
+      const sessionUserId = req.session.userId!;
+      
+      // Access control: ensure user can only access their own data
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied: Can only view your own equity curve" });
+      }
+      
+      // Get user's subscription tier for history filtering
+      const userRole = await storage.getUserRole(sessionUserId);
+      const historyDays = getHistoryDays(userRole?.subscriptionTier);
+      
+      const allMt5History = await storage.getMT5History(userId);
+      const allManualTrades = await storage.getTrades(userId);
+      
+      // Apply tier-based date filtering
+      const mt5History = filterByTierDate(allMt5History, historyDays);
+      const manualTrades = filterByTierDate(allManualTrades, historyDays);
       
       // Combine MT5 history and manual trades (excluding MT5 sync duplicates)
       const mt5Trades = (mt5History || []).map(t => ({
@@ -606,28 +656,54 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/mt5/history/:userId", async (req, res) => {
+  app.get("/api/mt5/history/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
+      const sessionUserId = req.session.userId!;
       
       if (userId === "demo") {
         return res.json([]);
       }
       
-      const history = await storage.getMT5History(userId);
-      res.json(history);
+      // Access control: ensure user can only access their own data
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied: Can only view your own MT5 history" });
+      }
+      
+      // Get user's subscription tier for history filtering
+      const userRole = await storage.getUserRole(sessionUserId);
+      const historyDays = getHistoryDays(userRole?.subscriptionTier);
+      
+      const allHistory = await storage.getMT5History(userId);
+      const filteredHistory = filterByTierDate(allHistory, historyDays);
+      res.json(filteredHistory);
     } catch (error) {
       console.error("MT5 History Error:", error);
       res.status(500).json({ message: "Failed to fetch MT5 history" });
     }
   });
 
-  app.get("/api/performance/intelligence/:userId", async (req, res) => {
+  app.get("/api/performance/intelligence/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
+      const sessionUserId = req.session.userId!;
+      
+      // Access control: ensure user can only access their own data
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied: Can only view your own performance data" });
+      }
+      
+      // Get user's subscription tier for history filtering
+      const userRole = await storage.getUserRole(sessionUserId);
+      const historyDays = getHistoryDays(userRole?.subscriptionTier);
+      
       // SINGLE SOURCE OF TRUTH: Combine MT5 history + manual trades (excluding duplicates)
-      const mt5History = await storage.getMT5History(userId);
-      const manualTrades = await storage.getTrades(userId);
+      const allMt5History = await storage.getMT5History(userId);
+      const allManualTrades = await storage.getTrades(userId);
+      
+      // Apply tier-based date filtering
+      const mt5History = filterByTierDate(allMt5History, historyDays);
+      const manualTrades = filterByTierDate(allManualTrades, historyDays);
       
       // MT5 trades
       const mt5Normalized = (mt5History || []).map(t => {
@@ -1206,18 +1282,26 @@ Output exactly 1-3 bullet points.`;
   app.get("/api/instruments/:userId/:symbol/stats", requireAuth, async (req, res) => {
     try {
       const { userId, symbol } = req.params;
+      const sessionUserId = req.session.userId!;
       
       // Authorization: Ensure user can only access their own data
-      if (req.session.userId !== userId) {
+      if (sessionUserId !== userId) {
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      const trades = await db.select()
+      // Get user's subscription tier for history filtering
+      const userRole = await storage.getUserRole(sessionUserId);
+      const historyDays = getHistoryDays(userRole?.subscriptionTier);
+      
+      const allTrades = await db.select()
         .from(schema.mt5History)
         .where(and(
           eq(schema.mt5History.userId, userId),
           eq(schema.mt5History.symbol, symbol)
         ));
+      
+      // Apply tier-based date filtering
+      const trades = filterByTierDate(allTrades, historyDays);
       
       if (trades.length === 0) {
         return res.json({ 
