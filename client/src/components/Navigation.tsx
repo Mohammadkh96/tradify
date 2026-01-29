@@ -18,12 +18,14 @@ import {
   ChevronRight,
   FolderOpen,
   Plus,
-  ClipboardCheck
+  ClipboardCheck,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { TOUR_RESTART_EVENT } from "./OnboardingTour";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -279,17 +281,27 @@ export function Navigation() {
             </span>
           </button>
         )}
-        <div className="bg-secondary rounded-lg p-4 border border-border">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">MT5 Status</h4>
-            <div className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              isConnected ? "bg-emerald-500 animate-pulse" : "bg-destructive"
-            )} />
+        <div className="flex gap-2">
+          <div className="flex-1 bg-secondary rounded-lg p-3 border border-border">
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-tight">MT5</h4>
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                isConnected ? "bg-emerald-500 animate-pulse" : "bg-destructive"
+              )} />
+            </div>
+            <p className="text-[10px] text-foreground font-bold">
+              {isConnected ? "CONNECTED" : "OFFLINE"}
+            </p>
           </div>
-          <p className="text-[11px] text-foreground font-bold">
-            {isConnected ? "CONNECTED" : "OFFLINE"}
-          </p>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent(TOUR_RESTART_EVENT))}
+            data-testid="button-restart-tour"
+            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg px-3 transition-all flex flex-col items-center justify-center gap-0.5"
+          >
+            <Sparkles size={14} />
+            <span className="text-[9px] font-bold uppercase tracking-wider">Tour</span>
+          </button>
         </div>
       </div>
     </aside>

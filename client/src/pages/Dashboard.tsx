@@ -230,10 +230,7 @@ export default function Dashboard() {
               <LayoutDashboard className="text-emerald-500" />
               Trader Dashboard
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-muted-foreground text-sm">Market Overview & Performance Metrics</p>
-              <Link href="/risk-disclaimer" className="text-[10px] text-muted-foreground hover:text-emerald-500 uppercase font-bold tracking-widest transition-colors">Risk Disclaimer</Link>
-            </div>
+            <p className="text-muted-foreground text-sm mt-1">Market Overview & Performance Metrics</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
