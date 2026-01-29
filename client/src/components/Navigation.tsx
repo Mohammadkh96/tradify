@@ -26,6 +26,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TOUR_RESTART_EVENT } from "./OnboardingTour";
+import { TierBadge } from "./EliteBadge";
+import { usePlan } from "@/hooks/usePlan";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -91,6 +93,7 @@ export function Navigation() {
   const isConnected = mt5?.status === "CONNECTED";
   const isPro = userRole?.subscriptionTier === "PRO";
   const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
+  const { tier, isPaid } = usePlan();
 
   const handleLogout = async () => {
     try {
@@ -269,6 +272,11 @@ export function Navigation() {
       </nav>
 
       <div className="p-4 border-t border-border space-y-2">
+        {isPaid && (
+          <div className="flex items-center justify-center mb-2">
+            <TierBadge tier={tier} size="md" />
+          </div>
+        )}
         {isAdmin && !isPro && (
           <button
             onClick={() => upgradeMutation.mutate()}

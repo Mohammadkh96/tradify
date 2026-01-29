@@ -28,6 +28,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { UserRole } from "@shared/schema";
 import { SiPaypal } from "react-icons/si";
 import { Link } from "wouter";
+import { TierBadge } from "@/components/EliteBadge";
 
 const countries = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
@@ -135,9 +136,12 @@ export default function Profile() {
           <h1 className="text-3xl font-black text-foreground uppercase italic tracking-tighter">Terminal Settings</h1>
           <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-black opacity-70">Manage your institutional account</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border border-border rounded-xl">
-          <CreditCard size={16} className="text-emerald-500" />
-          <span className="text-[10px] font-black text-foreground uppercase tracking-widest">{user?.subscriptionTier} PLAN</span>
+        <div className="flex items-center gap-3">
+          <TierBadge tier={user?.subscriptionTier} size="lg" />
+          <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border border-border rounded-xl">
+            <CreditCard size={16} className="text-emerald-500" />
+            <span className="text-[10px] font-black text-foreground uppercase tracking-widest">{user?.subscriptionTier} PLAN</span>
+          </div>
         </div>
       </div>
 

@@ -86,6 +86,13 @@ Key features:
   - Clean, professional A4 layout suitable for personal review or prop firm applications
   - Respects date filter selection (custom date range supported)
   - Server-side tier enforcement via `/api/pdf-report/:userId`
+- **Elite Visual Distinction**: Subtle visual badges for Pro and Elite users
+  - EliteBadge component with crown icon and amber/gold gradient styling
+  - ProBadge component with star icon and emerald gradient styling
+  - TierBadge wrapper that renders appropriate badge based on tier
+  - Displayed in sidebar footer for Pro/Elite users
+  - Shown prominently on Profile page header
+  - Clean, professional styling that doesn't clutter the interface
 
 **Plan System:**
 - Centralized plan configuration in `shared/plans.ts`
