@@ -1486,6 +1486,283 @@ export async function registerRoutes(
     }
   });
 
+  // STRATEGY DEVIATION ANALYSIS - Elite only
+  // Compare compliant vs non-compliant trade performance
+  app.get("/api/strategy-deviation/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Verify user access
+      if (req.session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Elite tier check
+      const user = await storage.getUserRole(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!canAccessFeature(user.subscriptionTier || "FREE", "sessionAnalytics")) {
+        return res.status(403).json({ 
+          message: "Elite subscription required for Strategy Deviation Analysis",
+          requiredTier: "ELITE"
+        });
+      }
+
+      // Get all compliance results for this user
+      const complianceResults = await db
+        .select()
+        .from(schema.tradeComplianceResults)
+        .where(eq(schema.tradeComplianceResults.userId, userId));
+
+      if (complianceResults.length === 0) {
+        return res.json({
+          message: "No strategy validation data found. Validate trades against your strategies to see deviation analysis.",
+          hasData: false,
+        });
+      }
+
+      // Get manual trades for P&L lookup
+      // Note: Strategy Validator currently only evaluates manual trades (trade_journal),
+      // so compliance results reference trade_journal IDs. MT5 trades are not evaluated.
+      const manualTrades = await storage.getTrades(userId);
+      
+      // Build trade P&L lookup from manual trades
+      const tradePnL: Record<number, number> = {};
+      for (const trade of manualTrades) {
+        tradePnL[trade.id] = parseFloat(trade.netPl || "0");
+      }
+      
+      // Group compliance results
+      const compliantResults = complianceResults.filter(cr => cr.overallCompliant);
+      const nonCompliantResults = complianceResults.filter(cr => !cr.overallCompliant);
+      
+      // Calculate P&L for each group
+      let compliantPnL = 0;
+      let compliantWins = 0;
+      let compliantCount = 0;
+      
+      let nonCompliantPnL = 0;
+      let nonCompliantWins = 0;
+      let nonCompliantCount = 0;
+      
+      for (const cr of compliantResults) {
+        const pnl = tradePnL[cr.tradeId];
+        if (pnl !== undefined) {
+          compliantPnL += pnl;
+          if (pnl > 0) compliantWins++;
+          compliantCount++;
+        }
+      }
+      
+      for (const cr of nonCompliantResults) {
+        const pnl = tradePnL[cr.tradeId];
+        if (pnl !== undefined) {
+          nonCompliantPnL += pnl;
+          if (pnl > 0) nonCompliantWins++;
+          nonCompliantCount++;
+        }
+      }
+      
+      // Get all rule evaluations for failed rules
+      const allComplianceIds = complianceResults.map(cr => cr.id);
+      const ruleEvaluations = allComplianceIds.length > 0 
+        ? await db
+            .select()
+            .from(schema.tradeRuleEvaluations)
+            .where(sql`${schema.tradeRuleEvaluations.complianceResultId} IN (${sql.join(allComplianceIds.map(id => sql`${id}`), sql`, `)})`)
+        : [];
+      
+      // Count violations by rule type
+      const violationCounts: Record<string, { label: string; count: number; trades: number[] }> = {};
+      
+      for (const evaluation of ruleEvaluations) {
+        if (!evaluation.passed) {
+          if (!violationCounts[evaluation.ruleType]) {
+            violationCounts[evaluation.ruleType] = {
+              label: evaluation.ruleLabel,
+              count: 0,
+              trades: [],
+            };
+          }
+          violationCounts[evaluation.ruleType].count++;
+          // Find the trade ID from the compliance result
+          const cr = complianceResults.find(c => c.id === evaluation.complianceResultId);
+          if (cr && !violationCounts[evaluation.ruleType].trades.includes(cr.tradeId)) {
+            violationCounts[evaluation.ruleType].trades.push(cr.tradeId);
+          }
+        }
+      }
+      
+      // Sort violations by count
+      const mostViolatedRules = Object.entries(violationCounts)
+        .map(([ruleType, data]) => ({
+          ruleType,
+          ruleLabel: data.label,
+          violationCount: data.count,
+          affectedTrades: data.trades.length,
+        }))
+        .sort((a, b) => b.violationCount - a.violationCount)
+        .slice(0, 10);
+      
+      // Calculate performance impact for most violated rules
+      const rulePerformanceImpact: Array<{
+        ruleType: string;
+        ruleLabel: string;
+        tradesViolating: number;
+        avgPnLWhenViolated: number;
+        avgPnLWhenCompliant: number;
+        performanceDifference: number;
+      }> = [];
+      
+      for (const violation of mostViolatedRules.slice(0, 5)) {
+        // Get compliance result IDs where this rule was violated
+        const violatedCrIds = ruleEvaluations
+          .filter(e => e.ruleType === violation.ruleType && !e.passed)
+          .map(e => e.complianceResultId);
+        
+        // Get trade IDs from these compliance results
+        const violatedTradeIds = complianceResults
+          .filter(cr => violatedCrIds.includes(cr.id))
+          .map(cr => cr.tradeId);
+        
+        // Get all compliance result IDs where this rule was checked
+        const checkedCrIds = ruleEvaluations
+          .filter(e => e.ruleType === violation.ruleType)
+          .map(e => e.complianceResultId);
+        
+        // Get passed trade IDs
+        const passedCrIds = ruleEvaluations
+          .filter(e => e.ruleType === violation.ruleType && e.passed)
+          .map(e => e.complianceResultId);
+        
+        const passedTradeIds = complianceResults
+          .filter(cr => passedCrIds.includes(cr.id))
+          .map(cr => cr.tradeId);
+        
+        // Calculate P&L
+        let violatedPnL = 0;
+        let violatedCount = 0;
+        let passedPnL = 0;
+        let passedCount = 0;
+        
+        for (const tradeId of violatedTradeIds) {
+          const pnl = tradePnL[tradeId];
+          if (pnl !== undefined) {
+            violatedPnL += pnl;
+            violatedCount++;
+          }
+        }
+        
+        for (const tradeId of passedTradeIds) {
+          const pnl = tradePnL[tradeId];
+          if (pnl !== undefined) {
+            passedPnL += pnl;
+            passedCount++;
+          }
+        }
+        
+        const avgViolated = violatedCount > 0 ? violatedPnL / violatedCount : 0;
+        const avgPassed = passedCount > 0 ? passedPnL / passedCount : 0;
+        
+        rulePerformanceImpact.push({
+          ruleType: violation.ruleType,
+          ruleLabel: violation.ruleLabel,
+          tradesViolating: violatedCount,
+          avgPnLWhenViolated: avgViolated,
+          avgPnLWhenCompliant: avgPassed,
+          performanceDifference: avgPassed - avgViolated,
+        });
+      }
+      
+      // Strategy breakdown
+      const strategyStats: Record<number, {
+        strategyId: number;
+        strategyName: string;
+        totalEvaluated: number;
+        compliantCount: number;
+        nonCompliantCount: number;
+        complianceRate: number;
+        compliantPnL: number;
+        nonCompliantPnL: number;
+      }> = {};
+      
+      for (const cr of complianceResults) {
+        if (!strategyStats[cr.strategyId]) {
+          strategyStats[cr.strategyId] = {
+            strategyId: cr.strategyId,
+            strategyName: cr.strategyName,
+            totalEvaluated: 0,
+            compliantCount: 0,
+            nonCompliantCount: 0,
+            complianceRate: 0,
+            compliantPnL: 0,
+            nonCompliantPnL: 0,
+          };
+        }
+        
+        strategyStats[cr.strategyId].totalEvaluated++;
+        const pnl = tradePnL[cr.tradeId] || 0;
+        
+        if (cr.overallCompliant) {
+          strategyStats[cr.strategyId].compliantCount++;
+          strategyStats[cr.strategyId].compliantPnL += pnl;
+        } else {
+          strategyStats[cr.strategyId].nonCompliantCount++;
+          strategyStats[cr.strategyId].nonCompliantPnL += pnl;
+        }
+      }
+      
+      // Calculate compliance rates
+      for (const stats of Object.values(strategyStats)) {
+        stats.complianceRate = stats.totalEvaluated > 0 
+          ? (stats.compliantCount / stats.totalEvaluated) * 100 
+          : 0;
+      }
+      
+      const strategyBreakdown = Object.values(strategyStats)
+        .sort((a, b) => b.totalEvaluated - a.totalEvaluated);
+      
+      res.json({
+        hasData: true,
+        summary: {
+          totalEvaluatedTrades: complianceResults.length,
+          compliantTrades: {
+            count: compliantCount,
+            totalPnL: compliantPnL,
+            avgPnL: compliantCount > 0 ? compliantPnL / compliantCount : 0,
+            winRate: compliantCount > 0 ? (compliantWins / compliantCount) * 100 : 0,
+          },
+          nonCompliantTrades: {
+            count: nonCompliantCount,
+            totalPnL: nonCompliantPnL,
+            avgPnL: nonCompliantCount > 0 ? nonCompliantPnL / nonCompliantCount : 0,
+            winRate: nonCompliantCount > 0 ? (nonCompliantWins / nonCompliantCount) * 100 : 0,
+          },
+          performanceDifference: {
+            pnlDifference: compliantPnL - nonCompliantPnL,
+            avgPnLDifference: 
+              (compliantCount > 0 ? compliantPnL / compliantCount : 0) - 
+              (nonCompliantCount > 0 ? nonCompliantPnL / nonCompliantCount : 0),
+            winRateDifference: 
+              (compliantCount > 0 ? (compliantWins / compliantCount) * 100 : 0) - 
+              (nonCompliantCount > 0 ? (nonCompliantWins / nonCompliantCount) * 100 : 0),
+          },
+          overallComplianceRate: complianceResults.length > 0 
+            ? (compliantResults.length / complianceResults.length) * 100 
+            : 0,
+        },
+        mostViolatedRules,
+        rulePerformanceImpact,
+        strategyBreakdown,
+      });
+    } catch (error) {
+      console.error("Strategy deviation analysis failure:", error);
+      res.status(500).json({ message: "Strategy deviation analysis failure" });
+    }
+  });
+
   app.get("/api/ai/insights/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;

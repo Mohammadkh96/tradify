@@ -4,6 +4,7 @@ import { StatCard } from "@/components/StatCard";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
 import { TimePatterns } from "@/components/TimePatterns";
 import { BehavioralRiskFlags } from "@/components/BehavioralRiskFlags";
+import { StrategyDeviationAnalysis } from "@/components/StrategyDeviationAnalysis";
 import { 
   Activity, 
   Wallet,
@@ -814,6 +815,13 @@ export default function Dashboard() {
         {userId && (
           <div className="mb-8">
             <BehavioralRiskFlags userId={userId} />
+          </div>
+        )}
+
+        {/* Strategy Deviation Analysis - Elite Only */}
+        {userId && (
+          <div className="mb-8">
+            <StrategyDeviationAnalysis userId={userId} />
           </div>
         )}
 

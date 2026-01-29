@@ -60,6 +60,15 @@ Key features:
   - All flags include severity (high/medium/low), title, description, and data-backed evidence
   - Pattern observations only, no trading advice language
   - Server-side Elite tier enforcement via `/api/behavioral-risks/:userId`
+- **Strategy Deviation Analysis** (ELITE only): Measure how often users break strategy rules
+  - Compare performance: compliant trades vs non-compliant trades
+  - Metrics: win rate, P&L, average P&L for each group
+  - Most violated rules: ranked list with violation count and affected trades
+  - Rule performance impact: shows avg P&L when rule is followed vs violated
+  - Strategy breakdown: compliance rate per strategy with P&L comparison
+  - Uses data from Strategy Validator evaluations (tradeComplianceResults, tradeRuleEvaluations)
+  - No market judgment, purely factual performance comparison
+  - Server-side Elite tier enforcement via `/api/strategy-deviation/:userId`
 
 **Plan System:**
 - Centralized plan configuration in `shared/plans.ts`
