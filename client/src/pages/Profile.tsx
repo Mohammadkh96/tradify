@@ -383,35 +383,38 @@ export default function Profile() {
                       </Button>
                     )}
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 uppercase font-black text-[10px] tracking-widest mt-2"
-                          data-testid="button-cancel-subscription"
-                        >
-                          Cancel Subscription
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-card border-border">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-foreground font-black uppercase tracking-tight">Cancel Subscription?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-muted-foreground">
-                            Are you sure you want to cancel your {isElite ? "Elite" : "Pro"} subscription? You'll retain access until the end of your current billing period, then your account will be downgraded to Free.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="uppercase font-black text-[10px] tracking-widest">Keep Subscription</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => cancelSubscriptionMutation.mutate()}
-                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground uppercase font-black text-[10px] tracking-widest"
-                            disabled={cancelSubscriptionMutation.isPending}
+                    {/* Only show cancel button if subscription is not already cancelled */}
+                    {subscription?.status?.toLowerCase() !== 'cancelled' && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 uppercase font-black text-[10px] tracking-widest mt-2"
+                            data-testid="button-cancel-subscription"
                           >
-                            {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Yes, Cancel"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            Cancel Subscription
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-card border-border">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-foreground font-black uppercase tracking-tight">Cancel Subscription?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-muted-foreground">
+                              Are you sure you want to cancel your {isElite ? "Elite" : "Pro"} subscription? You'll retain access until the end of your current billing period, then your account will be downgraded to Free.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="uppercase font-black text-[10px] tracking-widest">Keep Subscription</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => cancelSubscriptionMutation.mutate()}
+                              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground uppercase font-black text-[10px] tracking-widest"
+                              disabled={cancelSubscriptionMutation.isPending}
+                            >
+                              {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Yes, Cancel"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </>
                 ) : (
                   <div className="text-center py-4">
