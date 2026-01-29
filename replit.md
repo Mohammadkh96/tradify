@@ -50,12 +50,13 @@ Key features:
   - Highlights best/worst trading days and hours
   - Server-side Elite tier enforcement via `/api/time-patterns/:userId`
 - **Behavioral Risk Flags** (ELITE only): Automated pattern detection for trading behavior
-  - Revenge trading detection: Identifies increased position sizes after consecutive losses
+  - Revenge trading detection: Identifies increased position sizes on the next trade after consecutive losses (MT5 only)
   - Session overtrading: Flags abnormally high trade frequency in specific sessions
-  - Risk creep: Detects gradual position size increases over time
+  - Risk creep: Detects gradual position size increases over time (MT5 only)
   - Rapid retry: Identifies quick re-entry after losing trades (<15 min)
-  - Loss chasing: Flags increased volume on losing days
+  - Loss chasing: Flags increased volume on losing days (MT5 only)
   - Historical comparison: 30-day vs prior 30-day volume/frequency changes
+  - Volume-based flags require MT5 trades (manual trades excluded due to missing lot size)
   - All flags include severity (high/medium/low), title, description, and data-backed evidence
   - Pattern observations only, no trading advice language
   - Server-side Elite tier enforcement via `/api/behavioral-risks/:userId`
