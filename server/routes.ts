@@ -1015,23 +1015,25 @@ Output exactly 1-3 bullet points.`;
           closeTime: t.closeTime
         }));
       
-      // Generate AI analysis - Market characteristics for the instrument
-      const prompt = `You are a Market Analyst. Provide educational information about ${symbol} as a trading instrument.
+      // Generate AI analysis - Technical and fundamental market analysis
+      const prompt = `You are a Professional Market Analyst. Provide current technical and fundamental analysis for ${symbol}.
+
+ANALYSIS REQUIREMENTS:
+- Current market sentiment and trend direction
+- Key technical levels (support/resistance zones, trend structure)
+- Fundamental factors currently driving price action
+- Recent market developments affecting this instrument
 
 STRICT RULES:
-- Provide GENERAL market characteristics and educational info about ${symbol}
-- NO trade recommendations or signals
-- NO buy/sell suggestions  
-- NO price predictions
-- NO entry, SL, or TP levels
-- NO analysis of the user's trading behavior
-- Focus on the instrument's general characteristics
+- NO specific trade recommendations (no "buy now" or "sell now")
+- NO specific entry prices, stop losses, or take profits
+- Provide ANALYSIS only, trader makes their own decisions
 
-Provide a brief 2-3 sentence analysis covering:
-1. What type of instrument ${symbol} is and its general market characteristics
-2. Key factors that typically influence this instrument's price movements
+Provide a concise 3-4 sentence market analysis covering:
+1. Current technical outlook (trend, key levels, momentum)
+2. Fundamental factors currently influencing ${symbol}
 
-End with: "This is educational information, not trading advice."`;
+End with: "This analysis is for informational purposes only."`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
