@@ -79,6 +79,13 @@ Key features:
   - Cached in aiPerformanceInsights table with "monthly-review-YYYY-MM" timeframe pattern
   - Server-side Elite tier enforcement via `/api/monthly-review/:userId`
   - Available months endpoint: `/api/monthly-review/:userId/available`
+- **Professional PDF Reports** (PRO and ELITE): One-click PDF export of trading performance
+  - Performance Summary: Total trades, win rate, profit factor, expectancy, P&L
+  - Session Performance: Breakdown by trading session (Asian, London, NY, etc.)
+  - Instrument Breakdown: Top 10 traded symbols with win rate and P&L
+  - Clean, professional A4 layout suitable for personal review or prop firm applications
+  - Respects date filter selection (custom date range supported)
+  - Server-side tier enforcement via `/api/pdf-report/:userId`
 
 **Plan System:**
 - Centralized plan configuration in `shared/plans.ts`

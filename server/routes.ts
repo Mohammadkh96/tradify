@@ -12,7 +12,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { emailService } from "./emailService";
 import { openai } from "./replit_integrations/audio/index";
-import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays } from "@shared/plans";
+import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 
 const PostgresStore = connectPg(session);
 
@@ -3218,6 +3218,261 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
     } catch (error) {
       console.error("Error calculating compliance score:", error);
       res.status(500).json({ message: "Failed to calculate compliance score" });
+    }
+  });
+
+  // PROFESSIONAL PDF REPORT - Pro and Elite only
+  app.get("/api/pdf-report/:userId", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const { startDate, endDate } = req.query;
+      
+      if (req.session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const user = await storage.getUserRole(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!canAccessFeature(user.subscriptionTier || "FREE", "pdfReports")) {
+        return res.status(403).json({ 
+          message: "Pro or Elite subscription required for PDF Reports",
+          requiredTier: "PRO"
+        });
+      }
+
+      const PDFDocument = (await import('pdfkit')).default;
+
+      // Fetch all necessary data
+      const mt5Trades = await db
+        .select()
+        .from(schema.mt5History)
+        .where(eq(schema.mt5History.userId, userId));
+      
+      const manualTrades = await storage.getTrades(userId);
+
+      // Apply tier-based date filtering
+      const tierConfig = PLAN_FEATURES[user.subscriptionTier as keyof typeof PLAN_FEATURES] || PLAN_FEATURES.FREE;
+      const historyDays = tierConfig.historyDays;
+      const cutoffDate = historyDays > 0 ? new Date(Date.now() - historyDays * 24 * 60 * 60 * 1000) : null;
+
+      // Filter trades by date range if provided
+      let filteredMt5 = mt5Trades;
+      let filteredManual = manualTrades;
+
+      if (startDate && endDate) {
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        filteredMt5 = mt5Trades.filter(t => {
+          const d = new Date(t.closeTime);
+          return d >= start && d <= end;
+        });
+        filteredManual = manualTrades.filter(t => {
+          const d = new Date(t.createdAt!);
+          return d >= start && d <= end;
+        });
+      } else if (cutoffDate) {
+        filteredMt5 = mt5Trades.filter(t => new Date(t.closeTime) >= cutoffDate);
+        filteredManual = manualTrades.filter(t => new Date(t.createdAt!) >= cutoffDate);
+      }
+
+      // Combine trades
+      const allTrades = [
+        ...filteredMt5.map(t => ({
+          pnl: parseFloat(t.netPl),
+          volume: parseFloat(t.volume || "0"),
+          date: new Date(t.closeTime),
+          symbol: t.symbol,
+          source: 'MT5'
+        })),
+        ...filteredManual.map(t => ({
+          pnl: parseFloat(t.netPl || "0"),
+          volume: 0,
+          date: new Date(t.createdAt!),
+          symbol: t.pair || 'Unknown',
+          source: 'Manual'
+        }))
+      ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+      if (allTrades.length < 1) {
+        return res.status(400).json({ message: "No trades available for report" });
+      }
+
+      // Calculate performance metrics
+      const totalTrades = allTrades.length;
+      const wins = allTrades.filter(t => t.pnl > 0);
+      const losses = allTrades.filter(t => t.pnl < 0);
+      const breakeven = allTrades.filter(t => t.pnl === 0);
+      const totalPnL = allTrades.reduce((sum, t) => sum + t.pnl, 0);
+      const winRate = totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0;
+      const avgWin = wins.length > 0 ? wins.reduce((sum, t) => sum + t.pnl, 0) / wins.length : 0;
+      const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((sum, t) => sum + t.pnl, 0) / losses.length) : 0;
+      const profitFactor = avgLoss > 0 && losses.length > 0 
+        ? (avgWin * wins.length) / (avgLoss * losses.length) 
+        : wins.length > 0 ? Infinity : 0;
+      const expectancy = totalTrades > 0 
+        ? ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss) 
+        : 0;
+      const bestTrade = Math.max(...allTrades.map(t => t.pnl));
+      const worstTrade = Math.min(...allTrades.map(t => t.pnl));
+
+      // Session analysis
+      const sessions = { Asian: 0, London: 0, 'London/NY': 0, 'New York': 0, 'Off Hours': 0 };
+      const sessionPnL = { Asian: 0, London: 0, 'London/NY': 0, 'New York': 0, 'Off Hours': 0 };
+      
+      allTrades.forEach(t => {
+        const hour = t.date.getUTCHours();
+        let session: keyof typeof sessions;
+        if (hour >= 0 && hour < 7) session = 'Asian';
+        else if (hour >= 7 && hour < 12) session = 'London';
+        else if (hour >= 12 && hour < 16) session = 'London/NY';
+        else if (hour >= 16 && hour < 21) session = 'New York';
+        else session = 'Off Hours';
+        sessions[session]++;
+        sessionPnL[session] += t.pnl;
+      });
+
+      // Symbol breakdown
+      const symbolStats: Record<string, { count: number; pnl: number; wins: number }> = {};
+      allTrades.forEach(t => {
+        if (!symbolStats[t.symbol]) {
+          symbolStats[t.symbol] = { count: 0, pnl: 0, wins: 0 };
+        }
+        symbolStats[t.symbol].count++;
+        symbolStats[t.symbol].pnl += t.pnl;
+        if (t.pnl > 0) symbolStats[t.symbol].wins++;
+      });
+
+      // Create PDF
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="trading-report-${new Date().toISOString().split('T')[0]}.pdf"`);
+      
+      doc.pipe(res);
+
+      // Header
+      doc.fontSize(24).fillColor('#1a1a2e').text('TRADIFY', 50, 50);
+      doc.fontSize(10).fillColor('#666').text('Trading Performance Report', 50, 80);
+      doc.fontSize(8).text(`Generated: ${new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+      })}`, 50, 95);
+      
+      // Date range
+      const dateRange = startDate && endDate 
+        ? `${new Date(startDate as string).toLocaleDateString()} - ${new Date(endDate as string).toLocaleDateString()}`
+        : cutoffDate 
+          ? `Last ${historyDays} days`
+          : 'All time';
+      doc.fontSize(9).fillColor('#333').text(`Period: ${dateRange}`, 50, 110);
+      
+      // Horizontal line
+      doc.moveTo(50, 130).lineTo(545, 130).stroke('#ddd');
+
+      // Performance Summary Section
+      doc.fontSize(14).fillColor('#1a1a2e').text('Performance Summary', 50, 145);
+      
+      const col1 = 50, col2 = 180, col3 = 310, col4 = 440;
+      let y = 170;
+
+      const addMetric = (label: string, value: string, x: number, row: number) => {
+        doc.fontSize(8).fillColor('#888').text(label, x, y + (row * 35));
+        doc.fontSize(12).fillColor('#1a1a2e').text(value, x, y + 12 + (row * 35));
+      };
+
+      addMetric('Total Trades', totalTrades.toString(), col1, 0);
+      addMetric('Win Rate', `${winRate.toFixed(1)}%`, col2, 0);
+      addMetric('Profit Factor', profitFactor === Infinity ? '∞' : profitFactor.toFixed(2), col3, 0);
+      addMetric('Expectancy', `$${expectancy.toFixed(2)}`, col4, 0);
+
+      addMetric('Wins / Losses', `${wins.length} / ${losses.length}`, col1, 1);
+      addMetric('Avg Win', `$${avgWin.toFixed(2)}`, col2, 1);
+      addMetric('Avg Loss', `-$${avgLoss.toFixed(2)}`, col3, 1);
+      addMetric('Total P&L', `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`, col4, 1);
+
+      addMetric('Best Trade', `+$${bestTrade.toFixed(2)}`, col1, 2);
+      addMetric('Worst Trade', `$${worstTrade.toFixed(2)}`, col2, 2);
+      addMetric('Breakeven', breakeven.length.toString(), col3, 2);
+      addMetric('Data Source', filteredMt5.length > 0 ? 'MT5 + Manual' : 'Manual', col4, 2);
+
+      y = 290;
+      doc.moveTo(50, y).lineTo(545, y).stroke('#ddd');
+
+      // Session Performance
+      y += 15;
+      doc.fontSize(14).fillColor('#1a1a2e').text('Session Performance', 50, y);
+      y += 25;
+
+      doc.fontSize(9).fillColor('#888')
+        .text('Session', 50, y)
+        .text('Trades', 180, y)
+        .text('P&L', 280, y)
+        .text('Avg P&L', 380, y);
+      
+      y += 15;
+      doc.moveTo(50, y).lineTo(480, y).stroke('#eee');
+      y += 8;
+
+      Object.entries(sessions).forEach(([session, count]) => {
+        if (count > 0) {
+          const pnl = sessionPnL[session as keyof typeof sessionPnL];
+          const avgPnl = pnl / count;
+          doc.fontSize(9).fillColor('#333')
+            .text(session, 50, y)
+            .text(count.toString(), 180, y)
+            .fillColor(pnl >= 0 ? '#16a34a' : '#dc2626')
+            .text(`${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`, 280, y)
+            .text(`${avgPnl >= 0 ? '+' : ''}$${avgPnl.toFixed(2)}`, 380, y);
+          y += 18;
+        }
+      });
+
+      y += 10;
+      doc.moveTo(50, y).lineTo(545, y).stroke('#ddd');
+
+      // Instrument Breakdown
+      y += 15;
+      doc.fontSize(14).fillColor('#1a1a2e').text('Instrument Breakdown', 50, y);
+      y += 25;
+
+      doc.fontSize(9).fillColor('#888')
+        .text('Symbol', 50, y)
+        .text('Trades', 150, y)
+        .text('Win Rate', 230, y)
+        .text('P&L', 330, y);
+
+      y += 15;
+      doc.moveTo(50, y).lineTo(430, y).stroke('#eee');
+      y += 8;
+
+      const sortedSymbols = Object.entries(symbolStats)
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 10);
+
+      sortedSymbols.forEach(([symbol, stats]) => {
+        const symWinRate = stats.count > 0 ? (stats.wins / stats.count) * 100 : 0;
+        doc.fontSize(9).fillColor('#333')
+          .text(symbol, 50, y)
+          .text(stats.count.toString(), 150, y)
+          .text(`${symWinRate.toFixed(1)}%`, 230, y)
+          .fillColor(stats.pnl >= 0 ? '#16a34a' : '#dc2626')
+          .text(`${stats.pnl >= 0 ? '+' : ''}$${stats.pnl.toFixed(2)}`, 330, y);
+        y += 18;
+      });
+
+      // Footer
+      doc.fontSize(8).fillColor('#999')
+        .text('Generated by TRADIFY - Trading Journal Application', 50, 750)
+        .text('This report is for personal use only. Not financial advice.', 50, 762);
+
+      // Finalize PDF
+      doc.end();
+
+    } catch (error) {
+      console.error("PDF Report Error:", error);
+      res.status(500).json({ message: "Failed to generate PDF report" });
     }
   });
 

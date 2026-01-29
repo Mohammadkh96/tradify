@@ -6,6 +6,7 @@ import { TimePatterns } from "@/components/TimePatterns";
 import { BehavioralRiskFlags } from "@/components/BehavioralRiskFlags";
 import { StrategyDeviationAnalysis } from "@/components/StrategyDeviationAnalysis";
 import { MonthlyReviewReport } from "@/components/MonthlyReviewReport";
+import { PdfExportButton } from "@/components/PdfExportButton";
 import { 
   Activity, 
   Wallet,
@@ -339,11 +340,19 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {userId && (
+              <PdfExportButton 
+                userId={userId} 
+                startDate={dateFilter === "custom" ? customStartDate : undefined}
+                endDate={dateFilter === "custom" ? customEndDate : undefined}
+              />
+            )}
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full h-10 w-10 border-border bg-card hover:bg-accent text-muted-foreground"
+              className="rounded-full h-10 w-10 border-border bg-card text-muted-foreground"
               onClick={() => refetchStatus()}
+              data-testid="button-refresh-dashboard"
             >
               <RefreshCw size={16} />
             </Button>
