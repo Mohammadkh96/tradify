@@ -1015,25 +1015,29 @@ Output exactly 1-3 bullet points.`;
           closeTime: t.closeTime
         }));
       
-      // Generate AI analysis - Technical and fundamental market analysis
-      const prompt = `You are a Professional Market Analyst. Provide current technical and fundamental analysis for ${symbol}.
+      // Generate AI analysis - General market context (no real-time data available)
+      const prompt = `You are a Professional Market Analyst. Provide general market context for ${symbol}.
+
+IMPORTANT: You do NOT have access to real-time prices. Do NOT mention any specific price levels, support/resistance numbers, or current prices.
 
 ANALYSIS REQUIREMENTS:
-- Current market sentiment and trend direction
-- Key technical levels (support/resistance zones, trend structure)
-- Fundamental factors currently driving price action
-- Recent market developments affecting this instrument
+- General characteristics of how ${symbol} typically behaves
+- Key fundamental factors that influence this instrument
+- What economic events/data releases typically impact it
+- General trading considerations for this market
 
 STRICT RULES:
-- NO specific trade recommendations (no "buy now" or "sell now")
-- NO specific entry prices, stop losses, or take profits
-- Provide ANALYSIS only, trader makes their own decisions
+- NO specific price levels (you don't have real-time data)
+- NO "current price is X" statements
+- NO specific support/resistance numbers
+- NO trade recommendations
+- Focus on GENERAL market dynamics and what drives this instrument
 
-Provide a concise 3-4 sentence market analysis covering:
-1. Current technical outlook (trend, key levels, momentum)
-2. Fundamental factors currently influencing ${symbol}
+Provide a concise 3-4 sentence analysis covering:
+1. What fundamentally drives ${symbol} price movements
+2. Key economic factors and events traders should monitor
 
-End with: "This analysis is for informational purposes only."`;
+End with: "Check your charts for current price action."`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
