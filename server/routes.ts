@@ -1015,29 +1015,23 @@ Output exactly 1-3 bullet points.`;
           closeTime: t.closeTime
         }));
       
-      // Generate AI analysis
-      const prompt = `You are a Trading Journal Analyst. Analyze the user's performance on ${symbol}.
+      // Generate AI analysis - Market characteristics for the instrument
+      const prompt = `You are a Market Analyst. Provide educational information about ${symbol} as a trading instrument.
 
 STRICT RULES:
-- Factual observations ONLY based on the data provided
+- Provide GENERAL market characteristics and educational info about ${symbol}
 - NO trade recommendations or signals
-- NO buy/sell suggestions
+- NO buy/sell suggestions  
 - NO price predictions
 - NO entry, SL, or TP levels
-- Focus on behavioral patterns and discipline observations
+- NO analysis of the user's trading behavior
+- Focus on the instrument's general characteristics
 
-USER'S ${symbol} PERFORMANCE DATA:
-- Total Trades: ${trades.length}
-- Win Rate: ${winRate}%
-- Average P&L per trade: $${avgPl.toFixed(2)}
-- Total P&L: $${totalPl.toFixed(2)}
-- Recent trades: ${JSON.stringify(recentTrades)}
+Provide a brief 2-3 sentence analysis covering:
+1. What type of instrument ${symbol} is and its general market characteristics
+2. Key factors that typically influence this instrument's price movements
 
-Provide a brief 2-3 sentence FACTUAL analysis of:
-1. Their performance pattern on this instrument
-2. One behavioral observation (consistency, timing, etc.)
-
-End with: "This is a performance review, not trading advice."`;
+End with: "This is educational information, not trading advice."`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
