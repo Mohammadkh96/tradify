@@ -116,15 +116,19 @@ shared/           # Shared code
 
 ### PayPal Subscriptions
 - **Exclusive payment provider** - PayPal recurring subscriptions only (no Stripe)
-- **Plan ID persistence** - Use `PAYPAL_PLAN_ID` env var to avoid recreating plans on restart
+- **3-Tier pricing**: Free (1 strategy), Pro ($19/month), Elite ($39/month)
+- **Plan ID persistence** - Uses `PAYPAL_PRO_PLAN_ID` and `PAYPAL_ELITE_PLAN_ID` env vars
+- **Tier detection** - Server determines tier from PayPal plan_id (source of truth)
 - **Webhook verification** - Uses `PAYPAL_WEBHOOK_ID` for signature verification
-- **Smart cancellation** - Users retain PRO access until billing period ends
+- **Smart cancellation** - Users retain access until billing period ends
 - **Subscription flow**:
-  1. User clicks subscribe button → redirected to PayPal approval
-  2. On return, client calls `/api/paypal/subscription/activate` with subscription_id
-  3. Server fetches subscription details from PayPal and updates user
-  4. Webhooks handle ongoing status updates (activated, cancelled, expired)
+  1. User clicks subscribe button → tier stored in sessionStorage
+  2. User redirected to PayPal approval
+  3. On return, client calls `/api/paypal/subscription/activate` with subscription_id and tier hint
+  4. Server fetches subscription from PayPal, determines tier from plan_id, updates user
+  5. Webhooks handle ongoing status updates (activated, cancelled, expired)
 - **Profile management** - Users can view subscription details and cancel from Profile page
+- **Feature gates** - All components check for PRO or ELITE tier using case-insensitive comparison
 
 ### AI Integrations (Optional)
 - OpenAI integration via Replit AI Integrations
