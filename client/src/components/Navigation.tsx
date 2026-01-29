@@ -100,19 +100,13 @@ export function Navigation() {
       const response = await fetch("/api/logout", { method: "POST" });
       if (response.ok) {
         localStorage.removeItem("user_id");
-        queryClient.setQueryData(["/api/user"], null);
-        window.location.href = "/";
-        toast({
-          title: "Session Terminated",
-          description: "You have been logged out successfully.",
-        });
+        queryClient.clear();
+        window.location.href = "/login";
       }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Logout Failed",
-        description: "An error occurred while terminating your session.",
-      });
+      localStorage.removeItem("user_id");
+      queryClient.clear();
+      window.location.href = "/login";
     }
   };
 
