@@ -5,6 +5,7 @@ import { SessionAnalytics } from "@/components/SessionAnalytics";
 import { TimePatterns } from "@/components/TimePatterns";
 import { BehavioralRiskFlags } from "@/components/BehavioralRiskFlags";
 import { StrategyDeviationAnalysis } from "@/components/StrategyDeviationAnalysis";
+import { MonthlyReviewReport } from "@/components/MonthlyReviewReport";
 import { 
   Activity, 
   Wallet,
@@ -822,6 +823,13 @@ export default function Dashboard() {
         {userId && (
           <div className="mb-8">
             <StrategyDeviationAnalysis userId={userId} />
+          </div>
+        )}
+
+        {/* Monthly Self-Review Report - Elite Only */}
+        {userId && (
+          <div className="mb-8">
+            <MonthlyReviewReport userId={userId} />
           </div>
         )}
 

@@ -1839,6 +1839,318 @@ Output exactly 1-3 bullet points.`;
     }
   });
 
+  // MONTHLY SELF-REVIEW REPORT - Elite only
+  // AI-generated monthly performance review
+  app.get("/api/monthly-review/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { month, year } = req.query;
+      
+      // Verify user access
+      if (req.session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Elite tier check
+      const user = await storage.getUserRole(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!canAccessFeature(user.subscriptionTier || "FREE", "sessionAnalytics")) {
+        return res.status(403).json({ 
+          message: "Elite subscription required for Monthly Self-Review",
+          requiredTier: "ELITE"
+        });
+      }
+
+      // Determine which month to review (default: previous month)
+      const now = new Date();
+      const targetMonth = month ? parseInt(month as string) : now.getMonth() === 0 ? 12 : now.getMonth();
+      const targetYear = year ? parseInt(year as string) : now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      
+      const monthKey = `monthly-review-${targetYear}-${String(targetMonth).padStart(2, '0')}`;
+      
+      // Check for cached report
+      const existing = await storage.getAIInsights(userId, monthKey);
+      if (existing.length > 0) {
+        return res.json({
+          ...existing[0],
+          month: targetMonth,
+          year: targetYear,
+          cached: true,
+        });
+      }
+
+      // Calculate date ranges
+      const monthStart = new Date(targetYear, targetMonth - 1, 1);
+      const monthEnd = new Date(targetYear, targetMonth, 0, 23, 59, 59);
+      const prevMonthStart = new Date(targetYear, targetMonth - 2, 1);
+      const prevMonthEnd = new Date(targetYear, targetMonth - 1, 0, 23, 59, 59);
+
+      // Get MT5 trades for current and previous month
+      const allMt5Trades = await db
+        .select()
+        .from(schema.mt5History)
+        .where(eq(schema.mt5History.userId, userId));
+      
+      const manualTrades = await storage.getTrades(userId);
+
+      // Filter trades by month
+      const currentMonthMt5 = allMt5Trades.filter(t => {
+        const closeTime = new Date(t.closeTime);
+        return closeTime >= monthStart && closeTime <= monthEnd;
+      });
+      
+      const prevMonthMt5 = allMt5Trades.filter(t => {
+        const closeTime = new Date(t.closeTime);
+        return closeTime >= prevMonthStart && closeTime <= prevMonthEnd;
+      });
+
+      const currentMonthManual = manualTrades.filter(t => {
+        const date = new Date(t.createdAt!);
+        return date >= monthStart && date <= monthEnd;
+      });
+
+      const prevMonthManual = manualTrades.filter(t => {
+        const date = new Date(t.createdAt!);
+        return date >= prevMonthStart && date <= prevMonthEnd;
+      });
+
+      // Calculate current month metrics
+      const currentTrades = [
+        ...currentMonthMt5.map(t => ({ pnl: parseFloat(t.netPl), volume: parseFloat(t.volume || "0") })),
+        ...currentMonthManual.map(t => ({ pnl: parseFloat(t.netPl || "0"), volume: 0 }))
+      ];
+
+      const prevTrades = [
+        ...prevMonthMt5.map(t => ({ pnl: parseFloat(t.netPl), volume: parseFloat(t.volume || "0") })),
+        ...prevMonthManual.map(t => ({ pnl: parseFloat(t.netPl || "0"), volume: 0 }))
+      ];
+
+      if (currentTrades.length < 5) {
+        return res.json({
+          message: "Insufficient data for monthly review. At least 5 trades required.",
+          month: targetMonth,
+          year: targetYear,
+          hasData: false,
+        });
+      }
+
+      // Calculate metrics
+      const calcMetrics = (trades: { pnl: number; volume: number }[]) => {
+        const wins = trades.filter(t => t.pnl > 0);
+        const losses = trades.filter(t => t.pnl < 0);
+        const totalPnL = trades.reduce((sum, t) => sum + t.pnl, 0);
+        const winRate = trades.length > 0 ? (wins.length / trades.length) * 100 : 0;
+        const avgWin = wins.length > 0 ? wins.reduce((sum, t) => sum + t.pnl, 0) / wins.length : 0;
+        const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((sum, t) => sum + t.pnl, 0) / losses.length) : 0;
+        const profitFactor = avgLoss > 0 ? (avgWin * wins.length) / (avgLoss * losses.length) : wins.length > 0 ? Infinity : 0;
+        
+        return {
+          tradeCount: trades.length,
+          wins: wins.length,
+          losses: losses.length,
+          totalPnL,
+          winRate,
+          avgWin,
+          avgLoss,
+          profitFactor: profitFactor === Infinity ? "N/A" : profitFactor.toFixed(2),
+        };
+      };
+
+      const currentMetrics = calcMetrics(currentTrades);
+      const prevMetrics = calcMetrics(prevTrades);
+
+      // Get behavioral flags for context
+      let behavioralFlags: any[] = [];
+      try {
+        const behavioralRes = await fetch(`${req.protocol}://${req.get('host')}/api/behavioral-risks/${userId}`, {
+          headers: { cookie: req.headers.cookie || "" }
+        });
+        if (behavioralRes.ok) {
+          const behavioralData = await behavioralRes.json();
+          behavioralFlags = behavioralData.flags || [];
+        }
+      } catch (e) {
+        // Behavioral data optional
+      }
+
+      // Get session analytics for context
+      let sessionData: any = null;
+      try {
+        const sessionRes = await fetch(`${req.protocol}://${req.get('host')}/api/session-analytics/${userId}`, {
+          headers: { cookie: req.headers.cookie || "" }
+        });
+        if (sessionRes.ok) {
+          sessionData = await sessionRes.json();
+        }
+      } catch (e) {
+        // Session data optional
+      }
+
+      // Get compliance data
+      let complianceData: any = null;
+      try {
+        const complianceRes = await fetch(`${req.protocol}://${req.get('host')}/api/strategy-deviation/${userId}`, {
+          headers: { cookie: req.headers.cookie || "" }
+        });
+        if (complianceRes.ok) {
+          complianceData = await complianceRes.json();
+        }
+      } catch (e) {
+        // Compliance data optional
+      }
+
+      const monthNames = ["January", "February", "March", "April", "May", "June", 
+                          "July", "August", "September", "October", "November", "December"];
+      const monthName = monthNames[targetMonth - 1];
+      const prevMonthName = monthNames[targetMonth === 1 ? 11 : targetMonth - 2];
+
+      // Generate AI review
+      const prompt = `You are a Performance Coach writing a monthly self-review for a trader.
+
+Write a REFLECTIVE monthly review for ${monthName} ${targetYear}.
+
+STRICT RULES:
+- Use REFLECTIVE, first-person observational tone ("I noticed...", "My trading showed...", "This month revealed...")
+- NO trading advice or recommendations
+- NO predictions about future markets
+- NO specific entry/exit suggestions
+- FACTUAL observations only
+- Keep it PERSONAL and REFLECTIVE
+- Acknowledge both improvements and areas of concern
+
+CURRENT MONTH (${monthName}):
+- Total Trades: ${currentMetrics.tradeCount}
+- Win Rate: ${currentMetrics.winRate.toFixed(1)}%
+- Total P&L: $${currentMetrics.totalPnL.toFixed(2)}
+- Profit Factor: ${currentMetrics.profitFactor}
+- Wins: ${currentMetrics.wins}, Losses: ${currentMetrics.losses}
+- Avg Win: $${currentMetrics.avgWin.toFixed(2)}, Avg Loss: $${currentMetrics.avgLoss.toFixed(2)}
+
+${prevMetrics.tradeCount > 0 ? `PREVIOUS MONTH (${prevMonthName}):
+- Total Trades: ${prevMetrics.tradeCount}
+- Win Rate: ${prevMetrics.winRate.toFixed(1)}%
+- Total P&L: $${prevMetrics.totalPnL.toFixed(2)}
+- Profit Factor: ${prevMetrics.profitFactor}` : "Previous month: No comparison data available"}
+
+${behavioralFlags.length > 0 ? `BEHAVIORAL OBSERVATIONS:
+${behavioralFlags.slice(0, 3).map((f: any) => `- ${f.title}: ${f.description}`).join('\n')}` : ""}
+
+${sessionData?.sessions ? `BEST SESSION: ${sessionData.sessions.reduce((best: any, s: any) => s.pnl > (best?.pnl || -Infinity) ? s : best, null)?.session || "N/A"}` : ""}
+
+${complianceData?.hasData ? `STRATEGY COMPLIANCE: ${complianceData.summary?.overallComplianceRate?.toFixed(1) || "N/A"}%` : ""}
+
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+
+## Monthly Self-Review: ${monthName} ${targetYear}
+
+### What Improved
+[2-3 factual observations about improvements]
+
+### What Needs Attention
+[2-3 factual observations about areas that worsened or need focus]
+
+### Key Behavioral Observations
+[2-3 observations about trading patterns or behaviors]
+
+### Best-Performing Conditions
+[1-2 observations about when trading worked best]
+
+---
+*This review is auto-generated based on trading data. It is not financial advice.*`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 800,
+      });
+
+      const reviewText = response.choices[0].message.content || "Unable to generate review at this time.";
+
+      // Save the report
+      const savedReport = await storage.saveAIInsight({
+        userId,
+        timeframe: monthKey,
+        insightText: reviewText,
+        metadata: {
+          currentMetrics,
+          prevMetrics,
+          behavioralFlagsCount: behavioralFlags.length,
+          hasSessionData: !!sessionData,
+          hasComplianceData: !!complianceData?.hasData,
+          generatedAt: new Date().toISOString(),
+        }
+      });
+
+      await storage.logAIRequest({
+        userId,
+        prompt,
+        response: reviewText
+      });
+
+      res.json({
+        ...savedReport,
+        month: targetMonth,
+        year: targetYear,
+        cached: false,
+        metrics: {
+          current: currentMetrics,
+          previous: prevMetrics,
+        }
+      });
+    } catch (error) {
+      console.error("Monthly Review Error:", error);
+      res.status(500).json({ message: "Monthly review generation failed" });
+    }
+  });
+
+  // Get available months for review
+  app.get("/api/monthly-review/:userId/available", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      if (req.session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Get all trades to determine available months
+      const mt5Trades = await db
+        .select({ closeTime: schema.mt5History.closeTime })
+        .from(schema.mt5History)
+        .where(eq(schema.mt5History.userId, userId));
+
+      const manualTrades = await storage.getTrades(userId);
+
+      const months = new Set<string>();
+      
+      for (const trade of mt5Trades) {
+        const date = new Date(trade.closeTime);
+        months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+      }
+      
+      for (const trade of manualTrades) {
+        if (trade.createdAt) {
+          const date = new Date(trade.createdAt);
+          months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+        }
+      }
+
+      const sortedMonths = Array.from(months).sort().reverse();
+      
+      res.json({ 
+        availableMonths: sortedMonths.map(m => {
+          const [year, month] = m.split('-');
+          return { year: parseInt(year), month: parseInt(month), key: m };
+        })
+      });
+    } catch (error) {
+      console.error("Available months error:", error);
+      res.status(500).json({ message: "Failed to fetch available months" });
+    }
+  });
+
   // Get unique instruments from user's MT5 history
   app.get("/api/instruments/:userId", requireAuth, async (req, res) => {
     try {

@@ -69,6 +69,16 @@ Key features:
   - Uses data from Strategy Validator evaluations (tradeComplianceResults, tradeRuleEvaluations)
   - No market judgment, purely factual performance comparison
   - Server-side Elite tier enforcement via `/api/strategy-deviation/:userId`
+- **Monthly Self-Review Report** (ELITE only): AI-generated monthly performance reviews
+  - Reflective tone using first-person observations ("I noticed...", "My trading showed...")
+  - Contents: What improved, what needs attention, key behavioral observations, best-performing conditions
+  - Month selector to view historical reports
+  - Metrics comparison with previous month (trades, win rate, P&L, profit factor)
+  - Integrates behavioral flags, session data, and compliance data for context
+  - Exportable as markdown file
+  - Cached in aiPerformanceInsights table with "monthly-review-YYYY-MM" timeframe pattern
+  - Server-side Elite tier enforcement via `/api/monthly-review/:userId`
+  - Available months endpoint: `/api/monthly-review/:userId/available`
 
 **Plan System:**
 - Centralized plan configuration in `shared/plans.ts`
