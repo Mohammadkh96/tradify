@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePlan } from "@/hooks/usePlan";
+import { Link } from "wouter";
 import { 
   Target, 
   AlertTriangle, 
@@ -11,7 +14,8 @@ import {
   XCircle,
   BarChart3,
   Shield,
-  Zap
+  Zap,
+  Lock
 } from "lucide-react";
 
 interface ComplianceGroup {
@@ -72,10 +76,46 @@ interface StrategyDeviationAnalysisProps {
 }
 
 export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisProps) {
+  const { isElite } = usePlan();
+  
   const { data, isLoading, error } = useQuery<StrategyDeviationData>({
     queryKey: ["/api/strategy-deviation", userId],
-    enabled: !!userId,
+    enabled: !!userId && isElite,
   });
+
+  // Show upgrade prompt for non-Elite users
+  if (!isElite) {
+    return (
+      <Card className="border-border/50" data-testid="strategy-deviation-upgrade">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Strategy Deviation Analysis
+            </CardTitle>
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30">
+              <Lock className="h-3 w-3 mr-1" />
+              ELITE
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Shield className="h-12 w-12 mx-auto mb-3 text-amber-500/50" />
+            <h3 className="text-lg font-semibold mb-2">Elite Feature</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+              See how rule compliance impacts your trading performance. Compare compliant vs non-compliant trades and identify your most violated rules.
+            </p>
+            <Link href="/profile">
+              <Button variant="outline" className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10">
+                Upgrade to Elite
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return (
