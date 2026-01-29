@@ -91,7 +91,8 @@ export default function Profile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/paypal/subscription"] });
-      toast({ title: "Subscription Cancelled", description: "Your subscription has been cancelled. You'll retain Pro access until the end of your billing period." });
+      const tierName = isElite ? "Elite" : "Pro";
+      toast({ title: "Subscription Cancelled", description: `Your subscription has been cancelled. You'll retain ${tierName} access until the end of your billing period.` });
     },
     onError: (error: any) => {
       toast({ 
