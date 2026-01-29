@@ -983,19 +983,37 @@ Output exactly 1-3 bullet points.`;
         return res.json(existing[0]);
       }
       
-      // Fetch instrument stats
-      const statsRes = await fetch(`${req.protocol}://${req.get('host')}/api/instruments/${userId}/${encodeURIComponent(symbol)}/stats`, {
-        headers: { cookie: req.headers.cookie || "" }
-      });
-      const stats = await statsRes.json();
+      // Fetch instrument stats directly from database
+      const trades = await db.select()
+        .from(schema.mt5History)
+        .where(and(
+          eq(schema.mt5History.userId, userId),
+          eq(schema.mt5History.symbol, symbol)
+        ));
       
-      if (stats.tradeCount < 1) {
+      if (trades.length < 1) {
         return res.json({ 
           analysisText: "No trading history available for this instrument.", 
           symbol,
           tradeCount: 0 
         });
       }
+      
+      // Calculate stats
+      const wins = trades.filter(t => parseFloat(t.netPl) > 0).length;
+      const winRate = ((wins / trades.length) * 100).toFixed(1);
+      const totalPl = trades.reduce((sum, t) => sum + parseFloat(t.netPl), 0);
+      const avgPl = totalPl / trades.length;
+      
+      // Get recent trades for AI context
+      const recentTrades = trades
+        .sort((a, b) => new Date(b.closeTime).getTime() - new Date(a.closeTime).getTime())
+        .slice(0, 5)
+        .map(t => ({
+          direction: t.direction,
+          netPl: t.netPl,
+          closeTime: t.closeTime
+        }));
       
       // Generate AI analysis
       const prompt = `You are a Trading Journal Analyst. Analyze the user's performance on ${symbol}.
@@ -1009,11 +1027,11 @@ STRICT RULES:
 - Focus on behavioral patterns and discipline observations
 
 USER'S ${symbol} PERFORMANCE DATA:
-- Total Trades: ${stats.tradeCount}
-- Win Rate: ${stats.winRate}%
-- Average P&L per trade: $${stats.avgProfitLoss}
-- Total P&L: $${stats.totalProfitLoss}
-- Recent trades: ${JSON.stringify(stats.trades.slice(0, 5))}
+- Total Trades: ${trades.length}
+- Win Rate: ${winRate}%
+- Average P&L per trade: $${avgPl.toFixed(2)}
+- Total P&L: $${totalPl.toFixed(2)}
+- Recent trades: ${JSON.stringify(recentTrades)}
 
 Provide a brief 2-3 sentence FACTUAL analysis of:
 1. Their performance pattern on this instrument
@@ -1034,10 +1052,10 @@ End with: "This is a performance review, not trading advice."`;
         userId,
         symbol,
         analysisText,
-        tradeCount: stats.tradeCount,
-        winRate: stats.winRate,
-        avgProfitLoss: stats.avgProfitLoss,
-        totalProfitLoss: stats.totalProfitLoss
+        tradeCount: trades.length,
+        winRate: winRate,
+        avgProfitLoss: avgPl.toFixed(2),
+        totalProfitLoss: totalPl.toFixed(2)
       }).returning();
       
       res.json(saved);
