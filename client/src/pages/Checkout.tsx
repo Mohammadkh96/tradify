@@ -218,27 +218,29 @@ export default function Checkout() {
 
                   <PayPalSubscriptionButton tier={selectedTier} />
 
-                  {/* Plan Toggle */}
-                  <div className="flex gap-2 justify-center">
-                    <Button
-                      variant={selectedTier === 'PRO' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => window.location.href = '/checkout?plan=PRO'}
-                      className={selectedTier === 'PRO' ? 'bg-emerald-500' : ''}
-                      data-testid="button-select-pro"
-                    >
-                      <Star className="w-3 h-3 mr-1" /> Pro $19
-                    </Button>
-                    <Button
-                      variant={selectedTier === 'ELITE' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => window.location.href = '/checkout?plan=ELITE'}
-                      className={selectedTier === 'ELITE' ? 'bg-amber-500' : ''}
-                      data-testid="button-select-elite"
-                    >
-                      <Crown className="w-3 h-3 mr-1" /> Elite $39
-                    </Button>
-                  </div>
+                  {/* Plan Toggle - only show for free users, not for Pro users upgrading */}
+                  {!isUpgradingToElite && (
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        variant={selectedTier === 'PRO' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => window.location.href = '/checkout?plan=PRO'}
+                        className={selectedTier === 'PRO' ? 'bg-emerald-500' : ''}
+                        data-testid="button-select-pro"
+                      >
+                        <Star className="w-3 h-3 mr-1" /> Pro $19
+                      </Button>
+                      <Button
+                        variant={selectedTier === 'ELITE' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => window.location.href = '/checkout?plan=ELITE'}
+                        className={selectedTier === 'ELITE' ? 'bg-amber-500' : ''}
+                        data-testid="button-select-elite"
+                      >
+                        <Crown className="w-3 h-3 mr-1" /> Elite $39
+                      </Button>
+                    </div>
+                  )}
 
                   <div className="flex items-start gap-2 text-[9px] text-muted-foreground font-black uppercase tracking-widest bg-muted/30 p-3 rounded-lg border border-border/50 italic">
                     <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
