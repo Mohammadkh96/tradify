@@ -130,15 +130,14 @@ export default function Pricing() {
                   Current: Elite
                 </Button>
               ) : (
-                <Link href="/checkout?plan=PRO">
-                  <Button 
-                    className="w-full h-12 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs"
-                    data-testid="button-upgrade-pro"
-                  >
-                    Upgrade to Pro
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
+                <Button 
+                  className="w-full h-12 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs"
+                  data-testid="button-upgrade-pro"
+                  onClick={() => window.location.href = '/checkout?plan=PRO'}
+                >
+                  Upgrade to Pro
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               )}
             </CardContent>
           </Card>
@@ -180,15 +179,14 @@ export default function Pricing() {
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Link href="/checkout?plan=ELITE">
-                  <Button 
-                    className="w-full h-12 bg-amber-500 text-white font-black uppercase tracking-[0.15em] text-xs"
-                    data-testid="button-upgrade-elite"
-                  >
-                    Upgrade to Elite
-                    <Crown className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
+                <Button 
+                  className="w-full h-12 bg-amber-500 text-white font-black uppercase tracking-[0.15em] text-xs"
+                  data-testid="button-upgrade-elite"
+                  onClick={() => window.location.href = '/checkout?plan=ELITE'}
+                >
+                  Upgrade to Elite
+                  <Crown className="ml-2 h-4 w-4" />
+                </Button>
               )}
             </CardContent>
           </Card>
@@ -254,14 +252,13 @@ export default function Pricing() {
               <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Link href="/checkout?plan=PRO">
-              <Button 
-                className="h-14 px-10 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-                data-testid="button-start-pro-trial"
-              >
-                Start Your Pro Journey
-              </Button>
-            </Link>
+            <Button 
+              className="h-14 px-10 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+              data-testid="button-start-pro-trial"
+              onClick={() => window.location.href = '/checkout?plan=PRO'}
+            >
+              Start Your Pro Journey
+            </Button>
           )}
         </div>
       </main>

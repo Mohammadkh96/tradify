@@ -372,15 +372,14 @@ export default function Profile() {
 
                     {/* Upgrade to Elite option for Pro users */}
                     {isPro && !isElite && (
-                      <Link href="/checkout?plan=ELITE">
-                        <Button 
-                          className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black uppercase tracking-widest text-[10px] mt-2 shadow-lg shadow-amber-500/20"
-                          data-testid="button-upgrade-to-elite"
-                        >
-                          <Crown size={14} className="mr-2" />
-                          Upgrade to Elite
-                        </Button>
-                      </Link>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black uppercase tracking-widest text-[10px] mt-2 shadow-lg shadow-amber-500/20"
+                        data-testid="button-upgrade-to-elite"
+                        onClick={() => window.location.href = '/checkout?plan=ELITE'}
+                      >
+                        <Crown size={14} className="mr-2" />
+                        Upgrade to Elite
+                      </Button>
                     )}
 
                     <AlertDialog>
