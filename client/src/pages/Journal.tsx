@@ -20,8 +20,8 @@ export default function Journal() {
     enabled: true,
   });
 
-  const subscription = user?.subscriptionTier || "FREE";
-  const isPro = subscription === "PRO";
+  const subscription = user?.subscriptionTier?.toUpperCase() || "FREE";
+  const isPaidUser = subscription === "PRO" || subscription === "ELITE";
 
   const deleteTrade = useDeleteTrade();
   const [searchTerm, setSearchTerm] = useState("");
@@ -96,13 +96,13 @@ export default function Journal() {
       return matchesSearch && matchesOutcome && matchesDate;
     });
 
-    if (!isPro) {
+    if (!isPaidUser) {
       const thirtyDaysAgo = subDays(new Date(), 30);
       base = base.filter(trade => new Date(trade.closeTime || trade.createdAt) >= thirtyDaysAgo);
     }
 
     return base;
-  }, [combinedTrades, searchTerm, filterOutcome, dateFilter, customStartDate, customEndDate, isPro]);
+  }, [combinedTrades, searchTerm, filterOutcome, dateFilter, customStartDate, customEndDate, isPaidUser]);
 
   const stats = useMemo(() => {
     const total = filteredTrades.length;
@@ -154,7 +154,7 @@ export default function Journal() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {!isPro && (
+            {!isPaidUser && (
               <Link href="/pricing">
                 <Button variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
                   Upgrade to PRO
