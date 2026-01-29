@@ -1,23 +1,40 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2, Crown, Star } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
+type PlanTier = 'PRO' | 'ELITE';
+
+const PLAN_DETAILS: Record<PlanTier, { name: string; price: string; color: string; icon: any }> = {
+  PRO: { name: 'Pro', price: '$19', color: 'emerald', icon: Star },
+  ELITE: { name: 'Elite', price: '$39', color: 'amber', icon: Crown },
+};
+
 export default function Checkout() {
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useQuery<any>({ queryKey: ["/api/user"] });
   const [isActivating, setIsActivating] = useState(false);
+  
+  // Get plan from URL params
+  const params = new URLSearchParams(window.location.search);
+  const urlPlan = params.get('plan')?.toUpperCase();
+  const selectedTier: PlanTier = urlPlan === 'ELITE' ? 'ELITE' : 'PRO';
+  const planDetails = PLAN_DETAILS[selectedTier];
 
   // Handle subscription return URLs
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const subscriptionStatus = params.get('subscription');
-    // Try to get subscription_id from URL first, then from sessionStorage
+    // Get tier from URL first, then from sessionStorage
+    let tier = params.get('tier') as PlanTier;
+    if (!tier) {
+      tier = (sessionStorage.getItem('pending_paypal_tier') as PlanTier) || 'PRO';
+    }
     let subscriptionId = params.get('subscription_id');
     if (!subscriptionId) {
       subscriptionId = sessionStorage.getItem('pending_paypal_subscription_id');
@@ -26,18 +43,19 @@ export default function Checkout() {
     const activateSubscription = async () => {
       if (subscriptionStatus === 'success' && subscriptionId && !isActivating) {
         setIsActivating(true);
-        // Clear the stored subscription ID
         sessionStorage.removeItem('pending_paypal_subscription_id');
+        sessionStorage.removeItem('pending_paypal_tier');
         
         try {
-          // Call server to activate subscription (fetches details from PayPal and updates user)
-          const res = await apiRequest("POST", "/api/paypal/subscription/activate", { subscriptionId });
+          // Server determines actual tier from PayPal plan_id, tier is just a hint
+          const res = await apiRequest("POST", "/api/paypal/subscription/activate", { subscriptionId, tier });
           const result = await res.json();
           
+          const tierName = tier === 'ELITE' ? 'Elite' : 'Pro';
           if (result.success) {
             toast({
               title: "Subscription Activated!",
-              description: "Welcome to Tradify Pro! Your subscription is now active.",
+              description: `Welcome to Tradify ${tierName}! Your subscription is now active.`,
             });
           } else {
             toast({
@@ -45,7 +63,6 @@ export default function Checkout() {
               description: "Your subscription is being processed. It may take a moment to activate.",
             });
           }
-          // Refresh user data
           queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         } catch (error) {
           console.error("Activation error:", error);
@@ -57,10 +74,8 @@ export default function Checkout() {
         } finally {
           setIsActivating(false);
         }
-        // Clean URL
         window.history.replaceState({}, '', '/checkout');
       } else if (subscriptionStatus === 'success' && !subscriptionId) {
-        // No subscription_id available, just refresh and show message
         toast({
           title: "Subscription Processing",
           description: "Your subscription is being processed. Please wait a moment.",
@@ -68,8 +83,8 @@ export default function Checkout() {
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         window.history.replaceState({}, '', '/checkout');
       } else if (subscriptionStatus === 'cancelled') {
-        // Clear any pending subscription ID on cancel
         sessionStorage.removeItem('pending_paypal_subscription_id');
+        sessionStorage.removeItem('pending_paypal_tier');
         toast({
           title: "Subscription Cancelled",
           description: "You cancelled the subscription process.",
@@ -90,14 +105,20 @@ export default function Checkout() {
     );
   }
 
-  const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+  const subscription = user?.subscriptionTier?.toUpperCase() || "FREE";
+  const isPro = subscription === "PRO";
+  const isElite = subscription === "ELITE";
+  const isPaid = isPro || isElite;
+
+  const PlanIcon = planDetails.icon;
+  const isElitePlan = selectedTier === 'ELITE';
 
   return (
     <div className="flex-1 bg-background text-foreground min-h-screen p-6 lg:p-10">
       <div className="max-w-4xl mx-auto space-y-8">
         <header>
           <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase italic mb-2">
-            Billing & <span className="text-emerald-500">Subscription</span>
+            Billing & <span className={isElitePlan ? "text-amber-500" : "text-emerald-500"}>Subscription</span>
           </h1>
           <p className="text-muted-foreground font-medium">Manage your payment methods and subscription status.</p>
         </header>
@@ -113,36 +134,45 @@ export default function Checkout() {
               <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
                 <div>
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Plan</p>
-                  <p className="text-xl font-black text-foreground uppercase tracking-tight italic">{user?.subscriptionTier || "FREE"}</p>
+                  <p className={`text-xl font-black uppercase tracking-tight italic ${isElite ? 'text-amber-500' : isPro ? 'text-emerald-500' : 'text-foreground'}`}>
+                    {subscription}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Status</p>
                   <p className={`text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                    isPro ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
+                    isElite ? "bg-amber-500/10 text-amber-500" : isPro ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
                   }`}>
-                    {isPro ? "Active" : "INACTIVE"}
+                    {isPaid ? "Active" : "INACTIVE"}
                   </p>
                 </div>
               </div>
 
-              {isPro && (
-                <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+              {isPaid && (
+                <div className={`p-4 rounded-xl border ${isElite ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
                   <div className="flex items-start gap-3">
-                    <ShieldCheck className="text-emerald-500 w-5 h-5 mt-0.5" />
+                    <ShieldCheck className={`w-5 h-5 mt-0.5 ${isElite ? 'text-amber-500' : 'text-emerald-500'}`} />
                     <div>
-                      <p className="text-sm font-black text-foreground uppercase tracking-tight">Pro Features Enabled</p>
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight">
+                        {isElite ? 'Elite' : 'Pro'} Features Enabled
+                      </p>
                       <p className="text-[10px] text-muted-foreground mt-1 font-bold leading-tight">
-                        You have full access to performance intelligence, unlimited journal history, and priority MT5 sync.
+                        {isElite 
+                          ? 'You have full access to all features including priority support and advanced analytics.'
+                          : 'You have full access to performance intelligence, unlimited journal history, and priority MT5 sync.'
+                        }
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {isPro ? (
+              {isPaid ? (
                 <Button 
                   onClick={() => window.location.href = '/profile'}
-                  className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20"
+                  className={`w-full h-12 text-white font-black uppercase tracking-widest text-xs shadow-lg ${
+                    isElite ? 'bg-amber-500 shadow-amber-500/20' : 'bg-emerald-500 shadow-emerald-500/20'
+                  }`}
                   data-testid="button-manage-subscription"
                 >
                   Manage Subscription in Profile
@@ -157,17 +187,22 @@ export default function Checkout() {
           </Card>
 
           {/* Payment Method / Upgrade */}
-          <Card className="bg-card border-border shadow-2xl overflow-hidden">
+          <Card className={`bg-card shadow-2xl overflow-hidden ${
+            isElitePlan ? 'border-amber-500/30' : 'border-emerald-500/30'
+          }`}>
             <CardHeader className="bg-muted/30 border-b border-border">
-              <CardTitle className="text-lg font-black text-foreground uppercase tracking-widest">
-                {isPro ? "Subscription Details" : "Upgrade to Pro"}
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <PlanIcon className={isElitePlan ? "w-5 h-5 text-amber-500" : "w-5 h-5 text-emerald-500"} />
+                <CardTitle className={isElitePlan ? "text-lg font-black uppercase tracking-widest text-amber-500" : "text-lg font-black uppercase tracking-widest text-emerald-500"}>
+                  {isPaid ? "Subscription Details" : `Upgrade to ${planDetails.name}`}
+                </CardTitle>
+              </div>
               <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
-                {isPro ? "Current provider info." : "$19/month - Cancel anytime."}
+                {isPaid ? "Current provider info." : `${planDetails.price}/month - Cancel anytime.`}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              {isPro ? (
+              {isPaid ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
                     <SiPaypal className="text-[#0070ba] w-6 h-6" />
@@ -176,9 +211,11 @@ export default function Checkout() {
                       <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">PayPal</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
-                    <CheckCircle2 className="text-emerald-500 w-4 h-4" />
-                    <span className="text-xs text-emerald-500 font-bold">Subscription Active</span>
+                  <div className={`flex items-center gap-2 p-3 rounded-lg border ${
+                    isElite ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20'
+                  }`}>
+                    <CheckCircle2 className={`w-4 h-4 ${isElite ? 'text-amber-500' : 'text-emerald-500'}`} />
+                    <span className={`text-xs font-bold ${isElite ? 'text-amber-500' : 'text-emerald-500'}`}>Subscription Active</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-relaxed text-center opacity-50 italic">
                     Manage your subscription in Profile.
@@ -194,7 +231,29 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <PayPalSubscriptionButton />
+                  <PayPalSubscriptionButton tier={selectedTier} />
+
+                  {/* Plan Toggle */}
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      variant={selectedTier === 'PRO' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => window.location.href = '/checkout?plan=PRO'}
+                      className={selectedTier === 'PRO' ? 'bg-emerald-500' : ''}
+                      data-testid="button-select-pro"
+                    >
+                      <Star className="w-3 h-3 mr-1" /> Pro $19
+                    </Button>
+                    <Button
+                      variant={selectedTier === 'ELITE' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => window.location.href = '/checkout?plan=ELITE'}
+                      className={selectedTier === 'ELITE' ? 'bg-amber-500' : ''}
+                      data-testid="button-select-elite"
+                    >
+                      <Crown className="w-3 h-3 mr-1" /> Elite $39
+                    </Button>
+                  </div>
 
                   <div className="flex items-start gap-2 text-[9px] text-muted-foreground font-black uppercase tracking-widest bg-muted/30 p-3 rounded-lg border border-border/50 italic">
                     <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />

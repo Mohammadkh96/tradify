@@ -1,12 +1,24 @@
 import { storage } from './storage';
 
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID } = process.env;
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID } = process.env;
 const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://api-m.paypal.com' 
   : 'https://api-m.sandbox.paypal.com';
 
-// Cached plan ID - use env var or create on demand
-let cachedPlanId: string | null = PAYPAL_PLAN_ID || null;
+// Plan types
+export type PlanTier = 'PRO' | 'ELITE';
+
+// Cached plan IDs - use env vars or create on demand
+const cachedPlanIds: { PRO: string | null; ELITE: string | null } = {
+  PRO: PAYPAL_PLAN_ID || null,
+  ELITE: PAYPAL_ELITE_PLAN_ID || null,
+};
+
+// Plan pricing
+const PLAN_PRICES: Record<PlanTier, string> = {
+  PRO: '19.00',
+  ELITE: '39.00',
+};
 
 export class PayPalService {
   private async getAccessToken(): Promise<string> {
@@ -60,20 +72,23 @@ export class PayPalService {
     return data.id;
   }
 
-  private async createBillingPlan(productId: string): Promise<string> {
+  private async createBillingPlan(productId: string, tier: PlanTier): Promise<string> {
     const accessToken = await this.getAccessToken();
+    const price = PLAN_PRICES[tier];
+    const planName = tier === 'ELITE' ? 'Tradify Elite Monthly' : 'Tradify Pro Monthly';
+    const planDesc = tier === 'ELITE' ? 'Monthly subscription to Tradify Elite' : 'Monthly subscription to Tradify Pro';
     
     const response = await fetch(`${PAYPAL_BASE_URL}/v1/billing/plans`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
-        'PayPal-Request-Id': `TRADIFY-PLAN-${Date.now()}`,
+        'PayPal-Request-Id': `TRADIFY-${tier}-PLAN-${Date.now()}`,
       },
       body: JSON.stringify({
         product_id: productId,
-        name: 'Tradify Pro Monthly',
-        description: 'Monthly subscription to Tradify Pro',
+        name: planName,
+        description: planDesc,
         status: 'ACTIVE',
         billing_cycles: [
           {
@@ -86,7 +101,7 @@ export class PayPalService {
             total_cycles: 0, // Infinite
             pricing_scheme: {
               fixed_price: {
-                value: '19.00',
+                value: price,
                 currency_code: 'USD',
               },
             },
@@ -114,33 +129,37 @@ export class PayPalService {
     return data.id;
   }
 
-  async getOrCreatePlanId(): Promise<string> {
+  async getOrCreatePlanId(tier: PlanTier = 'PRO'): Promise<string> {
     // Return cached plan ID if available
-    if (cachedPlanId) {
-      return cachedPlanId;
+    if (cachedPlanIds[tier]) {
+      return cachedPlanIds[tier]!;
     }
     
     // Check if we have a stored plan ID in env
-    if (process.env.PAYPAL_PLAN_ID) {
-      cachedPlanId = process.env.PAYPAL_PLAN_ID;
-      return cachedPlanId;
+    if (tier === 'PRO' && process.env.PAYPAL_PLAN_ID) {
+      cachedPlanIds.PRO = process.env.PAYPAL_PLAN_ID;
+      return cachedPlanIds.PRO;
+    }
+    if (tier === 'ELITE' && process.env.PAYPAL_ELITE_PLAN_ID) {
+      cachedPlanIds.ELITE = process.env.PAYPAL_ELITE_PLAN_ID;
+      return cachedPlanIds.ELITE;
     }
     
     // Create new product and plan
-    console.log('Creating new PayPal product and billing plan...');
+    console.log(`Creating new PayPal product and billing plan for ${tier}...`);
     const productId = await this.createProduct();
     console.log('Created PayPal product:', productId);
     
-    const planId = await this.createBillingPlan(productId);
-    console.log('Created PayPal billing plan:', planId);
-    console.log('Save this PAYPAL_PLAN_ID for future use:', planId);
+    const planId = await this.createBillingPlan(productId, tier);
+    console.log(`Created PayPal ${tier} billing plan:`, planId);
+    console.log(`Save this PAYPAL_${tier === 'ELITE' ? 'ELITE_' : ''}PLAN_ID for future use:`, planId);
     
-    cachedPlanId = planId;
+    cachedPlanIds[tier] = planId;
     return planId;
   }
 
-  async createSubscription(userId: string, returnUrl: string, cancelUrl: string): Promise<{ subscriptionId: string; approvalUrl: string }> {
-    const planId = await this.getOrCreatePlanId();
+  async createSubscription(userId: string, returnUrl: string, cancelUrl: string, tier: PlanTier = 'PRO'): Promise<{ subscriptionId: string; approvalUrl: string; tier: PlanTier }> {
+    const planId = await this.getOrCreatePlanId(tier);
     const accessToken = await this.getAccessToken();
     
     const response = await fetch(`${PAYPAL_BASE_URL}/v1/billing/subscriptions`, {
@@ -176,6 +195,7 @@ export class PayPalService {
     return {
       subscriptionId: data.id,
       approvalUrl,
+      tier,
     };
   }
 
@@ -291,7 +311,7 @@ export class PayPalService {
   }
 
   // Activate subscription directly by fetching details (called on return URL)
-  async activateSubscriptionByUser(userId: string, subscriptionId: string): Promise<boolean> {
+  async activateSubscriptionByUser(userId: string, subscriptionId: string, tier: PlanTier = 'PRO'): Promise<boolean> {
     try {
       const details = await this.getSubscriptionDetails(subscriptionId);
       
@@ -301,12 +321,22 @@ export class PayPalService {
         return false;
       }
 
+      // Determine tier from plan - check which cached plan ID matches
+      let determinedTier: PlanTier = tier;
+      if (details.plan_id) {
+        if (details.plan_id === cachedPlanIds.ELITE || details.plan_id === process.env.PAYPAL_ELITE_PLAN_ID) {
+          determinedTier = 'ELITE';
+        } else {
+          determinedTier = 'PRO';
+        }
+      }
+
       // Only activate if subscription is active or approved
       if (details.status === 'ACTIVE' || details.status === 'APPROVED') {
         await storage.updateUserSubscriptionInfo(userId, {
           subscriptionProvider: 'paypal',
           subscriptionStatus: details.status.toLowerCase(),
-          subscriptionTier: 'PRO',
+          subscriptionTier: determinedTier,
           paypalSubscriptionId: subscriptionId,
           renewalDate: details.billing_info?.next_billing_time 
             ? new Date(details.billing_info.next_billing_time) 
@@ -327,14 +357,21 @@ export class PayPalService {
     const status = resource.status; 
     const customId = resource.custom_id; 
     const nextBillingTime = resource.billing_info?.next_billing_time;
+    const planId = resource.plan_id;
 
-    console.log('Subscription activated for user:', customId);
+    // Determine tier from plan ID
+    let tier: PlanTier = 'PRO';
+    if (planId === cachedPlanIds.ELITE || planId === process.env.PAYPAL_ELITE_PLAN_ID) {
+      tier = 'ELITE';
+    }
+
+    console.log(`Subscription activated for user: ${customId}, tier: ${tier}`);
 
     if (customId) {
       await storage.updateUserSubscriptionInfo(customId, {
         subscriptionProvider: 'paypal',
         subscriptionStatus: status?.toLowerCase() || 'active',
-        subscriptionTier: 'PRO', 
+        subscriptionTier: tier, 
         paypalSubscriptionId,
         renewalDate: nextBillingTime ? new Date(nextBillingTime) : undefined,
       });

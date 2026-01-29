@@ -222,14 +222,18 @@ export async function registerRoutes(
   app.post("/api/paypal/subscribe", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
+      const { tier = 'PRO' } = req.body;
+      const validTier = tier === 'ELITE' ? 'ELITE' : 'PRO';
+      
       const protocol = req.get('x-forwarded-proto') || req.protocol;
       const host = req.get('host');
       const baseUrl = `${protocol}://${host}`;
       
       const result = await paypalService.createSubscription(
         userId,
-        `${baseUrl}/checkout?subscription=success`,
-        `${baseUrl}/checkout?subscription=cancelled`
+        `${baseUrl}/checkout?subscription=success&tier=${validTier}`,
+        `${baseUrl}/checkout?subscription=cancelled`,
+        validTier
       );
       
       res.json(result);
@@ -958,10 +962,11 @@ Output exactly 1-3 bullet points.`;
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      // PRO subscription check
+      // PRO/ELITE subscription check
       const userRole = await storage.getUserRole(userId);
-      if (!userRole || userRole.subscriptionTier !== "PRO") {
-        return res.status(403).json({ message: "PRO subscription required for AI analysis" });
+      const tier = userRole?.subscriptionTier?.toUpperCase();
+      if (!userRole || (tier !== "PRO" && tier !== "ELITE")) {
+        return res.status(403).json({ message: "Pro or Elite subscription required for AI analysis" });
       }
       
       if (!symbol) {

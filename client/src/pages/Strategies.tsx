@@ -69,7 +69,8 @@ export default function Strategies() {
   });
 
   const isUserLoaded = user !== undefined;
-  const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+  const subscription = user?.subscriptionTier?.toUpperCase() || "FREE";
+  const isPro = subscription === "PRO" || subscription === "ELITE";
   const isAtLimit = isUserLoaded && !isPro && strategies.length >= FREE_STRATEGY_LIMIT;
 
   const activateMutation = useMutation({

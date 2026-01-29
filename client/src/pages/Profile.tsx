@@ -62,7 +62,9 @@ export default function Profile() {
     queryKey: ["/api/user"],
   });
 
-  const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+  const subscription_tier = user?.subscriptionTier?.toUpperCase() || "FREE";
+  const isPro = subscription_tier === "PRO" || subscription_tier === "ELITE";
+  const isElite = subscription_tier === "ELITE";
 
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery<any>({
     queryKey: ["/api/paypal/subscription"],

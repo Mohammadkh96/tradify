@@ -1,29 +1,35 @@
-import { ShieldCheck, Check, X, ArrowRight, ExternalLink } from "lucide-react";
+import { ShieldCheck, Check, X, ArrowRight, ExternalLink, Crown, Zap, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 
 const features = [
-  { name: "Live MT5 Data Connection", free: true, pro: true },
-  { name: "Open Positions & Account Health", free: true, pro: true },
-  { name: "Risk & Position Size Calculator", free: true, pro: true },
-  { name: "30-Day Trade Journal History", free: true, pro: true },
-  { name: "Institutional Knowledge Base", free: true, pro: true },
-  { name: "Performance Intelligence Layer", free: false, pro: true },
-  { name: "Full Equity Curve (All-Time)", free: false, pro: true },
-  { name: "Advanced Performance Analytics", free: false, pro: true },
-  { name: "Unlimited Journal History", free: false, pro: true },
-  { name: "CSV / PDF Data Export", free: false, pro: true },
-  { name: "Unlimited AI Assistant Usage", free: false, pro: true },
-  { name: "Priority MT5 Sync Intervals", free: false, pro: true },
-  { name: "Historical Backfill Sync", free: false, pro: true },
+  { name: "Live MT5 Data Connection", free: true, pro: true, elite: true },
+  { name: "Open Positions & Account Health", free: true, pro: true, elite: true },
+  { name: "Risk & Position Size Calculator", free: true, pro: true, elite: true },
+  { name: "30-Day Trade Journal History", free: true, pro: true, elite: true },
+  { name: "Institutional Knowledge Base", free: true, pro: true, elite: true },
+  { name: "1 Trading Strategy", free: true, pro: false, elite: false },
+  { name: "Unlimited Trading Strategies", free: false, pro: true, elite: true },
+  { name: "Performance Intelligence Layer", free: false, pro: true, elite: true },
+  { name: "Full Equity Curve (All-Time)", free: false, pro: true, elite: true },
+  { name: "AI Instrument Analysis", free: false, pro: true, elite: true },
+  { name: "Unlimited Journal History", free: false, pro: true, elite: true },
+  { name: "CSV / PDF Data Export", free: false, pro: true, elite: true },
+  { name: "Priority MT5 Sync Intervals", free: false, pro: true, elite: true },
+  { name: "Advanced Session Analytics", free: false, pro: false, elite: true },
+  { name: "Elite Member Badge", free: false, pro: false, elite: true },
+  { name: "Priority Support", free: false, pro: false, elite: true },
 ];
 
 export default function Pricing() {
   const { data: user } = useQuery<any>({ queryKey: ["/api/user"] });
 
-  const isPro = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "pro";
+  const subscription = user?.subscriptionTier?.toUpperCase() || "FREE";
+  const isPro = subscription === "PRO";
+  const isElite = subscription === "ELITE";
+  const isPaid = isPro || isElite;
 
   const handleManageSubscription = () => {
     window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
@@ -31,7 +37,7 @@ export default function Pricing() {
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
-      <main className="p-6 lg:p-10 max-w-5xl mx-auto">
+      <main className="p-6 lg:p-10 max-w-6xl mx-auto">
         <header className="text-center mb-16">
           <p className="text-muted-foreground max-w-2xl mx-auto uppercase text-[10px] font-bold tracking-[0.2em] mb-4">
             Not financial advice. Trading involves risk.
@@ -44,59 +50,63 @@ export default function Pricing() {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
           {/* Free Plan */}
           <Card className="bg-card border-border shadow-2xl relative overflow-hidden group">
-            <CardContent className="p-8">
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-muted-foreground mb-2 uppercase tracking-widest">Trader Essentials</h3>
+            <CardContent className="p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap size={20} className="text-muted-foreground" />
+                  <h3 className="text-lg font-bold text-muted-foreground uppercase tracking-widest">Free</h3>
+                </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black text-foreground">$0</span>
+                  <span className="text-4xl font-black text-foreground">$0</span>
                   <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Forever</span>
                 </div>
               </div>
 
-              <div className="space-y-4 mb-10">
+              <div className="space-y-3 mb-8">
                 {features.filter(f => f.free).map((f, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <Check size={16} className="text-emerald-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{f.name}</span>
-                  </div>
-                ))}
-                {features.filter(f => !f.free).map((f, i) => (
-                  <div key={i} className="flex items-center gap-3 opacity-30">
-                    <X size={16} className="text-muted-foreground flex-shrink-0" />
+                    <Check size={14} className="text-emerald-500 flex-shrink-0" />
                     <span className="text-sm text-muted-foreground">{f.name}</span>
                   </div>
                 ))}
               </div>
 
-              <Button variant="outline" className="w-full h-12 font-bold uppercase tracking-widest text-xs border-border">
-                Current Plan
+              <Button 
+                variant="outline" 
+                className="w-full h-12 font-bold uppercase tracking-widest text-xs border-border"
+                disabled
+                data-testid="button-current-free"
+              >
+                {subscription === "FREE" ? "Current Plan" : "Downgrade"}
               </Button>
             </CardContent>
           </Card>
 
           {/* Pro Plan */}
-          <Card className="bg-card border-emerald-500/30 shadow-2xl relative overflow-hidden group scale-105">
+          <Card className="bg-card border-emerald-500/30 shadow-2xl relative overflow-hidden group scale-[1.02]">
             <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest rounded-bl-lg">
-              Recommended
+              Popular
             </div>
-            <CardContent className="p-8">
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-emerald-500 mb-2 uppercase tracking-widest">Trader Pro</h3>
+            <CardContent className="p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Star size={20} className="text-emerald-500" />
+                  <h3 className="text-lg font-bold text-emerald-500 uppercase tracking-widest">Pro</h3>
+                </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black text-foreground">$19</span>
+                  <span className="text-4xl font-black text-foreground">$19</span>
                   <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
                 </div>
-                <p className="text-[10px] text-emerald-500/70 font-bold uppercase tracking-widest mt-2">or $190/year (2 months free)</p>
               </div>
 
-              <div className="space-y-4 mb-10">
+              <div className="space-y-3 mb-8">
                 <div className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest mb-2">Everything in Free, plus:</div>
-                {features.filter(f => !f.free).map((f, i) => (
+                {features.filter(f => f.pro && !f.free).map((f, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <Check size={16} className="text-emerald-500 flex-shrink-0" />
+                    <Check size={14} className="text-emerald-500 flex-shrink-0" />
                     <span className="text-sm text-foreground font-medium">{f.name}</span>
                   </div>
                 ))}
@@ -105,20 +115,79 @@ export default function Pricing() {
               {isPro ? (
                 <Button 
                   onClick={handleManageSubscription}
-                  className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-                  data-testid="button-manage-subscription"
+                  className="w-full h-12 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs"
+                  data-testid="button-manage-pro"
+                >
+                  Manage Subscription
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              ) : isElite ? (
+                <Button 
+                  variant="outline"
+                  className="w-full h-12 font-bold uppercase tracking-widest text-xs border-border"
+                  disabled
+                  data-testid="button-downgrade-pro"
+                >
+                  Current: Elite
+                </Button>
+              ) : (
+                <Link href="/checkout?plan=PRO">
+                  <Button 
+                    className="w-full h-12 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs"
+                    data-testid="button-upgrade-pro"
+                  >
+                    Upgrade to Pro
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Elite Plan */}
+          <Card className="bg-gradient-to-b from-amber-500/10 to-card border-amber-500/30 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest rounded-bl-lg">
+              Elite
+            </div>
+            <CardContent className="p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Crown size={20} className="text-amber-500" />
+                  <h3 className="text-lg font-bold text-amber-500 uppercase tracking-widest">Elite</h3>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-foreground">$39</span>
+                  <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-8">
+                <div className="text-[10px] font-black text-amber-500/50 uppercase tracking-widest mb-2">Everything in Pro, plus:</div>
+                {features.filter(f => f.elite && !f.pro).map((f, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Check size={14} className="text-amber-500 flex-shrink-0" />
+                    <span className="text-sm text-foreground font-medium">{f.name}</span>
+                  </div>
+                ))}
+              </div>
+
+              {isElite ? (
+                <Button 
+                  onClick={handleManageSubscription}
+                  className="w-full h-12 bg-amber-500 text-white font-black uppercase tracking-[0.15em] text-xs"
+                  data-testid="button-manage-elite"
                 >
                   Manage Subscription
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Link href="/checkout">
+                <Link href="/checkout?plan=ELITE">
                   <Button 
-                    className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
-                    data-testid="button-upgrade-pro"
+                    className="w-full h-12 bg-amber-500 text-white font-black uppercase tracking-[0.15em] text-xs"
+                    data-testid="button-upgrade-elite"
                   >
-                    Upgrade to Pro
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    Upgrade to Elite
+                    <Crown className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
               )}
@@ -133,20 +202,24 @@ export default function Pricing() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
-                  <th className="p-6 text-xs font-black text-muted-foreground uppercase tracking-widest">Feature</th>
-                  <th className="p-6 text-xs font-black text-muted-foreground uppercase tracking-widest text-center">Free</th>
-                  <th className="p-6 text-xs font-black text-emerald-500 uppercase tracking-widest text-center">Pro</th>
+                  <th className="p-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Feature</th>
+                  <th className="p-4 text-xs font-black text-muted-foreground uppercase tracking-widest text-center">Free</th>
+                  <th className="p-4 text-xs font-black text-emerald-500 uppercase tracking-widest text-center">Pro</th>
+                  <th className="p-4 text-xs font-black text-amber-500 uppercase tracking-widest text-center">Elite</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {features.map((f, i) => (
                   <tr key={i} className="hover:bg-muted/30 transition-colors">
-                    <td className="p-6 text-sm text-muted-foreground font-medium">{f.name}</td>
-                    <td className="p-6 text-center">
-                      {f.free ? <Check size={18} className="text-emerald-500 mx-auto" /> : <X size={18} className="text-muted-foreground mx-auto" />}
+                    <td className="p-4 text-sm text-muted-foreground font-medium">{f.name}</td>
+                    <td className="p-4 text-center">
+                      {f.free ? <Check size={16} className="text-emerald-500 mx-auto" /> : <X size={16} className="text-muted-foreground mx-auto" />}
                     </td>
-                    <td className="p-6 text-center">
-                      {f.pro ? <Check size={18} className="text-emerald-500 mx-auto" /> : <X size={18} className="text-muted-foreground mx-auto" />}
+                    <td className="p-4 text-center">
+                      {f.pro ? <Check size={16} className="text-emerald-500 mx-auto" /> : <X size={16} className="text-muted-foreground mx-auto" />}
+                    </td>
+                    <td className="p-4 text-center">
+                      {f.elite ? <Check size={16} className="text-amber-500 mx-auto" /> : <X size={16} className="text-muted-foreground mx-auto" />}
                     </td>
                   </tr>
                 ))}
@@ -172,22 +245,22 @@ export default function Pricing() {
 
         <div className="text-center pb-20">
           <h3 className="text-2xl font-bold text-foreground mb-6">Ready to upgrade your trading edge?</h3>
-          {isPro ? (
+          {isPaid ? (
             <Button 
               onClick={handleManageSubscription}
-              className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+              className="h-14 px-10 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
               data-testid="button-manage-account"
             >
               Manage Your Account
               <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Link href="/checkout">
+            <Link href="/checkout?plan=PRO">
               <Button 
-                className="h-14 px-10 bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
+                className="h-14 px-10 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
                 data-testid="button-start-pro-trial"
               >
-                Start Your Pro Trial
+                Start Your Pro Journey
               </Button>
             </Link>
           )}

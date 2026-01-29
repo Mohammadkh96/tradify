@@ -73,8 +73,9 @@ export default function Dashboard() {
     queryKey: [`/api/traders-hub/user-role/${localStorage.getItem("user_id") || "demo_user"}`],
   });
 
-  const subscription = userRoleData?.subscriptionTier || "FREE";
-  const isPro = subscription === "PRO";
+  const subscription = userRoleData?.subscriptionTier?.toUpperCase() || "FREE";
+  const isPro = subscription === "PRO" || subscription === "ELITE";
+  const isElite = subscription === "ELITE";
 
   const { data: insights, isLoading: isInsightsLoading } = useQuery<any>({
     queryKey: [`/api/ai/insights/${userId}`],
