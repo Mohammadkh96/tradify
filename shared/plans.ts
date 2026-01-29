@@ -6,6 +6,7 @@ export interface PlanFeatures {
   aiAnalysis: boolean;
   sessionAnalytics: boolean;
   timePatternAnalysis: boolean;
+  behavioralRiskFlags: boolean;
   pdfReports: boolean;
   csvExport: boolean;
   prioritySupport: boolean;
@@ -32,6 +33,7 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     aiAnalysis: false,
     sessionAnalytics: false,
     timePatternAnalysis: false,
+    behavioralRiskFlags: false,
     pdfReports: false,
     csvExport: false,
     prioritySupport: false,
@@ -45,6 +47,7 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     aiAnalysis: true,
     sessionAnalytics: false,
     timePatternAnalysis: false,
+    behavioralRiskFlags: false,
     pdfReports: false,
     csvExport: true,
     prioritySupport: false,
@@ -58,6 +61,7 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     aiAnalysis: true,
     sessionAnalytics: true,
     timePatternAnalysis: true,
+    behavioralRiskFlags: true,
     pdfReports: true,
     csvExport: true,
     prioritySupport: true,
@@ -91,6 +95,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       "CSV Data Export",
       "Session Analytics",
       "Time Pattern Analysis",
+      "Behavioral Risk Flags",
       "PDF Reports",
     ],
   },
@@ -114,6 +119,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     excludedFeatures: [
       "Session Analytics",
       "Time Pattern Analysis",
+      "Behavioral Risk Flags",
       "PDF Reports",
       "Priority Support",
       "Elite Badge",
@@ -131,6 +137,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       "Unlimited Trade History",
       "Session Performance Analytics",
       "Time Pattern Analysis",
+      "Behavioral Risk Flags",
       "PDF Report Generation",
       "Priority Support",
       "Elite Member Badge",
@@ -206,6 +213,10 @@ export const FEATURE_DESCRIPTIONS: Record<keyof PlanFeatures, { name: string; de
   timePatternAnalysis: {
     name: "Time Pattern Analysis",
     description: "Analysis of your performance by day of week and hour",
+  },
+  behavioralRiskFlags: {
+    name: "Behavioral Risk Flags",
+    description: "Automated detection of behavioral trading patterns like revenge trading, overtrading, and risk creep",
   },
   pdfReports: {
     name: "PDF Reports",

@@ -49,6 +49,16 @@ Key features:
   - Visual bar charts for day performance, heatmap grid for hourly patterns
   - Highlights best/worst trading days and hours
   - Server-side Elite tier enforcement via `/api/time-patterns/:userId`
+- **Behavioral Risk Flags** (ELITE only): Automated pattern detection for trading behavior
+  - Revenge trading detection: Identifies increased position sizes after consecutive losses
+  - Session overtrading: Flags abnormally high trade frequency in specific sessions
+  - Risk creep: Detects gradual position size increases over time
+  - Rapid retry: Identifies quick re-entry after losing trades (<15 min)
+  - Loss chasing: Flags increased volume on losing days
+  - Historical comparison: 30-day vs prior 30-day volume/frequency changes
+  - All flags include severity (high/medium/low), title, description, and data-backed evidence
+  - Pattern observations only, no trading advice language
+  - Server-side Elite tier enforcement via `/api/behavioral-risks/:userId`
 
 **Plan System:**
 - Centralized plan configuration in `shared/plans.ts`

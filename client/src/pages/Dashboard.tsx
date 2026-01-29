@@ -3,6 +3,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { StatCard } from "@/components/StatCard";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
 import { TimePatterns } from "@/components/TimePatterns";
+import { BehavioralRiskFlags } from "@/components/BehavioralRiskFlags";
 import { 
   Activity, 
   Wallet,
@@ -806,6 +807,13 @@ export default function Dashboard() {
         {userId && (
           <div className="mb-8">
             <TimePatterns userId={userId} />
+          </div>
+        )}
+
+        {/* Behavioral Risk Flags - Elite Only */}
+        {userId && (
+          <div className="mb-8">
+            <BehavioralRiskFlags userId={userId} />
           </div>
         )}
 

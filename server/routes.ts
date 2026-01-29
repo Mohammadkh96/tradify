@@ -1176,6 +1176,316 @@ export async function registerRoutes(
     }
   });
 
+  // Behavioral Risk Flags (ELITE ONLY)
+  app.get("/api/behavioral-risks/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const sessionUserId = req.session.userId!;
+      
+      // Access control: ensure user can only access their own data
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied: Can only view your own behavioral risks" });
+      }
+      
+      // Elite tier check
+      const currentUser = await storage.getUserRole(sessionUserId);
+      const tier = currentUser?.subscriptionTier?.toUpperCase();
+      if (tier !== "ELITE") {
+        return res.status(403).json({ message: "Behavioral Risk Flags requires Elite subscription" });
+      }
+
+      const mt5History = await storage.getMT5History(userId);
+      const manualTrades = await storage.getTrades(userId);
+
+      // Normalize trades from both sources
+      type NormalizedTrade = {
+        openTime: Date;
+        closeTime: Date;
+        netPl: number;
+        volume: number;
+        symbol: string;
+      };
+
+      const mt5Normalized: NormalizedTrade[] = (mt5History || []).map(t => ({
+        openTime: new Date(t.openTime),
+        closeTime: new Date(t.closeTime),
+        netPl: parseFloat(t.netPl || "0"),
+        volume: parseFloat(t.volume || "0"),
+        symbol: t.symbol || "Unknown",
+      }));
+
+      // For volume-based analysis, only use MT5 trades (manual trades don't have lot size)
+      const mt5OnlyTrades = mt5Normalized.sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
+      
+      // For general analysis (frequency, timing), include all trades
+      const manualNormalized: NormalizedTrade[] = (manualTrades || [])
+        .map(t => ({
+          openTime: new Date(t.createdAt!),
+          closeTime: new Date(t.createdAt!),
+          netPl: parseFloat(t.netPl || "0"),
+          volume: 0,
+          symbol: t.pair || "Unknown",
+        }));
+
+      const allTrades = [...mt5Normalized, ...manualNormalized]
+        .sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
+
+      if (allTrades.length < 5) {
+        return res.json({
+          flags: [],
+          summary: { totalFlags: 0, highRisk: 0, mediumRisk: 0, lowRisk: 0 },
+          message: "Insufficient trade data. At least 5 trades required for behavioral analysis."
+        });
+      }
+
+      const flags: Array<{
+        type: string;
+        severity: "high" | "medium" | "low";
+        title: string;
+        description: string;
+        evidence: string;
+        period?: string;
+      }> = [];
+
+      // 1. REVENGE TRADING DETECTION (MT5 only - requires position sizes)
+      // Pattern: Increased position size on the NEXT trade after consecutive losses
+      if (mt5OnlyTrades.length >= 10) {
+        let consecutiveLosses = 0;
+        let revengeTradeCount = 0;
+        let totalPostLossVolumeIncrease = 0;
+        let previousVolume = mt5OnlyTrades[0]?.volume || 0;
+
+        for (let i = 1; i < mt5OnlyTrades.length; i++) {
+          const prevTrade = mt5OnlyTrades[i - 1];
+          const currentTrade = mt5OnlyTrades[i];
+          
+          if (prevTrade.netPl < 0) {
+            consecutiveLosses++;
+          } else {
+            consecutiveLosses = 0;
+          }
+          
+          // Check if NEXT trade after 2+ losses has increased volume
+          if (consecutiveLosses >= 2 && previousVolume > 0) {
+            if (currentTrade.volume > previousVolume * 1.3) {
+              revengeTradeCount++;
+              totalPostLossVolumeIncrease += (currentTrade.volume - previousVolume) / previousVolume * 100;
+            }
+          }
+          
+          previousVolume = currentTrade.volume;
+        }
+
+        if (revengeTradeCount > 0) {
+          const avgIncrease = totalPostLossVolumeIncrease / revengeTradeCount;
+          const severity = revengeTradeCount >= 5 ? "high" : revengeTradeCount >= 2 ? "medium" : "low";
+          flags.push({
+            type: "revenge_trading",
+            severity,
+            title: "Increased Risk After Losses",
+            description: "Position sizes tend to increase following consecutive losing trades.",
+            evidence: `Detected ${revengeTradeCount} instances where volume increased by avg ${avgIncrease.toFixed(1)}% after 2+ losses (MT5 trades).`,
+          });
+        }
+      }
+
+      // 2. OVERTRADING DETECTION BY SESSION
+      // Group trades by session and detect abnormal trade frequency
+      const sessionTradeCounts: Record<string, { dates: Set<string>, trades: number }> = {};
+      
+      for (const trade of allTrades) {
+        const utcHour = trade.openTime.getUTCHours();
+        let session = "off_hours";
+        if (utcHour >= 0 && utcHour < 7) session = "asian";
+        else if (utcHour >= 7 && utcHour < 12) session = "london";
+        else if (utcHour >= 12 && utcHour < 16) session = "overlap";
+        else if (utcHour >= 16 && utcHour < 21) session = "new_york";
+        
+        const dateKey = trade.openTime.toISOString().split('T')[0];
+        if (!sessionTradeCounts[session]) {
+          sessionTradeCounts[session] = { dates: new Set(), trades: 0 };
+        }
+        sessionTradeCounts[session].dates.add(dateKey);
+        sessionTradeCounts[session].trades++;
+      }
+
+      const sessionAverages: Record<string, number> = {};
+      for (const [session, data] of Object.entries(sessionTradeCounts)) {
+        sessionAverages[session] = data.trades / Math.max(1, data.dates.size);
+      }
+
+      const overallAvg = Object.values(sessionAverages).reduce((a, b) => a + b, 0) / Math.max(1, Object.keys(sessionAverages).length);
+      
+      for (const [session, avg] of Object.entries(sessionAverages)) {
+        if (avg > overallAvg * 1.8 && sessionTradeCounts[session].trades >= 10) {
+          const sessionName = session.charAt(0).toUpperCase() + session.slice(1).replace('_', ' ');
+          flags.push({
+            type: "session_overtrading",
+            severity: avg > overallAvg * 2.5 ? "high" : "medium",
+            title: `Elevated Trading in ${sessionName} Session`,
+            description: `Trade frequency in the ${sessionName} session is significantly higher than other sessions.`,
+            evidence: `${avg.toFixed(1)} trades/day in ${sessionName} vs ${overallAvg.toFixed(1)} trades/day average across sessions.`,
+          });
+        }
+      }
+
+      // 3. RISK CREEP OVER TIME (MT5 only - requires position sizes)
+      // Detect gradual increase in position sizes over time
+      if (mt5OnlyTrades.length >= 20) {
+        const firstQuarterTrades = mt5OnlyTrades.slice(0, Math.floor(mt5OnlyTrades.length / 4));
+        const lastQuarterTrades = mt5OnlyTrades.slice(-Math.floor(mt5OnlyTrades.length / 4));
+        
+        const firstQuarterAvgVolume = firstQuarterTrades.reduce((a, t) => a + t.volume, 0) / firstQuarterTrades.length;
+        const lastQuarterAvgVolume = lastQuarterTrades.reduce((a, t) => a + t.volume, 0) / lastQuarterTrades.length;
+        
+        if (firstQuarterAvgVolume > 0 && lastQuarterAvgVolume > firstQuarterAvgVolume * 1.25) {
+          const increasePercent = ((lastQuarterAvgVolume - firstQuarterAvgVolume) / firstQuarterAvgVolume) * 100;
+          const firstDate = firstQuarterTrades[0].openTime.toISOString().split('T')[0];
+          const lastDate = lastQuarterTrades[lastQuarterTrades.length - 1].openTime.toISOString().split('T')[0];
+          
+          flags.push({
+            type: "risk_creep",
+            severity: increasePercent > 75 ? "high" : increasePercent > 40 ? "medium" : "low",
+            title: "Position Size Increase Over Time",
+            description: "Average position sizes have increased compared to earlier trading period.",
+            evidence: `Volume increased ${increasePercent.toFixed(1)}% from early period (avg ${firstQuarterAvgVolume.toFixed(2)}) to recent (avg ${lastQuarterAvgVolume.toFixed(2)}) (MT5 trades).`,
+            period: `${firstDate} to ${lastDate}`,
+          });
+        }
+      }
+
+      // 4. RAPID TRADING AFTER LOSSES (Same-day revenge)
+      const dailyTrades: Record<string, NormalizedTrade[]> = {};
+      for (const trade of allTrades) {
+        const dateKey = trade.closeTime.toISOString().split('T')[0];
+        if (!dailyTrades[dateKey]) dailyTrades[dateKey] = [];
+        dailyTrades[dateKey].push(trade);
+      }
+
+      let rapidRetryDays = 0;
+      for (const [date, trades] of Object.entries(dailyTrades)) {
+        if (trades.length < 3) continue;
+        
+        // Sort trades by time
+        trades.sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
+        
+        // Check for rapid trading after losses (multiple trades within 30 mins after a loss)
+        for (let i = 0; i < trades.length - 1; i++) {
+          if (trades[i].netPl < 0) {
+            const nextTrade = trades[i + 1];
+            const timeDiff = (nextTrade.openTime.getTime() - trades[i].closeTime.getTime()) / (1000 * 60);
+            if (timeDiff < 15) {
+              rapidRetryDays++;
+              break;
+            }
+          }
+        }
+      }
+
+      if (rapidRetryDays >= 3) {
+        flags.push({
+          type: "rapid_retry",
+          severity: rapidRetryDays >= 7 ? "high" : "medium",
+          title: "Quick Re-Entry After Losses",
+          description: "New trades are often opened within minutes after losing trades close.",
+          evidence: `Found ${rapidRetryDays} days where new trades were opened within 15 minutes of a loss.`,
+        });
+      }
+
+      // 5. LOSS CHASING (Increasing volume on losing days - MT5 only)
+      if (mt5OnlyTrades.length >= 10) {
+        const mt5DailyTrades: Record<string, NormalizedTrade[]> = {};
+        for (const trade of mt5OnlyTrades) {
+          const dateKey = trade.closeTime.toISOString().split('T')[0];
+          if (!mt5DailyTrades[dateKey]) mt5DailyTrades[dateKey] = [];
+          mt5DailyTrades[dateKey].push(trade);
+        }
+
+        let lossChasingDays = 0;
+        for (const [date, trades] of Object.entries(mt5DailyTrades)) {
+          if (trades.length < 3) continue;
+          
+          trades.sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
+          
+          let runningPnL = 0;
+          let increasedVolumeAfterLoss = false;
+          let prevVolume = trades[0].volume;
+          
+          for (let i = 0; i < trades.length; i++) {
+            runningPnL += trades[i].netPl;
+            if (runningPnL < 0 && trades[i].volume > prevVolume * 1.3) {
+              increasedVolumeAfterLoss = true;
+            }
+            prevVolume = trades[i].volume;
+          }
+          
+          if (increasedVolumeAfterLoss && runningPnL < 0) {
+            lossChasingDays++;
+          }
+        }
+
+        if (lossChasingDays >= 2) {
+          flags.push({
+            type: "loss_chasing",
+            severity: lossChasingDays >= 5 ? "high" : "medium",
+            title: "Increased Size on Losing Days",
+            description: "Position sizes increased during days that ended with negative P&L.",
+            evidence: `Detected ${lossChasingDays} losing days where volume increased mid-session while down (MT5 trades).`,
+          });
+        }
+      }
+
+      // Calculate summary
+      const summary = {
+        totalFlags: flags.length,
+        highRisk: flags.filter(f => f.severity === "high").length,
+        mediumRisk: flags.filter(f => f.severity === "medium").length,
+        lowRisk: flags.filter(f => f.severity === "low").length,
+      };
+
+      // Historical comparison - compare recent 30 days to prior 30 days
+      // Use MT5 trades for volume comparison, all trades for frequency
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      
+      const recentTrades = allTrades.filter(t => t.closeTime >= thirtyDaysAgo);
+      const priorTrades = allTrades.filter(t => t.closeTime >= sixtyDaysAgo && t.closeTime < thirtyDaysAgo);
+      const recentMt5Trades = mt5OnlyTrades.filter(t => t.closeTime >= thirtyDaysAgo);
+      const priorMt5Trades = mt5OnlyTrades.filter(t => t.closeTime >= sixtyDaysAgo && t.closeTime < thirtyDaysAgo);
+
+      let historicalComparison = null;
+      if (recentTrades.length >= 5 && priorTrades.length >= 5) {
+        const recentAvgVolume = recentMt5Trades.length > 0 ? recentMt5Trades.reduce((a, t) => a + t.volume, 0) / recentMt5Trades.length : 0;
+        const priorAvgVolume = priorMt5Trades.length > 0 ? priorMt5Trades.reduce((a, t) => a + t.volume, 0) / priorMt5Trades.length : 0;
+        const recentTradesPerDay = recentTrades.length / 30;
+        const priorTradesPerDay = priorTrades.length / 30;
+        
+        historicalComparison = {
+          recentPeriod: "Last 30 days",
+          priorPeriod: "30-60 days ago",
+          volumeChange: priorAvgVolume > 0 ? ((recentAvgVolume - priorAvgVolume) / priorAvgVolume * 100).toFixed(1) : "N/A",
+          frequencyChange: priorTradesPerDay > 0 ? ((recentTradesPerDay - priorTradesPerDay) / priorTradesPerDay * 100).toFixed(1) : "0",
+          recentTradeCount: recentTrades.length,
+          priorTradeCount: priorTrades.length,
+        };
+      }
+
+      res.json({
+        flags: flags.sort((a, b) => {
+          const severityOrder = { high: 0, medium: 1, low: 2 };
+          return severityOrder[a.severity] - severityOrder[b.severity];
+        }),
+        summary,
+        historicalComparison,
+        analyzedTrades: allTrades.length,
+      });
+    } catch (error) {
+      console.error("Behavioral risk analysis failure:", error);
+      res.status(500).json({ message: "Behavioral risk analysis failure" });
+    }
+  });
+
   app.get("/api/ai/insights/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
