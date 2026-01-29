@@ -404,6 +404,34 @@ export default function Profile() {
               </CardContent>
             </Card>
           )}
+
+          {/* Contact Us Card */}
+          <Card className="bg-card border-border shadow-2xl overflow-hidden">
+            <CardHeader className="border-b border-border bg-muted/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-lg">
+                  <Shield size={20} className="text-emerald-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">Need Help?</CardTitle>
+                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">We're here for you</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Having issues with your account or have questions about Tradify? Our support team is ready to help.
+              </p>
+              <a 
+                href="mailto:support@tradify.app?subject=Tradify Support Request" 
+                data-testid="link-contact-us-profile"
+              >
+                <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20 h-12 rounded-xl">
+                  Contact Support
+                </Button>
+              </a>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -278,6 +278,13 @@ export default function Landing() {
           <Link href="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
           <Link href="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
           <Link href="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
+          <a 
+            href="mailto:support@tradify.app?subject=Tradify Support Request" 
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-contact-us-footer"
+          >
+            Contact Us
+          </a>
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
           &copy; 2026 Tradify Intelligence Systems. All Rights Reserved.
