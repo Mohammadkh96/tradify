@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign } from "lucide-react";
+import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -64,11 +64,11 @@ export default function Profile() {
     queryKey: ["/api/user"],
   });
 
-  const { isPaid: isPro, isElite, tier, config } = usePlan();
+  const { isPaid, isElite, tier, config, isPro } = usePlan();
 
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery<any>({
     queryKey: ["/api/paypal/subscription"],
-    enabled: isPro && !!user?.paypalSubscriptionId,
+    enabled: isPaid && !!user?.paypalSubscriptionId,
   });
 
   const [country, setCountry] = useState("");
@@ -317,8 +317,8 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Subscription Management - Only for Pro users */}
-          {isPro && (
+          {/* Subscription Management - For Pro and Elite users */}
+          {isPaid && (
             <Card className="bg-card border-border shadow-2xl overflow-hidden">
               <CardHeader className="border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
@@ -364,9 +364,24 @@ export default function Profile() {
                           <DollarSign size={14} className="text-muted-foreground" />
                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Amount</span>
                         </div>
-                        <span className="text-[10px] font-black text-foreground uppercase tracking-widest">$19.00/month</span>
+                        <span className="text-[10px] font-black text-foreground uppercase tracking-widest">
+                          {isElite ? "$39.00/month" : "$19.00/month"}
+                        </span>
                       </div>
                     </div>
+
+                    {/* Upgrade to Elite option for Pro users */}
+                    {isPro && !isElite && (
+                      <Link href="/checkout?plan=ELITE">
+                        <Button 
+                          className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black uppercase tracking-widest text-[10px] mt-2 shadow-lg shadow-amber-500/20"
+                          data-testid="button-upgrade-to-elite"
+                        >
+                          <Crown size={14} className="mr-2" />
+                          Upgrade to Elite
+                        </Button>
+                      </Link>
+                    )}
 
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -382,7 +397,7 @@ export default function Profile() {
                         <AlertDialogHeader>
                           <AlertDialogTitle className="text-foreground font-black uppercase tracking-tight">Cancel Subscription?</AlertDialogTitle>
                           <AlertDialogDescription className="text-muted-foreground">
-                            Are you sure you want to cancel your Pro subscription? You'll retain access until the end of your current billing period, then your account will be downgraded to Free.
+                            Are you sure you want to cancel your {isElite ? "Elite" : "Pro"} subscription? You'll retain access until the end of your current billing period, then your account will be downgraded to Free.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
