@@ -20,22 +20,27 @@ import {
   AlertTriangle,
   ArrowUp,
   ArrowDown,
-  Minus
+  Minus,
+  ChevronDown,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Link } from "wouter";
 import { format, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Dashboard() {
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
+  const [selectedInstrument, setSelectedInstrument] = useState<string>("");
   
   const { data: trades, isLoading } = useTrades();
   const { data: user } = useQuery<any>({ 
@@ -75,6 +80,36 @@ export default function Dashboard() {
     queryKey: [`/api/ai/insights/${userId}`],
     enabled: !!userId && isPro,
   });
+
+  // Fetch available instruments from MT5 history
+  const { data: instrumentsData } = useQuery<{ symbols: string[] }>({
+    queryKey: [`/api/instruments/${userId}`],
+    enabled: !!userId,
+  });
+
+  // Mutation for generating instrument analysis
+  const instrumentAnalysisMutation = useMutation({
+    mutationFn: async (symbol: string) => {
+      const res = await apiRequest("POST", `/api/ai/instrument-analysis/${userId}`, { symbol });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData([`/api/ai/instrument-analysis/${userId}`, selectedInstrument], data);
+    }
+  });
+
+  // Fetch cached analysis for selected instrument
+  const { data: instrumentAnalysis } = useQuery<any>({
+    queryKey: [`/api/ai/instrument-analysis/${userId}`, selectedInstrument],
+    enabled: false, // Only populated via mutation
+  });
+
+  const handleInstrumentSelect = (symbol: string) => {
+    setSelectedInstrument(symbol);
+    if (symbol && isPro) {
+      instrumentAnalysisMutation.mutate(symbol);
+    }
+  };
 
   // Compliance score for active strategy (aggregated, no rule evaluation)
   const { data: complianceScore, isLoading: isComplianceLoading } = useQuery<{
@@ -431,39 +466,100 @@ export default function Dashboard() {
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <Zap size={80} className="text-emerald-500" />
             </div>
-            <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-              <Sparkles size={18} className="text-emerald-500" />
-              AI Performance Insights
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <BarChart3 size={18} className="text-emerald-500" />
+                AI Instrument Analysis
+              </h3>
+            </div>
+            
+            {/* Instrument Selector */}
+            <div className="mb-4">
+              <Select value={selectedInstrument} onValueChange={handleInstrumentSelect}>
+                <SelectTrigger 
+                  className="w-full bg-background/50 border-border"
+                  data-testid="select-instrument"
+                >
+                  <SelectValue placeholder="Select an instrument to analyze..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {instrumentsData?.symbols && instrumentsData.symbols.length > 0 ? (
+                    instrumentsData.symbols.map((symbol) => (
+                      <SelectItem key={symbol} value={symbol} data-testid={`instrument-${symbol}`}>
+                        {symbol}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No instruments found</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
             
             <div className="space-y-4">
-              {isInsightsLoading ? (
+              {instrumentAnalysisMutation.isPending ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-2">
                   <div className="animate-spin text-emerald-500"><RefreshCw size={24} /></div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Generating Analyst Report...</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Analyzing {selectedInstrument}...</p>
                 </div>
-              ) : insights?.insightText ? (
+              ) : instrumentAnalysis?.analysisText ? (
                 <div className="space-y-4">
+                  {/* Stats Grid */}
+                  {instrumentAnalysis.tradeCount > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="bg-background/50 p-2.5 rounded-lg border border-border">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">Trades</span>
+                        <span className="text-sm font-black text-foreground">{instrumentAnalysis.tradeCount}</span>
+                      </div>
+                      <div className="bg-background/50 p-2.5 rounded-lg border border-border">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">Win Rate</span>
+                        <span className="text-sm font-black text-emerald-500">{instrumentAnalysis.winRate}%</span>
+                      </div>
+                      <div className="bg-background/50 p-2.5 rounded-lg border border-border">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">Avg P&L</span>
+                        <span className={cn(
+                          "text-sm font-black",
+                          parseFloat(instrumentAnalysis.avgProfitLoss) >= 0 ? "text-emerald-500" : "text-red-500"
+                        )}>
+                          ${instrumentAnalysis.avgProfitLoss}
+                        </span>
+                      </div>
+                      <div className="bg-background/50 p-2.5 rounded-lg border border-border">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">Total P&L</span>
+                        <span className={cn(
+                          "text-sm font-black",
+                          parseFloat(instrumentAnalysis.totalProfitLoss) >= 0 ? "text-emerald-500" : "text-red-500"
+                        )}>
+                          ${instrumentAnalysis.totalProfitLoss}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* AI Analysis Text */}
                   <div className="prose prose-invert prose-sm max-w-none">
                     <div className="text-xs text-foreground leading-relaxed whitespace-pre-line border-l-2 border-emerald-500/30 pl-4 py-1">
-                      {insights.insightText}
+                      {instrumentAnalysis.analysisText}
                     </div>
                   </div>
                   
-                  <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3 flex items-start gap-2">
-                    <div className="space-y-1">
-                      <p className="text-[10px] text-muted-foreground italic leading-tight">
-                        Note: These insights are generated based on your historical MT5 and Journal data using strictly analytical rules.
-                      </p>
-                      <p className="text-[9px] text-muted-foreground/60 font-bold uppercase tracking-tighter">
-                        Not financial advice. <Link href="/risk-disclaimer" className="text-emerald-500/50 hover:underline">View Disclaimer</Link>
-                      </p>
-                    </div>
+                  <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-2.5">
+                    <p className="text-[9px] text-muted-foreground/60 font-bold uppercase tracking-tighter">
+                      Performance review only. Not financial advice.
+                    </p>
                   </div>
                 </div>
+              ) : selectedInstrument ? (
+                <div className="py-6 text-center">
+                  <p className="text-xs text-muted-foreground italic">Select an instrument to see AI-powered analysis of your trading performance.</p>
+                </div>
               ) : (
-                <div className="py-8 text-center">
-                  <p className="text-xs text-muted-foreground italic">No insights available yet. Insights appear after 5+ recorded trades.</p>
+                <div className="py-6 text-center">
+                  <BarChart3 size={32} className="text-muted-foreground/30 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground italic">Select an instrument from your MT5 history to analyze your performance.</p>
+                  {(!instrumentsData?.symbols || instrumentsData.symbols.length === 0) && (
+                    <p className="text-[10px] text-muted-foreground/50 mt-2">Connect MT5 and sync trades to unlock this feature.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -472,7 +568,7 @@ export default function Dashboard() {
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
                 <Lock className="text-emerald-500 mb-3" size={24} />
                 <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">AI Analyst Locked</h4>
-                <p className="text-[10px] text-muted-foreground mb-4">Subscribe to PRO to unlock contextual AI performance insights.</p>
+                <p className="text-[10px] text-muted-foreground mb-4">Subscribe to PRO to unlock instrument analysis.</p>
               </div>
             )}
           </div>

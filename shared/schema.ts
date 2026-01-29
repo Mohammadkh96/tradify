@@ -357,3 +357,19 @@ export type TradeComplianceResult = typeof tradeComplianceResults.$inferSelect;
 export type InsertTradeComplianceResult = z.infer<typeof insertTradeComplianceResultSchema>;
 export type TradeRuleEvaluation = typeof tradeRuleEvaluations.$inferSelect;
 export type InsertTradeRuleEvaluation = z.infer<typeof insertTradeRuleEvaluationSchema>;
+
+export const instrumentAnalyses = pgTable("instrument_analyses", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  symbol: text("symbol").notNull(),
+  analysisText: text("analysis_text").notNull(),
+  tradeCount: integer("trade_count").default(0),
+  winRate: text("win_rate"),
+  avgProfitLoss: text("avg_profit_loss"),
+  totalProfitLoss: text("total_profit_loss"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInstrumentAnalysisSchema = createInsertSchema(instrumentAnalyses).omit({ id: true, createdAt: true });
+export type InstrumentAnalysis = typeof instrumentAnalyses.$inferSelect;
+export type InsertInstrumentAnalysis = z.infer<typeof insertInstrumentAnalysisSchema>;

@@ -24,7 +24,13 @@ Key features:
   - Auto-launches for first-time users (localStorage tracking)
   - 8-step walkthrough of main features (Dashboard, Strategies, Calculator, MT5, Education, Traders Hub, Profile)
   - Keyboard navigation support (arrows, Escape)
-  - Restart button available after completion
+  - Restart button in sidebar footer
+- **AI Instrument Analysis** (PRO only): Analyze trading performance on specific instruments
+  - Select instrument from MT5 history dropdown
+  - Shows stats: trade count, win rate, avg P&L, total P&L
+  - AI-generated factual performance analysis (no trade recommendations)
+  - 30-minute cache to limit API calls
+  - Server-side PRO subscription enforcement
 
 **Navigation Structure:**
 - Collapsible "Strategies" menu in sidebar with sub-items

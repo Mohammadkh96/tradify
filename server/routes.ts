@@ -865,6 +865,188 @@ Output exactly 1-3 bullet points.`;
     }
   });
 
+  // Get unique instruments from user's MT5 history
+  app.get("/api/instruments/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Authorization: Ensure user can only access their own data
+      if (req.session.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Get unique symbols from mt5_history
+      const history = await db.select({
+        symbol: schema.mt5History.symbol
+      })
+        .from(schema.mt5History)
+        .where(eq(schema.mt5History.userId, userId))
+        .groupBy(schema.mt5History.symbol);
+      
+      const symbols = history.map(h => h.symbol);
+      res.json({ symbols });
+    } catch (error) {
+      console.error("Instruments Error:", error);
+      res.status(500).json({ message: "Failed to fetch instruments" });
+    }
+  });
+
+  // Get instrument stats (performance data for a specific symbol)
+  app.get("/api/instruments/:userId/:symbol/stats", requireAuth, async (req, res) => {
+    try {
+      const { userId, symbol } = req.params;
+      
+      // Authorization: Ensure user can only access their own data
+      if (req.session.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const trades = await db.select()
+        .from(schema.mt5History)
+        .where(and(
+          eq(schema.mt5History.userId, userId),
+          eq(schema.mt5History.symbol, symbol)
+        ));
+      
+      if (trades.length === 0) {
+        return res.json({ 
+          tradeCount: 0, 
+          winRate: "0", 
+          avgProfitLoss: "0", 
+          totalProfitLoss: "0",
+          trades: []
+        });
+      }
+      
+      const wins = trades.filter(t => parseFloat(t.netPl) > 0).length;
+      const winRate = ((wins / trades.length) * 100).toFixed(1);
+      const totalPl = trades.reduce((sum, t) => sum + parseFloat(t.netPl), 0);
+      const avgPl = totalPl / trades.length;
+      
+      // Get recent trades (last 10) for context
+      const recentTrades = trades
+        .sort((a, b) => new Date(b.closeTime).getTime() - new Date(a.closeTime).getTime())
+        .slice(0, 10)
+        .map(t => ({
+          direction: t.direction,
+          netPl: t.netPl,
+          duration: t.duration,
+          closeTime: t.closeTime
+        }));
+      
+      res.json({
+        tradeCount: trades.length,
+        winRate,
+        avgProfitLoss: avgPl.toFixed(2),
+        totalProfitLoss: totalPl.toFixed(2),
+        trades: recentTrades
+      });
+    } catch (error) {
+      console.error("Instrument Stats Error:", error);
+      res.status(500).json({ message: "Failed to fetch instrument stats" });
+    }
+  });
+
+  // Generate AI analysis for a specific instrument (PRO only)
+  app.post("/api/ai/instrument-analysis/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { symbol } = req.body;
+      
+      // Authorization: Ensure user can only access their own data
+      if (req.session.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // PRO subscription check
+      const userRole = await storage.getUserRole(userId);
+      if (!userRole || userRole.subscriptionTier !== "PRO") {
+        return res.status(403).json({ message: "PRO subscription required for AI analysis" });
+      }
+      
+      if (!symbol) {
+        return res.status(400).json({ message: "Symbol is required" });
+      }
+      
+      // Check cache - only regenerate if older than 30 minutes
+      const existing = await db.select()
+        .from(schema.instrumentAnalyses)
+        .where(and(
+          eq(schema.instrumentAnalyses.userId, userId),
+          eq(schema.instrumentAnalyses.symbol, symbol)
+        ))
+        .orderBy(desc(schema.instrumentAnalyses.createdAt))
+        .limit(1);
+      
+      const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+      if (existing.length > 0 && new Date(existing[0].createdAt!) > thirtyMinsAgo) {
+        return res.json(existing[0]);
+      }
+      
+      // Fetch instrument stats
+      const statsRes = await fetch(`${req.protocol}://${req.get('host')}/api/instruments/${userId}/${encodeURIComponent(symbol)}/stats`, {
+        headers: { cookie: req.headers.cookie || "" }
+      });
+      const stats = await statsRes.json();
+      
+      if (stats.tradeCount < 1) {
+        return res.json({ 
+          analysisText: "No trading history available for this instrument.", 
+          symbol,
+          tradeCount: 0 
+        });
+      }
+      
+      // Generate AI analysis
+      const prompt = `You are a Trading Journal Analyst. Analyze the user's performance on ${symbol}.
+
+STRICT RULES:
+- Factual observations ONLY based on the data provided
+- NO trade recommendations or signals
+- NO buy/sell suggestions
+- NO price predictions
+- NO entry, SL, or TP levels
+- Focus on behavioral patterns and discipline observations
+
+USER'S ${symbol} PERFORMANCE DATA:
+- Total Trades: ${stats.tradeCount}
+- Win Rate: ${stats.winRate}%
+- Average P&L per trade: $${stats.avgProfitLoss}
+- Total P&L: $${stats.totalProfitLoss}
+- Recent trades: ${JSON.stringify(stats.trades.slice(0, 5))}
+
+Provide a brief 2-3 sentence FACTUAL analysis of:
+1. Their performance pattern on this instrument
+2. One behavioral observation (consistency, timing, etc.)
+
+End with: "This is a performance review, not trading advice."`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        max_completion_tokens: 250,
+      });
+
+      const analysisText = response.choices[0].message.content || "Unable to generate analysis.";
+      
+      // Save to database
+      const [saved] = await db.insert(schema.instrumentAnalyses).values({
+        userId,
+        symbol,
+        analysisText,
+        tradeCount: stats.tradeCount,
+        winRate: stats.winRate,
+        avgProfitLoss: stats.avgProfitLoss,
+        totalProfitLoss: stats.totalProfitLoss
+      }).returning();
+      
+      res.json(saved);
+    } catch (error) {
+      console.error("Instrument Analysis Error:", error);
+      res.status(500).json({ message: "AI Analysis failed" });
+    }
+  });
+
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     const users = await db.select().from(schema.userRole);
     res.json(users);
