@@ -1,26 +1,15 @@
 {
   "version": 2,
-  "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "client/dist",
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/:path*", "destination": "/index.html" }
   ],
   "functions": {
     "api/index.ts": {
       "memory": 1024,
       "maxDuration": 30
     }
-  },
-  "env": {
-    "NODE_ENV": "production",
-    "VERCEL": "1"
   }
 }
