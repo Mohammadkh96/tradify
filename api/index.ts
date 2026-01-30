@@ -1,10 +1,9 @@
 import type { Request, Response } from "express";
+import app, { ensureInitialized } from "../server/index";
 
 // Vercel serverless handler with error handling
 export default async function handler(req: Request, res: Response) {
   try {
-    // Dynamic import to catch initialization errors
-    const { default: app, ensureInitialized } = await import("../server/index");
     await ensureInitialized();
     return app(req, res);
   } catch (error: any) {
