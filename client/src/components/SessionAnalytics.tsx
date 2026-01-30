@@ -72,10 +72,16 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
   const queryString = queryParams.toString();
   const apiUrl = `/api/session-analytics/${userId}${queryString ? `?${queryString}` : ""}`;
 
+  // Use separate query key segments to ensure proper cache invalidation
   const { data, isLoading, error } = useQuery<SessionAnalyticsData>({
-    queryKey: [apiUrl],
+    queryKey: ["/api/session-analytics", userId, dateFilter || "all", startDate || "", endDate || ""],
+    queryFn: async () => {
+      const res = await fetch(apiUrl, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch session analytics");
+      return res.json();
+    },
     enabled: !!userId && isElite,
-    staleTime: 60000,
+    staleTime: 30000, // Reduce stale time to 30 seconds
   });
 
   // Helper to get date range label

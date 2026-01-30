@@ -49,6 +49,63 @@ function filterByTierDate<T extends { closeTime?: Date | string | null; createdA
   });
 }
 
+// Shared date filter helper - uses UTC for consistent filtering
+function isWithinDateRangeUTC(
+  tradeDate: Date,
+  dateFilter: string | undefined,
+  startDate?: string,
+  endDate?: string
+): boolean {
+  if (!dateFilter || dateFilter === "all") return true;
+  
+  const now = new Date();
+  
+  // Get UTC date components for the trade
+  const tradeYear = tradeDate.getUTCFullYear();
+  const tradeMonth = tradeDate.getUTCMonth();
+  const tradeDay = tradeDate.getUTCDate();
+  const tradeUTCDate = new Date(Date.UTC(tradeYear, tradeMonth, tradeDay));
+  
+  if (dateFilter === "today") {
+    const todayUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    ));
+    return tradeUTCDate >= todayUTC;
+  }
+  
+  if (dateFilter === "week") {
+    const dayOfWeek = now.getUTCDay(); // 0 = Sunday
+    const weekStartUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - dayOfWeek
+    ));
+    return tradeUTCDate >= weekStartUTC;
+  }
+  
+  if (dateFilter === "month") {
+    const monthStartUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      1
+    ));
+    return tradeUTCDate >= monthStartUTC;
+  }
+  
+  if (dateFilter === "custom" && startDate && endDate) {
+    // Parse dates as local then convert to UTC for comparison
+    const start = new Date(startDate);
+    const startUTC = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()));
+    const end = new Date(endDate);
+    const endUTC = new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999));
+    return tradeUTCDate >= startUTC && tradeUTCDate <= endUTC;
+  }
+  
+  return true;
+}
+
 // Authentication middleware
 const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.session.userId) {
@@ -872,6 +929,11 @@ export async function registerRoutes(
 
   // Session Performance Analytics (ELITE ONLY)
   app.get("/api/session-analytics/:userId", requireAuth, async (req, res) => {
+    // Prevent browser caching for dynamic analytics data
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+    
     try {
       const { userId } = req.params;
       const { dateFilter, startDate, endDate } = req.query;
@@ -890,41 +952,9 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Session Analytics requires Elite subscription" });
       }
 
-      // Date filter helper function
+      // Use shared UTC-based date filter
       const isWithinDateRange = (tradeDate: Date): boolean => {
-        if (!dateFilter || dateFilter === "all") return true;
-        
-        const now = new Date();
-        const tradeDateStart = new Date(tradeDate);
-        tradeDateStart.setHours(0, 0, 0, 0);
-        
-        if (dateFilter === "today") {
-          const todayStart = new Date(now);
-          todayStart.setHours(0, 0, 0, 0);
-          return tradeDateStart >= todayStart;
-        }
-        
-        if (dateFilter === "week") {
-          const weekStart = new Date(now);
-          weekStart.setDate(now.getDate() - now.getDay());
-          weekStart.setHours(0, 0, 0, 0);
-          return tradeDateStart >= weekStart;
-        }
-        
-        if (dateFilter === "month") {
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          return tradeDateStart >= monthStart;
-        }
-        
-        if (dateFilter === "custom" && startDate && endDate) {
-          const start = new Date(startDate as string);
-          start.setHours(0, 0, 0, 0);
-          const end = new Date(endDate as string);
-          end.setHours(23, 59, 59, 999);
-          return tradeDateStart >= start && tradeDateStart <= end;
-        }
-        
-        return true;
+        return isWithinDateRangeUTC(tradeDate, dateFilter as string, startDate as string, endDate as string);
       };
 
       const mt5History = await storage.getMT5History(userId);
@@ -1072,6 +1102,11 @@ export async function registerRoutes(
 
   // Time-Based Performance Analysis (ELITE ONLY)
   app.get("/api/time-patterns/:userId", requireAuth, async (req, res) => {
+    // Prevent browser caching for dynamic analytics data
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+    
     try {
       const { userId } = req.params;
       const { dateFilter, startDate, endDate } = req.query;
@@ -1090,41 +1125,9 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Time Patterns requires Elite subscription" });
       }
 
-      // Date filter helper function
+      // Use shared UTC-based date filter
       const isWithinDateRange = (tradeDate: Date): boolean => {
-        if (!dateFilter || dateFilter === "all") return true;
-        
-        const now = new Date();
-        const tradeDateStart = new Date(tradeDate);
-        tradeDateStart.setHours(0, 0, 0, 0);
-        
-        if (dateFilter === "today") {
-          const todayStart = new Date(now);
-          todayStart.setHours(0, 0, 0, 0);
-          return tradeDateStart >= todayStart;
-        }
-        
-        if (dateFilter === "week") {
-          const weekStart = new Date(now);
-          weekStart.setDate(now.getDate() - now.getDay());
-          weekStart.setHours(0, 0, 0, 0);
-          return tradeDateStart >= weekStart;
-        }
-        
-        if (dateFilter === "month") {
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          return tradeDateStart >= monthStart;
-        }
-        
-        if (dateFilter === "custom" && startDate && endDate) {
-          const start = new Date(startDate as string);
-          start.setHours(0, 0, 0, 0);
-          const end = new Date(endDate as string);
-          end.setHours(23, 59, 59, 999);
-          return tradeDateStart >= start && tradeDateStart <= end;
-        }
-        
-        return true;
+        return isWithinDateRangeUTC(tradeDate, dateFilter as string, startDate as string, endDate as string);
       };
 
       const mt5History = await storage.getMT5History(userId);

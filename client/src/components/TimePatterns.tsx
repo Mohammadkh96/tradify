@@ -74,10 +74,16 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
   const queryString = queryParams.toString();
   const apiUrl = `/api/time-patterns/${userId}${queryString ? `?${queryString}` : ""}`;
 
+  // Use separate query key segments to ensure proper cache invalidation
   const { data, isLoading, error } = useQuery<TimePatternsData>({
-    queryKey: [apiUrl],
+    queryKey: ["/api/time-patterns", userId, dateFilter || "all", startDate || "", endDate || ""],
+    queryFn: async () => {
+      const res = await fetch(apiUrl, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch time patterns");
+      return res.json();
+    },
     enabled: !!userId && isElite,
-    staleTime: 60000,
+    staleTime: 30000, // Reduce stale time to 30 seconds
   });
 
   // Helper to get date range label
