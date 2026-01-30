@@ -66,24 +66,26 @@ interface TimePatternsProps {
 export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePatternsProps) {
   const { isElite } = usePlan();
 
-  // Build query string for date filtering
-  const queryParams = new URLSearchParams();
-  if (dateFilter && dateFilter !== "all") queryParams.set("dateFilter", dateFilter);
-  if (dateFilter === "custom" && startDate) queryParams.set("startDate", startDate);
-  if (dateFilter === "custom" && endDate) queryParams.set("endDate", endDate);
-  const queryString = queryParams.toString();
-  const apiUrl = `/api/time-patterns/${userId}${queryString ? `?${queryString}` : ""}`;
-
   // Use separate query key segments to ensure proper cache invalidation
   const { data, isLoading, error } = useQuery<TimePatternsData>({
     queryKey: ["/api/time-patterns", userId, dateFilter || "all", startDate || "", endDate || ""],
     queryFn: async () => {
-      const res = await fetch(apiUrl, { credentials: "include" });
+      // Build URL inside queryFn to avoid stale closure issues
+      const params = new URLSearchParams();
+      if (dateFilter && dateFilter !== "all") params.set("dateFilter", dateFilter);
+      if (dateFilter === "custom" && startDate) params.set("startDate", startDate);
+      if (dateFilter === "custom" && endDate) params.set("endDate", endDate);
+      const qs = params.toString();
+      const url = `/api/time-patterns/${userId}${qs ? `?${qs}` : ""}`;
+      
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch time patterns");
       return res.json();
     },
     enabled: !!userId && isElite,
-    staleTime: 30000, // Reduce stale time to 30 seconds
+    staleTime: 0, // Disable stale time to always refetch on filter change
+    gcTime: 0, // Don't cache old data
+    refetchOnMount: "always", // Always refetch when component mounts
   });
 
   // Helper to get date range label
