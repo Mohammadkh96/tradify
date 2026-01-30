@@ -249,7 +249,7 @@ export default function Landing() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="p-6 rounded-2xl bg-background/50 border border-border">
                   <div className="text-3xl font-black text-foreground mb-1">FREE</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Core Implementation</div>
@@ -264,6 +264,14 @@ export default function Landing() {
                   <ul className="space-y-2">
                     <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-emerald-500" /> Intelligence Layer</li>
                     <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-emerald-500" /> Multi-Terminal Sync</li>
+                  </ul>
+                </div>
+                <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-2xl shadow-amber-500/10">
+                  <div className="text-3xl font-black text-amber-500 mb-1">ELITE</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-4">$59/mo</div>
+                  <ul className="space-y-2">
+                    <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-amber-500" /> Session Analytics</li>
+                    <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-amber-500" /> Behavioral Risk Flags</li>
                   </ul>
                 </div>
               </div>
