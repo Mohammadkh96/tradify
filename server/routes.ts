@@ -650,6 +650,83 @@ export async function registerRoutes(
     }
   });
 
+  // MT5 Accounts Management Endpoints
+  app.get("/api/mt5/accounts/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const sessionUserId = req.session.userId!;
+      
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const accounts = await storage.getMT5Accounts(userId);
+      res.json(accounts);
+    } catch (error) {
+      console.error("MT5 Accounts Error:", error);
+      res.status(500).json({ message: "Failed to fetch MT5 accounts" });
+    }
+  });
+
+  app.get("/api/mt5/accounts/:userId/active", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const sessionUserId = req.session.userId!;
+      
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const activeAccount = await storage.getActiveMT5Account(userId);
+      res.json(activeAccount || null);
+    } catch (error) {
+      console.error("MT5 Active Account Error:", error);
+      res.status(500).json({ message: "Failed to fetch active MT5 account" });
+    }
+  });
+
+  app.post("/api/mt5/accounts/:userId/switch", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { accountNumber } = req.body;
+      const sessionUserId = req.session.userId!;
+      
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      if (!accountNumber) {
+        return res.status(400).json({ message: "Account number is required" });
+      }
+      
+      await storage.setActiveMT5Account(userId, accountNumber);
+      const updatedAccount = await storage.getMT5Account(userId, accountNumber);
+      
+      res.json({ success: true, activeAccount: updatedAccount });
+    } catch (error) {
+      console.error("MT5 Switch Account Error:", error);
+      res.status(500).json({ message: "Failed to switch MT5 account" });
+    }
+  });
+
+  app.patch("/api/mt5/accounts/:userId/:accountNumber", requireAuth, async (req, res) => {
+    try {
+      const { userId, accountNumber } = req.params;
+      const { accountName } = req.body;
+      const sessionUserId = req.session.userId!;
+      
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const updated = await storage.updateMT5Account(userId, accountNumber, { accountName });
+      res.json(updated);
+    } catch (error) {
+      console.error("MT5 Update Account Error:", error);
+      res.status(500).json({ message: "Failed to update MT5 account" });
+    }
+  });
+
   app.get("/api/mt5/snapshots/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
