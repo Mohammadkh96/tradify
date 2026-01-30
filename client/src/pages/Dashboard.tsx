@@ -29,7 +29,8 @@ import {
   ArrowDown,
   Minus,
   ChevronDown,
-  BarChart3
+  BarChart3,
+  CircleCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,19 @@ import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Type for MT5 Account
+type MT5Account = {
+  id: number;
+  userId: string;
+  accountNumber: string;
+  accountName: string | null;
+  broker: string | null;
+  server: string | null;
+  currency: string;
+  isActive: boolean;
+  createdAt: string;
+};
 
 export default function Dashboard() {
   const [dateFilter, setDateFilter] = useState<string>("all");
@@ -62,6 +76,33 @@ export default function Dashboard() {
     refetchInterval: 5000,
     enabled: !!userId,
     staleTime: 0,
+  });
+
+  // MT5 Accounts for multi-account support
+  const { data: mt5Accounts } = useQuery<MT5Account[]>({
+    queryKey: ['/api/mt5/accounts', userId],
+    enabled: !!userId,
+  });
+
+  const { data: activeAccount } = useQuery<MT5Account | null>({
+    queryKey: ['/api/mt5/accounts', userId, 'active'],
+    enabled: !!userId,
+  });
+
+  const switchAccountMutation = useMutation({
+    mutationFn: async (accountNumber: string) => {
+      return apiRequest('POST', `/api/mt5/accounts/${userId}/switch`, { accountNumber });
+    },
+    onSuccess: () => {
+      // Invalidate all queries that depend on MT5 account data
+      queryClient.invalidateQueries({ queryKey: ['/api/mt5/accounts'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/equity-curve/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/mt5/history/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/performance/intelligence/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/session-analytics/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/time-patterns/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/behavioral-risks/${userId}`] });
+    },
   });
 
   const { data: intelligence } = useQuery<any>({
@@ -338,6 +379,54 @@ export default function Dashboard() {
                 </PopoverContent>
               </Popover>
             </div>
+            
+            {/* MT5 Account Selector - Shows when multiple accounts are connected */}
+            {mt5Accounts && mt5Accounts.length > 0 && (
+              <Select
+                value={activeAccount?.accountNumber || "all"}
+                onValueChange={(value) => {
+                  if (value && value !== "all") {
+                    switchAccountMutation.mutate(value);
+                  }
+                }}
+              >
+                <SelectTrigger 
+                  className="w-[180px] h-8 text-xs border-border bg-background"
+                  data-testid="mt5-account-selector"
+                >
+                  <SelectValue placeholder="Select MT5 Account">
+                    {activeAccount ? (
+                      <span className="flex items-center gap-2">
+                        <CircleCheck className="h-3 w-3 text-emerald-500" />
+                        {activeAccount.accountName || activeAccount.accountNumber}
+                      </span>
+                    ) : (
+                      <span>All Accounts</span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {mt5Accounts.map((account) => (
+                    <SelectItem 
+                      key={account.accountNumber} 
+                      value={account.accountNumber}
+                      data-testid={`mt5-account-option-${account.accountNumber}`}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {account.accountName || account.accountNumber}
+                        </span>
+                        {account.broker && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {account.broker}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {userId && (
