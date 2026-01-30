@@ -938,19 +938,6 @@ export async function registerRoutes(
       const { userId } = req.params;
       const { dateFilter, startDate, endDate } = req.query;
       
-      console.log("[SessionAnalytics API] Received params:", { dateFilter, startDate, endDate });
-      
-      // Debug: Calculate week start for logging
-      const now = new Date();
-      const dayOfWeek = now.getUTCDay();
-      const weekStartUTC = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() - dayOfWeek
-      ));
-      console.log("[SessionAnalytics API] Week start date (UTC):", weekStartUTC.toISOString());
-      console.log("[SessionAnalytics API] Current date (UTC):", now.toISOString());
-      
       // Elite tier check - get user from session and verify subscription
       const sessionUserId = req.session.userId!;
       
@@ -971,9 +958,9 @@ export async function registerRoutes(
       };
 
       const mt5History = await storage.getMT5History(userId);
-      const manualTrades = await storage.getTrades(userId);
 
-      // Normalize trades from both sources
+      // For session analytics, only use MT5 history trades since they have accurate open times.
+      // Manual journal entries use created_at (sync time) which doesn't reflect actual trade time.
       type NormalizedTrade = {
         openTime: Date;
         closeTime: Date;
@@ -992,33 +979,10 @@ export async function registerRoutes(
         entryPrice: t.entryPrice ? parseFloat(t.entryPrice) : null,
       }));
 
-      const manualNormalized: NormalizedTrade[] = (manualTrades || [])
-        .map(t => ({
-          openTime: new Date(t.createdAt || new Date()),
-          closeTime: new Date(t.createdAt || new Date()),
-          netPl: parseFloat(t.netPl || "0"),
-          volume: 0,
-          stopLoss: t.stopLoss ? parseFloat(t.stopLoss) : null,
-          entryPrice: t.entryPrice ? parseFloat(t.entryPrice) : null,
-        }));
-
-      // Apply date filter to trades
-      const beforeFilterCount = mt5Normalized.length + manualNormalized.length;
-      const allTrades = [...mt5Normalized, ...manualNormalized].filter(trade => 
+      // Apply date filter to MT5 trades
+      const allTrades = mt5Normalized.filter(trade => 
         isWithinDateRange(trade.openTime)
       );
-      console.log("[SessionAnalytics API] Total trades before filter:", beforeFilterCount, "After filter:", allTrades.length);
-      
-      // Debug: Check a sample trade date vs week start
-      if (dateFilter === "week" && mt5Normalized.length > 0) {
-        const sampleTrade = mt5Normalized[0];
-        const now = new Date();
-        const dayOfWeek = now.getUTCDay();
-        const weekStartUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - dayOfWeek));
-        console.log("[SessionAnalytics API] Sample trade openTime:", sampleTrade.openTime.toISOString());
-        console.log("[SessionAnalytics API] Week start for comparison:", weekStartUTC.toISOString());
-        console.log("[SessionAnalytics API] Is sample within range?:", isWithinDateRange(sampleTrade.openTime));
-      }
 
       if (allTrades.length === 0) {
         return res.json({
@@ -1157,9 +1121,9 @@ export async function registerRoutes(
       };
 
       const mt5History = await storage.getMT5History(userId);
-      const manualTrades = await storage.getTrades(userId);
 
-      // Normalize trades from both sources
+      // For time patterns, only use MT5 history trades since they have accurate open times.
+      // Manual journal entries use created_at (sync time) which doesn't reflect actual trade time.
       type NormalizedTrade = {
         openTime: Date;
         netPl: number;
@@ -1170,14 +1134,8 @@ export async function registerRoutes(
         netPl: parseFloat(t.netPl || "0"),
       }));
 
-      const manualNormalized: NormalizedTrade[] = (manualTrades || [])
-        .map(t => ({
-          openTime: new Date(t.createdAt || new Date()),
-          netPl: parseFloat(t.netPl || "0"),
-        }));
-
-      // Apply date filter to trades
-      const allTrades = [...mt5Normalized, ...manualNormalized].filter(trade => 
+      // Apply date filter to MT5 trades
+      const allTrades = mt5Normalized.filter(trade => 
         isWithinDateRange(trade.openTime)
       );
 

@@ -64,21 +64,16 @@ interface SessionAnalyticsProps {
 export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: SessionAnalyticsProps) {
   const { isElite, canAccess } = usePlan();
 
-  console.log("[SessionAnalytics] Props received:", { userId, dateFilter, startDate, endDate });
-
   // Use separate query key segments to ensure proper cache invalidation
   const { data, isLoading, error } = useQuery<SessionAnalyticsData>({
     queryKey: ["/api/session-analytics", userId, dateFilter || "all", startDate || "", endDate || ""],
     queryFn: async () => {
-      // Build URL inside queryFn to avoid stale closure issues
-      console.log("[SessionAnalytics] queryFn executing with dateFilter:", dateFilter);
       const params = new URLSearchParams();
       if (dateFilter && dateFilter !== "all") params.set("dateFilter", dateFilter);
       if (dateFilter === "custom" && startDate) params.set("startDate", startDate);
       if (dateFilter === "custom" && endDate) params.set("endDate", endDate);
       const qs = params.toString();
       const url = `/api/session-analytics/${userId}${qs ? `?${qs}` : ""}`;
-      console.log("[SessionAnalytics] Fetching URL:", url);
       
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch session analytics");
