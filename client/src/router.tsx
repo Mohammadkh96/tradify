@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { queryClient } from "./lib/queryClient";
+import { queryClient, getQueryFn } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,8 +31,9 @@ import RiskDisclaimer from "@/pages/RiskDisclaimer";
 import { useQuery } from "@tanstack/react-query";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { data: userRole, isLoading, isError } = useQuery<any>({
+  const { data: userRole, isLoading } = useQuery<any>({
     queryKey: ["/api/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     staleTime: Infinity,
   });
@@ -41,7 +42,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
   }
 
-  if (isError || !userRole) {
+  if (!userRole) {
     return <Navigate to="/login" replace />;
   }
 
@@ -49,8 +50,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { data: userRole, isLoading, isError } = useQuery<any>({
+  const { data: userRole, isLoading } = useQuery<any>({
     queryKey: ["/api/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     staleTime: Infinity,
   });
@@ -61,7 +63,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
   }
 
-  if (isError || !userRole || !isAdmin) {
+  if (!userRole || !isAdmin) {
     return <Navigate to="/" replace />;
   }
 
@@ -71,18 +73,17 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { data: userRole, isLoading } = useQuery<any>({
     queryKey: ["/api/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
-    staleTime: Infinity,
+    staleTime: 5000,
   });
 
-  if (isLoading) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Secure Terminal...</div>;
-  }
-
+  // Don't block auth page rendering - show content while checking auth in background
   if (userRole) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Show children immediately, even if still loading (user sees login form faster)
   return <>{children}</>;
 }
 

@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, getQueryFn } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { PublicNavbar } from "@/components/PublicNavbar";
 
@@ -60,6 +60,7 @@ export default function Auth() {
 
   const { data: userRole } = useQuery<any>({
     queryKey: ["/api/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
   });
 
