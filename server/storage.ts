@@ -62,6 +62,7 @@ export interface IStorage {
     currency?: string;
     positions: any[];
     syncToken: string;
+    mt5AccountId?: string;
   }): Promise<MT5Data>;
   syncMT5History(userId: string, trades: any[]): Promise<void>;
   getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]>;
@@ -206,12 +207,14 @@ export class DatabaseStorage implements IStorage {
     currency?: string;
     positions: any[];
     syncToken: string;
+    mt5AccountId?: string;
   }): Promise<MT5Data> {
     const [existing] = await db.select().from(mt5Data).where(eq(mt5Data.userId, data.userId)).limit(1);
     
     const now = new Date();
     const values = {
       userId: data.userId,
+      mt5AccountId: data.mt5AccountId || "default",
       balance: data.balance.toString(),
       equity: data.equity.toString(),
       margin: data.margin.toString(),
@@ -225,13 +228,16 @@ export class DatabaseStorage implements IStorage {
       lastUpdate: now,
     };
 
-    console.log(`[MT5 Sync] HEARTBEAT: Received data from ${data.userId} at ${now.toISOString()}`);
-
-    // Update Daily Snapshot
+    // Update Daily Snapshot (with account ID for separation)
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0); // Use UTC for consistency
+    const accountId = data.mt5AccountId || "default";
     const [existingSnapshot] = await db.select().from(dailyEquitySnapshots)
-      .where(and(eq(dailyEquitySnapshots.userId, data.userId), eq(dailyEquitySnapshots.date, today)))
+      .where(and(
+        eq(dailyEquitySnapshots.userId, data.userId), 
+        eq(dailyEquitySnapshots.date, today),
+        eq(dailyEquitySnapshots.mt5AccountId, accountId)
+      ))
       .limit(1);
 
     if (existingSnapshot) {
@@ -241,6 +247,7 @@ export class DatabaseStorage implements IStorage {
     } else {
       await db.insert(dailyEquitySnapshots).values({
         userId: data.userId,
+        mt5AccountId: accountId,
         date: today,
         equity: values.equity,
         balance: values.balance,

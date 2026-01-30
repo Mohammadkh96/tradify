@@ -535,7 +535,10 @@ export async function registerRoutes(
         leverage,
         currency,
         positions,
-        history
+        history,
+        accountNumber, // MT5 account login number
+        broker,        // Broker name (optional)
+        server         // MT5 server name (optional)
       } = req.body;
 
       if (!userId || !token) {
@@ -560,7 +563,22 @@ export async function registerRoutes(
         });
       }
 
-      // 2. Atomic Sync Operation: Update metrics, snapshots, and history
+      // 2. MT5 Account Management - Create or update the account record
+      const accountId = accountNumber ? String(accountNumber) : "default";
+      if (accountNumber) {
+        console.log(`[MT5 Sync] HEARTBEAT: Received data from ${userId} account ${accountId} at ${new Date().toISOString()}`);
+        await storage.createMT5Account({
+          userId,
+          accountNumber: accountId,
+          broker: broker || undefined,
+          server: server || undefined,
+          currency: currency || "USD",
+        });
+      } else {
+        console.log(`[MT5 Sync] HEARTBEAT: Received data from ${userId} at ${new Date().toISOString()}`);
+      }
+
+      // 3. Atomic Sync Operation: Update metrics, snapshots, and history
       await storage.updateMT5Data({
         userId,
         syncToken: providedToken || "",
@@ -572,23 +590,24 @@ export async function registerRoutes(
         floatingPl: String(floatingPl || 0),
         leverage: leverage,
         currency: currency,
-        positions: positions || []
+        positions: positions || [],
+        mt5AccountId: accountId, // Associate with specific account
       });
 
-      // 3. Update history (Journal Data Integrity)
+      // 4. Update history with account association (Journal Data Integrity)
       if (history && Array.isArray(history) && history.length > 0) {
-        console.log(`[MT5 Sync] Syncing history for ${userId}. Count: ${history.length}`);
-        await storage.syncMT5History(userId, history);
+        console.log(`[MT5 Sync] Syncing history for ${userId} account ${accountId}. Count: ${history.length}`);
+        await storage.syncMT5HistoryWithAccount(userId, accountId, history);
         
         await db.insert(schema.adminAuditLog).values({
           adminId: "SYSTEM_MT5",
           actionType: "MT5_HISTORY_SYNC",
           targetUserId: userId,
-          details: { count: history.length, timestamp: new Date() }
+          details: { accountNumber: accountId, count: history.length, timestamp: new Date() }
         });
       }
 
-      res.json({ success: true, status: "CONNECTED", timestamp: new Date().toISOString() });
+      res.json({ success: true, status: "CONNECTED", accountNumber: accountId, timestamp: new Date().toISOString() });
     } catch (error) {
       console.error("[MT5 Sync Error]:", error);
       res.status(500).json({ message: "Synchronization failed" });
