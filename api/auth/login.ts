@@ -14,11 +14,31 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Missing credentials" });
+  }
+
   try {
-    const result = await pool.query("SELECT 1 AS ok");
-    return res.status(200).json({ db: result.rows[0] });
+    const result = await pool.query(
+      `
+      SELECT id, email, label
+      FROM admin_access
+      WHERE email = $1
+        AND access_key = $2
+        AND is_active = true
+      `,
+      [email, password]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(401).json({ error: "Authentication failed" });
+    }
+
+    return res.status(200).json({ user: result.rows[0] });
   } catch (err) {
-    console.error("DB ERROR:", err);
-    return res.status(500).json({ error: "DB connection failed" });
+    console.error("LOGIN ERROR:", err);
+    return res.status(500).json({ error: "Server error" });
   }
 }
