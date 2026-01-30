@@ -102,7 +102,7 @@ Key features:
 
 **Plan System:**
 - Centralized plan configuration in `shared/plans.ts`
-- Three tiers: Free, Pro ($19/mo), Elite ($39/mo)
+- Three tiers: Free, Pro ($29/mo), Elite ($59/mo)
 - Feature gating via `usePlan()` hook on frontend, plan utilities on backend
 - **Trade History Retention by Tier:**
   - Free: Last 30 days of trade history
@@ -208,7 +208,7 @@ shared/           # Shared code
 
 ### PayPal Subscriptions
 - **Exclusive payment provider** - PayPal recurring subscriptions only (no Stripe)
-- **3-Tier pricing**: Free (1 strategy), Pro ($19/month), Elite ($39/month)
+- **3-Tier pricing**: Free (1 strategy), Pro ($29/month), Elite ($59/month)
 - **Plan ID persistence** - Uses `PAYPAL_PRO_PLAN_ID` and `PAYPAL_ELITE_PLAN_ID` env vars
 - **Tier detection** - Server determines tier from PayPal plan_id (source of truth)
 - **Webhook verification** - Uses `PAYPAL_WEBHOOK_ID` for signature verification

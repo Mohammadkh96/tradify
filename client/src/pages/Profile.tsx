@@ -366,7 +366,7 @@ export default function Profile() {
                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Amount</span>
                         </div>
                         <span className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                          {isElite ? "$39.00/month" : "$19.00/month"}
+                          {isElite ? "$59.00/month" : "$29.00/month"}
                         </span>
                       </div>
                     </div>

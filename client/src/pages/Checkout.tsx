@@ -228,7 +228,7 @@ export default function Checkout() {
                         className={selectedTier === 'PRO' ? 'bg-emerald-500' : ''}
                         data-testid="button-select-pro"
                       >
-                        <Star className="w-3 h-3 mr-1" /> Pro $19
+                        <Star className="w-3 h-3 mr-1" /> Pro $29
                       </Button>
                       <Button
                         variant={selectedTier === 'ELITE' ? 'default' : 'outline'}
@@ -237,7 +237,7 @@ export default function Checkout() {
                         className={selectedTier === 'ELITE' ? 'bg-amber-500' : ''}
                         data-testid="button-select-elite"
                       >
-                        <Crown className="w-3 h-3 mr-1" /> Elite $39
+                        <Crown className="w-3 h-3 mr-1" /> Elite $59
                       </Button>
                     </div>
                   )}

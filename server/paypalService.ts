@@ -16,8 +16,8 @@ const cachedPlanIds: { PRO: string | null; ELITE: string | null } = {
 
 // Plan pricing
 const PLAN_PRICES: Record<PlanTier, string> = {
-  PRO: '19.00',
-  ELITE: '39.00',
+  PRO: '29.00',
+  ELITE: '59.00',
 };
 
 export class PayPalService {

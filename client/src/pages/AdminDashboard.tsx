@@ -535,8 +535,8 @@ export default function AdminDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="FREE">Free</SelectItem>
-                      <SelectItem value="PRO">Pro ($19/mo)</SelectItem>
-                      <SelectItem value="ELITE">Elite ($39/mo)</SelectItem>
+                      <SelectItem value="PRO">Pro ($29/mo)</SelectItem>
+                      <SelectItem value="ELITE">Elite ($59/mo)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

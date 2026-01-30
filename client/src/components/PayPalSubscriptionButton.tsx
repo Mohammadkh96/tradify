@@ -42,7 +42,7 @@ export default function PayPalSubscriptionButton({ tier = 'PRO' }: PayPalSubscri
   const isElite = tier === 'ELITE';
   const PlanIcon = isElite ? Crown : Star;
   const tierName = isElite ? 'Elite' : 'Pro';
-  const price = isElite ? '$39' : '$19';
+  const price = isElite ? '$59' : '$29';
 
   return (
     <Button
