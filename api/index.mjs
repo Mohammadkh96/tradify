@@ -30580,7 +30580,7 @@ var require_connect_pg_simple = __commonJS({
   }
 });
 
-// api/index.ts
+// api/handler.ts
 var import_express = __toESM(require_express2(), 1);
 var import_express_session = __toESM(require_express_session(), 1);
 var import_connect_pg_simple = __toESM(require_connect_pg_simple(), 1);
@@ -43536,7 +43536,7 @@ var bcryptjs_default = {
   decodeBase64
 };
 
-// api/index.ts
+// api/handler.ts
 var { Pool: Pool3 } = esm_default;
 var pool = new Pool3({
   connectionString: process.env.DATABASE_URL,

@@ -66,7 +66,7 @@ async function buildAll() {
   // Build Vercel API handler (bundled, no external dependencies except Node built-ins)
   console.log("building Vercel API handler...");
   await esbuild({
-    entryPoints: ["api/index.ts"],
+    entryPoints: ["api/handler.ts"],
     platform: "node",
     bundle: true,
     format: "esm",
