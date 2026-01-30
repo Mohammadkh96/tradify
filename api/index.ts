@@ -1,8 +1,17 @@
 import type { Request, Response } from "express";
-import app, { ensureInitialized } from "../server/index";
 
-// Vercel serverless handler that ensures app is initialized
+// Vercel serverless handler with error handling
 export default async function handler(req: Request, res: Response) {
-  await ensureInitialized();
-  return app(req, res);
+  try {
+    // Dynamic import to catch initialization errors
+    const { default: app, ensureInitialized } = await import("../server/index");
+    await ensureInitialized();
+    return app(req, res);
+  } catch (error: any) {
+    console.error("Vercel function error:", error);
+    return res.status(500).json({ 
+      message: "Server initialization failed",
+      error: error.message || "Unknown error"
+    });
+  }
 }
