@@ -1,6 +1,7 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile, mkdir, writeFile } from "fs/promises";
+import { rm, readFile, mkdir, cp, access } from "fs/promises";
+import path from "path";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -41,6 +42,21 @@ async function buildAll() {
   console.log("building client...");
   await viteBuild();
 
+  // Copy client build to dist/public for server to serve
+  console.log("copying client build to dist/public...");
+  const clientDistPath = path.resolve("client/dist");
+  const serverPublicPath = path.resolve("dist/public");
+  
+  try {
+    await access(clientDistPath);
+    await mkdir(serverPublicPath, { recursive: true });
+    await cp(clientDistPath, serverPublicPath, { recursive: true });
+    console.log("client build copied successfully");
+  } catch (err) {
+    console.error("Failed to copy client build:", err);
+    throw err;
+  }
+
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
   const allDeps = [
@@ -63,6 +79,7 @@ async function buildAll() {
     logLevel: "info",
   });
 
+  console.log("build complete!");
 }
 
 buildAll().catch((err) => {
