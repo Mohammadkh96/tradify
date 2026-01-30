@@ -4,11 +4,16 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import bcrypt from 'bcryptjs';
 
+// Create pool once (reused across invocations)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  max: 5,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000
 });
 
+// Session store
 const PgSession = connectPgSimple(session);
 const sessionStore = new PgSession({
   pool,
@@ -16,16 +21,20 @@ const sessionStore = new PgSession({
   createTableIfMissing: true
 });
 
+// Session middleware with production-ready settings
 const sessionMiddleware = session({
   store: sessionStore,
-  secret: process.env.SESSION_SECRET || 'tradify-secret-key',
+  secret: process.env.SESSION_SECRET || 'tradify-secret-key-change-in-production',
+  name: 'tradify.sid',
   resave: false,
   saveUninitialized: false,
+  proxy: true, // Trust proxy for Vercel
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: 'lax',
+    path: '/'
   }
 });
 
@@ -39,10 +48,13 @@ function runSession(req: any, res: any): Promise<void> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS headers
+  const origin = req.headers.origin || 'https://tradifyapp.com';
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+  res.setHeader('Vary', 'Origin');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -57,18 +69,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const url = req.url || '';
   const path = url.split('?')[0];
+  const sess = (req as any).session;
 
   try {
-    // GET /api/auth/user - Get current user
-    if (path === '/api/auth/user' && req.method === 'GET') {
-      const sess = (req as any).session;
+    // GET /api/user or /api/auth/user - Get current user
+    if ((path === '/api/user' || path === '/api/auth/user') && req.method === 'GET') {
       if (!sess?.visitorId) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
       const result = await pool.query(
-        `SELECT id, user_id as "userId", role, subscription_tier as "subscriptionTier", 
-                subscription_status as "subscriptionStatus", country, phone_number as "phoneNumber", 
-                timezone, created_at as "createdAt"
+        `SELECT id, user_id, role, subscription_tier, subscription_status, country, phone_number, timezone
          FROM user_role WHERE id = $1`,
         [sess.visitorId]
       );
@@ -79,13 +89,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({
         id: user.id,
         visitorId: user.id,
-        userId: user.userId,
-        email: user.userId,
+        userId: user.user_id,
+        email: user.user_id,
         role: user.role,
-        subscriptionTier: user.subscriptionTier,
-        subscriptionStatus: user.subscriptionStatus,
+        subscriptionTier: user.subscription_tier,
+        subscriptionStatus: user.subscription_status,
         country: user.country,
-        phoneNumber: user.phoneNumber,
+        phoneNumber: user.phone_number,
         timezone: user.timezone
       });
     }
@@ -105,13 +115,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!valid) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      (req as any).session.visitorId = user.id;
+      
+      // Set session
+      sess.visitorId = user.id;
+      
       await new Promise<void>((resolve, reject) => {
-        (req as any).session.save((err: any) => {
+        sess.save((err: any) => {
           if (err) reject(err);
           else resolve();
         });
       });
+      
       return res.json({
         id: user.id,
         visitorId: user.id,
@@ -148,9 +162,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
       
       const newUser = result.rows[0];
-      (req as any).session.visitorId = newUser.id;
+      
+      // Set session
+      sess.visitorId = newUser.id;
+      
       await new Promise<void>((resolve, reject) => {
-        (req as any).session.save((err: any) => {
+        sess.save((err: any) => {
           if (err) reject(err);
           else resolve();
         });
@@ -173,41 +190,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // POST /api/auth/logout
     if (path === '/api/auth/logout' && req.method === 'POST') {
       await new Promise<void>((resolve, reject) => {
-        (req as any).session.destroy((err: any) => {
+        sess.destroy((err: any) => {
           if (err) reject(err);
           else resolve();
         });
       });
+      res.setHeader('Set-Cookie', 'tradify.sid=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
       return res.json({ success: true });
-    }
-
-    // GET /api/user - Alias for /api/auth/user
-    if (path === '/api/user' && req.method === 'GET') {
-      const sess = (req as any).session;
-      if (!sess?.visitorId) {
-        return res.status(401).json({ message: 'Not authenticated' });
-      }
-      const result = await pool.query(
-        `SELECT id, user_id, role, subscription_tier, subscription_status, country, phone_number, timezone
-         FROM user_role WHERE id = $1`,
-        [sess.visitorId]
-      );
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      const user = result.rows[0];
-      return res.json({
-        id: user.id,
-        visitorId: user.id,
-        userId: user.user_id,
-        email: user.user_id,
-        role: user.role,
-        subscriptionTier: user.subscription_tier,
-        subscriptionStatus: user.subscription_status,
-        country: user.country,
-        phoneNumber: user.phone_number,
-        timezone: user.timezone
-      });
     }
 
     return res.status(404).json({ message: 'Not found', path });
