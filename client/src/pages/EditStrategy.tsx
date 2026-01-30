@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, useRoute } from "wouter";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -54,8 +54,8 @@ const CATEGORY_LABELS: Record<RuleCategoryType, { label: string; color: string }
 };
 
 export default function EditStrategy() {
-  const [, setLocation] = useLocation();
-  const [, params] = useRoute("/strategies/:id/edit");
+  const navigate = useNavigate();
+  const params = useParams();
   const strategyId = params?.id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -87,7 +87,7 @@ export default function EditStrategy() {
         title: "Strategy Updated",
         description: `"${strategyName}" has been saved.`,
       });
-      setLocation("/strategies");
+      navigate("/strategies");
     },
     onError: (error: Error) => {
       toast({
@@ -137,7 +137,7 @@ export default function EditStrategy() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-background gap-4">
         <p className="text-muted-foreground">Strategy not found</p>
-        <Button variant="outline" onClick={() => setLocation("/strategies")}>
+        <Button variant="outline" onClick={() => navigate("/strategies")}>
           Back to Strategies
         </Button>
       </div>
@@ -150,7 +150,7 @@ export default function EditStrategy() {
         <header className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => setLocation("/strategies")}
+            onClick={() => navigate("/strategies")}
             className="mb-4"
             data-testid="button-back"
           >
@@ -276,7 +276,7 @@ export default function EditStrategy() {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setLocation("/strategies")}
+              onClick={() => navigate("/strategies")}
               data-testid="button-cancel"
             >
               Cancel

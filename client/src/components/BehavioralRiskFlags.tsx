@@ -13,7 +13,7 @@ import {
   CheckCircle
 } from "lucide-react";
 import { usePlan } from "@/hooks/usePlan";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -132,7 +132,7 @@ export function BehavioralRiskFlags({ userId }: BehavioralRiskFlagsProps) {
                 and risk creep with data-backed insights.
               </p>
             </div>
-            <Link href="/profile">
+            <Link to="/profile">
               <Button className="bg-amber-500 hover:bg-amber-600 text-black font-medium" data-testid="upgrade-elite-behavioral">
                 Upgrade to Elite
                 <ChevronRight size={16} className="ml-1" />

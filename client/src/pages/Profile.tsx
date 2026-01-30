@@ -27,7 +27,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { UserRole } from "@shared/schema";
 import { SiPaypal } from "react-icons/si";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { TierBadge } from "@/components/EliteBadge";
 
 const countries = [
@@ -308,7 +308,7 @@ export default function Profile() {
               </div>
 
               {user?.subscriptionTier === "FREE" && (
-                <Link href="/pricing">
+                <Link to="/pricing">
                   <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-emerald-500/20 group h-12 rounded-xl">
                     Upgrade to PRO
                     <ArrowRight size={14} className="ml-2 transition-transform group-hover:translate-x-1" />

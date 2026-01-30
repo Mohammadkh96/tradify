@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight, BookOpen, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -249,7 +249,7 @@ export default function KnowledgeBase() {
           </div>
           <p className="text-muted-foreground mt-1 italic font-medium">Structured rule systems for deterministic trading.</p>
           <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
-            Educational content only. Not financial advice. <Link href="/risk-disclaimer" className="ml-1 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
+            Educational content only. Not financial advice. <Link to="/risk-disclaimer" className="ml-1 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
           </p>
         </header>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -340,7 +340,7 @@ export default function StrategyValidator() {
             <p className="text-muted-foreground mb-4">
               Create a strategy first to validate your trades against your rules.
             </p>
-            <Link href="/strategies/create">
+            <Link to="/strategies/create">
               <Button>
                 Create Strategy
               </Button>
@@ -531,7 +531,7 @@ export default function StrategyValidator() {
             <p className="text-muted-foreground mb-4">
               This strategy has no rules to validate against.
             </p>
-            <Link href="/strategies/create">
+            <Link to="/strategies/create">
               <Button variant="outline">
                 Create New Strategy with Rules
               </Button>

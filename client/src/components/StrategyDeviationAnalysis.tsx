@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePlan } from "@/hooks/usePlan";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { 
   Target, 
   AlertTriangle, 
@@ -106,7 +106,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
             <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
               See how rule compliance impacts your trading performance. Compare compliant vs non-compliant trades and identify your most violated rules.
             </p>
-            <Link href="/profile">
+            <Link to="/profile">
               <Button variant="outline" className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10">
                 Upgrade to Elite
               </Button>

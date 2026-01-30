@@ -3,7 +3,7 @@ import { format, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, s
 import { cn } from "@/lib/utils";
 import { Trash2, History as HistoryIcon, Plus, Calendar } from "lucide-react";
 import { useState, useMemo } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,7 +155,7 @@ export default function Journal() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {!isPaidUser && (
-              <Link href="/pricing">
+              <Link to="/pricing">
                 <Button variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
                   Upgrade to PRO
                 </Button>
@@ -229,7 +229,7 @@ export default function Journal() {
                 </PopoverContent>
               </Popover>
             </div>
-            <Link href="/strategies/create">
+            <Link to="/strategies/create">
               <Button 
                 data-testid="button-log-trade"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs uppercase transition-all shadow-lg shadow-emerald-500/20 px-6 h-10 rounded-xl"

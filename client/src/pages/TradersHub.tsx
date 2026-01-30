@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -126,7 +126,7 @@ export default function TradersHub() {
           <p className="text-muted-foreground mt-1 uppercase text-xs font-bold tracking-widest">Community Learning & Research</p>
           <p className="text-[10px] text-muted-foreground/70 uppercase font-bold tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
             Community content reflects personal opinions and is not financial advice. 
-            <Link href="/risk-disclaimer" className="ml-2 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
+            <Link to="/risk-disclaimer" className="ml-2 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
           </p>
         </div>
 

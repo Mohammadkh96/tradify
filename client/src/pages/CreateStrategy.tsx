@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ const CATEGORY_LABELS: Record<RuleCategoryType, { label: string; color: string }
 };
 
 export default function CreateStrategy() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -89,7 +89,7 @@ export default function CreateStrategy() {
         title: "Strategy Created",
         description: `"${strategyName}" has been saved successfully.`,
       });
-      setLocation("/strategies");
+      navigate("/strategies");
     },
     onError: (error: Error) => {
       if (error.message === "LIMIT_REACHED") {
@@ -98,7 +98,7 @@ export default function CreateStrategy() {
           description: "Free accounts are limited to 1 strategy. Upgrade to Pro for unlimited strategies.",
           variant: "destructive",
         });
-        setLocation("/pricing");
+        navigate("/pricing");
       } else {
         toast({
           title: "Error",

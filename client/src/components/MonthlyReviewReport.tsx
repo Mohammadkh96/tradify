@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePlan } from "@/hooks/usePlan";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { 
   FileText, 
   Calendar,
@@ -133,7 +133,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
             <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto" data-testid="text-elite-description">
               Get AI-generated monthly performance reviews that reflect on your trading journey, highlight improvements, and identify areas for growth.
             </p>
-            <Link href="/profile">
+            <Link to="/profile">
               <Button variant="outline" data-testid="button-upgrade-elite">
                 Upgrade to Elite
               </Button>

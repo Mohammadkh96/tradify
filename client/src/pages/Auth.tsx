@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link, Redirect } from "wouter";
+import { useLocation, Link, Navigate } from "react-router-dom";
 import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History, Check, X, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,7 +57,6 @@ export default function Auth() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [timezone, setTimezone] = useState<string>("");
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
 
   const { data: userRole } = useQuery<any>({
     queryKey: ["/api/user"],
@@ -75,7 +74,7 @@ export default function Auth() {
   }, []);
 
   if (userRole) {
-    return <Redirect to="/dashboard" />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const passwordRules = [
@@ -402,9 +401,9 @@ export default function Auth() {
               </button>
               <p className="text-center text-[10px] text-muted-foreground mt-6 leading-relaxed uppercase tracking-widest font-bold">
                 By continuing, you agree to our{" "}
-                <Link href="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
-                <Link href="/privacy" className="text-emerald-500 hover:underline">Privacy</Link>, and acknowledge the{" "}
-                <Link href="/risk" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
+                <Link to="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
+                <Link to="/privacy" className="text-emerald-500 hover:underline">Privacy</Link>, and acknowledge the{" "}
+                <Link to="/risk" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
               </p>
             </div>
 

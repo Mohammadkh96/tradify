@@ -12,7 +12,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { usePlan } from "@/hooks/usePlan";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   ResponsiveContainer, 
@@ -129,7 +129,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
             <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
               Analyze your trading performance by market session. Discover which sessions work best for your strategy.
             </p>
-            <Link href="/pricing">
+            <Link to="/pricing">
               <Button className="bg-amber-500 text-slate-950 border-amber-500/50 font-black uppercase tracking-widest text-[10px]">
                 Upgrade to Elite
               </Button>

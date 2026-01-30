@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -281,7 +281,7 @@ import { useTheme } from "@/components/theme-provider";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const [location] = useLocation();
+  const location = useLocation();
   const [searchEmail, setSearchEmail] = useState("");
   const { theme, setTheme } = useTheme();
   
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
   }
 
   // --- 1. OVERVIEW PAGE ---
-  if (location === "/admin/overview") {
+  if (location.pathname === "/admin/overview") {
     return (
       <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
         <div className="flex items-center justify-between">
@@ -432,7 +432,7 @@ export default function AdminDashboard() {
   }
 
   // --- 2. USERS MANAGEMENT PAGE ---
-  if (location === "/admin/users") {
+  if (location.pathname === "/admin/users") {
     return (
       <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -654,17 +654,17 @@ export default function AdminDashboard() {
   }
 
   // --- 3. ADMIN ACCESS PAGE ---
-  if (location === "/admin/access") {
+  if (location.pathname === "/admin/access") {
     return <AdminAccessTab />;
   }
 
   // --- 4. AUDIT LOGS PAGE ---
-  if (location === "/admin/audit-logs") {
+  if (location.pathname === "/admin/audit-logs") {
     return <AuditLogsTab />;
   }
 
   // --- 5. CREATOR APPLICATIONS PAGE ---
-  if (location === "/admin/creator-applications") {
+  if (location.pathname === "/admin/creator-applications") {
     return <CreatorApplicationsTab />;
   }
 
@@ -673,7 +673,7 @@ export default function AdminDashboard() {
     <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
       <div>
         <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
-          <Activity /> {location.split('/').pop()?.toUpperCase()}
+          <Activity /> {location.pathname.split('/').pop()?.toUpperCase()}
         </h1>
         <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Module Under Construction</p>
       </div>

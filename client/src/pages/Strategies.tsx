@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ interface Strategy {
 }
 
 export default function Strategies() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -158,14 +158,14 @@ export default function Strategies() {
             )}
           </div>
           {isAtLimit ? (
-            <Link href="/pricing">
+            <Link to="/pricing">
               <Button data-testid="button-upgrade-pro" className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 border-amber-600">
                 <Crown size={18} />
                 Upgrade for Unlimited
               </Button>
             </Link>
           ) : (
-            <Link href="/strategies/create">
+            <Link to="/strategies/create">
               <Button data-testid="button-create-strategy" className="gap-2">
                 <Plus size={18} />
                 Create Strategy
@@ -189,7 +189,7 @@ export default function Strategies() {
                     Free accounts are limited to {maxStrategies} strategy. Upgrade to Pro for unlimited strategies.
                   </p>
                 </div>
-                <Link href="/pricing">
+                <Link to="/pricing">
                   <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 border-amber-600">
                     <Crown size={14} className="mr-1" />
                     Upgrade
@@ -230,7 +230,7 @@ export default function Strategies() {
         ) : strategies.length === 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="border-dashed border-2 border-border bg-transparent flex flex-col items-center justify-center min-h-[200px] cursor-pointer group">
-              <Link href="/strategies/create" className="w-full h-full flex flex-col items-center justify-center p-6">
+              <Link to="/strategies/create" className="w-full h-full flex flex-col items-center justify-center p-6">
                 <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:bg-emerald-500/20 transition-colors">
                   <Plus size={32} className="text-emerald-500" />
                 </div>
@@ -286,7 +286,7 @@ export default function Strategies() {
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                          onClick={() => setLocation(`/strategies/${strategy.id}/edit`)}
+                          onClick={() => navigate(`/strategies/${strategy.id}/edit`)}
                           data-testid={`menu-edit-${strategy.id}`}
                         >
                           <Pencil size={14} className="mr-2" />
@@ -338,7 +338,7 @@ export default function Strategies() {
             ))}
 
             <Card className="border-dashed border-2 border-border bg-transparent flex flex-col items-center justify-center min-h-[160px] cursor-pointer group">
-              <Link href="/strategies/create" className="w-full h-full flex flex-col items-center justify-center p-6">
+              <Link to="/strategies/create" className="w-full h-full flex flex-col items-center justify-center p-6">
                 <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-3 group-hover:bg-muted/80 transition-colors">
                   <Plus size={24} className="text-muted-foreground" />
                 </div>

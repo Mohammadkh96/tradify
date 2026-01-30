@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { usePlan } from "@/hooks/usePlan";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { 
   FileDown, 
   Lock,
@@ -74,7 +74,7 @@ export function PdfExportButton({ userId, startDate, endDate }: PdfExportButtonP
 
   if (!canExport) {
     return (
-      <Link href="/profile">
+      <Link to="/profile">
         <Button 
           variant="outline" 
           size="sm"

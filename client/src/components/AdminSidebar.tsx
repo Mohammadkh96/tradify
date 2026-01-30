@@ -1,6 +1,6 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
 import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
 
@@ -14,7 +14,7 @@ const adminNavItems = [
 ];
 
 export function AdminSidebar() {
-  const [location] = useLocation();
+  const location = useLocation();
 
   return (
     <Sidebar className="border-r border-slate-800 bg-slate-950">
@@ -36,11 +36,11 @@ export function AdminSidebar() {
             <SidebarMenu>
               {adminNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={location === item.href}>
-                    <Link href={item.href}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.href}>
+                    <Link to={item.href}>
                       <div className={cn(
                         "flex items-center gap-3 w-full px-4 py-2 rounded-md transition-colors",
-                        location === item.href ? "bg-emerald-500/10 text-emerald-500" : "text-slate-400 hover:text-white hover:bg-slate-900"
+                        location.pathname === item.href ? "bg-emerald-500/10 text-emerald-500" : "text-slate-400 hover:text-white hover:bg-slate-900"
                       )}>
                         <item.icon size={18} />
                         <span className="font-medium text-sm">{item.label}</span>

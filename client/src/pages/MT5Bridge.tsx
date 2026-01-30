@@ -21,7 +21,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 
 export default function MT5Bridge() {
   const [copied, setCopied] = useState(false);
@@ -360,7 +360,7 @@ if __name__ == "__main__":
               <div className="flex justify-between items-center mb-4">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Refresh Interval</label>
                 {!hasPaidPlan && (
-                  <Link href="/pricing">
+                  <Link to="/pricing">
                     <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded cursor-pointer hover:bg-emerald-500/20 transition-colors font-black">PRO: PRIORITY SYNC</span>
                   </Link>
                 )}

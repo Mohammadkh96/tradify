@@ -37,7 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { format, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -487,7 +487,7 @@ export default function Dashboard() {
                   </span>
                 )}
                 {!mt5?.lastSync && (
-                  <Link href="/traders-hub">
+                  <Link to="/traders-hub">
                     <Button variant="ghost" className="text-[10px] text-emerald-500 h-auto p-0 font-bold uppercase hover:bg-transparent">Setup Bridge →</Button>
                   </Link>
                 )}
@@ -840,7 +840,7 @@ export default function Dashboard() {
               <div className="py-8 text-center space-y-2">
                 <CheckCircle2 size={32} className="mx-auto text-muted-foreground/30" />
                 <p className="text-xs text-muted-foreground">No active strategy found</p>
-                <Link href="/strategies">
+                <Link to="/strategies">
                   <Button variant="ghost" className="text-[10px] font-bold uppercase text-emerald-500 hover:bg-transparent" data-testid="link-create-strategy">
                     Create Strategy
                   </Button>
@@ -1076,7 +1076,7 @@ export default function Dashboard() {
                   </div>
                 ))
               )}
-              <Link href="/journal">
+              <Link to="/journal">
                 <Button variant="ghost" className="w-full text-[10px] font-bold uppercase text-muted-foreground hover:text-emerald-500">View Full Journal →</Button>
               </Link>
             </div>

@@ -10,7 +10,7 @@ import {
   Hash
 } from "lucide-react";
 import { usePlan } from "@/hooks/usePlan";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   ResponsiveContainer, 
@@ -132,7 +132,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
               Discover your best trading days and hours. Identify patterns in your performance over time.
             </p>
-            <Link href="/pricing">
+            <Link to="/pricing">
               <Button className="bg-amber-500 text-slate-950 border-amber-500/50 font-black uppercase tracking-widest text-[10px]">
                 Upgrade to Elite
               </Button>

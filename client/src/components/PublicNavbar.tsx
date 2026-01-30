@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { TrendingUp, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -19,7 +19,7 @@ export function PublicNavbar() {
     <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/">
+        <Link to="/">
           <div className="flex items-center gap-3 cursor-pointer">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
               <TrendingUp size={24} strokeWidth={3} />
@@ -34,7 +34,7 @@ export function PublicNavbar() {
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} to={item.href}>
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                 {item.title}
               </span>
@@ -45,12 +45,12 @@ export function PublicNavbar() {
         {/* Auth & Toggle */}
         <div className="hidden md:flex items-center gap-6">
           <ThemeToggle />
-          <Link href="/login">
+          <Link to="/login">
             <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-bold uppercase tracking-widest text-xs">
               Login
             </Button>
           </Link>
-          <Link href="/signup">
+          <Link to="/signup">
             <Button className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold uppercase tracking-widest text-xs px-6">
               Get Started
             </Button>
@@ -73,19 +73,19 @@ export function PublicNavbar() {
       )}>
         <div className="p-6 space-y-4">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} to={item.href}>
               <span className="block text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                 {item.title}
               </span>
             </Link>
           ))}
           <div className="pt-4 flex flex-col gap-3">
-            <Link href="/login">
+            <Link to="/login">
               <Button variant="outline" className="w-full font-bold uppercase tracking-widest text-xs">
                 Login
               </Button>
             </Link>
-            <Link href="/signup">
+            <Link to="/signup">
               <Button className="w-full bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs">
                 Get Started
               </Button>

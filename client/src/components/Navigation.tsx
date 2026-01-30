@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -47,15 +47,15 @@ const strategiesSubNav = [
 ];
 
 export function Navigation() {
-  const [location] = useLocation();
+  const location = useLocation();
   const { toast } = useToast();
-  const [strategiesExpanded, setStrategiesExpanded] = useState(() => location.startsWith("/strategies"));
+  const [strategiesExpanded, setStrategiesExpanded] = useState(() => location.pathname.startsWith("/strategies"));
 
   useEffect(() => {
-    if (location.startsWith("/strategies")) {
+    if (location.pathname.startsWith("/strategies")) {
       setStrategiesExpanded(true);
     }
-  }, [location]);
+  }, [location.pathname]);
 
   const { data: user } = useQuery<any>({ 
     queryKey: ["/api/user"],
@@ -124,11 +124,11 @@ export function Navigation() {
 
       <nav className="flex-1 space-y-1 p-4">
         {navItems.slice(0, 2).map((item) => {
-          const isActive = location === item.href;
+          const isActive = location.pathname === item.href;
           const Icon = item.icon;
           
           return (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} to={item.href}>
               <div
                 data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 className={cn(
@@ -157,7 +157,7 @@ export function Navigation() {
             onClick={() => setStrategiesExpanded(!strategiesExpanded)}
             className={cn(
               "w-full flex items-center justify-between gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
-              location.startsWith("/strategies")
+              location.pathname.startsWith("/strategies")
                 ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
             )}
@@ -167,7 +167,7 @@ export function Navigation() {
                 size={18} 
                 className={cn(
                   "transition-colors",
-                  location.startsWith("/strategies") ? "text-emerald-500" : "text-slate-500 group-hover:text-slate-300"
+                  location.pathname.startsWith("/strategies") ? "text-emerald-500" : "text-slate-500 group-hover:text-slate-300"
                 )} 
               />
               Strategies
@@ -182,11 +182,11 @@ export function Navigation() {
           {strategiesExpanded && (
             <div className="ml-4 space-y-1 border-l border-border pl-2">
               {strategiesSubNav.map((item) => {
-                const isActive = location === item.href;
+                const isActive = location.pathname === item.href;
                 const Icon = item.icon;
                 
                 return (
-                  <Link key={item.href} href={item.href}>
+                  <Link key={item.href} to={item.href}>
                     <div
                       data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                       className={cn(
@@ -213,11 +213,11 @@ export function Navigation() {
         </div>
 
         {navItems.slice(2).map((item) => {
-          const isActive = location === item.href;
+          const isActive = location.pathname === item.href;
           const Icon = item.icon;
           
           return (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} to={item.href}>
               <div
                 data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 className={cn(
@@ -241,16 +241,16 @@ export function Navigation() {
         })}
 
         {isAdmin && (
-          <Link href="/admin/overview">
+          <Link to="/admin/overview">
             <div
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group mt-4",
-                location.startsWith("/admin")
+                location.pathname.startsWith("/admin")
                   ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                   : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/10"
               )}
             >
-              <Shield size={18} className={location.startsWith("/admin") ? "text-emerald-500" : "text-slate-500 group-hover:text-emerald-400"} />
+              <Shield size={18} className={location.pathname.startsWith("/admin") ? "text-emerald-500" : "text-slate-500 group-hover:text-emerald-400"} />
               Admin Console
             </div>
           </Link>
@@ -318,16 +318,16 @@ const mobileNavItems = [
 ];
 
 export function MobileNav() {
-  const [location] = useLocation();
+  const location = useLocation();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background z-50 md:hidden flex justify-around p-3 pb-6">
       {mobileNavItems.map((item) => {
-        const isActive = location === item.href || (item.href === "/strategies" && location.startsWith("/strategies"));
+        const isActive = location.pathname === item.href || (item.href === "/strategies" && location.pathname.startsWith("/strategies"));
         const Icon = item.icon;
         
         return (
-          <Link key={item.href} href={item.href}>
+          <Link key={item.href} to={item.href}>
             <div 
               data-testid={`mobile-nav-${item.label.toLowerCase()}`}
               className={cn(
