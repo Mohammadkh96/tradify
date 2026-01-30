@@ -66,7 +66,9 @@ export interface IStorage {
   }): Promise<MT5Data>;
   syncMT5History(userId: string, trades: any[]): Promise<void>;
   getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]>;
+  getMT5HistoryByAccount(userId: string, accountNumber: string): Promise<any[]>;
   getDailySnapshots(userId: string): Promise<any[]>;
+  getDailySnapshotsByAccount(userId: string, accountNumber: string): Promise<any[]>;
   getMT5Data(userId: string): Promise<MT5Data | undefined>;
   getUserRole(userId: string): Promise<any>;
   updateUserSubscription(userId: string, tier: string): Promise<void>;
@@ -356,6 +358,12 @@ export class DatabaseStorage implements IStorage {
 
   async getDailySnapshots(userId: string): Promise<any[]> {
     return await db.select().from(dailyEquitySnapshots).where(eq(dailyEquitySnapshots.userId, userId)).orderBy(dailyEquitySnapshots.date);
+  }
+
+  async getDailySnapshotsByAccount(userId: string, accountNumber: string): Promise<any[]> {
+    return await db.select().from(dailyEquitySnapshots)
+      .where(and(eq(dailyEquitySnapshots.userId, userId), eq(dailyEquitySnapshots.mt5AccountId, accountNumber)))
+      .orderBy(dailyEquitySnapshots.date);
   }
 
   async getMT5Data(userId: string): Promise<MT5Data | undefined> {

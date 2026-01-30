@@ -753,7 +753,11 @@ export async function registerRoutes(
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      const allMt5History = await storage.getMT5History(userId);
+      // Get active MT5 account and filter history accordingly
+      const activeAccount = await storage.getActiveMT5Account(userId);
+      const allMt5History = activeAccount 
+        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
+        : await storage.getMT5History(userId);
       const allManualTrades = await storage.getTrades(userId);
       
       // Apply tier-based date filtering
@@ -827,7 +831,11 @@ export async function registerRoutes(
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      const allHistory = await storage.getMT5History(userId);
+      // Get active MT5 account and filter history accordingly
+      const activeAccount = await storage.getActiveMT5Account(userId);
+      const allHistory = activeAccount 
+        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
+        : await storage.getMT5History(userId);
       const filteredHistory = filterByTierDate(allHistory, historyDays);
       res.json(filteredHistory);
     } catch (error) {
@@ -850,8 +858,13 @@ export async function registerRoutes(
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
+      // Get active MT5 account and filter history accordingly
+      const activeAccount = await storage.getActiveMT5Account(userId);
+      
       // SINGLE SOURCE OF TRUTH: Combine MT5 history + manual trades (excluding duplicates)
-      const allMt5History = await storage.getMT5History(userId);
+      const allMt5History = activeAccount 
+        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
+        : await storage.getMT5History(userId);
       const allManualTrades = await storage.getTrades(userId);
       
       // Apply tier-based date filtering
@@ -1053,7 +1066,11 @@ export async function registerRoutes(
         return isWithinDateRangeUTC(tradeDate, dateFilter as string, startDate as string, endDate as string);
       };
 
-      const mt5History = await storage.getMT5History(userId);
+      // Get active MT5 account and filter history accordingly
+      const activeAccount = await storage.getActiveMT5Account(userId);
+      const mt5History = activeAccount 
+        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
+        : await storage.getMT5History(userId);
 
       // For session analytics, only use MT5 history trades since they have accurate open times.
       // Manual journal entries use created_at (sync time) which doesn't reflect actual trade time.
@@ -1216,7 +1233,11 @@ export async function registerRoutes(
         return isWithinDateRangeUTC(tradeDate, dateFilter as string, startDate as string, endDate as string);
       };
 
-      const mt5History = await storage.getMT5History(userId);
+      // Get active MT5 account and filter history accordingly
+      const activeAccount = await storage.getActiveMT5Account(userId);
+      const mt5History = activeAccount 
+        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
+        : await storage.getMT5History(userId);
 
       // For time patterns, only use MT5 history trades since they have accurate open times.
       // Manual journal entries use created_at (sync time) which doesn't reflect actual trade time.
@@ -1359,7 +1380,11 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Behavioral Risk Flags requires Elite subscription" });
       }
 
-      const mt5History = await storage.getMT5History(userId);
+      // Get active MT5 account and filter history accordingly
+      const activeAccount = await storage.getActiveMT5Account(userId);
+      const mt5History = activeAccount 
+        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
+        : await storage.getMT5History(userId);
       const manualTrades = await storage.getTrades(userId);
 
       // Normalize trades from both sources
