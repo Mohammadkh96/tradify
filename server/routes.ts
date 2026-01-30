@@ -938,6 +938,8 @@ export async function registerRoutes(
       const { userId } = req.params;
       const { dateFilter, startDate, endDate } = req.query;
       
+      console.log("[SessionAnalytics API] Received params:", { dateFilter, startDate, endDate });
+      
       // Elite tier check - get user from session and verify subscription
       const sessionUserId = req.session.userId!;
       
