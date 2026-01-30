@@ -102,7 +102,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   PRO: {
     id: "PRO",
     name: "Pro",
-    price: 19,
+    price: 29,
     billingPeriod: "month",
     description: "Advanced analytics for serious traders",
     features: PLAN_FEATURES.PRO,
@@ -128,7 +128,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   ELITE: {
     id: "ELITE",
     name: "Elite",
-    price: 39,
+    price: 59,
     billingPeriod: "month",
     description: "Complete toolkit for professional traders",
     features: PLAN_FEATURES.ELITE,

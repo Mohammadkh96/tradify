@@ -260,7 +260,7 @@ export default function Landing() {
                 </div>
                 <div className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
                   <div className="text-3xl font-black text-emerald-500 mb-1">PRO</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-4">$19/mo</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-4">$29/mo</div>
                   <ul className="space-y-2">
                     <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-emerald-500" /> Intelligence Layer</li>
                     <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-emerald-500" /> Multi-Terminal Sync</li>

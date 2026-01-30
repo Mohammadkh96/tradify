@@ -98,7 +98,7 @@ export default function Pricing() {
                   <h3 className="text-lg font-bold text-emerald-500 uppercase tracking-widest">Pro</h3>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-foreground">$19</span>
+                  <span className="text-4xl font-black text-foreground">$29</span>
                   <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
                 </div>
               </div>
@@ -156,7 +156,7 @@ export default function Pricing() {
                   <h3 className="text-lg font-bold text-amber-500 uppercase tracking-widest">Elite</h3>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-foreground">$39</span>
+                  <span className="text-4xl font-black text-foreground">$59</span>
                   <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
                 </div>
               </div>
