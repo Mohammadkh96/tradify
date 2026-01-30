@@ -940,6 +940,17 @@ export async function registerRoutes(
       
       console.log("[SessionAnalytics API] Received params:", { dateFilter, startDate, endDate });
       
+      // Debug: Calculate week start for logging
+      const now = new Date();
+      const dayOfWeek = now.getUTCDay();
+      const weekStartUTC = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - dayOfWeek
+      ));
+      console.log("[SessionAnalytics API] Week start date (UTC):", weekStartUTC.toISOString());
+      console.log("[SessionAnalytics API] Current date (UTC):", now.toISOString());
+      
       // Elite tier check - get user from session and verify subscription
       const sessionUserId = req.session.userId!;
       
@@ -992,9 +1003,22 @@ export async function registerRoutes(
         }));
 
       // Apply date filter to trades
+      const beforeFilterCount = mt5Normalized.length + manualNormalized.length;
       const allTrades = [...mt5Normalized, ...manualNormalized].filter(trade => 
         isWithinDateRange(trade.openTime)
       );
+      console.log("[SessionAnalytics API] Total trades before filter:", beforeFilterCount, "After filter:", allTrades.length);
+      
+      // Debug: Check a sample trade date vs week start
+      if (dateFilter === "week" && mt5Normalized.length > 0) {
+        const sampleTrade = mt5Normalized[0];
+        const now = new Date();
+        const dayOfWeek = now.getUTCDay();
+        const weekStartUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - dayOfWeek));
+        console.log("[SessionAnalytics API] Sample trade openTime:", sampleTrade.openTime.toISOString());
+        console.log("[SessionAnalytics API] Week start for comparison:", weekStartUTC.toISOString());
+        console.log("[SessionAnalytics API] Is sample within range?:", isWithinDateRange(sampleTrade.openTime));
+      }
 
       if (allTrades.length === 0) {
         return res.json({
