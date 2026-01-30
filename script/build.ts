@@ -63,21 +63,6 @@ async function buildAll() {
     logLevel: "info",
   });
 
-  // Build Vercel API handler (bundled, no external dependencies except Node built-ins)
-  console.log("building Vercel API handler...");
-  await esbuild({
-    entryPoints: ["api/handler.ts"],
-    platform: "node",
-    bundle: true,
-    format: "esm",
-    outfile: "api/index.mjs",
-    minify: false, // Keep readable for debugging
-    external: ["pg-native"], // Only external is native addon
-    logLevel: "info",
-    banner: {
-      js: '// Bundled Vercel API handler',
-    },
-  });
 }
 
 buildAll().catch((err) => {
