@@ -30,9 +30,24 @@ export const tradeJournal = pgTable("trade_journal", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// MT5 Accounts table - tracks connected MT5 accounts per user
+export const mt5Accounts = pgTable("mt5_accounts", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  accountNumber: text("account_number").notNull(), // MT5 login/account number
+  accountName: text("account_name"), // Optional user-defined name (e.g., "Main Account", "Prop Firm")
+  broker: text("broker"), // Broker name if available
+  server: text("server"), // MT5 server name
+  currency: text("currency").default("USD"),
+  isActive: boolean("is_active").default(true), // Currently selected account
+  createdAt: timestamp("created_at").defaultNow(),
+  lastSyncAt: timestamp("last_sync_at"),
+});
+
 export const mt5Data = pgTable("mt5_data", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
+  mt5AccountId: text("mt5_account_id"), // Links to mt5_accounts.accountNumber
   balance: text("balance").notNull(),
   equity: text("equity").notNull(),
   margin: text("margin").notNull(),
@@ -49,6 +64,7 @@ export const mt5Data = pgTable("mt5_data", {
 export const mt5History = pgTable("mt5_history", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
+  mt5AccountId: text("mt5_account_id"), // Links to mt5_accounts.accountNumber
   ticket: text("ticket").notNull(),
   symbol: text("symbol").notNull(),
   direction: text("direction").notNull(),
@@ -71,6 +87,7 @@ export const mt5History = pgTable("mt5_history", {
 export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
+  mt5AccountId: text("mt5_account_id"), // Links to mt5_accounts.accountNumber
   date: timestamp("date").notNull(),
   equity: text("equity").notNull(),
   balance: text("balance").notNull(),
@@ -187,6 +204,8 @@ export const updateTradeSchema = insertTradeSchema.partial();
 export type Trade = typeof tradeJournal.$inferSelect;
 export type InsertTrade = z.infer<typeof insertTradeSchema>;
 export type UpdateTradeRequest = z.infer<typeof updateTradeSchema>;
+export type MT5Account = typeof mt5Accounts.$inferSelect;
+export type InsertMT5Account = typeof mt5Accounts.$inferInsert;
 export type MT5Data = typeof mt5Data.$inferSelect;
 export type MT5History = typeof mt5History.$inferSelect;
 export type DailySnapshot = typeof dailyEquitySnapshots.$inferSelect;
