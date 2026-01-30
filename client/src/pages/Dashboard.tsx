@@ -94,14 +94,18 @@ export default function Dashboard() {
       return apiRequest('POST', `/api/mt5/accounts/${userId}/switch`, { accountNumber });
     },
     onSuccess: () => {
-      // Invalidate all queries that depend on MT5 account data
+      // Invalidate ALL queries that depend on MT5 account data
       queryClient.invalidateQueries({ queryKey: ['/api/mt5/accounts'] });
       queryClient.invalidateQueries({ queryKey: [`/api/equity-curve/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/mt5/history/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/mt5/status/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/performance/intelligence/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/session-analytics/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/time-patterns/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/behavioral-risks/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/strategy-deviation/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/instruments/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/ai/insights/${userId}`] });
     },
   });
 
@@ -381,11 +385,11 @@ export default function Dashboard() {
             </div>
             
             {/* MT5 Account Selector - Shows when multiple accounts are connected */}
-            {mt5Accounts && mt5Accounts.length > 0 && (
+            {mt5Accounts && mt5Accounts.length > 1 && (
               <Select
-                value={activeAccount?.accountNumber || "all"}
+                value={activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || ""}
                 onValueChange={(value) => {
-                  if (value && value !== "all") {
+                  if (value) {
                     switchAccountMutation.mutate(value);
                   }
                 }}
@@ -400,8 +404,13 @@ export default function Dashboard() {
                         <CircleCheck className="h-3 w-3 text-emerald-500" />
                         {activeAccount.accountName || activeAccount.accountNumber}
                       </span>
+                    ) : mt5Accounts[0] ? (
+                      <span className="flex items-center gap-2">
+                        <CircleCheck className="h-3 w-3 text-emerald-500" />
+                        {mt5Accounts[0].accountName || mt5Accounts[0].accountNumber}
+                      </span>
                     ) : (
-                      <span>All Accounts</span>
+                      <span>Select Account</span>
                     )}
                   </SelectValue>
                 </SelectTrigger>

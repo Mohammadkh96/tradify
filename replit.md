@@ -20,6 +20,12 @@ Key features:
 - Knowledge base with trading education modules
 - Risk/position size calculator (5 calculators in 3 category tabs)
 - MT5 Bridge for MetaTrader 5 integration
+  - **Multi-Account Support**: Connect multiple MT5 accounts with separate data tracking
+    - Each account's trades, equity, and analytics are tracked independently
+    - Account selector appears in Dashboard when multiple accounts are connected
+    - Switching accounts updates all analytics (equity curve, session analytics, etc.)
+    - Python connector sends accountNumber (from ACCOUNT_LOGIN) to identify accounts
+    - API endpoints: `/api/mt5/accounts/:userId`, `/api/mt5/accounts/:userId/active`, `/api/mt5/accounts/:userId/switch`
 - **Onboarding Tour**: Interactive step-by-step guide for new users
   - Auto-launches for first-time users (localStorage tracking)
   - 8-step walkthrough of main features (Dashboard, Strategies, Calculator, MT5, Education, Traders Hub, Profile)
