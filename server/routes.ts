@@ -133,6 +133,11 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Trust proxy for Vercel (required for secure cookies behind proxy)
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+  
   // Session setup
   app.use(session({
     store: new PostgresStore({
