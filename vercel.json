@@ -3,14 +3,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "client/dist",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/api/:path*", "destination": "/api/index.mjs" },
     { "source": "/:path*", "destination": "/index.html" }
   ],
   "functions": {
-    "api/index.ts": {
+    "api/index.mjs": {
       "memory": 1024,
-      "maxDuration": 30,
-      "includeFiles": "{server/**/*,shared/**/*}"
+      "maxDuration": 30
     }
   }
 }

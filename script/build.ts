@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile, mkdir } from "fs/promises";
+import { rm, readFile, mkdir, writeFile } from "fs/promises";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -63,18 +63,20 @@ async function buildAll() {
     logLevel: "info",
   });
 
-  // Build Vercel API handler
+  // Build Vercel API handler (bundled, no external dependencies except Node built-ins)
   console.log("building Vercel API handler...");
-  await mkdir("api-dist", { recursive: true });
   await esbuild({
-    entryPoints: ["api/vercel-handler.ts"],
+    entryPoints: ["api/index.ts"],
     platform: "node",
     bundle: true,
     format: "esm",
-    outfile: "api-dist/index.js",
-    minify: true,
-    external: ["pg-native"],
+    outfile: "api/index.mjs",
+    minify: false, // Keep readable for debugging
+    external: ["pg-native"], // Only external is native addon
     logLevel: "info",
+    banner: {
+      js: '// Bundled Vercel API handler',
+    },
   });
 }
 
