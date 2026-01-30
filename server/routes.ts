@@ -157,7 +157,7 @@ export async function registerRoutes(
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   
   // Registration Endpoint
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, country, phoneNumber, timezone } = req.body;
       
@@ -198,7 +198,7 @@ export async function registerRoutes(
   });
 
   // Login Endpoint
-  app.post("/api/login", async (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       const normalizedEmail = email.toLowerCase();

@@ -95,7 +95,7 @@ export default function Auth() {
     if (!isFormValid) return;
     
     try {
-      const endpoint = isLogin ? "/api/login" : "/api/register";
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const payload = isLogin 
         ? { email, password }
         : { email, password, country, phoneNumber, timezone };
