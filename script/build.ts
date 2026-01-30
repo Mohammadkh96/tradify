@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, mkdir } from "fs/promises";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -30,6 +30,9 @@ const allowlist = [
   "xlsx",
   "zod",
   "zod-validation-error",
+  "bcryptjs",
+  "pdfkit",
+  "serverless-http",
 ];
 
 async function buildAll() {
@@ -57,6 +60,20 @@ async function buildAll() {
     },
     minify: true,
     external: externals,
+    logLevel: "info",
+  });
+
+  // Build Vercel API handler
+  console.log("building Vercel API handler...");
+  await mkdir("api-dist", { recursive: true });
+  await esbuild({
+    entryPoints: ["api/vercel-handler.ts"],
+    platform: "node",
+    bundle: true,
+    format: "esm",
+    outfile: "api-dist/index.js",
+    minify: true,
+    external: ["pg-native"],
     logLevel: "info",
   });
 }
