@@ -3,6 +3,7 @@ import {
   tradeJournal,
   mt5Data,
   mt5History,
+  mt5Accounts,
   dailyEquitySnapshots,
   userRole,
   adminAuditLog,
@@ -27,6 +28,7 @@ import {
   type UpdateTradeRequest,
   type Trade,
   type MT5Data,
+  type MT5Account,
   type AdminAuditLog,
   type AIPerformanceInsight,
   type AIInsightLog,
@@ -125,6 +127,15 @@ export interface IStorage {
   createUserRole(role: any): Promise<any>;
   updateUserRole(userId: string, updates: any): Promise<any>;
   deleteUser(userId: string): Promise<void>;
+  // MT5 Account Management
+  getMT5Accounts(userId: string): Promise<any[]>;
+  getMT5Account(userId: string, accountNumber: string): Promise<any | undefined>;
+  getActiveMT5Account(userId: string): Promise<any | undefined>;
+  createMT5Account(account: { userId: string; accountNumber: string; accountName?: string; broker?: string; server?: string; currency?: string }): Promise<any>;
+  updateMT5Account(userId: string, accountNumber: string, updates: any): Promise<any>;
+  setActiveMT5Account(userId: string, accountNumber: string): Promise<void>;
+  getMT5HistoryByAccount(userId: string, accountNumber: string): Promise<any[]>;
+  syncMT5HistoryWithAccount(userId: string, accountNumber: string, trades: any[]): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -858,6 +869,138 @@ export class DatabaseStorage implements IStorage {
         riskDrift: { recentViolationRate, olderViolationRate }
       }
     };
+  }
+
+  // MT5 Account Management Methods
+  async getMT5Accounts(userId: string): Promise<any[]> {
+    return await db.select().from(mt5Accounts)
+      .where(eq(mt5Accounts.userId, userId))
+      .orderBy(desc(mt5Accounts.lastSyncAt));
+  }
+
+  async getMT5Account(userId: string, accountNumber: string): Promise<any | undefined> {
+    const [account] = await db.select().from(mt5Accounts)
+      .where(and(eq(mt5Accounts.userId, userId), eq(mt5Accounts.accountNumber, accountNumber)))
+      .limit(1);
+    return account;
+  }
+
+  async getActiveMT5Account(userId: string): Promise<any | undefined> {
+    const [account] = await db.select().from(mt5Accounts)
+      .where(and(eq(mt5Accounts.userId, userId), eq(mt5Accounts.isActive, true)))
+      .limit(1);
+    return account;
+  }
+
+  async createMT5Account(account: { userId: string; accountNumber: string; accountName?: string; broker?: string; server?: string; currency?: string }): Promise<any> {
+    // First, check if account already exists
+    const existing = await this.getMT5Account(account.userId, account.accountNumber);
+    if (existing) {
+      // Update last sync time
+      await db.update(mt5Accounts)
+        .set({ lastSyncAt: new Date() })
+        .where(and(eq(mt5Accounts.userId, account.userId), eq(mt5Accounts.accountNumber, account.accountNumber)));
+      return existing;
+    }
+    
+    // Create new account
+    const [newAccount] = await db.insert(mt5Accounts).values({
+      userId: account.userId,
+      accountNumber: account.accountNumber,
+      accountName: account.accountName || `Account ${account.accountNumber}`,
+      broker: account.broker,
+      server: account.server,
+      currency: account.currency || "USD",
+      isActive: true, // New accounts are active by default
+      lastSyncAt: new Date(),
+    }).returning();
+    
+    // Deactivate other accounts for this user
+    await db.update(mt5Accounts)
+      .set({ isActive: false })
+      .where(and(
+        eq(mt5Accounts.userId, account.userId),
+        sql`${mt5Accounts.accountNumber} != ${account.accountNumber}`
+      ));
+    
+    return newAccount;
+  }
+
+  async updateMT5Account(userId: string, accountNumber: string, updates: any): Promise<any> {
+    const [updated] = await db.update(mt5Accounts)
+      .set(updates)
+      .where(and(eq(mt5Accounts.userId, userId), eq(mt5Accounts.accountNumber, accountNumber)))
+      .returning();
+    return updated;
+  }
+
+  async setActiveMT5Account(userId: string, accountNumber: string): Promise<void> {
+    // First deactivate all accounts for this user
+    await db.update(mt5Accounts)
+      .set({ isActive: false })
+      .where(eq(mt5Accounts.userId, userId));
+    
+    // Then activate the selected account
+    await db.update(mt5Accounts)
+      .set({ isActive: true })
+      .where(and(eq(mt5Accounts.userId, userId), eq(mt5Accounts.accountNumber, accountNumber)));
+  }
+
+  async getMT5HistoryByAccount(userId: string, accountNumber: string): Promise<any[]> {
+    return await db.select().from(mt5History)
+      .where(and(eq(mt5History.userId, userId), eq(mt5History.mt5AccountId, accountNumber)))
+      .orderBy(desc(mt5History.closeTime));
+  }
+
+  async syncMT5HistoryWithAccount(userId: string, accountNumber: string, trades: any[]): Promise<void> {
+    console.log(`[MT5 Sync] Syncing history for ${userId} account ${accountNumber}. Count: ${trades.length}`);
+    for (const trade of trades) {
+      try {
+        const ticketStr = trade.ticket.toString();
+        // Check for existing ticket in this account
+        const [existing] = await db.select().from(mt5History)
+          .where(and(
+            eq(mt5History.userId, userId), 
+            eq(mt5History.mt5AccountId, accountNumber),
+            eq(mt5History.ticket, ticketStr)
+          ))
+          .limit(1);
+
+        if (!existing) {
+          console.log(`[MT5 Sync] NEW DEAL: Ticket ${ticketStr} for ${userId} account ${accountNumber}`);
+          const openTime = new Date(trade.open_time * 1000);
+          const closeTime = new Date(trade.close_time * 1000);
+          
+          const commission = parseFloat(trade.commission || 0);
+          const swap = parseFloat(trade.swap || 0);
+          const profit = parseFloat(trade.profit || 0);
+          const netPlNum = profit + commission + swap;
+          const netPl = netPlNum.toFixed(2);
+          
+          await db.insert(mt5History).values({
+            userId,
+            mt5AccountId: accountNumber,
+            ticket: ticketStr,
+            symbol: trade.symbol,
+            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Buy" : "Sell",
+            volume: trade.volume.toString(),
+            entryPrice: trade.price?.toString() || "0",
+            exitPrice: trade.price?.toString() || "0",
+            sl: trade.sl?.toString(),
+            tp: trade.tp?.toString(),
+            openTime,
+            closeTime,
+            duration: trade.close_time - trade.open_time,
+            grossPl: profit.toString(),
+            commission: commission.toString(),
+            swap: swap.toString(),
+            netPl,
+          });
+        }
+      } catch (err) {
+        console.error(`[MT5 Sync] Error syncing trade ${trade.ticket}:`, err);
+      }
+    }
   }
 }
 
