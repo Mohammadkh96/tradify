@@ -60,8 +60,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Track initialization promise for Vercel
-let initPromise: Promise<void> | null = null;
+const isProd = process.env.NODE_ENV === "production" || process.env.APP_ENV === "production";
 
 async function initializeApp() {
   await registerRoutes(httpServer, app);
@@ -71,41 +70,27 @@ async function initializeApp() {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    console.error("Express error:", err);
+    if (!isProd) {
+      console.error("Express error:", err);
+    }
   });
 
-  // Only setup vite and listen in non-Vercel environments
-  if (!process.env.VERCEL) {
-    if (process.env.NODE_ENV === "production") {
-      serveStatic(app);
-    } else {
-      const { setupVite } = await import("./vite");
-      await setupVite(httpServer, app);
-    }
-
-    const port = parseInt(process.env.PORT || "5000", 10);
-    httpServer.listen(
-      {
-        port,
-        host: "0.0.0.0",
-        reusePort: true,
-      },
-      () => {
-        log(`serving on port ${port}`);
-      },
-    );
+  // Setup static file serving for production, Vite dev server for development
+  if (isProd) {
+    serveStatic(app);
+  } else {
+    const { setupVite } = await import("./vite");
+    await setupVite(httpServer, app);
   }
+
+  // Replit decides the port - use PORT env or fallback to 5000
+  const port = parseInt(process.env.PORT || "5000", 10);
+  httpServer.listen(port, "0.0.0.0", () => {
+    log(`serving on port ${port}`);
+  });
 }
 
-// For Vercel: ensure initialization before handling requests
-export function ensureInitialized() {
-  if (!initPromise) {
-    initPromise = initializeApp();
-  }
-  return initPromise;
-}
-
-// Start initialization immediately
-ensureInitialized();
+// Start the application
+initializeApp().catch(console.error);
 
 export default app;

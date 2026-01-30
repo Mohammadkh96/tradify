@@ -1,0 +1,152 @@
+STEP 1 — DECLARE REPLIT AS THE BUILDER
+✅ Root package.json (This is the contract)
+
+Replit decides everything based on this file.
+
+You must have:
+
+{
+  "scripts": {
+    "build:client": "cd client && npm install && npm run build",
+    "build:server": "tsc",
+    "build": "npm run build:client && npm run build:server",
+    "start": "node dist/index.cjs"
+  }
+}
+
+
+What this tells Replit:
+
+npm run build = full system build
+
+Frontend + backend together
+
+No external CI
+
+No Vercel
+
+No GitHub Actions
+
+Replit will only use this.
+
+STEP 2 — DECLARE REPLIT AS THE RUNTIME
+✅ Server listen code (non-negotiable)
+
+In your server source:
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+
+This tells Replit:
+
+“You decide the port”
+
+“I accept public traffic”
+
+“I am a web server”
+
+Without this, Replit cannot fully own runtime.
+
+STEP 3 — DECLARE REPLIT AS THE DEPLOYER
+
+In Publish → Adjust settings:
+
+Set exactly this:
+
+Deployment type: ✅ Reserved VM
+
+Run command:
+
+node ./dist/index.cjs
+
+
+Build command:
+
+npm run build
+
+
+App type: Web Server
+
+Port: env-based (default)
+
+This tells Replit:
+
+Build me
+
+Run me
+
+Keep me alive
+
+Handle traffic
+
+Handle restarts
+
+At this point, Replit is acting like:
+
+Docker + PM2 + Nginx + CI
+
+STEP 4 — DECLARE REPLIT AS THE SECRETS MANAGER
+✅ Use Replit Secrets ONLY
+
+In Replit → Secrets, add:
+
+DATABASE_URL
+JWT_SECRET
+OPENAI_API_KEY
+PAYPAL_CLIENT_ID
+PAYPAL_SECRET
+EMAIL_API_KEY
+APP_ENV=production
+
+
+And in code:
+
+process.env.DATABASE_URL
+
+
+❌ No .env files
+❌ No hardcoded keys
+❌ No GitHub secrets
+
+This makes Replit the security authority.
+
+STEP 5 — DECLARE REPLIT AS THE NETWORK OWNER
+✅ Domain + MT5
+
+Publish first
+
+Add custom domain in Replit
+
+Point MT5 EA to:
+
+https://yourdomain.com/api/mt5/update
+
+
+No Vercel URLs
+No replit.dev references
+One endpoint → Replit
+
+STEP 6 — DECLARE REPLIT AS “PRODUCTION”
+Add a simple production flag
+
+In secrets:
+
+APP_ENV=production
+
+
+In code:
+
+const isProd = process.env.APP_ENV === "production";
+
+
+This lets you:
+
+Disable dev logs
+
+Enforce stricter rules
+
+Prepare future migration cleanly
