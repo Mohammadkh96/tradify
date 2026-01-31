@@ -56,6 +56,9 @@ export default function Auth() {
   const [country, setCountry] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [timezone, setTimezone] = useState<string>("");
+  const [requiresPasswordReset, setRequiresPasswordReset] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const { toast } = useToast();
 
   const { data: userRole } = useQuery<any>({
@@ -118,6 +121,16 @@ export default function Auth() {
       if (!response.ok) {
         throw new Error(data.message || "Authentication failed");
       }
+
+      // Check if user needs to reset password (admin-created accounts)
+      if (data.requiresPasswordReset) {
+        setRequiresPasswordReset(true);
+        toast({
+          title: "Password Reset Required",
+          description: "Please set a new password to continue.",
+        });
+        return;
+      }
       
       localStorage.setItem("user_id", data.userId);
       queryClient.setQueryData(["/api/user"], data);
@@ -165,6 +178,128 @@ export default function Auth() {
       });
     }
   };
+
+  // Password Reset Handler for admin-created accounts
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword.length < 8) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Password",
+        description: "Password must be at least 8 characters.",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        variant: "destructive",
+        title: "Passwords Don't Match",
+        description: "Please make sure both passwords match.",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword, confirmPassword: confirmNewPassword }),
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to reset password");
+      }
+
+      toast({
+        title: "Password Updated",
+        description: "Your password has been set. Redirecting to dashboard...",
+      });
+
+      // Redirect to dashboard after successful password reset
+      setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 1500);
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Reset Failed",
+        description: err.message || "Failed to update password.",
+      });
+    }
+  };
+
+  // New Password Reset Form for admin-created accounts
+  if (requiresPasswordReset) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col relative pt-20">
+        <PublicNavbar />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-2xl border border-border">
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg mb-4">
+                <Lock size={32} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-2xl font-bold text-foreground uppercase italic tracking-tighter" data-testid="text-reset-title">Set Your Password</h3>
+              <p className="text-muted-foreground mt-2 text-xs uppercase tracking-widest font-bold">Create a secure password for your account</p>
+            </div>
+            <form onSubmit={handlePasswordReset} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <Input 
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="bg-muted border-border text-foreground h-12 pl-10"
+                    type="password"
+                    required
+                    data-testid="input-new-password"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Confirm Password</label>
+                <div className="relative">
+                  <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <Input 
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="bg-muted border-border text-foreground h-12 pl-10"
+                    type="password"
+                    required
+                    data-testid="input-confirm-new-password"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1 text-xs">
+                {passwordRules.map((rule, i) => (
+                  <div key={i} className={cn("flex items-center gap-2", rule.test(newPassword) ? "text-emerald-500" : "text-muted-foreground")}>
+                    {rule.test(newPassword) ? <Check size={12} /> : <X size={12} />}
+                    <span>{rule.label}</span>
+                  </div>
+                ))}
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full h-12 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest"
+                disabled={!passwordRules.every(rule => rule.test(newPassword)) || newPassword !== confirmNewPassword}
+                data-testid="button-set-password"
+              >
+                Set Password & Continue
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (showForgot) {
     return (
