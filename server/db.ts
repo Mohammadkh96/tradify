@@ -4,15 +4,22 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
+// Use Neon database if available, otherwise fall back to Replit's database
+const connectionString = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+
+if (!connectionString) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "DATABASE_URL or NEON_DATABASE_URL must be set. Did you forget to provision a database?",
   );
 }
 
-// Neon requires SSL in production
+// Log which database is being used (without exposing credentials)
+const isNeon = !!process.env.NEON_DATABASE_URL;
+console.log(`Using ${isNeon ? 'Neon' : 'Replit'} PostgreSQL database`);
+
+// Neon requires SSL
 export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+  connectionString,
+  ssl: { rejectUnauthorized: false }
 });
 export const db = drizzle(pool, { schema });
