@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { ensureSchemaColumns } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -63,6 +64,9 @@ app.use((req, res, next) => {
 const isProd = process.env.NODE_ENV === "production" || process.env.APP_ENV === "production";
 
 async function initializeApp() {
+  // Ensure database schema is up to date before starting
+  await ensureSchemaColumns();
+  
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

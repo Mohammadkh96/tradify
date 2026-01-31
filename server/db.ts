@@ -34,3 +34,15 @@ export const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 export const db = drizzle(pool, { schema });
+
+// Auto-migrate: ensure all required columns exist
+export async function ensureSchemaColumns() {
+  try {
+    await pool.query(`
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS must_reset_password BOOLEAN DEFAULT false
+    `);
+    console.log('Schema columns verified');
+  } catch (error) {
+    console.error('Schema migration error:', error);
+  }
+}
