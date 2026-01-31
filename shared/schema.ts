@@ -112,6 +112,7 @@ export const userRole = pgTable("user_role", {
   country: text("country"), // ISO country name or code as per spec
   phoneNumber: text("phone_number"),
   timezone: text("timezone"), // Added per spec
+  mustResetPassword: boolean("must_reset_password").default(false), // For admin-created users
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

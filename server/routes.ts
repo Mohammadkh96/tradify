@@ -219,6 +219,17 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      // Check if user needs to reset password (admin-created accounts)
+      if (user.mustResetPassword) {
+        // Create a temporary session for password reset only
+        req.session.userId = user.userId;
+        req.session.role = user.role;
+        return res.json({ 
+          ...user, 
+          requiresPasswordReset: true 
+        });
+      }
+
       req.session.userId = user.userId;
       req.session.role = user.role;
 
@@ -226,6 +237,40 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Reset password endpoint for first-time users
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { newPassword, confirmPassword } = req.body;
+
+      if (!newPassword || newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match" });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      await db.update(schema.userRole)
+        .set({ 
+          password: hashedPassword, 
+          mustResetPassword: false,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.userRole.userId, req.session.userId));
+
+      res.json({ success: true, message: "Password updated successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 
@@ -2592,10 +2637,11 @@ End with: "Check your charts for current price action."`;
       const newUser = await storage.createUserRole({
         userId: normalizedEmail,
         password: hashedPassword,
-        role: role || "USER",
+        role: role || "TRADER",
         subscriptionTier: tier,
         termsAccepted: true,
         riskAcknowledged: true,
+        mustResetPassword: true, // Admin-created users must reset password on first login
       });
 
       // Audit log
