@@ -1,4 +1,5 @@
 import { storage } from './storage';
+import { emailService } from './emailService';
 
 const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID } = process.env;
 const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -375,6 +376,10 @@ export class PayPalService {
         paypalSubscriptionId,
         renewalDate: nextBillingTime ? new Date(nextBillingTime) : undefined,
       });
+      
+      // Send subscription activated email
+      const userName = customId.split('@')[0];
+      await emailService.sendSubscriptionActivatedEmail(customId, userName, tier);
     }
   }
 
@@ -383,6 +388,10 @@ export class PayPalService {
     console.log('Subscription cancelled for user:', customId);
     
     if (customId) {
+      // Get current user to know their plan for the email
+      const user = await storage.getUserRole(customId);
+      const planName = user?.subscriptionTier || 'Pro';
+      
       // Mark as cancelled but don't downgrade immediately - user retains access until billing period ends
       // The downgrade happens when the subscription actually expires (BILLING.SUBSCRIPTION.EXPIRED)
       const status = resource.status?.toLowerCase() || 'cancelled';
@@ -399,6 +408,10 @@ export class PayPalService {
           subscriptionStatus: 'cancelled', // Mark as cancelled but keep tier
         });
       }
+      
+      // Send subscription canceled email
+      const userName = customId.split('@')[0];
+      await emailService.sendSubscriptionCanceledEmail(customId, userName, planName);
     }
   }
 }

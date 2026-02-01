@@ -2652,6 +2652,10 @@ End with: "Check your charts for current price action."`;
         details: { subscriptionTier: tier, role: role || "USER" }
       });
 
+      // Send welcome email with temporary password
+      const userName = normalizedEmail.split('@')[0];
+      await emailService.sendAdminCreatedUserEmail(normalizedEmail, userName, password);
+
       res.json({ success: true, user: newUser, tempPassword: password });
     } catch (error) {
       console.error("Create user error:", error);
@@ -3715,6 +3719,95 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
     } catch (error) {
       console.error("PDF Report Error:", error);
       res.status(500).json({ message: "Failed to generate PDF report" });
+    }
+  });
+
+  // Rate limiting for contact form (in-memory, simple implementation)
+  const contactFormAttempts: Map<string, { count: number; lastAttempt: Date }> = new Map();
+  const CONTACT_FORM_RATE_LIMIT = 5; // max attempts per hour
+  const CONTACT_FORM_WINDOW = 60 * 60 * 1000; // 1 hour in ms
+
+  function checkContactFormRateLimit(ip: string): boolean {
+    const now = new Date();
+    const attempt = contactFormAttempts.get(ip);
+    
+    if (!attempt) {
+      contactFormAttempts.set(ip, { count: 1, lastAttempt: now });
+      return true;
+    }
+    
+    // Reset if window has passed
+    if (now.getTime() - attempt.lastAttempt.getTime() > CONTACT_FORM_WINDOW) {
+      contactFormAttempts.set(ip, { count: 1, lastAttempt: now });
+      return true;
+    }
+    
+    // Check if under limit
+    if (attempt.count < CONTACT_FORM_RATE_LIMIT) {
+      attempt.count++;
+      attempt.lastAttempt = now;
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Contact form endpoint (public - no auth required)
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      
+      // Rate limiting
+      if (!checkContactFormRateLimit(clientIp)) {
+        return res.status(429).json({ message: "Too many requests. Please try again later." });
+      }
+      
+      const { name, email, subject, message } = req.body;
+      
+      // Validation
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email address" });
+      }
+      
+      // Message length limit
+      if (message.length > 5000) {
+        return res.status(400).json({ message: "Message too long (max 5000 characters)" });
+      }
+      
+      // Send notification to support
+      await emailService.sendContactFormNotification(email, name, subject, message);
+      
+      // Send auto-reply to user
+      await emailService.sendContactFormAutoReply(email, name);
+      
+      res.json({ success: true, message: "Your message has been sent. We'll get back to you soon." });
+    } catch (error) {
+      console.error("Contact form error:", error);
+      res.status(500).json({ message: "Failed to send message. Please try again." });
+    }
+  });
+
+  // Email status endpoint (admin only)
+  app.get("/api/admin/email-status", requireAdmin, async (req, res) => {
+    try {
+      const logs = emailService.getEmailLogs();
+      const configured = emailService.isEmailConfigured();
+      
+      res.json({
+        configured,
+        recentLogs: logs.slice(-50), // Last 50 logs
+        totalSent: logs.filter(l => l.success).length,
+        totalFailed: logs.filter(l => !l.success).length,
+      });
+    } catch (error) {
+      console.error("Email status error:", error);
+      res.status(500).json({ message: "Failed to get email status" });
     }
   });
 
