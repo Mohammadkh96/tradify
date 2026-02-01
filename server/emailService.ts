@@ -1,12 +1,11 @@
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { db } from "./db";
 import * as schema from "@shared/schema";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Use process.cwd() for path resolution (works in both ESM and CJS)
+const EMAIL_TEMPLATES_DIR = path.join(process.cwd(), 'server', 'emails');
 
 const SMTP_HOST = 'smtp.gmail.com';
 const SMTP_PORT = 587;
@@ -49,7 +48,7 @@ function logEmail(log: EmailLog) {
 }
 
 function loadTemplate(templateName: string): string {
-  const templatePath = path.join(__dirname, 'emails', `${templateName}.html`);
+  const templatePath = path.join(EMAIL_TEMPLATES_DIR, `${templateName}.html`);
   try {
     return fs.readFileSync(templatePath, 'utf-8');
   } catch (error) {
