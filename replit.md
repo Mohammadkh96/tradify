@@ -123,6 +123,27 @@ Key features:
 - User deactivation/reactivation and deletion
 - Audit logging of all admin actions
 - Access restricted to OWNER/ADMIN roles
+- Email status dashboard at `/api/admin/email-status`
+
+**Email System** (Google Workspace SMTP):
+- Transport: Nodemailer with Google Workspace SMTP
+- Templates stored in `/server/emails/` as HTML files
+- Placeholder system: `{{user_name}}`, `{{app_name}}`, `{{action_url}}`, etc.
+- Email types:
+  - Welcome email (on signup)
+  - Admin-created user email (with temp password)
+  - Password reset email
+  - Subscription activated email
+  - Subscription canceled email
+  - Contact form notification (to support)
+  - Contact form auto-reply (to user)
+- Rate limiting: 5 contact form submissions per hour per IP
+- Environment variables:
+  - `SMTP_USER`: Google Workspace email (e.g., no-reply@tradifyapp.com)
+  - `SMTP_APP_PASSWORD`: 16-character Google App Password
+  - `SUPPORT_EMAIL`: Email for contact form notifications (default: support@tradifyapp.com)
+  - `FROM_EMAIL`: Sender email address (default: no-reply@tradifyapp.com)
+  - `APP_URL`: Base URL for email links (default: https://tradifyapp.com)
 
 **Navigation Structure:**
 - Collapsible "Strategies" menu in sidebar with sub-items
