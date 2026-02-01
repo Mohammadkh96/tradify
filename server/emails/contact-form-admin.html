@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Contact Form Submission</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0b; color: #e4e4e7;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse;">
+          <!-- Header -->
+          <tr>
+            <td style="text-align: center; padding-bottom: 30px;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #22c55e;">{{app_name}}</h1>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #f59e0b;">New Contact Form Submission</p>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="background-color: #18181b; border-radius: 12px; padding: 40px;">
+              <div style="margin-bottom: 24px;">
+                <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: #71717a;">From</p>
+                <p style="margin: 0; font-size: 16px; color: #fafafa;">{{from_name}} &lt;{{from_email}}&gt;</p>
+              </div>
+              
+              <div style="margin-bottom: 24px;">
+                <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: #71717a;">Subject</p>
+                <p style="margin: 0; font-size: 16px; color: #fafafa;">{{subject}}</p>
+              </div>
+              
+              <div style="border-top: 1px solid #27272a; padding-top: 24px;">
+                <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: #71717a;">Message</p>
+                <div style="background-color: #27272a; border-radius: 8px; padding: 20px; margin-top: 8px;">
+                  <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #e4e4e7; white-space: pre-wrap;">{{message}}</p>
+                </div>
+              </div>
+              
+              <div style="margin-top: 24px;">
+                <a href="mailto:{{from_email}}" style="display: inline-block; background-color: #22c55e; color: #000; font-weight: 600; text-decoration: none; padding: 12px 24px; border-radius: 8px;">Reply to {{from_name}}</a>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="text-align: center; padding-top: 30px;">
+              <p style="margin: 0; font-size: 12px; color: #52525b;">
+                This message was sent via the {{app_name}} contact form.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
