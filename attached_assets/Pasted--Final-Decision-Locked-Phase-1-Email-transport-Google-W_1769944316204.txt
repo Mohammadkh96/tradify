@@ -1,0 +1,166 @@
+✅ Final Decision Locked (Phase 1)
+
+Email transport: Google Workspace SMTP
+Library: Nodemailer
+Purpose: Transactional emails only
+Cost: $0 beyond Workspace subscription
+Scalability: Temporary (planned migration later)
+
+1️⃣ Sender & Inboxes (Decide Once)
+
+Use clear role-based emails:
+
+no-reply@tradifyapp.com
+ → all system emails
+
+support@tradifyapp.com
+ → contact form + replies
+
+billing@tradifyapp.com
+ → optional later
+
+⚠️ Do not send system emails from a personal inbox.
+
+2️⃣ Google Workspace Setup (One-Time)
+Required steps:
+
+Enable 2-Step Verification
+
+Create App Password for:
+
+App: Mail
+
+Device: Other (Tradify App)
+
+Save the 16-character password securely
+
+DNS (Must be correct):
+
+SPF: include Google
+
+DKIM: enabled in Admin Console
+
+DMARC: at least p=none initially
+
+This ensures deliverability.
+
+3️⃣ Backend Structure (Clean & Future-Proof)
+
+Create a single service:
+
+/services/emailService.ts
+
+
+Responsibilities:
+
+Nodemailer transport config
+
+One function per email type
+
+Central error handling
+
+Easy provider swap later
+
+👉 When you migrate, you replace only this file.
+
+4️⃣ Email Templates (Do This Right)
+
+Store as HTML files (best early-stage choice):
+
+/emails/
+  welcome.html
+  verify-email.html
+  reset-password.html
+  subscription-activated.html
+  subscription-canceled.html
+
+
+Use placeholders:
+
+{{user_name}}
+{{action_url}}
+{{plan_name}}
+{{support_email}}
+
+
+No inline AI generation. No JSX emails.
+
+5️⃣ Events → Emails Mapping (Tradify)
+Authentication
+
+Signup → Verify email
+
+Verify success → Welcome email
+
+Password reset request → Reset email
+
+Password reset success → Confirmation email
+
+Subscription (via PayPal webhooks)
+
+Activated → Subscription activated
+
+Upgraded → Plan upgraded
+
+Canceled → Subscription canceled
+
+Payment failed → Payment failed notice
+
+System
+
+Contact form → Support inbox + auto-reply
+
+Admin-created user → Set password email
+
+6️⃣ Rate Limiting & Safety (Important)
+
+You must:
+
+Limit password reset attempts
+
+Log email sends (success/fail)
+
+Retry once on failure
+
+Never expose SMTP credentials
+
+This prevents abuse and account flags.
+
+7️⃣ Known Limitations (Accepted for Now)
+
+You are knowingly giving up:
+
+Bounce tracking
+
+Complaint analytics
+
+Email event webhooks
+
+UI-based template editing
+
+This is acceptable until traffic proves demand.
+
+8️⃣ Migration Plan (So You Don’t Get Stuck)
+
+When traffic increases:
+
+Switch SMTP → Amazon SES / Postmark
+
+Keep:
+
+Templates
+
+Event triggers
+
+Email logic
+
+Change only transport config
+
+Zero rewrite.
+
+9️⃣ What I’ll Do Next (If You Confirm)
+
+Once you confirm:
+1️⃣ Final sender email
+2️⃣ Support inbox
+3️⃣ Template storage = HTML files (recommended)
