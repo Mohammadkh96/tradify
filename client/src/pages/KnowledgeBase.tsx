@@ -1,364 +1,458 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, BookOpen, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
+import { 
+  BookOpen, TrendingUp, Brain, Target, Heart, Zap,
+  Lock, Clock, ChevronRight, Play, Crown, Star,
+  GraduationCap, CheckCircle
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { usePlan } from "@/hooks/usePlan";
+import {
+  EDUCATION_LESSONS,
+  LESSON_CATEGORIES,
+  type Lesson,
+  type LessonCategory,
+  canAccessLesson,
+} from "@/data/educationLessons";
 
-const modules = [
-  {
-    id: 1,
-    title: "Market Foundations",
-    sections: [
-      {
-        title: "Core Market Truths",
-        content: [
-          "Price moves because of liquidity and order flow.",
-          "Institutions accumulate → manipulate → distribute.",
-          "Indicators lag; price is the source.",
-          "Every trade must answer: Who is trapped? Where is liquidity? Where is value?"
-        ]
-      }
-    ]
-  },
-  {
-    id: 2,
-    title: "Market Structure",
-    sections: [
-      {
-        title: "Structure Definitions",
-        content: [
-          "HH / HL → Uptrend",
-          "LL / LH → Downtrend",
-          "Range → Liquidity building"
-        ]
-      },
-      {
-        title: "Break Types",
-        content: [
-          "BOS (Break of Structure) → Continuation signal",
-          "CHOCH (Change of Character) → Reversal warning"
-        ]
-      },
-      {
-        title: "Structure Rules",
-        content: [
-          "HTF structure overrides everything.",
-          "Never trade against HTF structure.",
-          "LTF is for execution only."
-        ]
-      }
-    ]
-  },
-  {
-    id: 3,
-    title: "Supply & Demand",
-    sections: [
-      {
-        title: "Zone Types",
-        content: [
-          "RBR – Rally → Base → Rally (Demand)",
-          "DBD – Drop → Base → Drop (Supply)",
-          "RBD / DBR – Continuation zones"
-        ]
-      },
-      {
-        title: "Valid Zone Criteria",
-        content: [
-          "Strong impulsive exit",
-          "Minimal basing",
-          "Fresh / untested",
-          "Breaks structure or creates imbalance"
-        ]
-      },
-      {
-        title: "Zone Invalidation",
-        content: [
-          "Demand invalid → candle closes below",
-          "Supply invalid → candle closes above",
-          "Invalid zone = NO TRADE"
-        ]
-      }
-    ]
-  },
-  {
-    id: 4,
-    title: "Liquidity Theory",
-    sections: [
-      {
-        title: "Liquidity Pools",
-        content: [
-          "Equal highs / equal lows",
-          "Trendline stops",
-          "Range highs & lows",
-          "Previous day high/low",
-          "Session highs/lows"
-        ]
-      },
-      {
-        title: "Liquidity Rules",
-        content: [
-          "Price must take liquidity before real move.",
-          "Liquidity grab ≠ reversal (needs confirmation).",
-          "Entries are taken after the sweep."
-        ]
-      }
-    ]
-  },
-  {
-    id: 5,
-    title: "Order Blocks",
-    sections: [
-      {
-        title: "Definition",
-        content: [
-          "The last opposite candle before an impulsive move that breaks structure."
-        ]
-      },
-      {
-        title: "Valid OB Conditions",
-        content: [
-          "Leads to BOS / CHOCH",
-          "Clear imbalance",
-          "Untested",
-          "Located at premium/discount"
-        ]
-      },
-      {
-        title: "Entry Logic",
-        content: [
-          "HTF OB → bias",
-          "LTF OB → execution",
-          "SL beyond OB extreme"
-        ]
-      }
-    ]
-  },
-  {
-    id: 6,
-    title: "Fair Value Gap",
-    sections: [
-      {
-        title: "Definition",
-        content: [
-          "A 3-candle imbalance where price moves too fast."
-        ]
-      },
-      {
-        title: "Rules",
-        content: [
-          "Price tends to rebalance.",
-          "Best used with: OB, Structure, Liquidity sweep."
-        ]
-      }
-    ]
-  },
-  {
-    id: 7,
-    title: "Fibonacci Rules",
-    sections: [
-      {
-        title: "Retracement Levels",
-        content: [
-          "23.6% → aggressive",
-          "38.2% – 50% → optimal",
-          "61.8% → last valid",
-          "61.8% → setup invalid (for continuation)"
-        ]
-      },
-      {
-        title: "Fib Rules",
-        content: [
-          "Draw only after impulse.",
-          "Confluence required (zone, OB, structure).",
-          "Never fib random swings."
-        ]
-      }
-    ]
-  },
-  {
-    id: 8,
-    title: "Price Action",
-    sections: [
-      {
-        title: "Candle Psychology",
-        content: [
-          "Long wick → rejection",
-          "Large body → momentum",
-          "Small candles → absorption"
-        ]
-      },
-      {
-        title: "Confirmation Types",
-        content: [
-          "Pin bar at level",
-          "Engulfing after sweep",
-          "Micro BOS on LTF",
-          "Failed breakdown / breakout"
-        ]
-      }
-    ]
-  },
-  {
-    id: 9,
-    title: "Forbidden Trades",
-    sections: [
-      {
-        title: "Hard Rules",
-        content: [
-          "Inside HTF opposing zone",
-          "Against HTF structure",
-          "Before liquidity sweep",
-          "Without confirmation",
-          "News volatility (optional filter)"
-        ]
-      }
-    ]
-  },
-  {
-    id: 10,
-    title: "Execution Checklist",
-    sections: [
-      {
-        title: "Final Gate",
-        content: [
-          "HTF bias clear",
-          "Zone valid",
-          "Liquidity taken",
-          "Structure confirmed",
-          "Entry confirmed",
-          "RR acceptable",
-          "SL logical"
-        ]
-      }
-    ]
-  }
-];
+const categoryIcons: Record<string, typeof BookOpen> = {
+  fundamentals: BookOpen,
+  "price-action": TrendingUp,
+  "smart-money": Brain,
+  strategies: Target,
+  psychology: Heart,
+  advanced: Zap,
+};
+
+const difficultyColors: Record<string, string> = {
+  Beginner: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  Intermediate: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  Advanced: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+};
+
+function LessonCard({
+  lesson,
+  hasFullAccess,
+  onSelectLesson,
+}: {
+  lesson: Lesson;
+  hasFullAccess: boolean;
+  onSelectLesson: (id: number) => void;
+}) {
+  const canAccess = canAccessLesson(lesson.id, hasFullAccess);
+  const CategoryIcon = categoryIcons[lesson.category] || BookOpen;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card
+        className={cn(
+          "relative overflow-hidden transition-all duration-200 h-full",
+          canAccess
+            ? "hover:border-emerald-500/50 cursor-pointer hover-elevate"
+            : "opacity-75"
+        )}
+        onClick={() => canAccess && onSelectLesson(lesson.id)}
+        data-testid={`lesson-card-${lesson.id}`}
+      >
+        {lesson.isFree && (
+          <div className="absolute top-3 right-3">
+            <Badge className="bg-emerald-500 text-white text-[10px] font-black">
+              FREE
+            </Badge>
+          </div>
+        )}
+        {!canAccess && (
+          <div className="absolute top-3 right-3">
+            <Badge variant="outline" className="text-[10px] font-black gap-1">
+              <Lock size={10} />
+              PRO
+            </Badge>
+          </div>
+        )}
+
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-start gap-4">
+            <div
+              className={cn(
+                "p-3 rounded-lg shrink-0",
+                lesson.isFree
+                  ? "bg-emerald-500/10"
+                  : "bg-muted"
+              )}
+            >
+              <CategoryIcon
+                className={cn(
+                  "w-5 h-5",
+                  lesson.isFree ? "text-emerald-500" : "text-muted-foreground"
+                )}
+              />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-foreground text-sm sm:text-base mb-1 line-clamp-2">
+                {lesson.title}
+              </h3>
+              <p className="text-muted-foreground text-xs sm:text-sm line-clamp-2 mb-3">
+                {lesson.description}
+              </p>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge
+                  variant="outline"
+                  className={cn("text-[10px] font-bold", difficultyColors[lesson.difficulty])}
+                >
+                  {lesson.difficulty}
+                </Badge>
+                <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                  <Clock size={12} />
+                  <span>{lesson.duration}</span>
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                  <BookOpen size={12} />
+                  <span>{lesson.images.length} visual{lesson.images.length !== 1 ? "s" : ""}</span>
+                </div>
+              </div>
+            </div>
+
+            {canAccess && (
+              <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 hidden sm:block" />
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function CategoryFilter({
+  categories,
+  selectedCategory,
+  onSelectCategory,
+  lessonCounts,
+}: {
+  categories: LessonCategory[];
+  selectedCategory: string | null;
+  onSelectCategory: (id: string | null) => void;
+  lessonCounts: Record<string, number>;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2 mb-6">
+      <Button
+        variant={selectedCategory === null ? "default" : "outline"}
+        size="sm"
+        onClick={() => onSelectCategory(null)}
+        className="font-bold"
+        data-testid="filter-all"
+      >
+        All Lessons
+        <Badge variant="secondary" className="ml-2 text-[10px]">
+          {EDUCATION_LESSONS.length}
+        </Badge>
+      </Button>
+      {categories.map((cat) => {
+        const Icon = categoryIcons[cat.id] || BookOpen;
+        return (
+          <Button
+            key={cat.id}
+            variant={selectedCategory === cat.id ? "default" : "outline"}
+            size="sm"
+            onClick={() => onSelectCategory(cat.id)}
+            className="font-bold gap-2"
+            data-testid={`filter-${cat.id}`}
+          >
+            <Icon size={14} />
+            <span className="hidden sm:inline">{cat.name}</span>
+            <Badge variant="secondary" className="ml-1 text-[10px]">
+              {lessonCounts[cat.id] || 0}
+            </Badge>
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+function LessonViewer({
+  lesson,
+  onClose,
+}: {
+  lesson: Lesson;
+  onClose: () => void;
+}) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 overflow-y-auto"
+    >
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-10">
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="font-bold"
+            data-testid="button-back-to-lessons"
+          >
+            Back to Lessons
+          </Button>
+          <Badge
+            variant="outline"
+            className={cn("font-bold", difficultyColors[lesson.difficulty])}
+          >
+            {lesson.difficulty}
+          </Badge>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="p-6 sm:p-8 border-b border-border bg-gradient-to-r from-emerald-500/5 to-transparent">
+            <div className="flex items-center gap-2 text-emerald-500 text-xs font-black tracking-widest uppercase mb-2">
+              <GraduationCap size={14} />
+              <span>Lesson {lesson.id}</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-foreground mb-3">
+              {lesson.title}
+            </h1>
+            <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
+              {lesson.description}
+            </p>
+            <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Clock size={14} />
+                <span>{lesson.duration}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <BookOpen size={14} />
+                <span>{lesson.images.length} visual{lesson.images.length !== 1 ? "s" : ""}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-8">
+            <div className="mb-8">
+              <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
+                <CheckCircle className="text-emerald-500" size={18} />
+                Key Learning Points
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {lesson.keyPoints.map((point, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg border border-border"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <span className="text-emerald-500 text-xs font-black">
+                        {idx + 1}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground font-medium">{point}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
+                <BookOpen className="text-emerald-500" size={18} />
+                Lesson Materials
+              </h2>
+
+              {lesson.images.length > 1 && (
+                <div className="flex gap-2 mb-4 flex-wrap">
+                  {lesson.images.map((_, idx) => (
+                    <Button
+                      key={idx}
+                      variant={currentImageIndex === idx ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentImageIndex(idx)}
+                      data-testid={`image-tab-${idx}`}
+                    >
+                      Page {idx + 1}
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              <div className="relative rounded-xl overflow-hidden border border-border bg-muted">
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={currentImageIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    src={lesson.images[currentImageIndex].src}
+                    alt={lesson.images[currentImageIndex].alt}
+                    className="w-full h-auto max-h-[80vh] object-contain"
+                    data-testid="lesson-image"
+                  />
+                </AnimatePresence>
+              </div>
+
+              {lesson.images.length > 1 && (
+                <div className="flex justify-between mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setCurrentImageIndex((prev) =>
+                        prev > 0 ? prev - 1 : lesson.images.length - 1
+                      )
+                    }
+                    disabled={lesson.images.length <= 1}
+                    data-testid="button-prev-image"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-muted-foreground text-sm self-center">
+                    {currentImageIndex + 1} of {lesson.images.length}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setCurrentImageIndex((prev) =>
+                        prev < lesson.images.length - 1 ? prev + 1 : 0
+                      )
+                    }
+                    disabled={lesson.images.length <= 1}
+                    data-testid="button-next-image"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function KnowledgeBase() {
-  const [activeModule, setActiveModule] = useState<number | null>(1);
+  const { canAccess } = usePlan();
+  const [, navigate] = useLocation();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
 
-  const currentModule = modules.find(m => m.id === activeModule);
+  const hasFullAccess = canAccess("fullEducationAccess");
+
+  const lessonCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    EDUCATION_LESSONS.forEach((lesson) => {
+      counts[lesson.category] = (counts[lesson.category] || 0) + 1;
+    });
+    return counts;
+  }, []);
+
+  const filteredLessons = useMemo(() => {
+    if (!selectedCategory) return EDUCATION_LESSONS;
+    return EDUCATION_LESSONS.filter((l) => l.category === selectedCategory);
+  }, [selectedCategory]);
+
+  const selectedLesson = useMemo(() => {
+    if (!selectedLessonId) return null;
+    return EDUCATION_LESSONS.find((l) => l.id === selectedLessonId) || null;
+  }, [selectedLessonId]);
+
+  const freeLessonsCount = EDUCATION_LESSONS.filter((l) => l.isFree).length;
+  const paidLessonsCount = EDUCATION_LESSONS.filter((l) => !l.isFree).length;
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background min-h-screen">
-      <main className="p-6 lg:p-10 max-w-7xl mx-auto">
+      <main className="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto">
         <header className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <BookOpen className="text-emerald-500" size={28} />
-            <h1 className="text-3xl font-black text-foreground tracking-tight uppercase italic">Education</h1>
+          <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <GraduationCap className="text-emerald-500" size={28} />
+              <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight uppercase italic">
+                Education Hub
+              </h1>
+            </div>
+            {hasFullAccess ? (
+              <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold gap-1">
+                <Star size={12} />
+                Full Access
+              </Badge>
+            ) : (
+              <Button
+                size="sm"
+                className="font-bold gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                onClick={() => navigate("/profile")}
+                data-testid="button-upgrade-for-access"
+              >
+                <Crown size={14} />
+                Upgrade for Full Access
+              </Button>
+            )}
           </div>
-          <p className="text-muted-foreground mt-1 italic font-medium">Structured rule systems for deterministic trading.</p>
-          <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
-            Educational content only. Not financial advice. <Link to="/risk-disclaimer" className="ml-1 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
+          <p className="text-muted-foreground mt-1 italic font-medium max-w-2xl">
+            Master institutional trading concepts with {EDUCATION_LESSONS.length} comprehensive lessons
+            covering price action, smart money concepts, and advanced strategies.
+          </p>
+          <div className="flex items-center gap-4 mt-3 text-sm">
+            <span className="text-emerald-500 font-bold">
+              {freeLessonsCount} Free Lessons
+            </span>
+            <span className="text-muted-foreground">|</span>
+            <span className="text-muted-foreground">
+              {paidLessonsCount} Pro Lessons
+            </span>
+          </div>
+          <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-3 border-l-2 border-amber-500/50 pl-2">
+            Educational content only. Not financial advice.{" "}
+            <Link
+              to="/risk-disclaimer"
+              className="ml-1 text-emerald-500/70 hover:underline"
+            >
+              View Risk Disclaimer
+            </Link>
           </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sidebar List */}
-          <div className="space-y-2 h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar">
-            {modules.map((module) => (
-              <button 
-                key={module.id}
-                onClick={() => setActiveModule(module.id)}
-                className={cn(
-                  "w-full p-4 rounded-lg border text-left transition-all duration-200 flex justify-between items-center group",
-                  activeModule === module.id
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold"
-                    : "bg-card border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <span className={cn(
-                    "flex items-center justify-center min-w-[24px] h-6 rounded text-xs font-black",
-                    activeModule === module.id ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
-                  )}>
-                    {module.id}
-                  </span>
-                  <span className="font-bold text-sm tracking-tight">{module.title}</span>
-                </div>
-                {activeModule === module.id ? <ChevronRight size={16} /> : <ChevronDown size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />}
-              </button>
-            ))}
-          </div>
+        <CategoryFilter
+          categories={LESSON_CATEGORIES}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          lessonCounts={lessonCounts}
+        />
 
-          {/* Content Area */}
-          <div className="lg:col-span-2">
-            <AnimatePresence mode="wait">
-              {currentModule && (
-                <motion.div
-                  key={currentModule.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-card border border-border rounded-xl p-8 shadow-xl min-h-[600px] border-t-4 border-t-emerald-500"
-                >
-                  <div className="flex items-center justify-between mb-8 border-b border-border pb-6">
-                    <div>
-                      <span className="text-emerald-500 text-xs font-black tracking-[0.2em] uppercase mb-1 block">Layer 1: Static Knowledge</span>
-                      <h2 className="text-3xl font-black text-foreground uppercase tracking-tight">{currentModule.title}</h2>
-                    </div>
-                    <div className="hidden sm:block">
-                      <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-black text-muted-foreground uppercase tracking-widest border border-border">
-                        Rule System v1.0
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-10">
-                    {currentModule.sections.map((section, idx) => (
-                      <div key={idx} className="relative">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
-                          <h3 className="text-lg font-black text-foreground uppercase italic tracking-tight">{section.title}</h3>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 gap-3 ml-4">
-                          {section.content.map((item, i) => (
-                            <div 
-                              key={i} 
-                              className="group flex items-start gap-3 p-4 bg-background border border-border rounded-lg hover:border-emerald-500/30 transition-colors"
-                            >
-                              <div className="mt-1">
-                                {currentModule.id === 9 ? (
-                                  <XCircle size={14} className="text-destructive" />
-                                ) : currentModule.id === 10 ? (
-                                  <CheckCircle2 size={14} className="text-emerald-500" />
-                                ) : (
-                                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-emerald-500 transition-colors mt-1" />
-                                )}
-                              </div>
-                              <p className="text-muted-foreground group-hover:text-foreground text-sm font-bold font-mono transition-colors">
-                                {item}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {currentModule.id === 9 && (
-                    <div className="mt-12 p-6 bg-destructive/5 border border-destructive/20 rounded-xl flex items-start gap-4">
-                      <ShieldAlert className="text-destructive shrink-0" size={24} />
-                      <div>
-                        <h4 className="text-destructive font-black text-sm uppercase tracking-wider mb-1">Hard Filter Warning</h4>
-                        <p className="text-muted-foreground text-xs leading-relaxed font-bold">
-                          Violating any of these rules results in an immediate NO TRADE decision, regardless of other confirmations.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-12 pt-8 border-t border-border flex justify-between items-center text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">
-                    <span>Market Knowledge Engine</span>
-                    <span>Deterministic Execution</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+          {filteredLessons.map((lesson) => (
+            <LessonCard
+              key={lesson.id}
+              lesson={lesson}
+              hasFullAccess={hasFullAccess}
+              onSelectLesson={setSelectedLessonId}
+            />
+          ))}
         </div>
+
+        {filteredLessons.length === 0 && (
+          <div className="text-center py-12">
+            <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground font-medium">
+              No lessons found in this category.
+            </p>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {selectedLesson && (
+            <LessonViewer
+              lesson={selectedLesson}
+              onClose={() => setSelectedLessonId(null)}
+            />
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

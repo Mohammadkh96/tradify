@@ -13,6 +13,7 @@ import connectPg from "connect-pg-simple";
 import { emailService } from "./emailService";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
+import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
 
 const PostgresStore = connectPg(session);
 
@@ -2249,9 +2250,11 @@ Output exactly 1-3 bullet points.`;
       const prevMonthName = monthNames[targetMonth === 1 ? 11 : targetMonth - 2];
 
       // Generate AI review
-      const prompt = `You are a Performance Coach writing a monthly self-review for a trader.
+      const prompt = `You are a Professional Trading Performance Coach for TRADIFY.
 
-Write a REFLECTIVE monthly review for ${monthName} ${targetYear}.
+${TRADING_KNOWLEDGE_CONTEXT}
+
+Write a REFLECTIVE monthly self-review for ${monthName} ${targetYear}.
 
 STRICT RULES:
 - Use REFLECTIVE, first-person observational tone ("I noticed...", "My trading showed...", "This month revealed...")
@@ -2551,28 +2554,39 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
         }));
       
       // Generate AI analysis - General market context (no real-time data available)
-      const prompt = `You are a Professional Market Analyst. Provide general market context for ${symbol}.
+      const prompt = `You are a Professional Market Analyst for TRADIFY trading journal.
 
-IMPORTANT: You do NOT have access to real-time prices. Do NOT mention any specific price levels, support/resistance numbers, or current prices.
+${TRADING_KNOWLEDGE_CONTEXT}
+
+ANALYZE: ${symbol}
+
+TRADER'S PERFORMANCE ON THIS INSTRUMENT:
+- Total Trades: ${trades.length}
+- Win Rate: ${winRate}%
+- Average P&L: $${avgPl.toFixed(2)}
+- Total P&L: $${totalPl.toFixed(2)}
+- Recent Trades: ${JSON.stringify(recentTrades)}
+
+IMPORTANT: You do NOT have access to real-time prices. Do NOT mention any specific price levels.
 
 ANALYSIS REQUIREMENTS:
+- Assess the trader's performance on this instrument based on the data
+- Reference relevant trading concepts (market structure, session timing, etc.)
 - General characteristics of how ${symbol} typically behaves
-- Key fundamental factors that influence this instrument
-- What economic events/data releases typically impact it
-- General trading considerations for this market
+- Key factors that influence this instrument
 
 STRICT RULES:
 - NO specific price levels (you don't have real-time data)
 - NO "current price is X" statements
-- NO specific support/resistance numbers
 - NO trade recommendations
-- Focus on GENERAL market dynamics and what drives this instrument
+- Focus on factual performance observations
 
-Provide a concise 3-4 sentence analysis covering:
-1. What fundamentally drives ${symbol} price movements
-2. Key economic factors and events traders should monitor
+Provide a concise 4-5 sentence analysis covering:
+1. Trader's performance pattern on ${symbol} (using the data above)
+2. What fundamentally drives ${symbol} price movements
+3. Which trading sessions tend to have best movement for ${symbol}
 
-End with: "Check your charts for current price action."`;
+End with: "Review your charts for current market structure."`;
 
       console.log("Calling OpenAI for instrument analysis with model gpt-4o-mini...");
       const response = await openai.chat.completions.create({

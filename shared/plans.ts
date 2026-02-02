@@ -13,6 +13,7 @@ export interface PlanFeatures {
   eliteBadge: boolean;
   advancedEquityCurve: boolean;
   performanceIntelligence: boolean;
+  fullEducationAccess: boolean;
 }
 
 export interface PlanConfig {
@@ -40,6 +41,7 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     eliteBadge: false,
     advancedEquityCurve: false,
     performanceIntelligence: false,
+    fullEducationAccess: false,
   },
   PRO: {
     maxStrategies: -1,
@@ -54,6 +56,7 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     eliteBadge: false,
     advancedEquityCurve: true,
     performanceIntelligence: true,
+    fullEducationAccess: true,
   },
   ELITE: {
     maxStrategies: -1,
@@ -68,6 +71,7 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     eliteBadge: true,
     advancedEquityCurve: true,
     performanceIntelligence: true,
+    fullEducationAccess: true,
   },
 };
 
@@ -84,11 +88,12 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       "Open Positions & Account Health",
       "Risk & Position Size Calculator",
       "30-Day Trade Journal History",
-      "Institutional Knowledge Base",
+      "3 Free Education Lessons",
       "1 Trading Strategy",
     ],
     excludedFeatures: [
       "Unlimited Trading Strategies",
+      "Full Education Hub Access",
       "Performance Intelligence",
       "Full Equity Curve",
       "AI Instrument Analysis",
@@ -109,13 +114,13 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     displayFeatures: [
       "Everything in Free",
       "Unlimited Trading Strategies",
+      "Full Education Hub Access",
       "Performance Intelligence Layer",
       "6-Month Trade History",
       "Full Equity Curve (All-Time)",
       "AI Instrument Analysis",
       "CSV Data Export",
       "PDF Report Generation",
-      "Priority MT5 Sync Intervals",
     ],
     excludedFeatures: [
       "Session Analytics",
@@ -241,5 +246,9 @@ export const FEATURE_DESCRIPTIONS: Record<keyof PlanFeatures, { name: string; de
   performanceIntelligence: {
     name: "Performance Intelligence",
     description: "Advanced metrics like profit factor, expectancy, and more",
+  },
+  fullEducationAccess: {
+    name: "Full Education Access",
+    description: "Access to all trading education lessons and materials",
   },
 };

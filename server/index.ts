@@ -3,8 +3,11 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { ensureSchemaColumns } from "./db";
+import path from "path";
 
 const app = express();
+
+app.use("/attached_assets", express.static(path.resolve(process.cwd(), "attached_assets")));
 const httpServer = createServer(app);
 
 declare module "http" {
