@@ -153,7 +153,7 @@ export default function Landing() {
             <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">Terminal integration architecture</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 title: "MT5 Local Bridge",
@@ -168,12 +168,22 @@ export default function Landing() {
               {
                 title: "Logic Validation",
                 desc: "Post-trade auditing against predefined strategy rules and execution parameters.",
-                icon: <BookOpen className="text-blue-500" />
+                icon: <ShieldCheck className="text-blue-500" />
               },
               {
                 title: "Operational Metrics",
                 desc: "Efficiency analysis by session, day, and risk-reward ratios.",
                 icon: <TrendingUp className="text-purple-500" />
+              },
+              {
+                title: "Education Hub",
+                desc: "20 comprehensive lessons covering trading psychology, price action, smart money concepts, and advanced strategies.",
+                icon: <BookOpen className="text-cyan-500" />
+              },
+              {
+                title: "Strategy Framework",
+                desc: "Build and validate custom trading strategies with rule-based entry and exit criteria.",
+                icon: <BarChart3 className="text-rose-500" />
               }
             ].map((feature, i) => (
               <Card key={i} className="bg-background border-border hover:border-emerald-500/20 transition-all duration-300 group">
