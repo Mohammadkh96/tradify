@@ -3733,9 +3733,10 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
       // Finalize PDF
       doc.end();
 
-    } catch (error) {
-      console.error("PDF Report Error:", error);
-      res.status(500).json({ message: "Failed to generate PDF report" });
+    } catch (error: any) {
+      console.error("PDF Report Error:", error?.message || error);
+      console.error("PDF Report Stack:", error?.stack);
+      res.status(500).json({ message: "Failed to generate PDF report", error: error?.message });
     }
   });
 
