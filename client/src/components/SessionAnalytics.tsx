@@ -161,7 +161,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
         <CardContent className="pt-6">
           <div className="animate-pulse space-y-4">
             <div className="h-48 bg-muted/50 rounded-lg" />
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="h-20 bg-muted/50 rounded-lg" />
               <div className="h-20 bg-muted/50 rounded-lg" />
               <div className="h-20 bg-muted/50 rounded-lg" />

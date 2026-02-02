@@ -91,12 +91,12 @@ function PositionSizeCalculator() {
       </CardHeader>
       <CardContent className="space-y-4">
         <CalculatorField label="Account Balance" value={accountSize} onChange={setAccountSize} prefix="$" />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <CalculatorField label="Risk %" value={riskPercent} onChange={setRiskPercent} step="0.1" suffix="%" />
           <CalculatorField label="Stop Loss (Pips)" value={stopLossPips} onChange={setStopLossPips} />
         </div>
         <div className="h-px bg-border my-2" />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ResultCard label="Risk Amount" value={`$${riskAmount.toFixed(2)}`} variant="danger" />
           <ResultCard label="Position Size" value={`${lotSize} lots`} variant="success" large />
         </div>
@@ -140,7 +140,7 @@ function RiskRewardCalculator() {
       </CardHeader>
       <CardContent className="space-y-4">
         <CalculatorField label="Entry Price" value={entryPrice} onChange={setEntryPrice} step="0.0001" />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <CalculatorField label="Stop Loss" value={stopLoss} onChange={setStopLoss} step="0.0001" />
           <CalculatorField label="Take Profit" value={takeProfit} onChange={setTakeProfit} step="0.0001" />
         </div>
@@ -228,12 +228,12 @@ function TradeOutcomeCalculator() {
             </Badge>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <CalculatorField label="Entry Price" value={entryPrice} onChange={setEntryPrice} step="0.0001" />
           <CalculatorField label="Exit Price" value={exitPrice} onChange={setExitPrice} step="0.0001" />
         </div>
         <div className="h-px bg-border my-2" />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ResultCard 
             label="Profit / Loss" 
             value={`${isProfit ? '+' : ''}$${profitLoss.toFixed(2)}`} 
@@ -291,7 +291,7 @@ function DrawdownCalculator() {
         <CalculatorField label="Account Balance" value={accountBalance} onChange={setAccountBalance} prefix="$" />
         <CalculatorField label="Drawdown %" value={drawdownPercent} onChange={setDrawdownPercent} step="1" suffix="%" />
         <div className="h-px bg-border my-2" />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ResultCard label="Remaining Balance" value={`$${remainingBalance.toFixed(2)}`} variant="danger" />
           <ResultCard label="To Recover" value={`${recoveryPercent.toFixed(1)}%`} variant="warning" large />
         </div>
@@ -342,7 +342,7 @@ function RuleViolationCalculator() {
         <CalculatorField label="Average Loss per Violation" value={avgLoss} onChange={setAvgLoss} prefix="$" />
         <CalculatorField label="Violations per Month" value={violationsPerMonth} onChange={setViolationsPerMonth} />
         <div className="h-px bg-border my-2" />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ResultCard label="Monthly Cost" value={`$${monthlyCost.toFixed(2)}`} variant="danger" />
           <ResultCard label="Annual Cost" value={`$${annualCost.toFixed(2)}`} variant="danger" large />
         </div>

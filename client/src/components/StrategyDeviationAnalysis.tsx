@@ -263,7 +263,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   Compliant Trade Performance
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">Total P&L</p>
                     <p className={`text-lg font-mono font-bold ${
@@ -288,7 +288,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                   <XCircle className="h-4 w-4 text-red-500" />
                   Non-Compliant Trade Performance
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">Total P&L</p>
                     <p className={`text-lg font-mono font-bold ${
@@ -369,7 +369,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                       {impact.performanceDifference > 0 ? "+" : ""}${impact.performanceDifference.toFixed(2)} when followed
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                     <div>
                       <p className="text-muted-foreground">When Violated</p>
                       <p className={`font-mono ${impact.avgPnLWhenViolated >= 0 ? "text-green-500" : "text-red-500"}`}>
@@ -420,7 +420,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                       {strategy.complianceRate.toFixed(1)}% compliant
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div>
                       <p className="text-muted-foreground">Evaluated</p>
                       <p className="font-mono">{strategy.totalEvaluated}</p>

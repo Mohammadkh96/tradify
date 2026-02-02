@@ -322,7 +322,7 @@ export function BehavioralRiskFlags({ userId }: BehavioralRiskFlagsProps) {
               <Activity size={14} className="text-muted-foreground" />
               Historical Comparison
             </h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-3 bg-muted/30 rounded-lg">
                 <p className="text-xs text-muted-foreground mb-1">Volume Change</p>
                 <p className={`text-lg font-mono font-bold ${

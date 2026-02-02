@@ -439,7 +439,7 @@ if __name__ == "__main__":
                   </Link>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
                 {['5s', '2s', '1s'].map((interval) => {
                   const isDisabled = 
                     (interval === '2s' && !hasPaidPlan) || 

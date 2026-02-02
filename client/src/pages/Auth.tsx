@@ -424,7 +424,7 @@ export default function Auth() {
                 
                 {!isLogin && (
                   <>
-                    <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Country</label>
                         <Select value={country} onValueChange={setCountry} required={!isLogin}>
@@ -550,7 +550,7 @@ export default function Auth() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
               <div className="flex items-center gap-2 p-3 bg-muted rounded-xl border border-border">
                 <ShieldCheck size={16} className="text-emerald-500/50" />
                 <span className="text-[9px] text-muted-foreground leading-tight">No broker credentials needed</span>

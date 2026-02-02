@@ -614,7 +614,7 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   {/* Stats Grid */}
                   {instrumentAnalysis.tradeCount > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                       <div className="bg-background/50 p-2.5 rounded-lg border border-border">
                         <span className="text-[9px] font-bold text-muted-foreground uppercase block">Trades</span>
                         <span className="text-sm font-black text-foreground">{instrumentAnalysis.tradeCount}</span>
@@ -691,7 +691,7 @@ export default function Dashboard() {
             </h3>
             
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-background/50 p-3 rounded-xl border border-border">
                   <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Best Session</span>
                   <div className="flex items-center gap-2">
@@ -718,12 +718,12 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3">
                   <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Total Trades</span>
                   <span className="text-sm font-black text-foreground">{filteredStats.total}</span>
                 </div>
-                <div className="p-3 text-right">
+                <div className="p-3 sm:text-right">
                   <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Expectancy</span>
                   <span className={cn("text-sm font-black", filteredStats.expectancy >= 0 ? "text-emerald-500" : "text-rose-500")}>
                     ${filteredStats.expectancy.toFixed(2)}
@@ -791,7 +791,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Violations & Trend */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-background/50 p-3 rounded-xl border border-border">
                     <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Violations</span>
                     <div className="flex items-center gap-2">
@@ -859,7 +859,7 @@ export default function Dashboard() {
             </h3>
             
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-background/50 p-3 rounded-xl border border-border">
                   <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Avg Win</span>
                   <div className="flex items-center gap-2">
@@ -876,7 +876,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl">
                   <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Best Trade</span>
                   <span className="text-sm font-black text-emerald-500">+${filteredStats.bestTrade.toFixed(2)}</span>
