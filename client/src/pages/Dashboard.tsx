@@ -38,7 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Link } from "react-router-dom";
-import { format, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, parseISO } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, parseISO, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
@@ -184,6 +184,10 @@ export default function Dashboard() {
     
     if (dateFilter === "today") {
       return isWithinInterval(tradeDate, { start: startOfDay(now), end: endOfDay(now) });
+    } else if (dateFilter === "7days") {
+      return isWithinInterval(tradeDate, { start: subDays(now, 7), end: endOfDay(now) });
+    } else if (dateFilter === "30days") {
+      return isWithinInterval(tradeDate, { start: subDays(now, 30), end: endOfDay(now) });
     } else if (dateFilter === "week") {
       return isWithinInterval(tradeDate, { start: startOfWeek(now), end: endOfDay(now) });
     } else if (dateFilter === "month") {
@@ -316,7 +320,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
-              {['all', 'today', 'week', 'month'].map((filter) => (
+              {['all', 'today', '7days', '30days', 'month'].map((filter) => (
                 <Button
                   key={filter}
                   variant={dateFilter === filter ? "default" : "ghost"}
@@ -328,7 +332,7 @@ export default function Dashboard() {
                   )}
                   data-testid={`dashboard-filter-${filter}`}
                 >
-                  {filter === 'all' ? 'All Time' : filter}
+                  {filter === 'all' ? 'All Time' : filter === '7days' ? '7 Days' : filter === '30days' ? '30 Days' : filter}
                 </Button>
               ))}
               <Popover>

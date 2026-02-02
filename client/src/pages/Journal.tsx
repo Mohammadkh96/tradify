@@ -83,6 +83,10 @@ export default function Journal() {
         const now = new Date();
         if (dateFilter === "today") {
           matchesDate = isWithinInterval(tradeDate, { start: startOfDay(now), end: endOfDay(now) });
+        } else if (dateFilter === "7days") {
+          matchesDate = isWithinInterval(tradeDate, { start: subDays(now, 7), end: endOfDay(now) });
+        } else if (dateFilter === "30days") {
+          matchesDate = isWithinInterval(tradeDate, { start: subDays(now, 30), end: endOfDay(now) });
         } else if (dateFilter === "week") {
           matchesDate = isWithinInterval(tradeDate, { start: startOfWeek(now), end: endOfDay(now) });
         } else if (dateFilter === "month") {
@@ -162,7 +166,7 @@ export default function Journal() {
               </Link>
             )}
             <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
-              {['all', 'today', 'week', 'month'].map((filter) => (
+              {['all', 'today', '7days', '30days', 'month'].map((filter) => (
                 <Button
                   key={filter}
                   variant={dateFilter === filter ? "default" : "ghost"}
@@ -174,7 +178,7 @@ export default function Journal() {
                   )}
                   data-testid={`filter-${filter}`}
                 >
-                  {filter === 'all' ? 'All Time' : filter}
+                  {filter === 'all' ? 'All Time' : filter === '7days' ? '7 Days' : filter === '30days' ? '30 Days' : filter}
                 </Button>
               ))}
               <Popover>
