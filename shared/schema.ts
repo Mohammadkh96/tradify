@@ -393,3 +393,41 @@ export const instrumentAnalyses = pgTable("instrument_analyses", {
 export const insertInstrumentAnalysisSchema = createInsertSchema(instrumentAnalyses).omit({ id: true, createdAt: true });
 export type InstrumentAnalysis = typeof instrumentAnalyses.$inferSelect;
 export type InsertInstrumentAnalysis = z.infer<typeof insertInstrumentAnalysisSchema>;
+
+export const lessonProgress = pgTable("lesson_progress", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  lessonId: integer("lesson_id").notNull(),
+  completed: boolean("completed").default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omit({ id: true, createdAt: true });
+export type LessonProgress = typeof lessonProgress.$inferSelect;
+export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
+
+export const lessonBookmarks = pgTable("lesson_bookmarks", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  lessonId: integer("lesson_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertLessonBookmarkSchema = createInsertSchema(lessonBookmarks).omit({ id: true, createdAt: true });
+export type LessonBookmark = typeof lessonBookmarks.$inferSelect;
+export type InsertLessonBookmark = z.infer<typeof insertLessonBookmarkSchema>;
+
+export const quizResults = pgTable("quiz_results", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  lessonId: integer("lesson_id").notNull(),
+  score: integer("score").notNull(),
+  totalQuestions: integer("total_questions").notNull(),
+  answers: jsonb("answers").default({}),
+  completedAt: timestamp("completed_at").defaultNow(),
+});
+
+export const insertQuizResultSchema = createInsertSchema(quizResults).omit({ id: true, completedAt: true });
+export type QuizResult = typeof quizResults.$inferSelect;
+export type InsertQuizResult = z.infer<typeof insertQuizResultSchema>;

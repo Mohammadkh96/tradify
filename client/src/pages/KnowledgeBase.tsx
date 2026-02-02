@@ -3,21 +3,53 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   BookOpen, TrendingUp, Brain, Target, Heart, Zap,
-  Lock, Clock, ChevronRight, Crown, Star,
-  GraduationCap, CheckCircle, ArrowLeft
+  Lock, Clock, ChevronRight, Crown, Star, Search,
+  GraduationCap, CheckCircle, ArrowLeft, AlertTriangle,
+  Lightbulb, Play, XCircle, CircleCheck, Link2, HelpCircle,
+  Bookmark, BookmarkCheck, MessageSquare, Send, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { usePlan } from "@/hooks/usePlan";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   EDUCATION_LESSONS,
   LESSON_CATEGORIES,
   type Lesson,
   type LessonCategory,
+  type QuizQuestion,
+  type DiagramType,
   canAccessLesson,
 } from "@/data/educationLessons";
+import { DIAGRAM_TYPES } from "@/components/TradingDiagrams";
+
+type LessonProgress = {
+  id: number;
+  userId: string;
+  lessonId: number;
+  completed: boolean;
+  completedAt: string | null;
+};
+
+type LessonBookmark = {
+  id: number;
+  userId: string;
+  lessonId: number;
+  createdAt: string;
+};
+
+type QuizResult = {
+  id: number;
+  userId: string;
+  lessonId: number;
+  score: number;
+  totalQuestions: number;
+  completedAt: string;
+};
 
 const categoryIcons: Record<string, typeof BookOpen> = {
   fundamentals: BookOpen,
@@ -38,10 +70,16 @@ function LessonCard({
   lesson,
   hasFullAccess,
   onSelectLesson,
+  isCompleted,
+  isBookmarked,
+  onToggleBookmark,
 }: {
   lesson: Lesson;
   hasFullAccess: boolean;
   onSelectLesson: (id: number) => void;
+  isCompleted: boolean;
+  isBookmarked: boolean;
+  onToggleBookmark: (lessonId: number) => void;
 }) {
   const canAccess = canAccessLesson(lesson.id, hasFullAccess);
   const CategoryIcon = categoryIcons[lesson.category] || BookOpen;
@@ -57,41 +95,61 @@ function LessonCard({
           "relative overflow-visible transition-all duration-200 h-full",
           canAccess
             ? "hover:border-emerald-500/50 cursor-pointer hover-elevate"
-            : "opacity-75"
+            : "opacity-75",
+          isCompleted && "border-emerald-500/30"
         )}
         onClick={() => canAccess && onSelectLesson(lesson.id)}
         data-testid={`lesson-card-${lesson.id}`}
       >
-        {lesson.isFree && (
-          <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          {isCompleted && (
+            <CheckCircle className="w-5 h-5 text-emerald-500" data-testid={`completed-${lesson.id}`} />
+          )}
+          {canAccess && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleBookmark(lesson.id);
+              }}
+              className="p-1 hover:bg-muted rounded"
+              data-testid={`bookmark-toggle-${lesson.id}`}
+            >
+              {isBookmarked ? (
+                <BookmarkCheck className="w-4 h-4 text-amber-500" />
+              ) : (
+                <Bookmark className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
+          )}
+          {lesson.isFree && !isCompleted && (
             <Badge className="bg-emerald-500 text-white text-[10px] font-black">
               FREE
             </Badge>
-          </div>
-        )}
-        {!canAccess && (
-          <div className="absolute top-3 right-3">
+          )}
+          {!canAccess && (
             <Badge variant="outline" className="text-[10px] font-black gap-1">
               <Lock size={10} />
               PRO
             </Badge>
-          </div>
-        )}
+          )}
+        </div>
 
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start gap-4">
             <div
               className={cn(
                 "p-3 rounded-lg shrink-0",
-                lesson.isFree
+                isCompleted
                   ? "bg-emerald-500/10"
-                  : "bg-muted"
+                  : lesson.isFree
+                    ? "bg-emerald-500/10"
+                    : "bg-muted"
               )}
             >
               <CategoryIcon
                 className={cn(
                   "w-5 h-5",
-                  lesson.isFree ? "text-emerald-500" : "text-muted-foreground"
+                  isCompleted ? "text-emerald-500" : lesson.isFree ? "text-emerald-500" : "text-muted-foreground"
                 )}
               />
             </div>
@@ -119,6 +177,12 @@ function LessonCard({
                   <BookOpen size={12} />
                   <span>{lesson.sections.length} sections</span>
                 </div>
+                {lesson.quiz && lesson.quiz.length > 0 && (
+                  <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                    <HelpCircle size={12} />
+                    <span>Quiz</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -180,13 +244,291 @@ function CategoryFilter({
   );
 }
 
+function QuizSection({ quiz, lessonId }: { quiz: QuizQuestion[]; lessonId: number }) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [showResults, setShowResults] = useState(false);
+
+  const saveQuizResultMutation = useMutation({
+    mutationFn: async (data: { score: number; totalQuestions: number; answers: Record<number, number> }) => {
+      return apiRequest("/api/education/quiz-results", {
+        method: "POST",
+        body: JSON.stringify({ lessonId, ...data }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/education/quiz-results"] });
+    },
+  });
+
+  const handleAnswer = (questionId: number, optionIndex: number) => {
+    if (showResults) return;
+    setAnswers({ ...answers, [questionId]: optionIndex });
+  };
+
+  const checkAnswers = () => {
+    setShowResults(true);
+    const score = quiz.filter(q => answers[q.id] === q.correctAnswer).length;
+    saveQuizResultMutation.mutate({
+      score,
+      totalQuestions: quiz.length,
+      answers,
+    });
+  };
+
+  const resetQuiz = () => {
+    setAnswers({});
+    setShowResults(false);
+  };
+
+  const correctCount = quiz.filter(q => answers[q.id] === q.correctAnswer).length;
+
+  return (
+    <div className="mt-8 p-6 bg-gradient-to-r from-amber-500/5 to-transparent rounded-xl border border-amber-500/20">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-black text-foreground uppercase tracking-tight flex items-center gap-2">
+          <HelpCircle className="text-amber-500" size={20} />
+          Knowledge Check
+        </h2>
+        {showResults && (
+          <Badge className={cn(
+            "font-bold",
+            correctCount === quiz.length ? "bg-emerald-500" : correctCount >= quiz.length / 2 ? "bg-amber-500" : "bg-rose-500"
+          )}>
+            {correctCount}/{quiz.length} Correct
+          </Badge>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        {quiz.map((question, qIdx) => {
+          const userAnswer = answers[question.id];
+          const isCorrect = userAnswer === question.correctAnswer;
+          const showAnswer = showResults && userAnswer !== undefined;
+
+          return (
+            <div key={question.id} className="space-y-3" data-testid={`quiz-question-${lessonId}-${qIdx}`}>
+              <p className="font-bold text-foreground">
+                {qIdx + 1}. {question.question}
+              </p>
+              <div className="grid gap-2">
+                {question.options.map((option, oIdx) => {
+                  const isSelected = userAnswer === oIdx;
+                  const isCorrectAnswer = question.correctAnswer === oIdx;
+
+                  return (
+                    <button
+                      key={oIdx}
+                      onClick={() => handleAnswer(question.id, oIdx)}
+                      disabled={showResults}
+                      className={cn(
+                        "text-left p-3 rounded-lg border transition-all text-sm",
+                        !showResults && "hover:border-amber-500/50",
+                        isSelected && !showResults && "border-amber-500 bg-amber-500/10",
+                        showResults && isCorrectAnswer && "border-emerald-500 bg-emerald-500/10",
+                        showResults && isSelected && !isCorrect && "border-rose-500 bg-rose-500/10",
+                        !isSelected && !showResults && "border-border"
+                      )}
+                      data-testid={`quiz-option-${lessonId}-${qIdx}-${oIdx}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                          isSelected && !showResults && "bg-amber-500 text-white",
+                          showResults && isCorrectAnswer && "bg-emerald-500 text-white",
+                          showResults && isSelected && !isCorrect && "bg-rose-500 text-white",
+                          !isSelected && "bg-muted text-muted-foreground"
+                        )}>
+                          {showResults && isCorrectAnswer ? (
+                            <CheckCircle size={14} />
+                          ) : showResults && isSelected && !isCorrect ? (
+                            <XCircle size={14} />
+                          ) : (
+                            String.fromCharCode(65 + oIdx)
+                          )}
+                        </div>
+                        <span className={cn(
+                          showResults && isCorrectAnswer && "text-emerald-500 font-medium",
+                          showResults && isSelected && !isCorrect && "text-rose-500"
+                        )}>
+                          {option}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {showAnswer && (
+                <div className={cn(
+                  "p-3 rounded-lg text-sm",
+                  isCorrect ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-rose-500/10 border border-rose-500/20"
+                )}>
+                  <p className={cn("font-medium", isCorrect ? "text-emerald-500" : "text-rose-500")}>
+                    {isCorrect ? "Correct!" : "Incorrect"}
+                  </p>
+                  <p className="text-muted-foreground mt-1">{question.explanation}</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 flex gap-3">
+        {!showResults ? (
+          <Button 
+            onClick={checkAnswers} 
+            disabled={Object.keys(answers).length !== quiz.length}
+            className="font-bold"
+            data-testid="button-check-answers"
+          >
+            Check Answers
+          </Button>
+        ) : (
+          <Button onClick={resetQuiz} variant="outline" className="font-bold" data-testid="button-retry-quiz">
+            Try Again
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AITutorSection({ lesson, hasFullAccess }: { lesson: Lesson; hasFullAccess: boolean }) {
+  const [question, setQuestion] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const askTutorMutation = useMutation({
+    mutationFn: async (q: string) => {
+      const lessonContent = lesson.sections.map(s => `${s.title}: ${s.content}`).join('\n\n').slice(0, 3000);
+      const response = await apiRequest("/api/education/ai-tutor", {
+        method: "POST",
+        body: JSON.stringify({ 
+          question: q, 
+          lessonTitle: lesson.title,
+          lessonContent 
+        }),
+      });
+      return response as { answer: string };
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!question.trim()) return;
+    askTutorMutation.mutate(question);
+  };
+
+  if (!hasFullAccess) {
+    return (
+      <div className="mt-10 p-6 bg-gradient-to-r from-purple-500/5 to-transparent rounded-xl border border-purple-500/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="text-purple-500" size={20} />
+            <h2 className="text-lg font-black text-foreground uppercase tracking-tight">AI Tutor</h2>
+          </div>
+          <Badge variant="outline" className="text-[10px] font-black gap-1">
+            <Crown size={10} className="text-amber-500" />
+            PRO/ELITE
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mt-2">
+          Upgrade to Pro or Elite to ask questions about this lesson and get personalized explanations.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-10 p-6 bg-gradient-to-r from-purple-500/5 to-transparent rounded-xl border border-purple-500/20">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between"
+        data-testid="button-toggle-ai-tutor"
+      >
+        <div className="flex items-center gap-2">
+          <MessageSquare className="text-purple-500" size={20} />
+          <h2 className="text-lg font-black text-foreground uppercase tracking-tight">AI Tutor</h2>
+        </div>
+        <ChevronRight className={cn("w-5 h-5 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
+      </button>
+      
+      {isOpen && (
+        <div className="mt-4 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Ask any question about this lesson and get a personalized explanation based on the content.
+          </p>
+          
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g., Can you explain order blocks in simpler terms?"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              disabled={askTutorMutation.isPending}
+              data-testid="input-ai-question"
+            />
+            <Button 
+              onClick={handleSubmit} 
+              disabled={askTutorMutation.isPending || !question.trim()}
+              data-testid="button-ask-ai"
+            >
+              {askTutorMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send size={16} />
+              )}
+            </Button>
+          </div>
+          
+          {askTutorMutation.isSuccess && askTutorMutation.data && (
+            <div className="p-4 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-center gap-2 text-purple-500 text-xs font-black tracking-widest uppercase mb-2">
+                <Brain size={14} />
+                <span>AI Response</span>
+              </div>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                {askTutorMutation.data.answer.split('\n\n').map((paragraph, idx) => (
+                  <p key={idx} className="text-sm text-foreground mb-2">{paragraph}</p>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {askTutorMutation.isError && (
+            <div className="p-4 bg-rose-500/10 rounded-lg border border-rose-500/20">
+              <p className="text-sm text-rose-500">Failed to get response. Please try again.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LessonViewer({
   lesson,
   onClose,
+  onSelectLesson,
+  hasFullAccess,
+  isCompleted,
+  isBookmarked,
+  onMarkComplete,
+  onToggleBookmark,
 }: {
   lesson: Lesson;
   onClose: () => void;
+  onSelectLesson: (id: number) => void;
+  hasFullAccess: boolean;
+  isCompleted: boolean;
+  isBookmarked: boolean;
+  onMarkComplete: (lessonId: number, completed: boolean) => void;
+  onToggleBookmark: (lessonId: number) => void;
 }) {
+  const relatedLessonObjects = useMemo(() => {
+    return lesson.relatedLessons
+      .map(id => EDUCATION_LESSONS.find(l => l.id === id))
+      .filter((l): l is Lesson => l !== undefined);
+  }, [lesson.relatedLessons]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -195,7 +537,7 @@ function LessonViewer({
       className="fixed inset-0 bg-background z-50 overflow-y-auto"
     >
       <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-10">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <Button
             variant="outline"
             onClick={onClose}
@@ -205,12 +547,52 @@ function LessonViewer({
             <ArrowLeft size={16} />
             Back to Lessons
           </Button>
-          <Badge
-            variant="outline"
-            className={cn("font-bold", difficultyColors[lesson.difficulty])}
-          >
-            {lesson.difficulty}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onToggleBookmark(lesson.id)}
+              className="font-bold gap-2"
+              data-testid="button-toggle-bookmark"
+            >
+              {isBookmarked ? (
+                <>
+                  <BookmarkCheck size={14} className="text-amber-500" />
+                  Bookmarked
+                </>
+              ) : (
+                <>
+                  <Bookmark size={14} />
+                  Bookmark
+                </>
+              )}
+            </Button>
+            <Button
+              variant={isCompleted ? "outline" : "default"}
+              size="sm"
+              onClick={() => onMarkComplete(lesson.id, !isCompleted)}
+              className={cn("font-bold gap-2", isCompleted && "border-emerald-500/50")}
+              data-testid="button-mark-complete"
+            >
+              {isCompleted ? (
+                <>
+                  <CheckCircle size={14} className="text-emerald-500" />
+                  Completed
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={14} />
+                  Mark Complete
+                </>
+              )}
+            </Button>
+            <Badge
+              variant="outline"
+              className={cn("font-bold", difficultyColors[lesson.difficulty])}
+            >
+              {lesson.difficulty}
+            </Badge>
+          </div>
         </div>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden" data-testid={`lesson-viewer-${lesson.id}`}>
@@ -234,6 +616,12 @@ function LessonViewer({
                 <BookOpen size={14} />
                 <span>{lesson.sections.length} sections</span>
               </div>
+              {lesson.quiz && lesson.quiz.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <HelpCircle size={14} />
+                  <span>{lesson.quiz.length} quiz questions</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -261,27 +649,140 @@ function LessonViewer({
               </div>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-10">
               {lesson.sections.map((section, sectionIdx) => (
-                <div key={sectionIdx} className="border-l-2 border-emerald-500/30 pl-6" data-testid={`section-${sectionIdx}`}>
-                  <h3 className="text-xl font-black text-foreground mb-4" data-testid={`text-section-title-${sectionIdx}`}>
+                <div key={sectionIdx} data-testid={`section-${sectionIdx}`}>
+                  <h3 className="text-xl font-black text-foreground mb-4 flex items-center gap-2" data-testid={`text-section-title-${sectionIdx}`}>
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <span className="text-emerald-500 text-sm font-black">{sectionIdx + 1}</span>
+                    </div>
                     {section.title}
                   </h3>
-                  <ul className="space-y-3">
-                    {section.content.map((item, itemIdx) => (
-                      <li
-                        key={itemIdx}
-                        className="flex items-start gap-3 text-muted-foreground"
-                        data-testid={`section-${sectionIdx}-item-${itemIdx}`}
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
-                        <span className="text-sm leading-relaxed">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  
+                  {section.content && (
+                    <div className="prose prose-sm dark:prose-invert max-w-none mb-4">
+                      {section.content.split('\n\n').map((paragraph, pIdx) => (
+                        <p key={pIdx} className="text-muted-foreground leading-relaxed mb-4">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
+                  {section.bullets && section.bullets.length > 0 && (
+                    <ul className="space-y-2 mb-4">
+                      {section.bullets.map((bullet, bIdx) => (
+                        <li key={bIdx} className="flex items-start gap-3 text-muted-foreground">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                          <span className="text-sm leading-relaxed">{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {section.tradingExample && (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg border border-blue-500/20">
+                      <div className="flex items-center gap-2 text-blue-500 text-xs font-black tracking-widest uppercase mb-3">
+                        <Play size={14} />
+                        <span>Trading Example</span>
+                      </div>
+                      <div className="grid gap-3">
+                        <div>
+                          <p className="text-xs font-bold text-blue-400 uppercase mb-1">Setup</p>
+                          <p className="text-sm text-muted-foreground">{section.tradingExample.setup}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-blue-400 uppercase mb-1">Entry</p>
+                          <p className="text-sm text-muted-foreground">{section.tradingExample.entry}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-blue-400 uppercase mb-1">Management</p>
+                          <p className="text-sm text-muted-foreground">{section.tradingExample.management}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-emerald-400 uppercase mb-1">Outcome</p>
+                          <p className="text-sm text-foreground font-medium">{section.tradingExample.outcome}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+
+            {lesson.diagrams && lesson.diagrams.length > 0 && (
+              <div className="mt-10">
+                <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
+                  <TrendingUp className="text-cyan-500" size={18} />
+                  Visual Reference
+                </h2>
+                <div className="grid gap-6">
+                  {lesson.diagrams.map((diagramType: DiagramType) => {
+                    const DiagramComponent = DIAGRAM_TYPES[diagramType];
+                    return DiagramComponent ? <DiagramComponent key={diagramType} /> : null;
+                  })}
+                </div>
+              </div>
+            )}
+
+            {lesson.commonMistakes && lesson.commonMistakes.length > 0 && (
+              <div className="mt-10 p-6 bg-rose-500/5 rounded-xl border border-rose-500/20">
+                <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
+                  <AlertTriangle className="text-rose-500" size={18} />
+                  Common Mistakes to Avoid
+                </h2>
+                <ul className="space-y-3">
+                  {lesson.commonMistakes.map((mistake, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <XCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                      <span className="text-sm text-muted-foreground">{mistake}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {lesson.quiz && lesson.quiz.length > 0 && (
+              <QuizSection quiz={lesson.quiz} lessonId={lesson.id} />
+            )}
+
+            <AITutorSection lesson={lesson} hasFullAccess={hasFullAccess} />
+
+            {lesson.relatedLessons && relatedLessonObjects.length > 0 && (
+              <div className="mt-10">
+                <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
+                  <Link2 className="text-emerald-500" size={18} />
+                  Related Lessons
+                </h2>
+                <div className="grid gap-3">
+                  {relatedLessonObjects.map((related) => {
+                    const canAccess = canAccessLesson(related.id, hasFullAccess);
+                    return (
+                      <button
+                        key={related.id}
+                        onClick={() => canAccess && onSelectLesson(related.id)}
+                        disabled={!canAccess}
+                        className={cn(
+                          "text-left p-4 rounded-lg border transition-all flex items-center justify-between gap-4",
+                          canAccess ? "hover:border-emerald-500/50 hover-elevate" : "opacity-60"
+                        )}
+                        data-testid={`related-lesson-${related.id}`}
+                      >
+                        <div>
+                          <p className="font-bold text-foreground text-sm">{related.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{related.description.slice(0, 80)}...</p>
+                        </div>
+                        {canAccess ? (
+                          <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                        ) : (
+                          <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="mt-12 pt-8 border-t border-border">
               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest text-center">
@@ -300,8 +801,73 @@ export default function KnowledgeBase() {
   const [, navigate] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showBookmarked, setShowBookmarked] = useState(false);
 
   const hasFullAccess = canAccess("fullEducationAccess");
+
+  const { data: progress = [] } = useQuery<LessonProgress[]>({
+    queryKey: ["/api/education/progress"],
+  });
+
+  const { data: bookmarks = [] } = useQuery<LessonBookmark[]>({
+    queryKey: ["/api/education/bookmarks"],
+  });
+
+  const progressMutation = useMutation({
+    mutationFn: async ({ lessonId, completed }: { lessonId: number; completed: boolean }) => {
+      return apiRequest("/api/education/progress", {
+        method: "POST",
+        body: JSON.stringify({ lessonId, completed }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/education/progress"] });
+    },
+  });
+
+  const addBookmarkMutation = useMutation({
+    mutationFn: async (lessonId: number) => {
+      return apiRequest("/api/education/bookmarks", {
+        method: "POST",
+        body: JSON.stringify({ lessonId }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/education/bookmarks"] });
+    },
+  });
+
+  const removeBookmarkMutation = useMutation({
+    mutationFn: async (lessonId: number) => {
+      return apiRequest(`/api/education/bookmarks/${lessonId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/education/bookmarks"] });
+    },
+  });
+
+  const completedLessonIds = useMemo(() => {
+    return new Set(progress.filter(p => p.completed).map(p => p.lessonId));
+  }, [progress]);
+
+  const bookmarkedLessonIds = useMemo(() => {
+    return new Set(bookmarks.map(b => b.lessonId));
+  }, [bookmarks]);
+
+  const handleToggleBookmark = (lessonId: number) => {
+    if (bookmarkedLessonIds.has(lessonId)) {
+      removeBookmarkMutation.mutate(lessonId);
+    } else {
+      addBookmarkMutation.mutate(lessonId);
+    }
+  };
+
+  const handleMarkComplete = (lessonId: number, completed: boolean) => {
+    progressMutation.mutate({ lessonId, completed });
+  };
 
   const lessonCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -312,9 +878,28 @@ export default function KnowledgeBase() {
   }, []);
 
   const filteredLessons = useMemo(() => {
-    if (!selectedCategory) return EDUCATION_LESSONS;
-    return EDUCATION_LESSONS.filter((l) => l.category === selectedCategory);
-  }, [selectedCategory]);
+    let lessons = EDUCATION_LESSONS;
+    
+    if (showBookmarked) {
+      lessons = lessons.filter(l => bookmarkedLessonIds.has(l.id));
+    }
+    
+    if (selectedCategory) {
+      lessons = lessons.filter((l) => l.category === selectedCategory);
+    }
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      lessons = lessons.filter(
+        (l) =>
+          l.title.toLowerCase().includes(query) ||
+          l.description.toLowerCase().includes(query) ||
+          l.sections.some((s) => s.title.toLowerCase().includes(query))
+      );
+    }
+    
+    return lessons;
+  }, [selectedCategory, searchQuery, showBookmarked, bookmarkedLessonIds]);
 
   const selectedLesson = useMemo(() => {
     if (!selectedLessonId) return null;
@@ -323,6 +908,8 @@ export default function KnowledgeBase() {
 
   const freeLessonsCount = EDUCATION_LESSONS.filter((l) => l.isFree).length;
   const paidLessonsCount = EDUCATION_LESSONS.filter((l) => !l.isFree).length;
+  const completedCount = completedLessonIds.size;
+  const progressPercentage = Math.round((completedCount / EDUCATION_LESSONS.length) * 100);
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background min-h-screen">
@@ -354,15 +941,36 @@ export default function KnowledgeBase() {
           </div>
           <p className="text-muted-foreground mt-1 italic font-medium max-w-2xl">
             Master institutional trading concepts with {EDUCATION_LESSONS.length} comprehensive lessons
-            covering price action, smart money concepts, and advanced strategies.
+            covering price action, smart money concepts, psychology, and advanced strategies.
           </p>
-          <div className="flex items-center gap-4 mt-3 text-sm">
+          
+          <div className="mt-4 p-4 bg-card border border-border rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold text-foreground">Your Progress</span>
+              <span className="text-sm text-muted-foreground">{completedCount} / {EDUCATION_LESSONS.length} lessons</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2.5">
+              <div 
+                className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" 
+                style={{ width: `${progressPercentage}%` }}
+                data-testid="progress-bar"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">{progressPercentage}% complete</p>
+          </div>
+          
+          <div className="flex items-center gap-4 mt-4 text-sm flex-wrap">
             <span className="text-emerald-500 font-bold">
               {freeLessonsCount} Free Lessons
             </span>
             <span className="text-muted-foreground">|</span>
             <span className="text-muted-foreground">
               {paidLessonsCount} Pro Lessons
+            </span>
+            <span className="text-muted-foreground">|</span>
+            <span className="text-muted-foreground flex items-center gap-1">
+              <HelpCircle size={12} />
+              Quizzes Included
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-3 border-l-2 border-amber-500/50 pl-2">
@@ -375,6 +983,28 @@ export default function KnowledgeBase() {
             </Link>
           </p>
         </header>
+        
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+            <Input
+              placeholder="Search lessons by title, topic, or concept..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 font-medium"
+              data-testid="input-search-lessons"
+            />
+          </div>
+          <Button
+            variant={showBookmarked ? "default" : "outline"}
+            onClick={() => setShowBookmarked(!showBookmarked)}
+            className="font-bold gap-2"
+            data-testid="button-show-bookmarks"
+          >
+            <Bookmark size={16} />
+            Bookmarked ({bookmarks.length})
+          </Button>
+        </div>
 
         <CategoryFilter
           categories={LESSON_CATEGORIES}
@@ -390,6 +1020,9 @@ export default function KnowledgeBase() {
               lesson={lesson}
               hasFullAccess={hasFullAccess}
               onSelectLesson={setSelectedLessonId}
+              isCompleted={completedLessonIds.has(lesson.id)}
+              isBookmarked={bookmarkedLessonIds.has(lesson.id)}
+              onToggleBookmark={handleToggleBookmark}
             />
           ))}
         </div>
@@ -398,7 +1031,7 @@ export default function KnowledgeBase() {
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground font-medium">
-              No lessons found in this category.
+              {showBookmarked ? "No bookmarked lessons yet." : "No lessons found."}
             </p>
           </div>
         )}
@@ -408,6 +1041,12 @@ export default function KnowledgeBase() {
             <LessonViewer
               lesson={selectedLesson}
               onClose={() => setSelectedLessonId(null)}
+              onSelectLesson={setSelectedLessonId}
+              hasFullAccess={hasFullAccess}
+              isCompleted={completedLessonIds.has(selectedLesson.id)}
+              isBookmarked={bookmarkedLessonIds.has(selectedLesson.id)}
+              onMarkComplete={handleMarkComplete}
+              onToggleBookmark={handleToggleBookmark}
             />
           )}
         </AnimatePresence>

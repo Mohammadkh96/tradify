@@ -3828,6 +3828,208 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
     }
   });
 
+  // Education Hub - Lesson Progress Endpoints
+  app.get("/api/education/progress", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const progress = await db.select().from(schema.lessonProgress).where(eq(schema.lessonProgress.userId, userId));
+      res.json(progress);
+    } catch (error) {
+      console.error("Lesson progress error:", error);
+      res.status(500).json({ message: "Failed to get lesson progress" });
+    }
+  });
+
+  app.post("/api/education/progress", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { lessonId, completed } = req.body;
+      
+      const existing = await db.select().from(schema.lessonProgress)
+        .where(and(eq(schema.lessonProgress.userId, userId), eq(schema.lessonProgress.lessonId, lessonId)))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        await db.update(schema.lessonProgress)
+          .set({ completed, completedAt: completed ? new Date() : null })
+          .where(and(eq(schema.lessonProgress.userId, userId), eq(schema.lessonProgress.lessonId, lessonId)));
+      } else {
+        await db.insert(schema.lessonProgress).values({
+          userId,
+          lessonId,
+          completed,
+          completedAt: completed ? new Date() : null,
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Lesson progress update error:", error);
+      res.status(500).json({ message: "Failed to update lesson progress" });
+    }
+  });
+
+  // Education Hub - Bookmark Endpoints
+  app.get("/api/education/bookmarks", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const bookmarks = await db.select().from(schema.lessonBookmarks).where(eq(schema.lessonBookmarks.userId, userId));
+      res.json(bookmarks);
+    } catch (error) {
+      console.error("Bookmarks error:", error);
+      res.status(500).json({ message: "Failed to get bookmarks" });
+    }
+  });
+
+  app.post("/api/education/bookmarks", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { lessonId } = req.body;
+      
+      const existing = await db.select().from(schema.lessonBookmarks)
+        .where(and(eq(schema.lessonBookmarks.userId, userId), eq(schema.lessonBookmarks.lessonId, lessonId)))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        res.json({ success: true, message: "Already bookmarked" });
+        return;
+      }
+      
+      await db.insert(schema.lessonBookmarks).values({ userId, lessonId });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Bookmark add error:", error);
+      res.status(500).json({ message: "Failed to add bookmark" });
+    }
+  });
+
+  app.delete("/api/education/bookmarks/:lessonId", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const lessonId = parseInt(req.params.lessonId);
+      
+      await db.delete(schema.lessonBookmarks)
+        .where(and(eq(schema.lessonBookmarks.userId, userId), eq(schema.lessonBookmarks.lessonId, lessonId)));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Bookmark delete error:", error);
+      res.status(500).json({ message: "Failed to remove bookmark" });
+    }
+  });
+
+  // Education Hub - Quiz Results Endpoints
+  app.get("/api/education/quiz-results", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const results = await db.select().from(schema.quizResults).where(eq(schema.quizResults.userId, userId));
+      res.json(results);
+    } catch (error) {
+      console.error("Quiz results error:", error);
+      res.status(500).json({ message: "Failed to get quiz results" });
+    }
+  });
+
+  app.post("/api/education/quiz-results", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { lessonId, score, totalQuestions, answers } = req.body;
+      
+      await db.insert(schema.quizResults).values({
+        userId,
+        lessonId,
+        score,
+        totalQuestions,
+        answers: answers || {},
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Quiz result save error:", error);
+      res.status(500).json({ message: "Failed to save quiz result" });
+    }
+  });
+
+  app.get("/api/education/quiz-results/:lessonId/best", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const lessonId = parseInt(req.params.lessonId);
+      
+      const results = await db.select().from(schema.quizResults)
+        .where(and(eq(schema.quizResults.userId, userId), eq(schema.quizResults.lessonId, lessonId)))
+        .orderBy(desc(schema.quizResults.score))
+        .limit(1);
+      
+      res.json(results[0] || null);
+    } catch (error) {
+      console.error("Best quiz result error:", error);
+      res.status(500).json({ message: "Failed to get best quiz result" });
+    }
+  });
+
+  app.post("/api/education/ai-tutor", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      const aiTutorSchema = z.object({
+        question: z.string().min(1).max(500),
+        lessonTitle: z.string().min(1).max(200),
+        lessonContent: z.string().max(5000).optional(),
+      });
+      
+      const validationResult = aiTutorSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        res.status(400).json({ message: "Invalid request data" });
+        return;
+      }
+      
+      const { question, lessonTitle, lessonContent } = validationResult.data;
+      
+      const user = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
+      const userPlan = user[0]?.subscriptionTier || "FREE";
+      
+      if (!canAccessFeature(userPlan, "aiAnalysis")) {
+        res.status(403).json({ message: "AI Tutor is a Pro/Elite feature. Upgrade to access." });
+        return;
+      }
+      
+      const systemPrompt = `${AI_SYSTEM_CONTEXT}
+
+You are an AI Trading Tutor for the TRADIFY trading journal application. You help traders understand trading concepts from their educational lessons.
+
+Current Lesson: "${lessonTitle}"
+${lessonContent ? `\nLesson Context:\n${lessonContent.slice(0, 2000)}` : ""}
+
+Trading Knowledge Context:
+${TRADING_KNOWLEDGE_CONTEXT}
+
+Guidelines:
+- Answer questions specifically about the current lesson topic
+- Provide practical examples when helpful
+- Keep responses concise (2-4 paragraphs max)
+- Use trading terminology the student is learning
+- If asked about unrelated topics, gently redirect to trading education
+- Never provide specific trade recommendations or financial advice
+- Focus on concepts, not predictions`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: question }
+        ],
+        max_tokens: 800,
+        temperature: 0.7,
+      });
+      
+      const answer = response.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+      
+      res.json({ answer });
+    } catch (error) {
+      console.error("AI Tutor error:", error);
+      res.status(500).json({ message: "Failed to get AI response. Please try again." });
+    }
+  });
+
   return httpServer;
 }
 
