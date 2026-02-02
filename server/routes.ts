@@ -2050,9 +2050,9 @@ Metrics:
 Output exactly 1-3 bullet points.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 200,
+        max_completion_tokens: 200,
       });
 
       const insightText = response.choices[0].message.content || "Unable to generate insights at this time.";
@@ -2303,9 +2303,9 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 *This review is auto-generated based on trading data. It is not financial advice.*`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 800,
+        max_completion_tokens: 800,
       });
 
       const reviewText = response.choices[0].message.content || "Unable to generate review at this time.";
@@ -2575,7 +2575,7 @@ Provide a concise 3-4 sentence analysis covering:
 End with: "Check your charts for current price action."`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
         max_completion_tokens: 250,
       });
@@ -3412,7 +3412,7 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
       });
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
         max_completion_tokens: 300,
       });
