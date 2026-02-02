@@ -146,7 +146,7 @@ function RiskRewardCalculator() {
         </div>
         <CalculatorField label="Position Size (Lots)" value={positionSize} onChange={setPositionSize} step="0.01" />
         <div className="h-px bg-border my-2" />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <ResultCard label="Risk" value={`$${riskDollars.toFixed(2)}`} variant="danger" />
           <ResultCard label="Reward" value={`$${rewardDollars.toFixed(2)}`} variant="success" />
           <ResultCard label="R:R Ratio" value={`${rrRatio}:1`} variant={rrVariant} large />
