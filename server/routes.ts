@@ -2050,9 +2050,9 @@ Metrics:
 Output exactly 1-3 bullet points.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5-mini",
+        model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        max_completion_tokens: 200,
+        max_tokens: 200,
       });
 
       const insightText = response.choices[0].message.content || "Unable to generate insights at this time.";
@@ -2303,9 +2303,9 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 *This review is auto-generated based on trading data. It is not financial advice.*`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5-mini",
+        model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        max_completion_tokens: 800,
+        max_tokens: 800,
       });
 
       const reviewText = response.choices[0].message.content || "Unable to generate review at this time.";
@@ -2574,11 +2574,13 @@ Provide a concise 3-4 sentence analysis covering:
 
 End with: "Check your charts for current price action."`;
 
+      console.log("Calling OpenAI for instrument analysis with model gpt-4o-mini...");
       const response = await openai.chat.completions.create({
-        model: "gpt-5-mini",
+        model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        max_completion_tokens: 250,
+        max_tokens: 250,
       });
+      console.log("OpenAI response:", JSON.stringify(response.choices[0]));
 
       const analysisText = response.choices[0].message.content || "Unable to generate analysis.";
       
@@ -3413,9 +3415,9 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
       });
       
       const response = await openai.chat.completions.create({
-        model: "gpt-5-mini",
+        model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        max_completion_tokens: 300,
+        max_tokens: 300,
       });
       
       const explanation = response.choices[0]?.message?.content || "Unable to generate explanation.";
