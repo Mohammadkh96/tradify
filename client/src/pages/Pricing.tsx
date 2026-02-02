@@ -1,7 +1,7 @@
 import { ShieldCheck, Check, X, ArrowRight, ExternalLink, Crown, Zap, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { usePlan } from "@/hooks/usePlan";
 import { PLAN_CONFIGS } from "@shared/plans";
 
@@ -10,17 +10,14 @@ const features = [
   { name: "Open Positions & Account Health", free: true, pro: true, elite: true },
   { name: "Risk & Position Size Calculator", free: true, pro: true, elite: true },
   { name: "1 Trading Strategy", free: true, pro: true, elite: true },
-  { name: "30-Day Trade Journal History", free: true, pro: false, elite: false },
-  { name: "3 Free Education Lessons", free: true, pro: false, elite: false },
+  { name: "Trade History", free: "30 Days", pro: "6 Months", elite: "Unlimited" },
+  { name: "Education Access", free: "3 Lessons", pro: "Full Hub", elite: "Full Hub" },
   { name: "Unlimited Trading Strategies", free: false, pro: true, elite: true },
-  { name: "Full Education Hub (20 Lessons)", free: false, pro: true, elite: true },
   { name: "Performance Intelligence Layer", free: false, pro: true, elite: true },
-  { name: "6-Month Trade History", free: false, pro: true, elite: false },
   { name: "Full Equity Curve (All-Time)", free: false, pro: true, elite: true },
   { name: "AI Instrument Analysis", free: false, pro: true, elite: true },
   { name: "CSV Data Export", free: false, pro: true, elite: true },
   { name: "PDF Report Generation", free: false, pro: true, elite: true },
-  { name: "Unlimited Trade History", free: false, pro: false, elite: true },
   { name: "Session Performance Analytics", free: false, pro: false, elite: true },
   { name: "Time Pattern Analysis", free: false, pro: false, elite: true },
   { name: "Behavioral Risk Flags", free: false, pro: false, elite: true },
@@ -211,20 +208,24 @@ export default function Pricing() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {features.map((f, i) => (
-                  <tr key={i} className="hover:bg-muted/30 transition-colors">
-                    <td className="p-4 text-sm text-muted-foreground font-medium">{f.name}</td>
-                    <td className="p-4 text-center">
-                      {f.free ? <Check size={16} className="text-emerald-500 mx-auto" /> : <X size={16} className="text-muted-foreground mx-auto" />}
-                    </td>
-                    <td className="p-4 text-center">
-                      {f.pro ? <Check size={16} className="text-emerald-500 mx-auto" /> : <X size={16} className="text-muted-foreground mx-auto" />}
-                    </td>
-                    <td className="p-4 text-center">
-                      {f.elite ? <Check size={16} className="text-amber-500 mx-auto" /> : <X size={16} className="text-muted-foreground mx-auto" />}
-                    </td>
-                  </tr>
-                ))}
+                {features.map((f, i) => {
+                  const renderValue = (val: boolean | string, isElite = false) => {
+                    if (typeof val === 'string') {
+                      return <span className={`text-xs font-medium ${isElite ? 'text-amber-500' : 'text-emerald-500'}`}>{val}</span>;
+                    }
+                    return val 
+                      ? <Check size={16} className={`${isElite ? 'text-amber-500' : 'text-emerald-500'} mx-auto`} /> 
+                      : <X size={16} className="text-muted-foreground mx-auto" />;
+                  };
+                  return (
+                    <tr key={i} className="hover:bg-muted/30 transition-colors">
+                      <td className="p-4 text-sm text-muted-foreground font-medium">{f.name}</td>
+                      <td className="p-4 text-center">{renderValue(f.free)}</td>
+                      <td className="p-4 text-center">{renderValue(f.pro)}</td>
+                      <td className="p-4 text-center">{renderValue(f.elite, true)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
