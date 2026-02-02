@@ -249,8 +249,8 @@ def main():
                 "history": hist_list
             }
             
-            # Send to API
-            resp = requests.post(API_URL, json=payload, timeout=15)
+            # Send to API (60s timeout for server cold starts)
+            resp = requests.post(API_URL, json=payload, timeout=60)
             timestamp = time.strftime('%H:%M:%S')
             
             if resp.status_code == 200:
