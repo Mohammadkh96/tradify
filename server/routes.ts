@@ -2594,9 +2594,10 @@ End with: "Check your charts for current price action."`;
       }).returning();
       
       res.json(saved);
-    } catch (error) {
-      console.error("Instrument Analysis Error:", error);
-      res.status(500).json({ message: "AI Analysis failed" });
+    } catch (error: any) {
+      console.error("Instrument Analysis Error:", error?.message || error);
+      console.error("Full error:", JSON.stringify(error, null, 2));
+      res.status(500).json({ message: "AI Analysis failed", error: error?.message });
     }
   });
 
