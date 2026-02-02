@@ -14,7 +14,7 @@ import { emailService } from "./emailService";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
-import PDFDocument from "pdfkit";
+// Removed pdfkit - using client-side PDF generation with jspdf
 
 const PostgresStore = connectPg(session);
 
@@ -3607,130 +3607,53 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
         if (t.pnl > 0) symbolStats[t.symbol].wins++;
       });
 
-      // Create PDF
-      const doc = new PDFDocument({ size: 'A4', margin: 50 });
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="trading-report-${new Date().toISOString().split('T')[0]}.pdf"`);
-      
-      doc.pipe(res);
-
-      // Header
-      doc.fontSize(24).fillColor('#1a1a2e').text('TRADIFY', 50, 50);
-      doc.fontSize(10).fillColor('#666').text('Trading Performance Report', 50, 80);
-      doc.fontSize(8).text(`Generated: ${new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-      })}`, 50, 95);
-      
-      // Date range
+      // Return JSON data for client-side PDF generation
       const dateRange = startDate && endDate 
         ? `${new Date(startDate as string).toLocaleDateString()} - ${new Date(endDate as string).toLocaleDateString()}`
         : cutoffDate 
           ? `Last ${historyDays} days`
           : 'All time';
-      doc.fontSize(9).fillColor('#333').text(`Period: ${dateRange}`, 50, 110);
-      
-      // Horizontal line
-      doc.moveTo(50, 130).lineTo(545, 130).stroke('#ddd');
-
-      // Performance Summary Section
-      doc.fontSize(14).fillColor('#1a1a2e').text('Performance Summary', 50, 145);
-      
-      const col1 = 50, col2 = 180, col3 = 310, col4 = 440;
-      let y = 170;
-
-      const addMetric = (label: string, value: string, x: number, row: number) => {
-        doc.fontSize(8).fillColor('#888').text(label, x, y + (row * 35));
-        doc.fontSize(12).fillColor('#1a1a2e').text(value, x, y + 12 + (row * 35));
-      };
-
-      addMetric('Total Trades', totalTrades.toString(), col1, 0);
-      addMetric('Win Rate', `${winRate.toFixed(1)}%`, col2, 0);
-      addMetric('Profit Factor', profitFactor === Infinity ? '∞' : profitFactor.toFixed(2), col3, 0);
-      addMetric('Expectancy', `$${expectancy.toFixed(2)}`, col4, 0);
-
-      addMetric('Wins / Losses', `${wins.length} / ${losses.length}`, col1, 1);
-      addMetric('Avg Win', `$${avgWin.toFixed(2)}`, col2, 1);
-      addMetric('Avg Loss', `-$${avgLoss.toFixed(2)}`, col3, 1);
-      addMetric('Total P&L', `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`, col4, 1);
-
-      addMetric('Best Trade', `+$${bestTrade.toFixed(2)}`, col1, 2);
-      addMetric('Worst Trade', `$${worstTrade.toFixed(2)}`, col2, 2);
-      addMetric('Breakeven', breakeven.length.toString(), col3, 2);
-      addMetric('Data Source', filteredMt5.length > 0 ? 'MT5 + Manual' : 'Manual', col4, 2);
-
-      y = 290;
-      doc.moveTo(50, y).lineTo(545, y).stroke('#ddd');
-
-      // Session Performance
-      y += 15;
-      doc.fontSize(14).fillColor('#1a1a2e').text('Session Performance', 50, y);
-      y += 25;
-
-      doc.fontSize(9).fillColor('#888')
-        .text('Session', 50, y)
-        .text('Trades', 180, y)
-        .text('P&L', 280, y)
-        .text('Avg P&L', 380, y);
-      
-      y += 15;
-      doc.moveTo(50, y).lineTo(480, y).stroke('#eee');
-      y += 8;
-
-      Object.entries(sessions).forEach(([session, count]) => {
-        if (count > 0) {
-          const pnl = sessionPnL[session as keyof typeof sessionPnL];
-          const avgPnl = pnl / count;
-          doc.fontSize(9).fillColor('#333')
-            .text(session, 50, y)
-            .text(count.toString(), 180, y)
-            .fillColor(pnl >= 0 ? '#16a34a' : '#dc2626')
-            .text(`${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`, 280, y)
-            .text(`${avgPnl >= 0 ? '+' : ''}$${avgPnl.toFixed(2)}`, 380, y);
-          y += 18;
-        }
-      });
-
-      y += 10;
-      doc.moveTo(50, y).lineTo(545, y).stroke('#ddd');
-
-      // Instrument Breakdown
-      y += 15;
-      doc.fontSize(14).fillColor('#1a1a2e').text('Instrument Breakdown', 50, y);
-      y += 25;
-
-      doc.fontSize(9).fillColor('#888')
-        .text('Symbol', 50, y)
-        .text('Trades', 150, y)
-        .text('Win Rate', 230, y)
-        .text('P&L', 330, y);
-
-      y += 15;
-      doc.moveTo(50, y).lineTo(430, y).stroke('#eee');
-      y += 8;
 
       const sortedSymbols = Object.entries(symbolStats)
         .sort((a, b) => b[1].count - a[1].count)
-        .slice(0, 10);
+        .slice(0, 10)
+        .map(([symbol, stats]) => ({
+          symbol,
+          count: stats.count,
+          pnl: stats.pnl,
+          winRate: stats.count > 0 ? (stats.wins / stats.count) * 100 : 0
+        }));
 
-      sortedSymbols.forEach(([symbol, stats]) => {
-        const symWinRate = stats.count > 0 ? (stats.wins / stats.count) * 100 : 0;
-        doc.fontSize(9).fillColor('#333')
-          .text(symbol, 50, y)
-          .text(stats.count.toString(), 150, y)
-          .text(`${symWinRate.toFixed(1)}%`, 230, y)
-          .fillColor(stats.pnl >= 0 ? '#16a34a' : '#dc2626')
-          .text(`${stats.pnl >= 0 ? '+' : ''}$${stats.pnl.toFixed(2)}`, 330, y);
-        y += 18;
+      const sessionData = Object.entries(sessions)
+        .filter(([_, count]) => count > 0)
+        .map(([session, count]) => ({
+          session,
+          count,
+          pnl: sessionPnL[session as keyof typeof sessionPnL],
+          avgPnl: sessionPnL[session as keyof typeof sessionPnL] / count
+        }));
+
+      res.json({
+        dateRange,
+        generatedAt: new Date().toISOString(),
+        dataSource: filteredMt5.length > 0 ? 'MT5 + Manual' : 'Manual',
+        metrics: {
+          totalTrades,
+          wins: wins.length,
+          losses: losses.length,
+          breakeven: breakeven.length,
+          winRate,
+          profitFactor: profitFactor === Infinity ? 'Infinity' : profitFactor,
+          expectancy,
+          totalPnL,
+          avgWin,
+          avgLoss,
+          bestTrade,
+          worstTrade
+        },
+        sessionData,
+        symbolData: sortedSymbols
       });
-
-      // Footer
-      doc.fontSize(8).fillColor('#999')
-        .text('Generated by TRADIFY - Trading Journal Application', 50, 750)
-        .text('This report is for personal use only. Not financial advice.', 50, 762);
-
-      // Finalize PDF
-      doc.end();
 
     } catch (error: any) {
       console.error("PDF Report Error:", error?.message || error);
