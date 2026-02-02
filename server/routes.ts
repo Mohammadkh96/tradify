@@ -2877,6 +2877,44 @@ End with: "Review your charts for current market structure."`;
     }
   });
 
+  app.post("/api/user/change-password", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current password and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "New password must be at least 8 characters" });
+      }
+
+      const user = await db.query.userRole.findFirst({
+        where: eq(schema.userRole.userId, userId),
+      });
+
+      if (!user || !user.password) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const isValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await db.update(schema.userRole)
+        .set({ password: hashedPassword, updatedAt: new Date() })
+        .where(eq(schema.userRole.userId, userId));
+
+      res.json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Change password error:", error);
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
   app.post("/api/user/deactivate", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;

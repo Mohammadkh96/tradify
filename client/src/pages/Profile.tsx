@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown } from "lucide-react";
+import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -74,6 +74,11 @@ export default function Profile() {
   const [country, setCountry] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [timezone, setTimezone] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -115,6 +120,36 @@ export default function Profile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({ title: "Profile Updated", description: "Your changes have been saved." });
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async () => {
+      if (newPassword !== confirmPassword) {
+        throw new Error("New passwords do not match");
+      }
+      const res = await apiRequest("POST", "/api/user/change-password", {
+        currentPassword,
+        newPassword,
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to change password");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast({ title: "Password Changed", description: "Your password has been updated successfully." });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Password Change Failed", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
@@ -220,6 +255,86 @@ export default function Profile() {
                 >
                   <Save size={16} className="mr-2" />
                   {updateMutation.isPending ? "Syncing..." : "Save Changes"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border shadow-2xl overflow-hidden">
+            <CardHeader className="border-b border-border bg-muted/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-lg">
+                  <Lock size={20} className="text-amber-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-foreground uppercase italic tracking-tight font-black">Security</CardTitle>
+                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Change your password</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Current Password</label>
+                <div className="relative">
+                  <Input 
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword} 
+                    onChange={(e) => setCurrentPassword(e.target.value)} 
+                    placeholder="Enter current password"
+                    className="bg-background border-border text-foreground h-11 font-bold pr-10"
+                    data-testid="input-current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    data-testid="button-toggle-current-password"
+                  >
+                    {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">New Password</label>
+                <div className="relative">
+                  <Input 
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword} 
+                    onChange={(e) => setNewPassword(e.target.value)} 
+                    placeholder="Enter new password (min 8 characters)"
+                    className="bg-background border-border text-foreground h-11 font-bold pr-10"
+                    data-testid="input-new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    data-testid="button-toggle-new-password"
+                  >
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Confirm New Password</label>
+                <Input 
+                  type="password"
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  placeholder="Confirm new password"
+                  className="bg-background border-border text-foreground h-11 font-bold"
+                  data-testid="input-confirm-password"
+                />
+              </div>
+              <div className="pt-4 border-t border-border flex justify-end">
+                <Button 
+                  onClick={() => changePasswordMutation.mutate()}
+                  disabled={changePasswordMutation.isPending || !currentPassword || !newPassword || !confirmPassword}
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-black uppercase tracking-widest text-xs h-11 px-8 shadow-md shadow-amber-500/20"
+                  data-testid="button-change-password"
+                >
+                  <Lock size={16} className="mr-2" />
+                  {changePasswordMutation.isPending ? "Updating..." : "Change Password"}
                 </Button>
               </div>
             </CardContent>
