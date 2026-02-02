@@ -35,7 +35,7 @@ export default function Landing() {
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Institutional Performance Engine</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]">
             Standardize your<br />
             <span className="text-emerald-500">execution logic</span><br />
             with MT5 sync
@@ -69,7 +69,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-8">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-8">
                 Execution <span className="text-rose-500">Variance</span>
               </h2>
               <div className="space-y-6">
@@ -117,11 +117,11 @@ export default function Landing() {
       {/* How it Works Section */}
       <section className="py-24 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-16">
             System <span className="text-emerald-500">Architecture</span>
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 relative">
             <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent hidden md:block" />
             
             {[
@@ -147,7 +147,7 @@ export default function Landing() {
       <section className="py-24 bg-muted/30 border-y border-border">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
               Functional <span className="text-emerald-500">Specifications</span>
             </h2>
             <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">Terminal integration architecture</p>
@@ -198,7 +198,7 @@ export default function Landing() {
           <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-8">
             <Lock className="text-emerald-500" size={32} />
           </div>
-          <h2 className="text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase italic mb-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase italic mb-8">
             Trust & <span className="text-emerald-500">Reliability</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -229,7 +229,7 @@ export default function Landing() {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
               <div>
-                <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-6">
+                <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-6">
                   Standardize your<br />execution.
                 </h2>
                 <p className="text-muted-foreground mb-8 max-w-md">
@@ -249,29 +249,29 @@ export default function Landing() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-6 rounded-2xl bg-background/50 border border-border">
-                  <div className="text-3xl font-black text-foreground mb-1">FREE</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 sm:p-6 rounded-2xl bg-background/50 border border-border">
+                  <div className="text-2xl sm:text-3xl font-black text-foreground mb-1">FREE</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Core Implementation</div>
                   <ul className="space-y-2">
-                    <li className="text-[10px] text-muted-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-emerald-500" /> 1 Terminal Sync</li>
-                    <li className="text-[10px] text-muted-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-emerald-500" /> Operational Log</li>
+                    <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> 1 Terminal Sync</li>
+                    <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Operational Log</li>
                   </ul>
                 </div>
-                <div className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
-                  <div className="text-3xl font-black text-emerald-500 mb-1">PRO</div>
+                <div className="p-4 sm:p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-500 mb-1">PRO</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-4">$29/mo</div>
                   <ul className="space-y-2">
-                    <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-emerald-500" /> Intelligence Layer</li>
-                    <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-emerald-500" /> Multi-Terminal Sync</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Intelligence Layer</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Multi-Terminal Sync</li>
                   </ul>
                 </div>
-                <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-2xl shadow-amber-500/10">
-                  <div className="text-3xl font-black text-amber-500 mb-1">ELITE</div>
+                <div className="p-4 sm:p-6 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-2xl shadow-amber-500/10">
+                  <div className="text-2xl sm:text-3xl font-black text-amber-500 mb-1">ELITE</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-4">$59/mo</div>
                   <ul className="space-y-2">
-                    <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-amber-500" /> Session Analytics</li>
-                    <li className="text-[10px] text-foreground flex items-center gap-2"><CheckCircle2 size={10} className="text-amber-500" /> Behavioral Risk Flags</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> Session Analytics</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> Behavioral Risk Flags</li>
                   </ul>
                 </div>
               </div>

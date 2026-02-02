@@ -43,7 +43,7 @@ export default function Pricing() {
           <p className="text-muted-foreground max-w-2xl mx-auto uppercase text-[10px] font-bold tracking-[0.2em] mb-4">
             Not financial advice. Trading involves risk.
           </p>
-          <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase italic mb-4">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase italic mb-4">
             Simple Pricing. <span className="text-emerald-500">No Hype.</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -197,8 +197,8 @@ export default function Pricing() {
         {/* Comparison Section */}
         <div className="mb-20">
           <h2 className="text-2xl font-bold text-foreground text-center mb-10 uppercase tracking-widest">Full Comparison</h2>
-          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-2xl">
-            <table className="w-full text-left">
+          <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-2xl">
+            <table className="w-full text-left min-w-[500px]">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
                   <th className="p-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Feature</th>
