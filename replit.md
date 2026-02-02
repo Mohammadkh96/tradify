@@ -7,7 +7,7 @@ Key capabilities include:
 - A dashboard with customizable performance metrics and an equity curve.
 - A trade journal for chronological trade tracking.
 - A "Strategies" section for creating, managing, and validating trading frameworks against predefined rules.
-- An "Education Hub" with comprehensive trading lessons, accessible by subscription tier.
+- An "Education Hub" with 20 comprehensive text-based trading lessons organized by 6 categories (Fundamentals, Price Action, Smart Money, Strategies, Psychology, Advanced). First 3 lessons are free; PRO/ELITE tiers get full access via `fullEducationAccess` feature flag. Lessons cover: trading psychology, price action, smart money concepts, order blocks, FVGs, liquidity, risk management, multi-timeframe analysis, session dynamics, entry techniques. Lesson data in `client/src/data/educationLessons.ts`. Trading knowledge context injected into AI prompts via `server/tradingKnowledge.ts`.
 - Risk/position size calculators.
 - Integration with MetaTrader 5 (MT5) for multi-account trade tracking.
 - An interactive onboarding tour for new users.
