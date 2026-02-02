@@ -14,6 +14,7 @@ import { emailService } from "./emailService";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
+import PDFDocument from "pdfkit";
 
 const PostgresStore = connectPg(session);
 
@@ -3505,8 +3506,6 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
           requiredTier: "PRO"
         });
       }
-
-      const PDFDocument = (await import('pdfkit')).default;
 
       // Fetch all necessary data
       const mt5Trades = await db
