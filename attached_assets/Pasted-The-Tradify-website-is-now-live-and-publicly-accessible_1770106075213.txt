@@ -1,0 +1,84 @@
+The Tradify website is now live and publicly accessible.
+I’d like you to perform a full end-to-end QA and production readiness review of the application.
+
+Scope of QA review:
+
+Routing & Navigation
+
+Verify all public and authenticated routes load correctly
+
+Check route protection (unauthenticated vs authenticated access)
+
+Confirm no broken links, redirect loops, or dead routes
+
+Validate browser refresh behavior on deep links
+
+UI & Interaction Testing
+
+Validate all buttons, links, forms, and CTAs function as intended
+
+Check loading states, disabled states, and error states
+
+Ensure consistent behavior across key pages (landing, auth, dashboard, pricing, etc.)
+
+Authentication & User Flow
+
+Test signup, login, logout flows
+
+Validate session persistence and expiration behavior
+
+Confirm role-based access (admin vs user, free vs paid)
+
+Payments & Subscriptions (PayPal – Live)
+
+Validate PayPal Live checkout flow
+
+Confirm successful payment → correct backend state → correct UI state
+
+Test subscription activation, cancellation, downgrade, and access revocation
+
+Verify webhook handling and failure scenarios
+
+Data Integrity & State Management
+
+Confirm frontend state reflects backend truth after actions
+
+Check edge cases (refresh after payment, logout/login after upgrade)
+
+Validate no stale or inconsistent states
+
+Error Handling & Edge Cases
+
+Verify graceful handling of API failures
+
+Ensure user-facing error messages are clear and non-technical
+
+Check for console errors or unhandled exceptions
+
+Performance & Stability
+
+Basic performance sanity check (page load, navigation)
+
+Confirm no blocking requests or obvious bottlenecks
+
+Check that production environment variables are correctly configured
+
+Security & Production Hygiene
+
+Confirm secrets are not exposed client-side
+
+Validate environment separation (no sandbox/test references in prod)
+
+Check that sensitive routes and actions are protected
+
+Deliverables Requested:
+
+A list of confirmed working areas
+
+A list of issues / bugs found (with severity)
+
+Recommended improvements or UX enhancements based on real usage
+
+Any technical risks that should be addressed before scaling traffic
+
+The goal is to validate that Tradify is production-ready, stable, and safe for real users, and to identify any improvements that would meaningfully improve reliability, UX, or conversion.
