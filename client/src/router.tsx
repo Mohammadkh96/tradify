@@ -21,6 +21,7 @@ import Profile from "@/pages/Profile";
 import Checkout from "@/pages/Checkout";
 import TradersHub from "@/pages/TradersHub";
 import Auth from "@/pages/Auth";
+import EarlyAccess from "@/pages/EarlyAccess";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PublicNavbar } from "@/components/PublicNavbar";
@@ -359,6 +360,7 @@ function AppRoutes() {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Landing />} />
+      <Route path="/early-access" element={<EarlyAccess />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
