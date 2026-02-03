@@ -135,6 +135,11 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Health check endpoint for deployment (must be before session middleware)
+  app.get("/api/health", (_req, res) => {
+    res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
+  });
+
   // Trust proxy for Vercel (required for secure cookies behind proxy)
   if (process.env.NODE_ENV === "production") {
     app.set("trust proxy", 1);
