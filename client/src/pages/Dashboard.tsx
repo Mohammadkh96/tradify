@@ -320,7 +320,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
-              {['all', 'today', '7days', '30days', 'month'].map((filter) => (
+              {['all', 'today', '7days', '30days'].map((filter) => (
                 <Button
                   key={filter}
                   variant={dateFilter === filter ? "default" : "ghost"}
