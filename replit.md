@@ -13,6 +13,7 @@ Key capabilities include:
 - An interactive onboarding tour for new users (tracked via `hasSeenTour` database field; tour shows only on first login).
 - Premium features (PRO/ELITE tiers) such as AI Instrument Analysis, Session and Time-Based Performance Analytics, Behavioral Risk Flags, Strategy Deviation Analysis, Monthly Self-Review Reports, and Professional PDF Reports.
 - A tiered plan system (Free, Pro, Elite) with feature gating and differentiated trade history retention.
+- **Founding Member Program:** Early access signup at `/early-access` with exclusive benefits (3 months free Pro, lifetime 30% discount, feature influence, exclusive badge). Founding members display amber-styled Crown badge in navigation, dashboard, and profile. Tracked via `foundingMember` field on users and `early_access_signups` table for pre-launch signups.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
