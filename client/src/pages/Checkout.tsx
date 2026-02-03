@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2, Crown, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2, Crown, Star, Sparkles } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
 import { useEffect, useState } from "react";
@@ -112,6 +113,14 @@ export default function Checkout() {
   const isPaid = isPro || isElite;
   const isElitePlan = selectedTier === 'ELITE';
   
+  // Founding member discount
+  const isFoundingMember = user?.foundingMember === true;
+  const discountRate = 0.30;
+  const proPrice = isFoundingMember ? Math.round(29 * (1 - discountRate)) : 29;
+  const elitePrice = isFoundingMember ? Math.round(59 * (1 - discountRate)) : 59;
+  const displayPrice = isElitePlan ? elitePrice : proPrice;
+  const originalPrice = isElitePlan ? 59 : 29;
+  
   // Pro user trying to upgrade to Elite - show PayPal button instead of subscription details
   const isUpgradingToElite = isPro && !isElite && isElitePlan;
   // Show PayPal button for: free users OR Pro users upgrading to Elite
@@ -125,6 +134,15 @@ export default function Checkout() {
             Billing & <span className={isElitePlan ? "text-amber-500" : "text-emerald-500"}>Subscription</span>
           </h1>
           <p className="text-muted-foreground font-medium">Manage your payment methods and subscription status.</p>
+          {isFoundingMember && (
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+              <Crown size={16} className="text-amber-500" />
+              <span className="text-amber-500 font-bold text-sm uppercase tracking-widest">
+                Founding Member: 30% Lifetime Discount Applied
+              </span>
+              <Sparkles size={14} className="text-amber-500" />
+            </div>
+          )}
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -202,7 +220,15 @@ export default function Checkout() {
                 </CardTitle>
               </div>
               <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
-                {showPayPalButton ? `$${planConfig.price}/month - Cancel anytime.` : "Current provider info."}
+                {showPayPalButton ? (
+                  isFoundingMember ? (
+                    <span className="flex items-center gap-2">
+                      <span className="text-amber-500">${displayPrice}/month</span>
+                      <span className="line-through text-muted-foreground/50">${originalPrice}</span>
+                      <span className="text-amber-500">• Founder Discount</span>
+                    </span>
+                  ) : `$${planConfig.price}/month - Cancel anytime.`
+                ) : "Current provider info."}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
@@ -228,7 +254,8 @@ export default function Checkout() {
                         className={selectedTier === 'PRO' ? 'bg-emerald-500' : ''}
                         data-testid="button-select-pro"
                       >
-                        <Star className="w-3 h-3 mr-1" /> Pro $29
+                        <Star className="w-3 h-3 mr-1" /> Pro ${proPrice}
+                        {isFoundingMember && <span className="ml-1 line-through text-xs opacity-50">$29</span>}
                       </Button>
                       <Button
                         variant={selectedTier === 'ELITE' ? 'default' : 'outline'}
@@ -237,7 +264,8 @@ export default function Checkout() {
                         className={selectedTier === 'ELITE' ? 'bg-amber-500' : ''}
                         data-testid="button-select-elite"
                       >
-                        <Crown className="w-3 h-3 mr-1" /> Elite $59
+                        <Crown className="w-3 h-3 mr-1" /> Elite ${elitePrice}
+                        {isFoundingMember && <span className="ml-1 line-through text-xs opacity-50">$59</span>}
                       </Button>
                     </div>
                   )}

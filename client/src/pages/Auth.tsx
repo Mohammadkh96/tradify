@@ -76,6 +76,15 @@ export default function Auth() {
         description: "Your email has been verified. You can now log in.",
       });
     }
+    // Pre-fill email from early access flow
+    const earlyAccessEmail = searchParams.get("email");
+    const isFoundingFlow = searchParams.get("founding") === "true";
+    if (earlyAccessEmail) {
+      setEmail(decodeURIComponent(earlyAccessEmail));
+      if (isFoundingFlow) {
+        setIsLogin(false); // Switch to signup mode for founding members
+      }
+    }
   }, [searchParams, toast]);
 
   const { data: userRole } = useQuery<any>({

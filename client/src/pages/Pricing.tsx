@@ -1,9 +1,12 @@
-import { ShieldCheck, Check, X, ArrowRight, ExternalLink, Crown, Zap, Star } from "lucide-react";
+import { ShieldCheck, Check, X, ArrowRight, ExternalLink, Crown, Zap, Star, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import { usePlan } from "@/hooks/usePlan";
+import { useQuery } from "@tanstack/react-query";
 import { PLAN_CONFIGS } from "@shared/plans";
+import type { UserRole } from "@shared/schema";
 
 const features = [
   { name: "Live MT5 Data Connection", free: true, pro: true, elite: true },
@@ -32,6 +35,16 @@ export default function Pricing() {
   const proConfig = PLAN_CONFIGS.PRO;
   const eliteConfig = PLAN_CONFIGS.ELITE;
 
+  const { data: user } = useQuery<UserRole>({
+    queryKey: ["/api/user"],
+  });
+
+  const isFoundingMember = user?.foundingMember === true;
+  const discountRate = 0.30;
+
+  const proPrice = isFoundingMember ? Math.round(29 * (1 - discountRate)) : 29;
+  const elitePrice = isFoundingMember ? Math.round(59 * (1 - discountRate)) : 59;
+
   const handleManageSubscription = () => {
     window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
   };
@@ -49,6 +62,15 @@ export default function Pricing() {
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Start free. Upgrade only when you need deeper insights to master your trading discipline.
           </p>
+          {isFoundingMember && (
+            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+              <Crown size={16} className="text-amber-500" />
+              <span className="text-amber-500 font-bold text-sm uppercase tracking-widest">
+                Founding Member: 30% Lifetime Discount Applied
+              </span>
+              <Sparkles size={14} className="text-amber-500" />
+            </div>
+          )}
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
@@ -98,9 +120,21 @@ export default function Pricing() {
                   <h3 className="text-lg font-bold text-emerald-500 uppercase tracking-widest">Pro</h3>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-foreground">$29</span>
+                  {isFoundingMember ? (
+                    <>
+                      <span className="text-4xl font-black text-emerald-500">${proPrice}</span>
+                      <span className="text-lg text-muted-foreground line-through ml-1">$29</span>
+                    </>
+                  ) : (
+                    <span className="text-4xl font-black text-foreground">$29</span>
+                  )}
                   <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
                 </div>
+                {isFoundingMember && (
+                  <Badge className="mt-2 bg-amber-500/20 text-amber-500 border-amber-500/30 text-[9px] uppercase tracking-widest">
+                    <Crown size={10} className="mr-1" /> Founder Discount
+                  </Badge>
+                )}
               </div>
 
               <div className="space-y-3 mb-8">
@@ -156,9 +190,21 @@ export default function Pricing() {
                   <h3 className="text-lg font-bold text-amber-500 uppercase tracking-widest">Elite</h3>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-foreground">$59</span>
+                  {isFoundingMember ? (
+                    <>
+                      <span className="text-4xl font-black text-amber-500">${elitePrice}</span>
+                      <span className="text-lg text-muted-foreground line-through ml-1">$59</span>
+                    </>
+                  ) : (
+                    <span className="text-4xl font-black text-foreground">$59</span>
+                  )}
                   <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
                 </div>
+                {isFoundingMember && (
+                  <Badge className="mt-2 bg-amber-500/20 text-amber-500 border-amber-500/30 text-[9px] uppercase tracking-widest">
+                    <Crown size={10} className="mr-1" /> Founder Discount
+                  </Badge>
+                )}
               </div>
 
               <div className="space-y-3 mb-8">

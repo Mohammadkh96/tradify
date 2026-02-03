@@ -221,6 +221,14 @@ export async function registerRoutes(
         return res.status(400).json({ message: "An account with this email already exists." });
       }
 
+      // Check if this email has an early access signup - auto-grant founding member status
+      const [earlyAccessRecord] = await db.select()
+        .from(schema.earlyAccessSignups)
+        .where(eq(schema.earlyAccessSignups.email, normalizedEmail))
+        .limit(1);
+      
+      const isFoundingMember = !!earlyAccessRecord;
+
       const hashedPassword = await bcrypt.hash(password, 10);
       
       // Generate email verification token
@@ -241,7 +249,18 @@ export async function registerRoutes(
         emailVerificationToken: verificationToken,
         emailVerificationExpiry: tokenExpiry,
         hasSeenTour: false,
+        foundingMember: isFoundingMember, // Auto-grant founding member status
       }).returning();
+
+      // If early access signup exists, update it to link to the user
+      if (earlyAccessRecord) {
+        await db.update(schema.earlyAccessSignups)
+          .set({
+            status: "registered",
+            registeredUserId: normalizedEmail,
+          })
+          .where(eq(schema.earlyAccessSignups.id, earlyAccessRecord.id));
+      }
 
       // Send verification email
       await emailService.sendTransactionalEmail(newUser.userId, "email_verification", {
@@ -250,9 +269,12 @@ export async function registerRoutes(
       });
 
       res.status(201).json({ 
-        message: "Account created. Please check your email to verify your account.",
+        message: isFoundingMember 
+          ? "Founding member account created! Please check your email to verify your account."
+          : "Account created. Please check your email to verify your account.",
         requiresVerification: true,
-        userId: newUser.userId
+        userId: newUser.userId,
+        foundingMember: isFoundingMember,
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -2793,6 +2815,171 @@ End with: "Review your charts for current market structure."`;
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     const users = await db.select().from(schema.userRole);
     res.json(users);
+  });
+
+  // Get all early access signups for admin
+  app.get("/api/admin/early-access", requireAdmin, async (req, res) => {
+    try {
+      const signups = await db.select().from(schema.earlyAccessSignups).orderBy(schema.earlyAccessSignups.createdAt);
+      res.json(signups);
+    } catch (error) {
+      console.error("Error fetching early access signups:", error);
+      res.status(500).json({ message: "Failed to fetch early access signups" });
+    }
+  });
+
+  // Get all founding members for admin
+  app.get("/api/admin/founding-members", requireAdmin, async (req, res) => {
+    try {
+      const foundingMembers = await db.select()
+        .from(schema.userRole)
+        .where(eq(schema.userRole.foundingMember, true));
+      res.json(foundingMembers);
+    } catch (error) {
+      console.error("Error fetching founding members:", error);
+      res.status(500).json({ message: "Failed to fetch founding members" });
+    }
+  });
+
+  // Toggle founding member status for a user
+  app.patch("/api/admin/users/:userId/founding-member", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { foundingMember } = req.body;
+      
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await db.update(schema.userRole)
+        .set({ foundingMember, updatedAt: new Date() })
+        .where(eq(schema.userRole.userId, userId));
+
+      // Audit log
+      await db.insert(schema.adminAuditLog).values({
+        adminId: req.session.userId!,
+        actionType: foundingMember ? "GRANT_FOUNDING_MEMBER" : "REVOKE_FOUNDING_MEMBER",
+        targetUserId: userId,
+        details: { timestamp: new Date() }
+      });
+
+      res.json({ success: true, message: `Founding member status ${foundingMember ? 'granted' : 'revoked'}` });
+    } catch (error) {
+      console.error("Error updating founding member status:", error);
+      res.status(500).json({ message: "Failed to update founding member status" });
+    }
+  });
+
+  // Grant Pro access to a founding member
+  app.patch("/api/admin/users/:userId/grant-pro", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await db.update(schema.userRole)
+        .set({ 
+          subscriptionTier: "PRO", 
+          subscriptionStatus: "founding_member_access",
+          updatedAt: new Date() 
+        })
+        .where(eq(schema.userRole.userId, userId));
+
+      // Audit log
+      await db.insert(schema.adminAuditLog).values({
+        adminId: req.session.userId!,
+        actionType: "GRANT_FOUNDING_MEMBER_PRO",
+        targetUserId: userId,
+        details: { timestamp: new Date() }
+      });
+
+      res.json({ success: true, message: "Pro access granted to founding member" });
+    } catch (error) {
+      console.error("Error granting Pro access:", error);
+      res.status(500).json({ message: "Failed to grant Pro access" });
+    }
+  });
+
+  // Get founding member suggestions for admin
+  app.get("/api/admin/founding-suggestions", requireAdmin, async (req, res) => {
+    try {
+      const suggestions = await db.select()
+        .from(schema.foundingMemberSuggestions)
+        .orderBy(schema.foundingMemberSuggestions.createdAt);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      res.status(500).json({ message: "Failed to fetch suggestions" });
+    }
+  });
+
+  // Update suggestion status (admin)
+  app.patch("/api/admin/founding-suggestions/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status, adminNotes } = req.body;
+      
+      await db.update(schema.foundingMemberSuggestions)
+        .set({ status, adminNotes })
+        .where(eq(schema.foundingMemberSuggestions.id, id));
+
+      res.json({ success: true, message: "Suggestion updated" });
+    } catch (error) {
+      console.error("Error updating suggestion:", error);
+      res.status(500).json({ message: "Failed to update suggestion" });
+    }
+  });
+
+  // Submit suggestion (founding members only)
+  app.post("/api/founding-suggestions", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      // Check if user is a founding member
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
+      if (!user?.foundingMember) {
+        return res.status(403).json({ message: "Only founding members can submit suggestions" });
+      }
+
+      const { category, title, description } = req.body;
+      if (!category || !title || !description) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      await db.insert(schema.foundingMemberSuggestions).values({
+        userId,
+        category,
+        title,
+        description,
+        status: "pending"
+      });
+
+      res.status(201).json({ success: true, message: "Suggestion submitted successfully" });
+    } catch (error) {
+      console.error("Error submitting suggestion:", error);
+      res.status(500).json({ message: "Failed to submit suggestion" });
+    }
+  });
+
+  // Get user's own suggestions (founding members)
+  app.get("/api/founding-suggestions", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      const suggestions = await db.select()
+        .from(schema.foundingMemberSuggestions)
+        .where(eq(schema.foundingMemberSuggestions.userId, userId))
+        .orderBy(schema.foundingMemberSuggestions.createdAt);
+      
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      res.status(500).json({ message: "Failed to fetch suggestions" });
+    }
   });
 
   app.post("/api/admin/create-user", requireAdmin, async (req, res) => {

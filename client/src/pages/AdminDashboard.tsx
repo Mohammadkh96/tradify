@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History, UserPlus, Crown } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -192,6 +193,375 @@ function AuditLogsTab() {
           </TableBody>
         </Table>
       </Card>
+    </div>
+  );
+}
+
+function EarlyAccessTab() {
+  const { data: signups, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/early-access"],
+  });
+
+  if (isLoading) return <div className="p-8 text-emerald-500 font-mono">LOADING EARLY ACCESS DATA...</div>;
+
+  const pendingCount = signups?.filter(s => s.status === "pending").length || 0;
+  const registeredCount = signups?.filter(s => s.status === "registered").length || 0;
+
+  return (
+    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
+      <div>
+        <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-amber-500">
+          <Sparkles /> Early Access Signups
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Founding Member Pipeline</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-foreground">{signups?.length || 0}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Total Signups</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-amber-500">{pendingCount}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Pending</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-emerald-500">{registeredCount}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Registered</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-card border-border overflow-hidden">
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="border-border">
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Email</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Name</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Status</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Signed Up</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {signups?.map((signup) => (
+              <TableRow key={signup.id} className="border-border hover:bg-muted/40">
+                <TableCell className="font-bold text-foreground text-xs">{signup.email}</TableCell>
+                <TableCell className="text-muted-foreground text-xs">{signup.fullName || "-"}</TableCell>
+                <TableCell>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-[9px] font-black uppercase tracking-widest",
+                      signup.status === "registered" ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"
+                    )}
+                  >
+                    {signup.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground text-[10px] font-mono">
+                  {signup.createdAt ? format(new Date(signup.createdAt), "MMM d, yyyy") : "N/A"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+}
+
+function FoundingMembersTab() {
+  const { toast } = useToast();
+  const { data: members, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/founding-members"],
+  });
+
+  const grantProMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("PATCH", `/api/admin/users/${encodeURIComponent(userId)}/grant-pro`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/founding-members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Success", description: "Pro access granted to founding member." });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Error", description: "Failed to grant Pro access." });
+    },
+  });
+
+  if (isLoading) return <div className="p-8 text-emerald-500 font-mono">LOADING FOUNDING MEMBERS...</div>;
+
+  const proMembers = members?.filter(m => m.subscriptionTier === "PRO" || m.subscriptionTier === "ELITE").length || 0;
+  const freeMembers = members?.filter(m => m.subscriptionTier === "FREE").length || 0;
+
+  return (
+    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
+      <div>
+        <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-amber-500">
+          <Crown /> Founding Members
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Manage Founding Member Benefits</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-foreground">{members?.length || 0}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Total Founders</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-emerald-500">{proMembers}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">With Pro Access</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-amber-500">{freeMembers}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Awaiting Pro Grant</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-card border-border overflow-hidden">
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="border-border">
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Email</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Name</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Current Plan</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Joined</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {members?.map((member) => (
+              <TableRow key={member.userId} className="border-border hover:bg-muted/40">
+                <TableCell className="font-bold text-foreground text-xs flex items-center gap-2">
+                  <Crown size={14} className="text-amber-500" />
+                  {member.userId}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-xs">{member.fullName || "-"}</TableCell>
+                <TableCell>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-[9px] font-black uppercase tracking-widest",
+                      member.subscriptionTier === "PRO" || member.subscriptionTier === "ELITE" 
+                        ? "border-emerald-500/30 text-emerald-500" 
+                        : "border-muted-foreground/30 text-muted-foreground"
+                    )}
+                  >
+                    {member.subscriptionTier}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground text-[10px] font-mono">
+                  {member.createdAt ? format(new Date(member.createdAt), "MMM d, yyyy") : "N/A"}
+                </TableCell>
+                <TableCell>
+                  {member.subscriptionTier === "FREE" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => grantProMutation.mutate(member.userId)}
+                      disabled={grantProMutation.isPending}
+                      className="text-xs h-7 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
+                    >
+                      Grant Pro
+                    </Button>
+                  )}
+                  {member.subscriptionTier !== "FREE" && (
+                    <span className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Active</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+}
+
+function SuggestionsTab() {
+  const { toast } = useToast();
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [adminNotes, setAdminNotes] = useState<string>("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const { data: suggestions, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/founding-suggestions"],
+  });
+
+  const { data: users } = useQuery<any[]>({
+    queryKey: ["/api/admin/users"],
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, status, notes }: { id: number; status: string; notes: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/founding-suggestions/${id}`, { status, adminNotes: notes });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/founding-suggestions"] });
+      setEditingId(null);
+      setAdminNotes("");
+      setSelectedStatus("");
+      toast({ title: "Updated", description: "Suggestion status updated." });
+    },
+  });
+
+  if (isLoading) return <div className="p-8 text-emerald-500 font-mono">LOADING SUGGESTIONS...</div>;
+
+  const getUserName = (userId: string) => {
+    const user = users?.find(u => u.userId === userId);
+    return user?.fullName || userId;
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: "border-amber-500/30 text-amber-500",
+    reviewed: "border-blue-500/30 text-blue-500",
+    implemented: "border-emerald-500/30 text-emerald-500",
+    declined: "border-rose-500/30 text-rose-500",
+  };
+
+  return (
+    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
+      <div>
+        <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
+          <MessageSquare /> Founding Member Suggestions
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Product Feedback Pipeline</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-foreground">{suggestions?.length || 0}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Total</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-amber-500">{suggestions?.filter(s => s.status === "pending").length || 0}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Pending</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-blue-500">{suggestions?.filter(s => s.status === "reviewed").length || 0}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Reviewed</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-3xl font-black text-emerald-500">{suggestions?.filter(s => s.status === "implemented").length || 0}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Implemented</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="space-y-4">
+        {suggestions?.map((suggestion) => (
+          <Card key={suggestion.id} className="bg-card border-border">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Badge variant="outline" className={cn("text-[9px] font-black uppercase tracking-widest", statusColors[suggestion.status] || statusColors.pending)}>
+                      {suggestion.status}
+                    </Badge>
+                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-muted-foreground/30 text-muted-foreground">
+                      {suggestion.category}
+                    </Badge>
+                  </div>
+                  <h3 className="font-bold text-foreground mb-1">{suggestion.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{suggestion.description}</p>
+                  <div className="text-[10px] text-muted-foreground">
+                    By <span className="text-foreground font-bold">{getUserName(suggestion.userId)}</span> on {suggestion.createdAt ? format(new Date(suggestion.createdAt), "MMM d, yyyy") : "N/A"}
+                  </div>
+                  {suggestion.adminNotes && (
+                    <div className="mt-3 p-3 bg-muted rounded-lg">
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Admin Notes</div>
+                      <p className="text-xs text-foreground">{suggestion.adminNotes}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {editingId === suggestion.id ? (
+                    <div className="space-y-2 w-48">
+                      <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="reviewed">Reviewed</SelectItem>
+                          <SelectItem value="implemented">Implemented</SelectItem>
+                          <SelectItem value="declined">Declined</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Textarea 
+                        placeholder="Admin notes..." 
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                        className="text-xs h-20"
+                      />
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          className="flex-1 h-7 text-xs bg-emerald-500 text-slate-950"
+                          onClick={() => updateMutation.mutate({ id: suggestion.id, status: selectedStatus || suggestion.status, notes: adminNotes })}
+                          disabled={updateMutation.isPending}
+                        >
+                          Save
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-7 text-xs"
+                          onClick={() => { setEditingId(null); setAdminNotes(""); setSelectedStatus(""); }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-7 text-xs"
+                      onClick={() => { 
+                        setEditingId(suggestion.id); 
+                        setSelectedStatus(suggestion.status); 
+                        setAdminNotes(suggestion.adminNotes || ""); 
+                      }}
+                    >
+                      Update
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {(!suggestions || suggestions.length === 0) && (
+          <Card className="bg-card border-border">
+            <CardContent className="p-12 text-center">
+              <MessageSquare size={48} className="mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No suggestions yet.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
@@ -666,6 +1036,21 @@ export default function AdminDashboard() {
   // --- 5. CREATOR APPLICATIONS PAGE ---
   if (location.pathname === "/admin/creator-applications") {
     return <CreatorApplicationsTab />;
+  }
+
+  // --- 6. EARLY ACCESS PAGE ---
+  if (location.pathname === "/admin/early-access") {
+    return <EarlyAccessTab />;
+  }
+
+  // --- 7. FOUNDING MEMBERS PAGE ---
+  if (location.pathname === "/admin/founding-members") {
+    return <FoundingMembersTab />;
+  }
+
+  // --- 8. SUGGESTIONS PAGE ---
+  if (location.pathname === "/admin/suggestions") {
+    return <SuggestionsTab />;
   }
 
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)

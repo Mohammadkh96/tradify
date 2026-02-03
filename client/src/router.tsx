@@ -391,6 +391,9 @@ function AppRoutes() {
       {/* Admin Routes */}
       <Route path="/admin/overview" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/early-access" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/founding-members" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/suggestions" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/access" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/subscriptions" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/mt5" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

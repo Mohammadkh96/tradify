@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown, Lock, Eye, EyeOff, MessageSquare, Sparkles, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -58,6 +60,179 @@ const countries = [
 ];
 
 const timezones = Intl.supportedValuesOf('timeZone');
+
+function FoundingSuggestionsCard({ userId }: { userId: number }) {
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<string>("feature");
+
+  const { data: mySuggestions, isLoading: loadingSuggestions } = useQuery<any[]>({
+    queryKey: ["/api/founding-suggestions"],
+  });
+
+  const submitSuggestionMutation = useMutation({
+    mutationFn: async (data: { category: string; title: string; description: string }) => {
+      const res = await apiRequest("POST", "/api/founding-suggestions", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/founding-suggestions"] });
+      setTitle("");
+      setDescription("");
+      toast({
+        title: "Suggestion Submitted",
+        description: "Thank you for helping shape Tradify's future!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to submit",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!title.trim() || !description.trim()) {
+      toast({
+        title: "Missing fields",
+        description: "Please provide both a title and description for your suggestion.",
+        variant: "destructive",
+      });
+      return;
+    }
+    submitSuggestionMutation.mutate({ category, title: title.trim(), description: description.trim() });
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Badge variant="secondary" className="text-[9px] uppercase tracking-widest">Pending</Badge>;
+      case "reviewed":
+        return <Badge className="text-[9px] uppercase tracking-widest bg-blue-500/20 text-blue-500 border-blue-500/30">Reviewed</Badge>;
+      case "implemented":
+        return <Badge className="text-[9px] uppercase tracking-widest bg-emerald-500/20 text-emerald-500 border-emerald-500/30">Implemented</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[9px] uppercase tracking-widest">{status}</Badge>;
+    }
+  };
+
+  return (
+    <Card className="bg-gradient-to-b from-amber-500/10 to-card border-amber-500/30 shadow-2xl overflow-hidden">
+      <CardHeader className="border-b border-amber-500/20 bg-amber-500/5">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-amber-500/10 rounded-lg">
+            <Sparkles size={20} className="text-amber-500" />
+          </div>
+          <div>
+            <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black flex items-center gap-2">
+              Shape the Roadmap
+              <Crown size={16} className="text-amber-500" />
+            </CardTitle>
+            <CardDescription className="text-amber-500/70 uppercase text-[10px] font-black tracking-widest">
+              Founding Member Exclusive
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-6">
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          As a Founding Member, your feedback directly influences Tradify's development. Share feature ideas, improvement suggestions, or any thoughts to help shape the platform.
+        </p>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Category</label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="bg-muted border-border" data-testid="select-suggestion-category">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="feature">Feature Request</SelectItem>
+                <SelectItem value="improvement">Improvement</SelectItem>
+                <SelectItem value="bug">Bug Report</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Title</label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Brief title for your suggestion"
+              className="bg-muted border-border"
+              data-testid="input-suggestion-title"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Description</label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe your idea in detail..."
+              className="bg-muted border-border min-h-[100px] resize-none"
+              data-testid="textarea-suggestion-description"
+            />
+          </div>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={submitSuggestionMutation.isPending || !title.trim() || !description.trim()}
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-amber-500/20 h-12 rounded-xl"
+            data-testid="button-submit-suggestion"
+          >
+            {submitSuggestionMutation.isPending ? (
+              <>
+                <Loader2 size={14} className="animate-spin mr-2" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send size={14} className="mr-2" />
+                Submit Suggestion
+              </>
+            )}
+          </Button>
+        </div>
+
+        {loadingSuggestions ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 size={20} className="animate-spin text-amber-500" />
+          </div>
+        ) : mySuggestions && mySuggestions.length > 0 && (
+          <div className="space-y-3 pt-4 border-t border-amber-500/20">
+            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Your Previous Suggestions</h4>
+            <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              {mySuggestions.slice(0, 5).map((suggestion: any) => (
+                <div key={suggestion.id} className="p-3 bg-muted/50 rounded-lg border border-border">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest capitalize">
+                      {suggestion.category}
+                    </Badge>
+                    {getStatusBadge(suggestion.status)}
+                  </div>
+                  <h5 className="text-sm font-bold text-foreground mb-1">{suggestion.title}</h5>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{suggestion.description}</p>
+                  {suggestion.adminNotes && (
+                    <div className="mt-2 p-2 bg-emerald-500/10 rounded border border-emerald-500/20">
+                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Response</p>
+                      <p className="text-xs text-muted-foreground">{suggestion.adminNotes}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Profile() {
   const { toast } = useToast();
@@ -542,6 +717,11 @@ export default function Profile() {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Founding Member Suggestions Card */}
+          {user?.foundingMember && (
+            <FoundingSuggestionsCard userId={user.userId} />
           )}
 
           {/* Contact Us Card */}

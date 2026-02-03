@@ -293,12 +293,28 @@ export const earlyAccessSignups = pgTable("early_access_signups", {
   email: text("email").notNull(),
   fullName: text("full_name"),
   source: text("source").default("landing_page"), // Where they signed up from
-  status: text("status").default("pending"), // pending, invited, converted
+  status: text("status").default("pending"), // pending, registered, converted
+  registeredUserId: text("registered_user_id"), // Links to user when they complete signup
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertEarlyAccessSchema = createInsertSchema(earlyAccessSignups).omit({ id: true, createdAt: true });
+export const insertEarlyAccessSchema = createInsertSchema(earlyAccessSignups).omit({ id: true, createdAt: true, registeredUserId: true });
 export type EarlyAccessSignup = typeof earlyAccessSignups.$inferSelect;
+
+// Founding member suggestions/feedback
+export const foundingMemberSuggestions = pgTable("founding_member_suggestions", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  category: text("category").notNull(), // feature, improvement, bug, other
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").default("pending"), // pending, reviewed, implemented, declined
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFoundingMemberSuggestionSchema = createInsertSchema(foundingMemberSuggestions).omit({ id: true, createdAt: true, status: true, adminNotes: true });
+export type FoundingMemberSuggestion = typeof foundingMemberSuggestions.$inferSelect;
 
 export const creatorProfiles = pgTable("creator_profiles", {
   id: serial("id").primaryKey(),

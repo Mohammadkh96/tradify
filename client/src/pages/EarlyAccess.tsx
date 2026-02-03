@@ -125,12 +125,15 @@ export default function EarlyAccess() {
                     <Check className="h-8 w-8 text-emerald-500" />
                   </div>
                   <h3 className="text-2xl font-bold text-foreground mb-2">Request Confirmed</h3>
-                  <p className="text-muted-foreground mb-6">
-                    We'll follow up with your founding member access details shortly.
+                  <p className="text-muted-foreground mb-4">
+                    Complete your account setup to activate your founding member status.
                   </p>
-                  <Link to="/login">
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Your founding member benefits will be applied automatically when you sign up with this email.
+                  </p>
+                  <Link to={`/signup?email=${encodeURIComponent(email)}&founding=true`}>
                     <Button className="bg-emerald-500 text-slate-950 font-black uppercase tracking-widest">
-                      Continue to Login
+                      Complete Registration
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
