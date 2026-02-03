@@ -12,6 +12,7 @@ const SMTP_PORT = 587;
 const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_APP_PASSWORD = process.env.SMTP_APP_PASSWORD || '';
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@tradifyapp.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@tradifyapp.com';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@tradifyapp.com';
 const APP_NAME = 'Tradify';
 const APP_URL = process.env.APP_URL || 'https://tradifyapp.com';
@@ -286,7 +287,6 @@ async function sendAdminSignupNotification(
   country: string,
   isFoundingMember: boolean
 ): Promise<boolean> {
-  const adminEmail = 'admin@tradifyapp.com';
   const now = new Date();
   const formattedDate = now.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -359,7 +359,7 @@ async function sendAdminSignupNotification(
     ? `[Founding Member] New Signup: ${fullName}` 
     : `New User Signup: ${fullName}`;
 
-  return sendEmail(adminEmail, subject, html);
+  return sendEmail(ADMIN_EMAIL, subject, html);
 }
 
 function getEmailLogs(): EmailLog[] {

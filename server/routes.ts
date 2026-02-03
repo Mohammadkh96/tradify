@@ -268,6 +268,10 @@ export async function registerRoutes(
         fullName,
       });
 
+      // Notify admin of new signup (don't await - run in background)
+      emailService.sendAdminSignupNotification(normalizedEmail, fullName, country, isFoundingMember)
+        .catch(err => console.error("Failed to send admin signup notification:", err));
+
       res.status(201).json({ 
         message: isFoundingMember 
           ? "Founding member account created! Please check your email to verify your account."
