@@ -46,7 +46,7 @@ integrations = ["javascript_openai_ai_integrations:2.0.0", "stripe:2.0.0", "java
 
 [userenv.shared]
 PAYPAL_CLIENT_ID = "AbHhMwfn29m4CsTUtqTTrTqV27uXxRho4yCUbLX13PDpKXDObCiFKVU6p3koPuoX4-iRoBp1XT3KFOKD"
-PAYPAL_MODE = "sandbox"
+PAYPAL_MODE = "live"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-8936a1f8-2dad-4729-b100-8306e576f172"
