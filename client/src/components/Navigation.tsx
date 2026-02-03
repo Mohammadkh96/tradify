@@ -10,8 +10,6 @@ import {
   Zap,
   Users,
   LogOut,
-  ShieldCheck,
-  Shield,
   User,
   CreditCard,
   ChevronDown,
@@ -22,8 +20,8 @@ import {
   Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TOUR_RESTART_EVENT } from "./OnboardingTour";
 import { TierBadge } from "./EliteBadge";
@@ -71,28 +69,7 @@ export function Navigation() {
     enabled: !!userId,
   });
 
-  const { data: userRole } = useQuery<any>({
-    queryKey: [`/api/traders-hub/user-role/${userId}`],
-    enabled: !!userId,
-  });
-
-  const upgradeMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/user/upgrade-dev");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user/role"] });
-      toast({
-        title: "Developer Access",
-        description: "PRO features unlocked for testing.",
-      });
-    },
-  });
-
   const isConnected = mt5?.status === "CONNECTED";
-  const isPro = userRole?.subscriptionTier === "PRO";
-  const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
   const { tier, isPaid } = usePlan();
 
   const handleLogout = async () => {
@@ -240,22 +217,6 @@ export function Navigation() {
           );
         })}
 
-        {isAdmin && (
-          <Link to="/admin/overview">
-            <div
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group mt-4",
-                location.pathname.startsWith("/admin")
-                  ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                  : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/10"
-              )}
-            >
-              <Shield size={18} className={location.pathname.startsWith("/admin") ? "text-emerald-500" : "text-slate-500 group-hover:text-emerald-400"} />
-              Admin Console
-            </div>
-          </Link>
-        )}
-        
         <button 
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 mt-4 border border-transparent hover:border-rose-500/20"
@@ -270,18 +231,6 @@ export function Navigation() {
           <div className="flex items-center justify-center mb-2">
             <TierBadge tier={tier} size="md" />
           </div>
-        )}
-        {isAdmin && !isPro && (
-          <button
-            onClick={() => upgradeMutation.mutate()}
-            disabled={upgradeMutation.isPending}
-            className="w-full bg-secondary hover:bg-primary/10 text-primary border border-primary/30 rounded-lg p-3 transition-all flex items-center justify-center gap-2 group mb-2"
-          >
-            <ShieldCheck size={14} className="group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              {upgradeMutation.isPending ? "Unlocking..." : "Developer Unlock"}
-            </span>
-          </button>
         )}
         <div className="flex gap-2">
           <div className="flex-1 bg-secondary rounded-lg p-3 border border-border">
