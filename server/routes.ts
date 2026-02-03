@@ -549,6 +549,19 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/paypal/status", requireAdmin, async (req, res) => {
+    try {
+      const status = await paypalService.testConnection();
+      res.json(status);
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Error testing PayPal connection", 
+        error: error.message 
+      });
+    }
+  });
+
   app.post("/api/admin/trigger-email", requireAdmin, async (req, res) => {
     try {
       const { userId, type, data } = req.body;

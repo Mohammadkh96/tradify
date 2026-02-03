@@ -422,6 +422,47 @@ export class PayPalService {
       await emailService.sendSubscriptionCanceledEmail(customId, userName, planName);
     }
   }
+
+  async testConnection(): Promise<{ success: boolean; mode: string; message: string; details?: any }> {
+    const mode = process.env.PAYPAL_MODE === 'live' ? 'LIVE' : 'SANDBOX';
+    
+    if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+      return {
+        success: false,
+        mode,
+        message: 'PayPal credentials not configured',
+        details: {
+          hasClientId: !!PAYPAL_CLIENT_ID,
+          hasClientSecret: !!PAYPAL_CLIENT_SECRET,
+        }
+      };
+    }
+
+    try {
+      const accessToken = await this.getAccessToken();
+      
+      return {
+        success: true,
+        mode,
+        message: `PayPal ${mode} connection successful`,
+        details: {
+          baseUrl: PAYPAL_BASE_URL,
+          tokenObtained: !!accessToken,
+          clientIdPrefix: PAYPAL_CLIENT_ID.substring(0, 10) + '...',
+        }
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        mode,
+        message: `PayPal ${mode} connection failed: ${error.message}`,
+        details: {
+          baseUrl: PAYPAL_BASE_URL,
+          error: error.message,
+        }
+      };
+    }
+  }
 }
 
 export const paypalService = new PayPalService();
