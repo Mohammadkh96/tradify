@@ -10,7 +10,7 @@ Key capabilities include:
 - An "Education Hub" with 20 comprehensive text-based trading lessons organized by 6 categories (Fundamentals, Price Action, Smart Money, Strategies, Psychology, Advanced). First 3 lessons are free; PRO/ELITE tiers get full access via `fullEducationAccess` feature flag. Lessons cover: trading psychology, price action, smart money concepts, order blocks, FVGs, liquidity, risk management, multi-timeframe analysis, session dynamics, entry techniques. Lesson data in `client/src/data/educationLessons.ts`. Trading knowledge context injected into AI prompts via `server/tradingKnowledge.ts`.
 - Risk/position size calculators.
 - Integration with MetaTrader 5 (MT5) for multi-account trade tracking.
-- An interactive onboarding tour for new users.
+- An interactive onboarding tour for new users (tracked via `hasSeenTour` database field; tour shows only on first login).
 - Premium features (PRO/ELITE tiers) such as AI Instrument Analysis, Session and Time-Based Performance Analytics, Behavioral Risk Flags, Strategy Deviation Analysis, Monthly Self-Review Reports, and Professional PDF Reports.
 - A tiered plan system (Free, Pro, Elite) with feature gating and differentiated trade history retention.
 
@@ -34,7 +34,8 @@ Preferred communication style: Simple, everyday language.
 ### Feature Specifications
 - **MT5 Bridge:** Supports multi-account connectivity, independently tracking trades, equity, and analytics for each MT5 account.
 - **Plan System:** Centralized configuration in `shared/plans.ts` with feature gating via frontend hooks and backend utilities. Trade history retention is tier-specific.
-- **Email System:** Uses Nodemailer with Google Workspace SMTP for various email types, including welcome, admin-created user, password reset, subscription notifications, and contact form handling, with rate limiting.
+- **Email System:** Uses Nodemailer with Google Workspace SMTP for various email types, including welcome, admin-created user, password reset, email verification, subscription notifications, and contact form handling, with rate limiting.
+- **Email Verification:** New users must verify their email before logging in. Verification tokens expire after 24 hours. Admin/Owner accounts bypass verification. Users can resend verification emails from the verification screen.
 - **Admin Panel:** Provides user management (creation, plan changes, deactivation, deletion), accessible only by OWNER/ADMIN roles, with audit logging.
 
 ### System Design Choices

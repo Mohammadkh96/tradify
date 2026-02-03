@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link, Navigate } from "react-router-dom";
-import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History, Check, X, Globe } from "lucide-react";
+import { useLocation, Link, Navigate, useSearchParams } from "react-router-dom";
+import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History, Check, X, Globe, User, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,19 +47,36 @@ const countries = [
 const timezones = Intl.supportedValuesOf('timeZone');
 
 export default function Auth() {
+  const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showForgot, setShowForgot] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [country, setCountry] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [timezone, setTimezone] = useState<string>("");
   const [requiresPasswordReset, setRequiresPasswordReset] = useState(false);
+  const [requiresVerification, setRequiresVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [resendingVerification, setResendingVerification] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const { toast } = useToast();
+
+  // Check for verified=true in URL (after email verification)
+  useEffect(() => {
+    if (searchParams.get("verified") === "true") {
+      setRequiresVerification(false);
+      setIsLogin(true);
+      toast({
+        title: "Email Verified",
+        description: "Your email has been verified. You can now log in.",
+      });
+    }
+  }, [searchParams, toast]);
 
   const { data: userRole } = useQuery<any>({
     queryKey: ["/api/user"],
@@ -91,7 +108,40 @@ export default function Auth() {
   const isPasswordValid = passwordRules.every(rule => rule.test(password));
   const isFormValid = isLogin 
     ? (email && password) 
-    : (email && isPasswordValid && password === confirmPassword && !!country && !!timezone);
+    : (email && fullName && isPasswordValid && password === confirmPassword && !!country && !!timezone);
+
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+    setResendingVerification(true);
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verificationEmail }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        toast({
+          title: "Verification Email Sent",
+          description: "Please check your inbox for the verification link.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Failed to Resend",
+          description: data.message || "Could not resend verification email.",
+        });
+      }
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to resend verification email.",
+      });
+    } finally {
+      setResendingVerification(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +151,7 @@ export default function Auth() {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const payload = isLogin 
         ? { email, password }
-        : { email, password, country, phoneNumber, timezone };
+        : { email, password, fullName, country, phoneNumber, timezone };
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -118,8 +168,31 @@ export default function Auth() {
 
       const data = await response.json();
 
+      // Handle email verification required (for login)
+      if (response.status === 403 && data.requiresVerification) {
+        setRequiresVerification(true);
+        setVerificationEmail(data.email);
+        toast({
+          variant: "destructive",
+          title: "Email Not Verified",
+          description: "Please verify your email before logging in.",
+        });
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(data.message || "Authentication failed");
+      }
+
+      // Handle registration success (requires email verification)
+      if (!isLogin && data.requiresVerification) {
+        setRequiresVerification(true);
+        setVerificationEmail(email);
+        toast({
+          title: "Account Created",
+          description: "Please check your email to verify your account.",
+        });
+        return;
       }
 
       // Check if user needs to reset password (admin-created accounts)
@@ -135,6 +208,11 @@ export default function Auth() {
       localStorage.setItem("user_id", data.userId);
       queryClient.setQueryData(["/api/user"], data);
       
+      // Store isFirstLogin for tour
+      if (data.isFirstLogin) {
+        localStorage.setItem("show_tour", "true");
+      }
+      
       // Redirect based on role
       if (data.role === "OWNER" || data.role === "ADMIN") {
         window.location.replace("/admin/overview");
@@ -143,8 +221,8 @@ export default function Auth() {
       }
       
       toast({
-        title: isLogin ? "Session Initialized" : "Account Created",
-        description: isLogin ? "Welcome back to the terminal." : "Precision trading starts now.",
+        title: "Session Initialized",
+        description: "Welcome back to the terminal.",
       });
     } catch (err: any) {
       console.error("Auth error:", err);
@@ -301,6 +379,66 @@ export default function Auth() {
     );
   }
 
+  // Email verification required screen
+  if (requiresVerification) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col relative pt-20">
+        <PublicNavbar />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-2xl border border-border text-center">
+            <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <Mail className="text-emerald-500" size={40} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-foreground uppercase italic tracking-tighter">Verify Your Email</h3>
+              <p className="text-muted-foreground mt-2 text-sm">
+                We've sent a verification link to <span className="text-emerald-500 font-bold">{verificationEmail}</span>
+              </p>
+            </div>
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-widest">
+                Please check your inbox and click the verification link to activate your account.
+              </p>
+              <div className="p-4 bg-muted rounded-lg border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Didn't receive the email?</p>
+                <Button
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification}
+                  variant="outline"
+                  className="w-full border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
+                  data-testid="button-resend-verification"
+                >
+                  {resendingVerification ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Resend Verification Email
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setRequiresVerification(false);
+                setIsLogin(true);
+              }}
+              className="text-muted-foreground text-xs font-bold uppercase tracking-widest"
+              data-testid="button-back-to-login"
+            >
+              Back to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (showForgot) {
     return (
       <div className="min-h-screen bg-background flex flex-col relative pt-20">
@@ -418,12 +556,28 @@ export default function Auth() {
                       className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                       type="email"
                       required
+                      data-testid="input-email"
                     />
                   </div>
                 </div>
                 
                 {!isLogin && (
                   <>
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Full Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
+                        <Input 
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="John Doe" 
+                          className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
+                          type="text"
+                          required
+                          data-testid="input-fullname"
+                        />
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Country</label>

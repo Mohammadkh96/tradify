@@ -93,11 +93,10 @@ async function sendEmail(
     // Log to database
     try {
       await db.insert(schema.sentEmails).values({
-        userId: to,
-        emailType: 'transactional',
+        recipient: to,
         subject,
-        content: html.substring(0, 500),
-        status: 'sent'
+        templateName: 'transactional',
+        success: true,
       });
     } catch (dbError) {
       console.error('[EMAIL] Failed to log email to database:', dbError);
@@ -197,9 +196,74 @@ async function sendContactFormAutoReply(email: string, name: string): Promise<bo
   return sendEmail(email, `We received your message - ${APP_NAME}`, html);
 }
 
+// Send email verification email
+async function sendEmailVerificationEmail(email: string, fullName: string, verificationToken: string): Promise<boolean> {
+  const verificationUrl = `${APP_URL}/api/auth/verify-email?token=${verificationToken}`;
+  
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Email - ${APP_NAME}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0a0f1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0f1a; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #111827; border-radius: 12px; border: 1px solid #1f2937; overflow: hidden;">
+          <tr>
+            <td style="padding: 40px; text-align: center; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+              <h1 style="color: #0a0f1a; margin: 0; font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: -1px;">
+                Welcome to ${APP_NAME}
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <p style="color: #f3f4f6; font-size: 16px; margin: 0 0 20px 0;">
+                Hi ${fullName},
+              </p>
+              <p style="color: #9ca3af; font-size: 14px; margin: 0 0 30px 0; line-height: 1.6;">
+                Thank you for creating your ${APP_NAME} account. To complete your registration and access your trading terminal, please verify your email address by clicking the button below.
+              </p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #0a0f1a; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                  Verify Email Address
+                </a>
+              </div>
+              <p style="color: #6b7280; font-size: 12px; margin: 30px 0 0 0; line-height: 1.6;">
+                This verification link will expire in 24 hours. If you didn't create an account with ${APP_NAME}, you can safely ignore this email.
+              </p>
+              <hr style="border: none; border-top: 1px solid #1f2937; margin: 30px 0;">
+              <p style="color: #6b7280; font-size: 11px; margin: 0; text-align: center;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <span style="color: #10b981; word-break: break-all;">${verificationUrl}</span>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 40px; background-color: #0d1117; text-align: center;">
+              <p style="color: #6b7280; font-size: 11px; margin: 0;">
+                © ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+  
+  return sendEmail(email, `Verify your email - ${APP_NAME}`, html);
+}
+
 // Legacy function for backward compatibility with existing code
-async function sendTransactionalEmail(userId: string, type: "signup" | "payment_success" | "password_reset", data: any): Promise<boolean> {
-  const userName = userId.split('@')[0]; // Extract name from email
+async function sendTransactionalEmail(userId: string, type: "signup" | "payment_success" | "password_reset" | "email_verification", data: any): Promise<boolean> {
+  const userName = data.fullName || userId.split('@')[0]; // Extract name from email
   
   switch (type) {
     case "signup":
@@ -208,6 +272,8 @@ async function sendTransactionalEmail(userId: string, type: "signup" | "payment_
       return sendSubscriptionActivatedEmail(userId, userName, data.planName || 'Pro');
     case "password_reset":
       return sendPasswordResetEmail(userId, userName, data.resetUrl || '');
+    case "email_verification":
+      return sendEmailVerificationEmail(userId, userName, data.verificationToken || '');
     default:
       console.warn(`[EMAIL] Unknown transactional email type: ${type}`);
       return false;
@@ -231,6 +297,7 @@ export const emailService = {
   sendSubscriptionCanceledEmail,
   sendContactFormNotification,
   sendContactFormAutoReply,
+  sendEmailVerificationEmail,
   getEmailLogs,
   isEmailConfigured,
 };

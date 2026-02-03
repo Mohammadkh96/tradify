@@ -167,9 +167,9 @@ export async function registerRoutes(
   // Registration Endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, country, phoneNumber, timezone } = req.body;
+      const { email, password, fullName, country, phoneNumber, timezone } = req.body;
       
-      if (!email || !password || !country || !timezone) {
+      if (!email || !password || !fullName || !country || !timezone) {
         return res.status(400).json({ message: "Required fields missing" });
       }
 
@@ -181,27 +181,120 @@ export async function registerRoutes(
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Generate email verification token
+      const crypto = await import("crypto");
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       const [newUser] = await db.insert(schema.userRole).values({
         userId: normalizedEmail,
         password: hashedPassword,
         role: "TRADER",
+        fullName,
         country,
         phoneNumber: phoneNumber || null,
         timezone,
         subscriptionTier: "FREE",
+        emailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiry: tokenExpiry,
+        hasSeenTour: false,
       }).returning();
 
-      req.session.userId = newUser.userId;
-      req.session.role = newUser.role;
+      // Send verification email
+      await emailService.sendTransactionalEmail(newUser.userId, "email_verification", {
+        verificationToken,
+        fullName,
+      });
 
-      // Send signup email
-      await emailService.sendTransactionalEmail(newUser.userId, "signup", {});
-
-      res.status(201).json(newUser);
+      res.status(201).json({ 
+        message: "Account created. Please check your email to verify your account.",
+        requiresVerification: true,
+        userId: newUser.userId
+      });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Email verification endpoint
+  app.get("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({ message: "Invalid verification token" });
+      }
+
+      const [user] = await db.select().from(schema.userRole)
+        .where(eq(schema.userRole.emailVerificationToken, token))
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+
+      if (user.emailVerificationExpiry && new Date(user.emailVerificationExpiry) < new Date()) {
+        return res.status(400).json({ message: "Verification token has expired. Please request a new one." });
+      }
+
+      await db.update(schema.userRole)
+        .set({
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
+        })
+        .where(eq(schema.userRole.userId, user.userId));
+
+      // Redirect to login with success message
+      res.redirect("/login?verified=true");
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
+  // Resend verification email
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const { email } = req.body;
+      const normalizedEmail = email.toLowerCase();
+
+      const [user] = await db.select().from(schema.userRole)
+        .where(eq(schema.userRole.userId, normalizedEmail))
+        .limit(1);
+
+      if (!user) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ message: "Email is already verified" });
+      }
+
+      // Generate new verification token
+      const crypto = await import("crypto");
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await db.update(schema.userRole)
+        .set({
+          emailVerificationToken: verificationToken,
+          emailVerificationExpiry: tokenExpiry,
+        })
+        .where(eq(schema.userRole.userId, user.userId));
+
+      await emailService.sendTransactionalEmail(user.userId, "email_verification", {
+        verificationToken,
+        fullName: user.fullName || "Trader",
+      });
+
+      res.json({ message: "Verification email sent" });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ message: "Failed to resend verification email" });
     }
   });
 
@@ -221,6 +314,15 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      // Check if email is verified (skip for admins/owners)
+      if (!user.emailVerified && user.role !== "OWNER" && user.role !== "ADMIN") {
+        return res.status(403).json({ 
+          message: "Please verify your email before logging in",
+          requiresVerification: true,
+          email: user.userId
+        });
+      }
+
       // Check if user needs to reset password (admin-created accounts)
       if (user.mustResetPassword) {
         // Create a temporary session for password reset only
@@ -235,7 +337,10 @@ export async function registerRoutes(
       req.session.userId = user.userId;
       req.session.role = user.role;
 
-      res.json(user);
+      // Check if this is first login (for tour)
+      const isFirstLogin = !user.hasSeenTour;
+
+      res.json({ ...user, isFirstLogin });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
@@ -292,6 +397,19 @@ export async function registerRoutes(
     }
     const user = await storage.getUserRole(req.session.userId);
     res.json(user);
+  });
+
+  // Mark tour as seen
+  app.post("/api/user/tour-complete", requireAuth, async (req, res) => {
+    try {
+      await db.update(schema.userRole)
+        .set({ hasSeenTour: true })
+        .where(eq(schema.userRole.userId, req.session.userId!));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking tour complete:", error);
+      res.status(500).json({ message: "Failed to update tour status" });
+    }
   });
 
   app.get("/api/paypal/setup", requireAuth, async (req, res) => {

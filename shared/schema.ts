@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -98,6 +98,7 @@ export const userRole = pgTable("user_role", {
   userId: text("user_id").notNull(),
   password: text("password"),
   role: text("role").notNull(),
+  fullName: text("full_name"), // User's full name
   termsAccepted: boolean("terms_accepted").default(false),
   riskAcknowledged: boolean("risk_acknowledged").default(false),
   subscriptionTier: text("subscription_tier").default("FREE"),
@@ -113,6 +114,10 @@ export const userRole = pgTable("user_role", {
   phoneNumber: text("phone_number"),
   timezone: text("timezone"), // Added per spec
   mustResetPassword: boolean("must_reset_password").default(false), // For admin-created users
+  emailVerified: boolean("email_verified").default(false), // Email verification status
+  emailVerificationToken: text("email_verification_token"), // Token for email verification
+  emailVerificationExpiry: timestamp("email_verification_expiry"), // Token expiry
+  hasSeenTour: boolean("has_seen_tour").default(false), // Onboarding tour completed
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -228,11 +233,12 @@ export const adminAuditLog = pgTable("admin_audit_log", {
 
 export const sentEmails = pgTable("sent_emails", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull(),
-  emailType: text("email_type").notNull(), // signup, payment_success, password_reset
-  subject: text("subject").notNull(),
-  content: text("content").notNull(),
-  status: text("status").notNull(), // sent, failed
+  userId: integer("user_id"),
+  recipient: varchar("recipient"),
+  subject: varchar("subject").notNull(),
+  templateName: varchar("template_name"), // email template type
+  success: boolean("success").default(true),
+  errorMessage: text("error_message"),
   sentAt: timestamp("sent_at").defaultNow(),
 });
 
