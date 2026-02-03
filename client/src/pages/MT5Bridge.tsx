@@ -13,15 +13,13 @@ import {
   Download,
   Key,
   Server,
-  Play,
-  Lock
+  Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 
 export default function MT5Bridge() {
   const [copied, setCopied] = useState(false);
@@ -39,10 +37,6 @@ export default function MT5Bridge() {
     enabled: !!currentUserId,
   });
 
-  const subscription = (userRoleData?.subscriptionTier || "FREE").toUpperCase();
-  const isPro = subscription === "PRO";
-  const isElite = subscription === "ELITE";
-  const hasPaidPlan = isPro || isElite;
 
   const generateTokenMutation = useMutation({
     mutationFn: async () => {
@@ -429,53 +423,6 @@ if __name__ == "__main__":
             </div>
           </div>
 
-          <div className="p-8 bg-muted/20 border-t border-border space-y-8">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Refresh Interval</label>
-                {!hasPaidPlan && (
-                  <Link to="/pricing">
-                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded cursor-pointer hover:bg-emerald-500/20 transition-colors font-black">PRO: PRIORITY SYNC</span>
-                  </Link>
-                )}
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
-                {['5s', '2s', '1s'].map((interval) => {
-                  const isDisabled = 
-                    (interval === '2s' && !hasPaidPlan) || 
-                    (interval === '1s' && !isElite);
-                  return (
-                    <button 
-                      key={interval}
-                      disabled={isDisabled}
-                      className={cn(
-                        "py-2 rounded-lg text-xs font-bold border transition-all",
-                        isDisabled 
-                          ? "bg-muted border-border text-muted-foreground/40 cursor-not-allowed"
-                          : "bg-background border-border text-muted-foreground hover:border-emerald-500/50 hover:text-emerald-500"
-                      )}
-                    >
-                      {interval}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-4 border-t border-border">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Historical Backfill</label>
-                {!hasPaidPlan && <Lock size={12} className="text-muted-foreground/40" />}
-              </div>
-              <Button 
-                variant="outline" 
-                disabled={!hasPaidPlan}
-                className="w-full border-border text-muted-foreground text-xs font-bold uppercase tracking-widest h-12"
-              >
-                {hasPaidPlan ? "Request Full Backfill" : "Pro Feature Only"}
-              </Button>
-            </div>
-          </div>
         </div>
       </main>
     </div>
