@@ -1,5 +1,6 @@
 import { useTrades } from "@/hooks/use-trades";
 import { usePlan } from "@/hooks/usePlan";
+import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { StatCard } from "@/components/StatCard";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
 import { TimePatterns } from "@/components/TimePatterns";
@@ -312,10 +313,13 @@ export default function Dashboard() {
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
         <header className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-2">
-              <LayoutDashboard className="text-emerald-500" />
-              Trader Dashboard
-            </h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-2">
+                <LayoutDashboard className="text-emerald-500" />
+                Trader Dashboard
+              </h1>
+              {user?.foundingMember && <FoundingMemberBadge size="md" />}
+            </div>
             <p className="text-muted-foreground text-sm mt-1">Market Overview & Performance Metrics</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">

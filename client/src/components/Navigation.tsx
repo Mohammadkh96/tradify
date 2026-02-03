@@ -25,6 +25,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TOUR_RESTART_EVENT } from "./OnboardingTour";
 import { TierBadge } from "./EliteBadge";
+import { FoundingMemberBadge } from "./FoundingMemberBadge";
 import { usePlan } from "@/hooks/usePlan";
 
 const navItems = [
@@ -227,9 +228,10 @@ export function Navigation() {
       </nav>
 
       <div className="p-4 border-t border-border space-y-2">
-        {isPaid && (
-          <div className="flex items-center justify-center mb-2">
-            <TierBadge tier={tier} size="md" />
+        {(isPaid || user?.foundingMember) && (
+          <div className="flex items-center justify-center gap-2 mb-2 flex-wrap">
+            {user?.foundingMember && <FoundingMemberBadge size="sm" />}
+            {isPaid && <TierBadge tier={tier} size="md" />}
           </div>
         )}
         <div className="flex gap-2">

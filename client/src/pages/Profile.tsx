@@ -29,6 +29,7 @@ import { UserRole } from "@shared/schema";
 import { SiPaypal } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { TierBadge } from "@/components/EliteBadge";
+import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 
 const countries = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
@@ -173,6 +174,7 @@ export default function Profile() {
           <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-black opacity-70">Manage your institutional account</p>
         </div>
         <div className="flex items-center gap-3">
+          {user?.foundingMember && <FoundingMemberBadge size="lg" />}
           <TierBadge tier={user?.subscriptionTier} size="lg" />
           <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border border-border rounded-xl">
             <CreditCard size={16} className="text-emerald-500" />
