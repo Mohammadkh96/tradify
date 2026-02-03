@@ -116,7 +116,35 @@ export default function TradersHub() {
   if (isLoading) return <div className="p-8 text-muted-foreground uppercase font-black animate-pulse">Synchronizing Hub...</div>;
 
   return (
-    <div className="container mx-auto p-6 space-y-6 bg-background text-foreground min-h-screen">
+    <div className="container mx-auto p-6 space-y-6 bg-background text-foreground min-h-screen relative">
+      {/* Coming Soon Overlay */}
+      <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <div className="text-center space-y-6 p-8 max-w-md">
+          <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center">
+            <Users className="text-emerald-500" size={40} />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">Coming Soon</h2>
+            <p className="text-muted-foreground mt-2 uppercase text-xs font-bold tracking-widest">Stay Tuned for Trader Hub</p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              We're building something special for the trading community. Connect, learn, and share insights with fellow traders.
+            </p>
+            <p className="text-xs text-emerald-500 font-bold uppercase tracking-wider">
+              Launching Soon
+            </p>
+          </div>
+          <div className="flex justify-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500/60 animate-pulse delay-75"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500/30 animate-pulse delay-150"></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Blurred Content Behind */}
+      <div className="blur-sm pointer-events-none select-none">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase flex items-center gap-3">
@@ -427,6 +455,7 @@ export default function TradersHub() {
             </CardContent>
           </Card>
         </div>
+      </div>
       </div>
     </div>
   );
