@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { 
   TrendingUp, 
   ShieldCheck, 
@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   BarChart3,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -49,13 +50,21 @@ export default function Landing() {
             </p>
           </div>
 
+          <Link href="/early-access" className="inline-block mb-6">
+            <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-5 py-2 hover:bg-amber-500/20 transition-colors cursor-pointer group">
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              <span className="text-amber-400 text-sm font-bold uppercase tracking-widest">Founding Member Early Access</span>
+              <ArrowRight className="h-4 w-4 text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/signup">
+            <Link href="/signup">
               <Button className="w-full sm:w-auto h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400 shadow-xl shadow-emerald-500/20">
                 Create Account
               </Button>
             </Link>
-            <Link to="/pricing">
+            <Link href="/pricing">
               <Button variant="outline" className="w-full sm:w-auto h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted">
                 View Plans
               </Button>
@@ -246,12 +255,12 @@ export default function Landing() {
                   Deploy Tradify to enforce systematic discipline and utilize institutional-grade analytics.
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <Link to="/signup">
+                  <Link href="/signup">
                     <Button className="h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400">
                       Access Terminal
                     </Button>
                   </Link>
-                  <Link to="/pricing">
+                  <Link href="/pricing">
                     <Button variant="ghost" className="h-14 px-8 text-foreground font-bold uppercase tracking-widest text-xs group">
                       Subscription Tiers <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
                     </Button>
@@ -293,9 +302,9 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-12 border-t border-border text-center">
         <div className="flex justify-center flex-wrap gap-6 mb-4">
-          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
-          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
-          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
+          <Link href="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
+          <Link href="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
+          <Link href="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
           <a 
             href="mailto:support@tradify.app?subject=Tradify Support Request" 
             className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"

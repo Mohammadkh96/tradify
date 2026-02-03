@@ -118,6 +118,7 @@ export const userRole = pgTable("user_role", {
   emailVerificationToken: text("email_verification_token"), // Token for email verification
   emailVerificationExpiry: timestamp("email_verification_expiry"), // Token expiry
   hasSeenTour: boolean("has_seen_tour").default(false), // Onboarding tour completed
+  foundingMember: boolean("founding_member").default(false), // Early adopter badge
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -285,6 +286,19 @@ export const insertHubReportSchema = createInsertSchema(hubReports).omit({ id: t
 export type HubPost = typeof hubPosts.$inferSelect;
 export type HubComment = typeof hubComments.$inferSelect;
 export type HubReport = typeof hubReports.$inferSelect;
+
+// Early access signups for pre-launch marketing
+export const earlyAccessSignups = pgTable("early_access_signups", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  fullName: text("full_name"),
+  source: text("source").default("landing_page"), // Where they signed up from
+  status: text("status").default("pending"), // pending, invited, converted
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEarlyAccessSchema = createInsertSchema(earlyAccessSignups).omit({ id: true, createdAt: true });
+export type EarlyAccessSignup = typeof earlyAccessSignups.$inferSelect;
 
 export const creatorProfiles = pgTable("creator_profiles", {
   id: serial("id").primaryKey(),

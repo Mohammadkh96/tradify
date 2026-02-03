@@ -169,6 +169,42 @@ export async function registerRoutes(
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   
+  // Early Access Signup Endpoint
+  app.post("/api/early-access/signup", async (req, res) => {
+    try {
+      const { email, fullName } = req.body;
+      
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ message: "Valid email is required" });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Check if already signed up
+      const [existing] = await db.select()
+        .from(schema.earlyAccessSignups)
+        .where(eq(schema.earlyAccessSignups.email, normalizedEmail))
+        .limit(1);
+      
+      if (existing) {
+        return res.status(400).json({ message: "You're already on the list!" });
+      }
+      
+      // Insert new signup
+      await db.insert(schema.earlyAccessSignups).values({
+        email: normalizedEmail,
+        fullName: fullName?.trim() || null,
+        source: "early_access_page",
+        status: "pending"
+      });
+      
+      res.json({ success: true, message: "You've been added to the founding member list!" });
+    } catch (error: any) {
+      console.error("Early access signup error:", error);
+      res.status(500).json({ message: "Failed to sign up. Please try again." });
+    }
+  });
+  
   // Registration Endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {

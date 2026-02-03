@@ -46,6 +46,19 @@ export async function ensureSchemaColumns() {
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS email_verification_token TEXT;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS email_verification_expiry TIMESTAMP;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS has_seen_tour BOOLEAN DEFAULT false;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS founding_member BOOLEAN DEFAULT false;
+    `);
+    
+    // Create early access signups table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS early_access_signups (
+        id SERIAL PRIMARY KEY,
+        email TEXT NOT NULL,
+        full_name TEXT,
+        source TEXT DEFAULT 'landing_page',
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
     `);
     console.log('Schema columns verified');
   } catch (error) {

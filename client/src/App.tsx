@@ -21,6 +21,7 @@ import Profile from "@/pages/Profile";
 import Checkout from "@/pages/Checkout";
 import TradersHub from "@/pages/TradersHub";
 import Auth from "@/pages/Auth";
+import EarlyAccess from "@/pages/EarlyAccess";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PublicNavbar } from "@/components/PublicNavbar";
@@ -34,11 +35,12 @@ function Router() {
   const [location] = useLocation();
   const isLandingPage = location === "/";
   const isPricingPage = location === "/pricing";
+  const isEarlyAccessPage = location === "/early-access";
   const isAuthPage = location === "/login" || location === "/signup";
   const isAdminRoute = location.startsWith("/admin");
   const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer";
 
-  const isPublicPage = isLandingPage || isPricingPage || isAuthPage || isPublicLegalPage || 
+  const isPublicPage = isLandingPage || isPricingPage || isEarlyAccessPage || isAuthPage || isPublicLegalPage || 
                        location === "/features" || location === "/how-it-works" || location === "/resources";
 
   const { data: userRole, isLoading: isRoleLoading, isError: isRoleError } = useQuery<any>({
@@ -65,12 +67,12 @@ function Router() {
 
   const content = (
     <Switch>
+      <Route path="/early-access" component={EarlyAccess} />
       <Route path="/login" component={Auth} />
       <Route path="/signup" component={Auth} />
       <Route path="/register">
         <Redirect to="/signup" />
       </Route>
-      <Route path="/" component={Landing} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
@@ -392,6 +394,7 @@ function Router() {
         {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
       </Route>
       
+      <Route path="/" component={Landing} />
       <Route component={NotFound} />
     </Switch>
   );
