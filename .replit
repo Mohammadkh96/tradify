@@ -48,5 +48,8 @@ integrations = ["javascript_openai_ai_integrations:2.0.0", "stripe:2.0.0", "java
 PAYPAL_CLIENT_ID = "AbHhMwfn29m4CsTUtqTTrTqV27uXxRho4yCUbLX13PDpKXDObCiFKVU6p3koPuoX4-iRoBp1XT3KFOKD"
 PAYPAL_MODE = "live"
 
+[userenv.development]
+APP_URL = "https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev"
+
 [objectStorage]
 defaultBucketID = "replit-objstore-8936a1f8-2dad-4729-b100-8306e576f172"

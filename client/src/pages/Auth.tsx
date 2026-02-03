@@ -66,7 +66,7 @@ export default function Auth() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const { toast } = useToast();
 
-  // Check for verified=true in URL (after email verification)
+  // Check for verified=true or verification_error in URL (after email verification)
   useEffect(() => {
     if (searchParams.get("verified") === "true") {
       setRequiresVerification(false);
@@ -76,10 +76,38 @@ export default function Auth() {
         description: "Your email has been verified. You can now log in.",
       });
     }
+    
+    // Handle verification errors
+    const verificationError = searchParams.get("verification_error");
+    const errorEmail = searchParams.get("email");
+    if (verificationError) {
+      if (verificationError === "expired") {
+        setRequiresVerification(true);
+        if (errorEmail) setVerificationEmail(decodeURIComponent(errorEmail));
+        toast({
+          variant: "destructive",
+          title: "Verification Link Expired",
+          description: "Your verification link has expired. Please request a new one.",
+        });
+      } else if (verificationError === "invalid_token") {
+        toast({
+          variant: "destructive",
+          title: "Invalid Verification Link",
+          description: "This verification link is invalid or has already been used.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Verification Failed",
+          description: "Something went wrong. Please try again.",
+        });
+      }
+    }
+    
     // Pre-fill email from early access flow
     const earlyAccessEmail = searchParams.get("email");
     const isFoundingFlow = searchParams.get("founding") === "true";
-    if (earlyAccessEmail) {
+    if (earlyAccessEmail && !verificationError) {
       setEmail(decodeURIComponent(earlyAccessEmail));
       if (isFoundingFlow) {
         setIsLogin(false); // Switch to signup mode for founding members

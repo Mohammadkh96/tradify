@@ -288,7 +288,7 @@ export async function registerRoutes(
       const { token } = req.query;
       
       if (!token || typeof token !== "string") {
-        return res.status(400).json({ message: "Invalid verification token" });
+        return res.redirect("/login?verification_error=invalid_token");
       }
 
       const [user] = await db.select().from(schema.userRole)
@@ -296,11 +296,11 @@ export async function registerRoutes(
         .limit(1);
 
       if (!user) {
-        return res.status(400).json({ message: "Invalid or expired verification token" });
+        return res.redirect("/login?verification_error=invalid_token");
       }
 
       if (user.emailVerificationExpiry && new Date(user.emailVerificationExpiry) < new Date()) {
-        return res.status(400).json({ message: "Verification token has expired. Please request a new one." });
+        return res.redirect(`/login?verification_error=expired&email=${encodeURIComponent(user.userId)}`);
       }
 
       await db.update(schema.userRole)
@@ -315,7 +315,7 @@ export async function registerRoutes(
       res.redirect("/login?verified=true");
     } catch (error) {
       console.error("Email verification error:", error);
-      res.status(500).json({ message: "Verification failed" });
+      res.redirect("/login?verification_error=failed");
     }
   });
 
