@@ -1,8 +1,10 @@
 import { storage } from './storage';
 import { emailService } from './emailService';
 
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID } = process.env;
-const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_MODE } = process.env;
+// Use PAYPAL_MODE=sandbox to force sandbox mode even in production (for testing)
+// Set PAYPAL_MODE=live when ready for real payments
+const PAYPAL_BASE_URL = PAYPAL_MODE === 'live'
   ? 'https://api-m.paypal.com' 
   : 'https://api-m.sandbox.paypal.com';
 
