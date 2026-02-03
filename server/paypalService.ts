@@ -345,6 +345,12 @@ export class PayPalService {
             ? new Date(details.billing_info.next_billing_time) 
             : undefined,
         });
+        
+        // Send subscription activated email
+        const userName = userId.split('@')[0];
+        await emailService.sendSubscriptionActivatedEmail(userId, userName, determinedTier);
+        console.log(`Subscription activated for ${userId}, tier: ${determinedTier}, email sent`);
+        
         return true;
       }
       

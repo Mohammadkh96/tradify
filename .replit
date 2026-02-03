@@ -45,7 +45,7 @@ integrations = ["javascript_openai_ai_integrations:2.0.0", "stripe:2.0.0", "java
 [userenv]
 
 [userenv.shared]
-PAYPAL_CLIENT_ID = "Aebgj7DlXq2iqIhpv-fZIG9jqe-TL4kmEHtw46UFyTbw50PpK_bIFmGQrBynp4cVdyrqMaCXke_59C2h"
+PAYPAL_CLIENT_ID = "AbHhMwfn29m4CsTUtqTTrTqV27uXxRho4yCUbLX13PDpKXDObCiFKVU6p3koPuoX4-iRoBp1XT3KFOKD"
 PAYPAL_MODE = "sandbox"
 
 [objectStorage]
