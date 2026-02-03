@@ -94,9 +94,9 @@ export default function Landing() {
                     icon: <Zap className="text-amber-500" />
                   },
                   {
-                    title: "Post-Trade Feedback",
-                    desc: "Linking terminal execution directly to strategy rules for objective performance auditing.",
-                    icon: <Search className="text-blue-500" />
+                    title: "Strategy Drift",
+                    desc: "Track when trades deviate from your documented strategy rules. Measure consistency over time.",
+                    icon: <TrendingUp className="text-blue-500" />
                   }
                 ].map((item, i) => (
                   <div key={i} className="flex gap-4 p-4 rounded-2xl border border-border bg-background/50">
@@ -113,9 +113,25 @@ export default function Landing() {
               <div className="aspect-square rounded-3xl bg-gradient-to-br from-muted to-background border border-border flex items-center justify-center p-12 overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(244,63,94,0.1),transparent)]" />
                 <Activity size={200} className="text-rose-500/20 animate-pulse" />
-                <div className="absolute bottom-8 left-8 right-8 p-6 rounded-2xl bg-background border border-rose-500/20 backdrop-blur-xl">
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-2">System Alert</div>
-                  <div className="text-sm font-bold text-foreground">Rule Violation Detected: GR-05 (Entry Confirmation) Missing</div>
+                <div className="absolute bottom-8 left-8 right-8 p-6 rounded-2xl bg-background border border-border backdrop-blur-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Performance Snapshot</div>
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-lg font-black text-emerald-500">67%</div>
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Win Rate</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-foreground">1:2.4</div>
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">R:R Ratio</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-amber-500">3</div>
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Today</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
