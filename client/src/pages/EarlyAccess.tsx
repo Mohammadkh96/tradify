@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, Check, Zap, Gift, Users, ArrowRight, Sparkles } from "lucide-react";
+import { TrendingUp, Check, Zap, Gift, Users, ArrowRight, Sparkles, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,24 +9,24 @@ import { PublicNavbar } from "@/components/PublicNavbar";
 
 const benefits = [
   {
-    icon: Gift,
-    title: "Free Pro for 3 Months",
-    description: "Full access to all Pro features, no credit card required"
+    icon: Zap,
+    title: "Early Pro Access",
+    description: "Full access to Pro features during the early launch phase. No upfront commitment required."
   },
   {
-    icon: Sparkles,
-    title: "Lifetime 30% Discount",
-    description: "Lock in exclusive pricing that never expires"
+    icon: Gift,
+    title: "Founding Member Pricing",
+    description: "Secure a 30% discounted subscription rate, maintained for as long as your subscription remains active."
   },
   {
     icon: Users,
-    title: "Shape the Product",
-    description: "Direct access to founders, vote on features, influence roadmap"
+    title: "Influence the Roadmap",
+    description: "Provide structured feedback, help prioritize features, and contribute to the product's early development cycle."
   },
   {
-    icon: Zap,
-    title: "Founding Member Badge",
-    description: "Exclusive badge displayed on your profile forever"
+    icon: Shield,
+    title: "Founding Member Identification",
+    description: "A permanent founding member identifier displayed on your profile."
   }
 ];
 
@@ -54,13 +54,13 @@ export default function EarlyAccess() {
       if (response.ok) {
         setIsSubmitted(true);
         toast({
-          title: "You're on the list!",
-          description: "We'll reach out soon with your exclusive access.",
+          title: "Request Received",
+          description: "We'll be in touch with your access details.",
         });
       } else {
         toast({
           variant: "destructive",
-          title: "Signup Failed",
+          title: "Request Failed",
           description: data.message || "Please try again.",
         });
       }
@@ -84,20 +84,22 @@ export default function EarlyAccess() {
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-1.5 mb-6">
               <Sparkles className="h-4 w-4 text-amber-400" />
-              <span className="text-amber-400 text-sm font-bold uppercase tracking-widest">Limited to First 100 Users</span>
+              <span className="text-amber-400 text-sm font-bold uppercase tracking-widest">Early Access — Limited Availability</span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl font-black text-foreground uppercase italic tracking-tighter mb-4">
-              Join the <span className="text-emerald-500">Founding</span> Circle
+            <h1 className="text-4xl md:text-5xl font-black text-foreground uppercase italic tracking-tighter mb-6">
+              Founding Member <span className="text-emerald-500">Access</span>
             </h1>
             
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Be among the first to experience TRADIFY. Early users get exclusive benefits 
-              and help shape the future of disciplined trading.
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
+              Gain early access to Tradify and participate in the initial launch cohort.
+            </p>
+            <p className="text-muted-foreground max-w-2xl mx-auto mt-2">
+              Founding members receive extended access, preferential pricing, and the opportunity to influence product direction.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 mb-12">
+          <div className="grid md:grid-cols-2 gap-6 mb-12">
             {benefits.map((benefit, index) => (
               <Card key={index} className="bg-card/50 border-border">
                 <CardContent className="p-6">
@@ -107,7 +109,7 @@ export default function EarlyAccess() {
                     </div>
                     <div>
                       <h3 className="font-bold text-foreground mb-1">{benefit.title}</h3>
-                      <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{benefit.description}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -122,13 +124,13 @@ export default function EarlyAccess() {
                   <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
                     <Check className="h-8 w-8 text-emerald-500" />
                   </div>
-                  <h3 className="text-2xl font-bold text-foreground mb-2">You're In!</h3>
+                  <h3 className="text-2xl font-bold text-foreground mb-2">Request Confirmed</h3>
                   <p className="text-muted-foreground mb-6">
-                    Check your inbox for next steps. Welcome to the founding circle.
+                    We'll follow up with your founding member access details shortly.
                   </p>
                   <Link to="/login">
                     <Button className="bg-emerald-500 text-slate-950 font-black uppercase tracking-widest">
-                      Go to Login
+                      Continue to Login
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
@@ -136,9 +138,9 @@ export default function EarlyAccess() {
               ) : (
                 <>
                   <div className="text-center mb-6">
-                    <h3 className="text-xl font-bold text-foreground mb-2">Get Early Access</h3>
+                    <h3 className="text-xl font-bold text-foreground mb-2">Request Founding Access</h3>
                     <p className="text-sm text-muted-foreground">
-                      Enter your email to secure your spot as a Founding Member
+                      Enter your details to join the founding member cohort
                     </p>
                   </div>
 
@@ -170,12 +172,12 @@ export default function EarlyAccess() {
                       className="w-full h-12 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest"
                       data-testid="button-early-access-submit"
                     >
-                      {isSubmitting ? "Joining..." : "Join the Founding Circle"}
+                      {isSubmitting ? "Processing..." : "Request Founding Access"}
                     </Button>
                   </form>
 
                   <p className="text-center text-xs text-muted-foreground mt-4">
-                    No spam, ever. Unsubscribe anytime.
+                    Your information is kept confidential.
                   </p>
                 </>
               )}
@@ -186,7 +188,7 @@ export default function EarlyAccess() {
             <p className="text-muted-foreground text-sm">
               Already have an account?{" "}
               <Link to="/login" className="text-emerald-500 font-bold hover:underline">
-                Log in
+                Sign in
               </Link>
             </p>
           </div>

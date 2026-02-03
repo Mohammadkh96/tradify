@@ -1,0 +1,153 @@
+SECTION LABEL (TOP BADGE)
+
+Current:
+
+LIMITED TO FIRST 100 USERS
+
+Rewrite:
+
+EARLY ACCESS — LIMITED AVAILABILITY
+
+Why: removes hype, keeps scarcity credible.
+
+HEADLINE
+
+Current:
+
+JOIN THE FOUNDING CIRCLE
+
+Rewrite:
+
+Founding Member Access
+
+Why: calmer, more institutional, less “clubby”.
+
+SUBHEADLINE / DESCRIPTION
+
+Current:
+
+Be among the first to experience TRADIFY. Early users get exclusive benefits and help shape the future of disciplined trading.
+
+Rewrite:
+
+Gain early access to Tradify and participate in the initial launch cohort.
+Founding members receive extended access, preferential pricing, and the opportunity to influence product direction.
+
+Why:
+
+Removes emotional language
+
+Sounds like a SaaS launch, not a promo
+
+Clear value without hype
+
+BENEFIT CARD 1
+Title
+
+Current:
+
+Free Pro for 3 Months
+
+Rewrite:
+
+Early Pro Access
+
+Description
+
+Current:
+
+Full access to all Pro features, no credit card required
+
+Rewrite:
+
+Full access to Pro features during the early launch phase.
+No upfront commitment required.
+
+Why: reframes “free” as access, not a giveaway.
+
+BENEFIT CARD 2
+Title
+
+Current:
+
+Lifetime 30% Discount
+
+Rewrite:
+
+Founding Member Pricing
+
+Description
+
+Current:
+
+Lock in exclusive pricing that never expires
+
+Rewrite:
+
+Secure a 30% discounted subscription rate, maintained for as long as your subscription remains active.
+
+Why: removes “lifetime” ambiguity and increases trust.
+
+BENEFIT CARD 3
+Title
+
+Current:
+
+Shape the Product
+
+Rewrite:
+
+Influence the Roadmap
+
+Description
+
+Current:
+
+Direct access to founders, vote on features, influence roadmap
+
+Rewrite:
+
+Provide structured feedback, help prioritize features, and contribute to the product’s early development cycle.
+
+Why: sounds product-led, not casual.
+
+BENEFIT CARD 4
+Title
+
+Current:
+
+Founding Member Badge
+
+Rewrite:
+
+Founding Member Identification
+
+Description
+
+Current:
+
+Exclusive badge displayed on your profile forever
+
+Rewrite:
+
+A permanent founding member identifier displayed on your profile.
+
+Why: removes emotional phrasing, keeps status value.
+
+CTA BUTTON
+
+Current:
+
+Get Early Access
+
+Rewrite:
+
+Request Founding Access
+
+Why:
+
+More controlled
+
+Feels selective, not salesy
+
+Matches disciplined brand
