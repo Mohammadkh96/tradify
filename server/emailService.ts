@@ -280,6 +280,88 @@ async function sendTransactionalEmail(userId: string, type: "signup" | "payment_
   }
 }
 
+async function sendAdminSignupNotification(
+  userEmail: string,
+  fullName: string,
+  country: string,
+  isFoundingMember: boolean
+): Promise<boolean> {
+  const adminEmail = 'admin@tradifyapp.com';
+  const now = new Date();
+  const formattedDate = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short'
+  });
+  
+  const foundingBadge = isFoundingMember 
+    ? '<span style="background-color: #f59e0b; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold;">FOUNDING MEMBER</span>' 
+    : '';
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0a; color: #e5e5e5; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 8px; padding: 24px; border: 1px solid #262626; }
+        h1 { color: #22c55e; margin-top: 0; }
+        .info-row { padding: 12px 0; border-bottom: 1px solid #262626; }
+        .label { color: #a3a3a3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .value { color: #ffffff; font-size: 16px; margin-top: 4px; }
+        .footer { margin-top: 24px; font-size: 12px; color: #737373; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>New User Signup ${foundingBadge}</h1>
+        <p style="color: #a3a3a3;">A new user has registered on ${APP_NAME}.</p>
+        
+        <div class="info-row">
+          <div class="label">Full Name</div>
+          <div class="value">${fullName}</div>
+        </div>
+        
+        <div class="info-row">
+          <div class="label">Email</div>
+          <div class="value">${userEmail}</div>
+        </div>
+        
+        <div class="info-row">
+          <div class="label">Country</div>
+          <div class="value">${country}</div>
+        </div>
+        
+        <div class="info-row">
+          <div class="label">Signup Time</div>
+          <div class="value">${formattedDate}</div>
+        </div>
+        
+        <div class="info-row">
+          <div class="label">Status</div>
+          <div class="value">${isFoundingMember ? 'Founding Member (Early Access)' : 'Standard Registration'}</div>
+        </div>
+        
+        <div class="footer">
+          <p>This is an automated notification from ${APP_NAME}.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const subject = isFoundingMember 
+    ? `[Founding Member] New Signup: ${fullName}` 
+    : `New User Signup: ${fullName}`;
+
+  return sendEmail(adminEmail, subject, html);
+}
+
 function getEmailLogs(): EmailLog[] {
   return [...emailLogs];
 }
@@ -298,6 +380,7 @@ export const emailService = {
   sendContactFormNotification,
   sendContactFormAutoReply,
   sendEmailVerificationEmail,
+  sendAdminSignupNotification,
   getEmailLogs,
   isEmailConfigured,
 };
