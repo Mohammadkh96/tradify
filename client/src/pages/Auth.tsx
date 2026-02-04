@@ -737,7 +737,7 @@ export default function Auth() {
                 By continuing, you agree to our{" "}
                 <Link to="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
                 <Link to="/privacy" className="text-emerald-500 hover:underline">Privacy</Link>, and acknowledge the{" "}
-                <Link to="/risk" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
+                <Link to="/risk-disclaimer" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
               </p>
             </div>
 
