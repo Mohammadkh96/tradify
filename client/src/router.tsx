@@ -383,6 +383,7 @@ function AppRoutes() {
       <Route path="/strategies/validate" element={<ProtectedRoute><StrategyValidator /></ProtectedRoute>} />
       <Route path="/knowledge-base" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
       <Route path="/calculator" element={<ProtectedRoute><RiskCalculator /></ProtectedRoute>} />
+      <Route path="/risk" element={<ProtectedRoute><RiskCalculator /></ProtectedRoute>} />
       <Route path="/mt5-bridge" element={<ProtectedRoute><MT5Bridge /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
