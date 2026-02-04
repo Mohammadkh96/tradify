@@ -252,14 +252,15 @@ export async function registerRoutes(
         foundingMember: isFoundingMember, // Auto-grant founding member status
       }).returning();
 
-      // If early access signup exists, update it to link to the user
+      // If early access signup exists, update it to link to the user (don't block registration)
       if (earlyAccessRecord) {
-        await db.update(schema.earlyAccessSignups)
+        db.update(schema.earlyAccessSignups)
           .set({
             status: "registered",
             registeredUserId: normalizedEmail,
           })
-          .where(eq(schema.earlyAccessSignups.id, earlyAccessRecord.id));
+          .where(eq(schema.earlyAccessSignups.id, earlyAccessRecord.id))
+          .catch(err => console.error("Failed to update early access record:", err));
       }
 
       // Send verification email (don't await - run in background so registration doesn't fail if email fails)
