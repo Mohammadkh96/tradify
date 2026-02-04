@@ -176,7 +176,7 @@ export function CookieSettingsButton() {
     <>
       <button
         onClick={() => setShowPreferences(true)}
-        className="text-muted-foreground hover:text-emerald-500 transition-colors text-xs"
+        className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
         data-testid="button-cookie-settings"
       >
         Cookie Settings
