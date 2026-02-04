@@ -283,10 +283,7 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       console.error("Registration error:", error);
-      const errorMessage = error?.message || "Unknown error";
-      const errorCode = error?.code || "UNKNOWN";
-      console.error("Registration error details:", { message: errorMessage, code: errorCode });
-      res.status(500).json({ message: "Registration failed", debug: errorMessage });
+      res.status(500).json({ message: "Registration failed" });
     }
   });
 

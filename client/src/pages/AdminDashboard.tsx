@@ -715,6 +715,25 @@ export default function AdminDashboard() {
     },
   });
 
+  const toggleFoundingMemberMutation = useMutation({
+    mutationFn: async ({ userId, foundingMember }: { userId: string, foundingMember: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/admin/users/${encodeURIComponent(userId)}/founding-member`, { foundingMember });
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/founding-members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+      toast({ 
+        title: "Success", 
+        description: variables.foundingMember ? "Founding member status granted." : "Founding member status revoked." 
+      });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Error", description: "Failed to update founding member status." });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="p-8 space-y-4">
@@ -943,6 +962,7 @@ export default function AdminDashboard() {
                 <TableRow className="border-border">
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Email/ID</TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Plan</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Founding Member</TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Account Status</TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Registered</TableHead>
                   <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
@@ -964,6 +984,30 @@ export default function AdminDashboard() {
                         {user.subscriptionTier === "ELITE" && <Crown size={10} className="mr-1" />}
                         {user.subscriptionTier}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {user.foundingMember ? (
+                          <Badge className="bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-500 border border-amber-500/30">
+                            <Crown size={10} className="mr-1" />
+                            FOUNDER
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
+                            —
+                          </Badge>
+                        )}
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className={`h-6 px-2 text-[9px] ${user.foundingMember ? "text-rose-400 hover:bg-rose-500/10" : "text-amber-500 hover:bg-amber-500/10"}`}
+                          onClick={() => toggleFoundingMemberMutation.mutate({ userId: user.userId, foundingMember: !user.foundingMember })}
+                          disabled={toggleFoundingMemberMutation.isPending}
+                          data-testid={`button-toggle-founder-${user.userId}`}
+                        >
+                          {user.foundingMember ? "Revoke" : "Grant"}
+                        </Button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={user.role === "DEACTIVATED" ? "border-rose-500/50 text-rose-500" : "border-emerald-500/50 text-emerald-500"}>
@@ -1010,7 +1054,7 @@ export default function AdminDashboard() {
                 ))}
                 {filteredUsers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground italic text-sm">
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic text-sm">
                       No users found matching your search.
                     </TableCell>
                   </TableRow>
