@@ -57,8 +57,14 @@ export async function ensureSchemaColumns() {
         full_name TEXT,
         source TEXT DEFAULT 'landing_page',
         status TEXT DEFAULT 'pending',
+        registered_user_id TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
+    `);
+    
+    // Add registered_user_id column if missing (for existing tables)
+    await pool.query(`
+      ALTER TABLE early_access_signups ADD COLUMN IF NOT EXISTS registered_user_id TEXT;
     `);
     console.log('Schema columns verified');
   } catch (error) {
