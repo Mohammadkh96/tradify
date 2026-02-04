@@ -331,8 +331,8 @@ export default function StrategyValidator() {
       <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
         <main className="p-6 lg:p-10 max-w-4xl mx-auto">
           <header className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Strategy Validator</h1>
-            <p className="text-muted-foreground mt-1">Check trade alignment with your rules</p>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">Trade Validator</h1>
+            <p className="text-muted-foreground mt-1">Check if your trade aligns with your strategy rules</p>
           </header>
           <Card className="p-8 text-center">
             <Target className="mx-auto mb-4 text-muted-foreground" size={48} />
@@ -354,10 +354,24 @@ export default function StrategyValidator() {
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-4xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Strategy Validator</h1>
-          <p className="text-muted-foreground mt-1">Check trade alignment with your rules</p>
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Trade Validator</h1>
+          <p className="text-muted-foreground mt-1">Check if your trade aligns with your strategy rules</p>
         </header>
+
+        <Card className="p-4 mb-6 bg-muted/30 border-muted">
+          <div className="flex items-start gap-3">
+            <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck size={16} className="text-emerald-500" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">How to use the Validator</p>
+              <p className="text-xs text-muted-foreground">
+                After taking a trade, answer each rule honestly. <strong>Subjective rules</strong> (purple) require your honest self-assessment. <strong>Objective rules</strong> (amber/cyan) should match your actual trade parameters. Click "Validate Trade" to see if you followed your strategy.
+              </p>
+            </div>
+          </div>
+        </Card>
 
         <Card className="p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -477,7 +491,7 @@ export default function StrategyValidator() {
                 )}
                 data-testid="validation-result"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 mb-4">
                   {isAligned ? (
                     <div className="h-16 w-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
                       <ShieldCheck size={32} className="text-emerald-500" />
@@ -520,6 +534,20 @@ export default function StrategyValidator() {
                       </div>
                     )}
                   </div>
+                </div>
+
+                <div className={cn(
+                  "p-4 rounded-lg border mt-4",
+                  isAligned ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"
+                )}>
+                  <p className="text-sm font-medium mb-1">
+                    {isAligned ? "Great discipline!" : "Reflection prompt"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isAligned 
+                      ? "You followed your trading plan. Whether this trade wins or loses, you made a disciplined decision. That's what separates professionals from gamblers."
+                      : "You deviated from your own rules. Before your next trade, ask yourself: Was this a conscious exception with valid reasoning, or was it emotional trading? Write down what triggered the deviation."}
+                  </p>
                 </div>
               </Card>
             )}

@@ -39,6 +39,8 @@ import {
   AlertCircle,
   Crown,
   Lock,
+  ShieldCheck,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -352,7 +354,7 @@ export default function Strategies() {
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-emerald-500">
               <Sparkles size={18} />
-              Understanding Strategies
+              How Strategy Compliance Works
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -370,25 +372,50 @@ export default function Strategies() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-foreground font-semibold">
                   <div className="h-6 w-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-xs font-bold">2</div>
-                  Trade Your Way
+                  Log & Validate Trades
                 </div>
                 <p className="text-sm text-muted-foreground pl-8">
-                  Execute trades through MT5 or log manually. Your trades are automatically synced and recorded.
+                  When you take a trade, use the Validator to check it against your strategy. Answer honestly about each rule.
                 </p>
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-foreground font-semibold">
                   <div className="h-6 w-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-xs font-bold">3</div>
-                  Measure Discipline
+                  Track Your Discipline
                 </div>
                 <p className="text-sm text-muted-foreground pl-8">
-                  Your Compliance Score shows how well you follow your own rules. Pattern insights reveal behavioral drift.
+                  Your Compliance Score shows how well you follow your own rules. Deviations are flagged so you can improve.
                 </p>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border">
+            <div className="pt-4 border-t border-border space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-violet-500/5 border border-violet-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-5 w-5 rounded bg-violet-500/20 flex items-center justify-center">
+                      <CheckCircle2 size={12} className="text-violet-500" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wide text-violet-500">Subjective Rules</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Rules only <strong>you</strong> can verify: "Was my entry confirmation present?", "Did I follow my personal model?" You answer honestly when logging trades.
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-5 w-5 rounded bg-cyan-500/20 flex items-center justify-center">
+                      <Target size={12} className="text-cyan-500" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wide text-cyan-500">Objective Rules</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Rules the system can measure: Risk/Reward ratio, trading session, max trades per day. These are auto-calculated from your trade data.
+                  </p>
+                </div>
+              </div>
+              
               <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
                 <AlertCircle size={18} className="text-amber-500 mt-0.5 flex-shrink-0" />
                 <div className="space-y-1">
@@ -398,6 +425,13 @@ export default function Strategies() {
                   </p>
                 </div>
               </div>
+
+              <Link to="/strategies/validate">
+                <Button variant="outline" className="w-full gap-2" data-testid="button-open-validator">
+                  <ShieldCheck size={16} />
+                  Open Trade Validator
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>

@@ -233,7 +233,7 @@ export default function Journal() {
                 </PopoverContent>
               </Popover>
             </div>
-            <Link to="/strategies/create">
+            <Link to="/strategies/validate">
               <Button 
                 data-testid="button-log-trade"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs uppercase transition-all shadow-lg shadow-emerald-500/20 px-6 h-10 rounded-xl"
