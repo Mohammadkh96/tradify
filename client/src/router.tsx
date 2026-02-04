@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { queryClient, getQueryFn } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { CookieConsent } from "@/components/CookieConsent";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import NotFound from "@/pages/not-found";
@@ -29,6 +30,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import RiskDisclaimer from "@/pages/RiskDisclaimer";
+import CookiePolicy from "@/pages/CookiePolicy";
 import { useQuery } from "@tanstack/react-query";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -365,6 +367,7 @@ function AppRoutes() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
       <Route path="/features" element={<FeaturesPage />} />
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/resources" element={<ResourcesPage />} />
@@ -413,6 +416,7 @@ export default function AppRouter() {
         <TooltipProvider>
           <Toaster />
           <BrowserRouter>
+            <CookieConsent />
             <AppRoutes />
           </BrowserRouter>
         </TooltipProvider>

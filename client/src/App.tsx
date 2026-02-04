@@ -38,7 +38,7 @@ function Router() {
   const isEarlyAccessPage = location === "/early-access";
   const isAuthPage = location === "/login" || location === "/signup";
   const isAdminRoute = location.startsWith("/admin");
-  const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer";
+  const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer" || location === "/cookie-policy";
 
   const isPublicPage = isLandingPage || isPricingPage || isEarlyAccessPage || isAuthPage || isPublicLegalPage || 
                        location === "/features" || location === "/how-it-works" || location === "/resources";

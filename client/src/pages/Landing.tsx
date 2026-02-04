@@ -17,6 +17,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 
 import { PublicNavbar } from "@/components/PublicNavbar";
+import { CookieSettingsButton } from "@/components/CookieConsent";
 
 export default function Landing() {
   return (
@@ -321,6 +322,8 @@ export default function Landing() {
           <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
           <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
           <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
+          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Cookie Policy</Link>
+          <CookieSettingsButton />
           <a 
             href="mailto:support@tradify.app?subject=Tradify Support Request" 
             className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
