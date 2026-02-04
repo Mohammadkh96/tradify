@@ -280,9 +280,12 @@ export async function registerRoutes(
         userId: newUser.userId,
         foundingMember: isFoundingMember,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
-      res.status(500).json({ message: "Registration failed" });
+      const errorMessage = error?.message || "Unknown error";
+      const errorCode = error?.code || "UNKNOWN";
+      console.error("Registration error details:", { message: errorMessage, code: errorCode });
+      res.status(500).json({ message: "Registration failed", debug: errorMessage });
     }
   });
 
