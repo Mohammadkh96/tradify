@@ -262,11 +262,11 @@ export async function registerRoutes(
           .where(eq(schema.earlyAccessSignups.id, earlyAccessRecord.id));
       }
 
-      // Send verification email
-      await emailService.sendTransactionalEmail(newUser.userId, "email_verification", {
+      // Send verification email (don't await - run in background so registration doesn't fail if email fails)
+      emailService.sendTransactionalEmail(newUser.userId, "email_verification", {
         verificationToken,
         fullName,
-      });
+      }).catch(err => console.error("Failed to send verification email:", err));
 
       // Notify admin of new signup (don't await - run in background)
       emailService.sendAdminSignupNotification(normalizedEmail, fullName, country, isFoundingMember)
