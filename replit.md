@@ -27,7 +27,7 @@ Preferred communication style: Simple, everyday language.
 - **Visuals:** Elite/Pro badges for subscribers with distinct styling.
 
 ### Technical Implementations
-- **Frontend:** React 18 with TypeScript, Wouter for routing, TanStack Query for server state, Tailwind CSS for styling, Recharts for data visualization, Framer Motion for animations, and React Hook Form with Zod for forms.
+- **Frontend:** React 18 with TypeScript, react-router-dom for routing, TanStack Query for server state, Tailwind CSS for styling, Recharts for data visualization, Framer Motion for animations, and React Hook Form with Zod for forms.
 - **Backend:** Express.js with TypeScript, built with Vite for frontend and esbuild for server bundling. API uses REST endpoints defined in `shared/routes.ts`.
 - **Data Validation:** Zod schemas are shared between client and server for consistent validation.
 - **Rule Engine:** A metadata-driven rule engine (defined in `shared/ruleTypes.ts`) allows for dynamic rule creation and validation. The `RULE_TYPE_CATALOG` centralizes rule types and their metadata for dynamic UI rendering and comparison logic.
@@ -37,7 +37,8 @@ Preferred communication style: Simple, everyday language.
 - **Plan System:** Centralized configuration in `shared/plans.ts` with feature gating via frontend hooks and backend utilities. Trade history retention is tier-specific.
 - **Email System:** Uses Nodemailer with Google Workspace SMTP for various email types, including welcome, admin-created user, password reset, email verification, subscription notifications, and contact form handling, with rate limiting.
 - **Email Verification:** New users must verify their email before logging in. Verification tokens expire after 24 hours. Admin/Owner accounts bypass verification. Users can resend verification emails from the verification screen.
-- **Admin Panel:** Provides user management (creation, plan changes, deactivation, deletion), accessible only by OWNER/ADMIN roles, with audit logging.
+- **Admin Panel:** Provides user management (creation, plan changes, deactivation, deletion, founding member status toggle), accessible only by OWNER/ADMIN roles, with audit logging.
+- **Cookie Consent System:** GDPR-compliant cookie banner with Accept All/Reject All/Customize options. Users can manage preferences for Analytics (Google Analytics) and Marketing (Facebook Pixel) cookies via modal. Preferences stored in localStorage. Cookie Policy page at `/cookie-policy`. Footer includes Cookie Policy link and Cookie Settings button. Tracking hooks in `client/src/hooks/useTracking.ts` gate analytics/marketing scripts based on consent.
 
 ### System Design Choices
 - **Project Structure:** Clearly separates client, server, and shared code.
