@@ -321,34 +321,24 @@ if __name__ == "__main__":
             {/* Left Column: Form */}
             <div className="space-y-6">
               <div className="bg-background rounded-xl p-5 border border-border">
-                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 1: Download Connector</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-7 w-7 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">1</div>
+                  <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest">Generate Token</h3>
+                </div>
                 <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-                  Download the Tradify Python Bridge. This script runs locally and communicates with MT5 via the MetaTrader5 library.
+                  First, generate your unique sync token. This token authenticates your connector with Tradify.
                 </p>
-                <Button 
-                  onClick={downloadConnector}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-tighter"
-                >
-                  <Download size={14} className="mr-2" />
-                  Download tradify_connector.py
-                </Button>
-              </div>
-
-              <div className="bg-background rounded-xl p-5 border border-border">
-                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 2: Connection Credentials</h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">User ID</label>
-                    <div className="bg-muted border border-border rounded-lg px-4 py-2 text-sm font-mono text-emerald-500">
-                      {userRoleData?.userId}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Sync Token</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Your Sync Token</label>
                     <div className="flex gap-2">
-                      <div className="flex-1 bg-muted border border-border rounded-lg px-4 py-2 text-sm font-mono text-emerald-500 truncate">
-                        {userRoleData?.syncToken || "Click Generate Below"}
+                      <div className={cn(
+                        "flex-1 border rounded-lg px-4 py-2 text-sm font-mono truncate",
+                        userRoleData?.syncToken 
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" 
+                          : "bg-muted border-border text-muted-foreground"
+                      )}>
+                        {userRoleData?.syncToken || "No token yet - click Generate below"}
                       </div>
                       <Button 
                         variant="outline" 
@@ -356,28 +346,76 @@ if __name__ == "__main__":
                         className="border-border text-muted-foreground"
                         onClick={copyToClipboard}
                         disabled={!userRoleData?.syncToken}
+                        data-testid="button-copy-token"
                       >
                         {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                       </Button>
                     </div>
                   </div>
-
                   <Button 
-                    variant="outline"
-                    className="w-full border-border text-muted-foreground text-[10px] uppercase font-bold tracking-widest h-10"
+                    className={cn(
+                      "w-full font-bold uppercase tracking-tighter",
+                      userRoleData?.syncToken 
+                        ? "bg-muted text-muted-foreground border border-border" 
+                        : "bg-emerald-500 hover:bg-emerald-600 text-white"
+                    )}
                     onClick={() => generateTokenMutation.mutate()}
                     disabled={generateTokenMutation.isPending}
+                    data-testid="button-generate-token"
                   >
-                    {generateTokenMutation.isPending ? "Generating..." : "Generate New Token"}
+                    <Key size={14} className="mr-2" />
+                    {generateTokenMutation.isPending ? "Generating..." : userRoleData?.syncToken ? "Regenerate Token" : "Generate Token"}
                   </Button>
                 </div>
+              </div>
+
+              <div className={cn(
+                "bg-background rounded-xl p-5 border transition-all",
+                userRoleData?.syncToken ? "border-border" : "border-border/50 opacity-60"
+              )}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={cn(
+                    "h-7 w-7 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                    userRoleData?.syncToken ? "bg-emerald-500" : "bg-muted-foreground/30"
+                  )}>2</div>
+                  <h3 className={cn(
+                    "text-sm font-bold uppercase tracking-widest",
+                    userRoleData?.syncToken ? "text-emerald-500" : "text-muted-foreground"
+                  )}>Download Connector</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+                  Download the Python connector with your credentials pre-configured. Just run it to start syncing.
+                </p>
+                <Button 
+                  onClick={downloadConnector}
+                  disabled={!userRoleData?.syncToken}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold uppercase tracking-tighter disabled:opacity-50"
+                  data-testid="button-download-connector"
+                >
+                  <Download size={14} className="mr-2" />
+                  Download tradify_connector.py
+                </Button>
+                {!userRoleData?.syncToken && (
+                  <p className="text-[10px] text-amber-500 mt-2 text-center">
+                    Generate a token first before downloading
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Right Column: Execution */}
             <div className="space-y-6">
               <div className="bg-background rounded-xl p-5 border border-border h-full flex flex-col">
-                <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest mb-4">Step 3: Run Connection</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={cn(
+                    "h-7 w-7 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                    userRoleData?.syncToken ? "bg-emerald-500" : "bg-muted-foreground/30"
+                  )}>3</div>
+                  <h3 className={cn(
+                    "text-sm font-bold uppercase tracking-widest",
+                    userRoleData?.syncToken ? "text-emerald-500" : "text-muted-foreground"
+                  )}>Run Connector</h3>
+                </div>
                 <div className="flex-1 space-y-4">
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     Ensure MetaTrader 5 is running on this device, then execute the script in your terminal:
