@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { CookiePreferencesModal } from "@/components/CookiePreferencesModal";
 import { CookiePreferences, setCookiePreferences } from "@/components/CookieConsent";
+import { SEO } from "@/components/SEO";
 
 export default function CookiePolicy() {
   const [showPreferences, setShowPreferences] = useState(false);
@@ -14,6 +15,11 @@ export default function CookiePolicy() {
 
   return (
     <div className="flex-1 text-slate-50 p-6 lg:p-10 max-w-4xl mx-auto">
+      <SEO 
+        title="Cookie Policy | Tradify"
+        description="Learn how Tradify uses cookies. Manage your preferences for analytics and marketing cookies. GDPR compliant cookie consent."
+        canonical="https://tradifyapp.com/cookie-policy"
+      />
       <div className="flex items-center gap-3 mb-6">
         <Cookie className="text-amber-500 h-8 w-8" />
         <h1 className="text-3xl font-bold uppercase tracking-tighter">Cookie Policy</h1>

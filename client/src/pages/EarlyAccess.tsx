@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { PublicNavbar } from "@/components/PublicNavbar";
+import { SEO } from "@/components/SEO";
 
 const benefits = [
   {
@@ -36,6 +37,14 @@ export default function EarlyAccess() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+
+  const seoElement = (
+    <SEO 
+      title="Founding Member Program - Early Access | Tradify"
+      description="Join Tradify's Founding Member program. Get 3 months free Pro access, 30% lifetime discount, influence the roadmap, and earn your permanent founder badge."
+      canonical="https://tradifyapp.com/early-access"
+    />
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +86,7 @@ export default function EarlyAccess() {
 
   return (
     <div className="min-h-screen bg-background">
+      {seoElement}
       <PublicNavbar />
       
       <div className="pt-24 pb-16">

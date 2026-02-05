@@ -1,10 +1,14 @@
-
-import { MainLayout } from "@/components/MainLayout";
 import { AlertTriangle } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 export default function RiskDisclaimer() {
   return (
     <div className="flex-1 text-slate-50 p-6 lg:p-10 max-w-4xl mx-auto">
+      <SEO 
+        title="Risk Disclaimer | Tradify"
+        description="Important risk disclosure for Tradify users. Trading forex and CFDs involves substantial risk. Read our full risk disclaimer before trading."
+        canonical="https://tradifyapp.com/risk-disclaimer"
+      />
       <div className="flex items-center gap-3 mb-6">
         <AlertTriangle className="text-rose-500 h-8 w-8" />
         <h1 className="text-3xl font-bold uppercase tracking-tighter">Risk Disclaimer</h1>

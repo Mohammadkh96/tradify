@@ -1,10 +1,14 @@
-
-import { MainLayout } from "@/components/MainLayout";
 import { FileText } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 export default function Terms() {
   return (
     <div className="flex-1 text-slate-50 p-6 lg:p-10 max-w-4xl mx-auto">
+      <SEO 
+        title="Terms of Service | Tradify"
+        description="Read Tradify's Terms of Service. Understand your rights and responsibilities when using our trading journal and MT5 sync platform."
+        canonical="https://tradifyapp.com/terms"
+      />
       <div className="flex items-center gap-3 mb-6">
         <FileText className="text-primary h-8 w-8" />
         <h1 className="text-3xl font-bold uppercase tracking-tighter">Terms of Service</h1>

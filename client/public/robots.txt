@@ -1,0 +1,44 @@
+# Tradify - Trading Journal Application
+# https://tradifyapp.com
+
+User-agent: *
+
+# Allow public pages
+Allow: /
+Allow: /login
+Allow: /signup
+Allow: /register
+Allow: /early-access
+Allow: /pricing
+Allow: /features
+Allow: /how-it-works
+Allow: /resources
+Allow: /cookie-policy
+Allow: /privacy
+Allow: /terms
+Allow: /risk-disclaimer
+
+# Disallow all authenticated/private pages
+Disallow: /dashboard
+Disallow: /journal
+Disallow: /strategies
+Disallow: /strategies/
+Disallow: /analytics
+Disallow: /mt5-bridge
+Disallow: /education
+Disallow: /knowledge-base
+Disallow: /calculator
+Disallow: /risk
+Disallow: /settings
+Disallow: /profile
+Disallow: /checkout
+Disallow: /traders-hub
+Disallow: /subscription
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /forgot-password
+Disallow: /verify-email
+
+# Sitemap location
+Sitemap: https://tradifyapp.com/sitemap.xml

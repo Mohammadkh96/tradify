@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, getQueryFn } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { PublicNavbar } from "@/components/PublicNavbar";
+import { SEO } from "@/components/SEO";
 
 const countries = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
@@ -517,6 +518,14 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative pt-20">
+      <SEO 
+        title={isLogin ? "Login | Tradify" : "Create Account | Tradify"}
+        description={isLogin 
+          ? "Sign in to your Tradify trading journal. Access your MT5 sync, analytics, and strategy validation tools."
+          : "Create your free Tradify account. Start tracking your trades with MT5 auto-sync and professional analytics."
+        }
+        canonical={isLogin ? "https://tradifyapp.com/login" : "https://tradifyapp.com/signup"}
+      />
       <PublicNavbar />
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Side: Brand & Trust (Hidden on Mobile) */}

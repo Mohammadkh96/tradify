@@ -18,10 +18,16 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { CookieSettingsButton } from "@/components/CookieConsent";
+import { SEO } from "@/components/SEO";
 
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
+      <SEO 
+        title="Tradify - Rule-Based Trading Journal | MT5 Auto-Sync"
+        description="Enforce disciplined trading with Tradify. Auto-sync trades from MT5, validate strategies against rules, track performance with real-time analytics. Free plan available."
+        canonical="https://tradifyapp.com/"
+      />
       <PublicNavbar />
       
       {/* Hero Section */}

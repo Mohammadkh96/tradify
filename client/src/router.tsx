@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { queryClient, getQueryFn } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { CookieConsent } from "@/components/CookieConsent";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SEO, NoIndexSEO } from "@/components/SEO";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -49,7 +51,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  return <MainLayout>{children}</MainLayout>;
+  return (
+    <>
+      <NoIndexSEO />
+      <MainLayout>{children}</MainLayout>
+    </>
+  );
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
@@ -70,7 +77,12 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />;
   }
 
-  return <AdminLayout>{children}</AdminLayout>;
+  return (
+    <>
+      <NoIndexSEO />
+      <AdminLayout>{children}</AdminLayout>
+    </>
+  );
 }
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
@@ -93,6 +105,11 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 function FeaturesPage() {
   return (
     <div className="min-h-screen bg-background pt-20">
+      <SEO 
+        title="Features - Trade Visualization & Analytics | Tradify"
+        description="Explore Tradify's features: live MT5 sync, equity curves, performance analytics, behavioral insights, and strategy validation for disciplined trading."
+        canonical="https://tradifyapp.com/features"
+      />
       <PublicNavbar />
       <div className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
@@ -194,6 +211,11 @@ function FeaturesPage() {
 function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-background pt-20">
+      <SEO 
+        title="How It Works - Simple MT5 Integration | Tradify"
+        description="Learn how Tradify works: connect your MT5, sync trades automatically, build strategies, and track your trading performance in 3 simple steps."
+        canonical="https://tradifyapp.com/how-it-works"
+      />
       <PublicNavbar />
       <div className="max-w-4xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
@@ -278,6 +300,11 @@ function HowItWorksPage() {
 function ResourcesPage() {
   return (
     <div className="min-h-screen bg-background pt-20">
+      <SEO 
+        title="Resources - Trading Education & Tools | Tradify"
+        description="Access Tradify's trading resources: risk calculators, educational content, strategy guides, and professional tools to improve your trading discipline."
+        canonical="https://tradifyapp.com/resources"
+      />
       <PublicNavbar />
       <div className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
@@ -411,16 +438,18 @@ function AppRoutes() {
 
 export default function AppRouter() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="tradify-theme">
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <CookieConsent />
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="dark" storageKey="tradify-theme">
+          <TooltipProvider>
+            <Toaster />
+            <BrowserRouter>
+              <CookieConsent />
+              <AppRoutes />
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }

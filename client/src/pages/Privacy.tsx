@@ -1,10 +1,14 @@
-
-import { MainLayout } from "@/components/MainLayout";
 import { Shield } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 export default function Privacy() {
   return (
     <div className="flex-1 text-slate-50 p-6 lg:p-10 max-w-4xl mx-auto">
+      <SEO 
+        title="Privacy Policy | Tradify"
+        description="Tradify's Privacy Policy explains how we collect, use, and protect your trading data and personal information. GDPR compliant."
+        canonical="https://tradifyapp.com/privacy"
+      />
       <div className="flex items-center gap-3 mb-6">
         <Shield className="text-primary h-8 w-8" />
         <h1 className="text-3xl font-bold uppercase tracking-tighter">Privacy Policy</h1>

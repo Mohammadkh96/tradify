@@ -7,6 +7,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { useQuery } from "@tanstack/react-query";
 import { PLAN_CONFIGS } from "@shared/plans";
 import type { UserRole } from "@shared/schema";
+import { SEO } from "@/components/SEO";
 
 const features = [
   { name: "Live MT5 Data Connection", free: true, pro: true, elite: true },
@@ -51,6 +52,11 @@ export default function Pricing() {
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
+      <SEO 
+        title="Pricing - Free, Pro & Elite Plans | Tradify"
+        description="Choose your Tradify plan. Free MT5 sync, Pro analytics at $29/mo, or Elite with AI insights at $59/mo. Founding members get 30% off forever."
+        canonical="https://tradifyapp.com/pricing"
+      />
       <main className="p-6 lg:p-10 max-w-6xl mx-auto">
         <header className="text-center mb-16">
           <p className="text-muted-foreground max-w-2xl mx-auto uppercase text-[10px] font-bold tracking-[0.2em] mb-4">
