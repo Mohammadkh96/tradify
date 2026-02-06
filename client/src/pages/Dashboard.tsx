@@ -31,12 +31,15 @@ import {
   Minus,
   ChevronDown,
   BarChart3,
-  CircleCheck
+  CircleCheck,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Link } from "react-router-dom";
 import { format, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, parseISO, subDays } from "date-fns";
@@ -63,7 +66,9 @@ export default function Dashboard() {
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [selectedInstrument, setSelectedInstrument] = useState<string>("");
+  const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
   
+  const { toast } = useToast();
   const { data: trades, isLoading } = useTrades();
   const { data: user } = useQuery<any>({ 
     queryKey: ["/api/user"],
@@ -107,6 +112,23 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: [`/api/strategy-deviation/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/instruments/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/ai/insights/${userId}`] });
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (accountNumber: string) => {
+      return apiRequest('DELETE', `/api/mt5/accounts/${userId}/${accountNumber}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mt5/accounts'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/mt5/status/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/mt5/history/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/equity-curve/${userId}`] });
+      toast({
+        title: "Account Deleted",
+        description: "MT5 account and all associated data have been removed.",
+      });
+      setAccountToDelete(null);
     },
   });
 
@@ -424,7 +446,7 @@ export default function Dashboard() {
             </div>
             
             {/* MT5 Account Selector - Shows when multiple accounts are connected */}
-            {mt5Accounts && mt5Accounts.length > 1 && (
+            {mt5Accounts && mt5Accounts.length >= 1 && (<>
               <Select
                 value={activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || ""}
                 onValueChange={(value) => {
@@ -474,7 +496,36 @@ export default function Dashboard() {
                   ))}
                 </SelectContent>
               </Select>
-            )}
+              <AlertDialog open={!!accountToDelete} onOpenChange={(open) => !open && setAccountToDelete(null)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground"
+                  onClick={() => setAccountToDelete(activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || "")}
+                  data-testid="button-delete-mt5-account"
+                >
+                  <Trash2 size={14} />
+                </Button>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete MT5 Account?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete account #{accountToDelete} and all its trade history, equity snapshots, and synced data. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground"
+                      onClick={() => accountToDelete && deleteAccountMutation.mutate(accountToDelete)}
+                      data-testid="button-confirm-delete-account"
+                    >
+                      {deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>)}
           </div>
           <div className="flex items-center gap-3">
             {userId && (

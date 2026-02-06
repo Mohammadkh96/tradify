@@ -1,22 +1,59 @@
 import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
 import { format, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Trash2, History as HistoryIcon, Plus, Calendar } from "lucide-react";
+import { Trash2, History as HistoryIcon, Plus, Calendar, Monitor } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+type MT5Account = {
+  id: number;
+  accountNumber: string;
+  accountName: string | null;
+  broker: string | null;
+  server: string | null;
+  currency: string;
+  isActive: boolean;
+};
+
 export default function Journal() {
+  const queryClient = useQueryClient();
   const { data: user } = useQuery<any>({
     queryKey: ["/api/user"],
   });
 
+  const userId = user?.userId;
+
+  const { data: mt5Accounts } = useQuery<MT5Account[]>({
+    queryKey: ['/api/mt5/accounts', userId],
+    enabled: !!userId,
+  });
+
+  const { data: activeAccount } = useQuery<MT5Account | null>({
+    queryKey: ['/api/mt5/accounts', userId, 'active'],
+    enabled: !!userId,
+  });
+
+  const switchAccountMutation = useMutation({
+    mutationFn: async (accountNumber: string) => {
+      return apiRequest('POST', `/api/mt5/accounts/${userId}/switch`, { accountNumber });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mt5/accounts'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/mt5/history/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/mt5/status/${userId}`] });
+    },
+  });
+
   const { data: manualTrades, isLoading: isLoadingManual } = useTrades();
   const { data: mt5History } = useQuery<any[]>({
-    queryKey: user?.userId ? [`/api/mt5/history/${user.userId}`] : ["/api/mt5/history/demo"],
+    queryKey: userId ? [`/api/mt5/history/${userId}`] : ["/api/mt5/history/demo"],
     enabled: true,
   });
 
@@ -158,6 +195,50 @@ export default function Journal() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {mt5Accounts && mt5Accounts.length >= 1 && (
+              <Select
+                value={activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || ""}
+                onValueChange={(value) => {
+                  if (value) {
+                    switchAccountMutation.mutate(value);
+                  }
+                }}
+              >
+                <SelectTrigger
+                  className="w-[200px] text-xs border-border bg-card"
+                  data-testid="journal-mt5-account-selector"
+                >
+                  <SelectValue placeholder="Select MT5 Account">
+                    <span className="flex items-center gap-2">
+                      <Monitor size={12} className="text-cyan-400" />
+                      {activeAccount
+                        ? (activeAccount.accountName || `Account ${activeAccount.accountNumber}`)
+                        : mt5Accounts[0]
+                          ? (mt5Accounts[0].accountName || `Account ${mt5Accounts[0].accountNumber}`)
+                          : "Select Account"}
+                    </span>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {mt5Accounts.map((account) => (
+                    <SelectItem
+                      key={account.accountNumber}
+                      value={account.accountNumber}
+                      data-testid={`journal-mt5-option-${account.accountNumber}`}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {account.accountName || `Account ${account.accountNumber}`}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          #{account.accountNumber} {account.broker ? `- ${account.broker}` : ""}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {!isPaidUser && (
               <Link to="/pricing">
                 <Button variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest h-10 px-4">

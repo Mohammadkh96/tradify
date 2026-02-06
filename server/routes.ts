@@ -1086,6 +1086,38 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/mt5/accounts/:userId/:accountNumber", requireAuth, async (req, res) => {
+    try {
+      const { userId, accountNumber } = req.params;
+      const sessionUserId = req.session.userId!;
+
+      if (userId !== sessionUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await db.delete(schema.mt5History)
+        .where(and(eq(schema.mt5History.userId, userId), eq(schema.mt5History.mt5AccountId, accountNumber)));
+
+      await db.delete(schema.dailyEquitySnapshots)
+        .where(and(eq(schema.dailyEquitySnapshots.userId, userId), eq(schema.dailyEquitySnapshots.mt5AccountId, accountNumber)));
+
+      await db.delete(schema.mt5Data)
+        .where(and(eq(schema.mt5Data.userId, userId), eq(schema.mt5Data.mt5AccountId, accountNumber)));
+
+      await db.delete(schema.mt5Accounts)
+        .where(and(eq(schema.mt5Accounts.userId, userId), eq(schema.mt5Accounts.accountNumber, accountNumber)));
+
+      await db.update(schema.propFirmChallenges)
+        .set({ mt5AccountId: null, mt5AutoSync: false })
+        .where(and(eq(schema.propFirmChallenges.userId, userId), eq(schema.propFirmChallenges.mt5AccountId, accountNumber)));
+
+      res.json({ success: true, message: "Account and all associated data deleted" });
+    } catch (error) {
+      console.error("MT5 Delete Account Error:", error);
+      res.status(500).json({ message: "Failed to delete MT5 account" });
+    }
+  });
+
   app.get("/api/mt5/snapshots/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
