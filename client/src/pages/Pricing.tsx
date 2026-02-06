@@ -10,18 +10,20 @@ import type { UserRole } from "@shared/schema";
 import { SEO } from "@/components/SEO";
 
 const features = [
-  { name: "Live MT5 Data Connection", free: true, pro: true, elite: true },
+  { name: "MT5 Multi-Account Sync", free: true, pro: true, elite: true },
   { name: "Open Positions & Account Health", free: true, pro: true, elite: true },
   { name: "Risk & Position Size Calculator", free: true, pro: true, elite: true },
   { name: "1 Trading Strategy", free: true, pro: true, elite: true },
   { name: "Trade History", free: "30 Days", pro: "6 Months", elite: "Unlimited" },
-  { name: "Education Access", free: "3 Lessons", pro: "Full Hub", elite: "Full Hub" },
+  { name: "Education Access", free: "3 Lessons", pro: "Full Hub (20)", elite: "Full Hub (20)" },
   { name: "Unlimited Trading Strategies", free: false, pro: true, elite: true },
   { name: "Performance Intelligence Layer", free: false, pro: true, elite: true },
   { name: "Full Equity Curve (All-Time)", free: false, pro: true, elite: true },
   { name: "AI Instrument Analysis", free: false, pro: true, elite: true },
+  { name: "Prop Firm Challenge Tracker", free: false, pro: true, elite: true },
   { name: "CSV Data Export", free: false, pro: true, elite: true },
   { name: "PDF Report Generation", free: false, pro: true, elite: true },
+  { name: "AI Challenge Risk Warnings", free: false, pro: false, elite: true },
   { name: "Session Performance Analytics", free: false, pro: false, elite: true },
   { name: "Time Pattern Analysis", free: false, pro: false, elite: true },
   { name: "Behavioral Risk Flags", free: false, pro: false, elite: true },

@@ -7,14 +7,25 @@ import {
   Activity, 
   ArrowRight, 
   Lock, 
-  Search, 
   CheckCircle2, 
   AlertCircle,
   BarChart3,
   BookOpen,
-  Sparkles
+  Sparkles,
+  Crown,
+  Target,
+  Calculator,
+  LineChart,
+  Users,
+  Brain,
+  Clock,
+  Trophy,
+  MonitorSmartphone,
+  FileText,
+  Shield
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { CookieSettingsButton } from "@/components/CookieConsent";
@@ -24,8 +35,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO 
-        title="Tradify - Rule-Based Trading Journal | MT5 Auto-Sync"
-        description="Enforce disciplined trading with Tradify. Auto-sync trades from MT5, validate strategies against rules, track performance with real-time analytics. Free plan available."
+        title="Tradify - Rule-Based Trading Journal | MT5 Auto-Sync & Prop Firm Tracker"
+        description="Enforce disciplined trading with Tradify. Auto-sync trades from MT5, validate strategies against rules, track prop firm challenges, and analyze performance with AI-powered insights. Free plan available."
         canonical="https://tradifyapp.com/"
       />
       <PublicNavbar />
@@ -49,12 +60,23 @@ export default function Landing() {
             with MT5 sync
           </h1>
           
-          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 mb-12 max-w-2xl mx-auto text-left">
-            <h3 className="text-emerald-500 font-bold uppercase tracking-widest text-sm mb-2">Designed for Discipline</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Tradify is for MT5 traders who want execution discipline and performance clarity. 
-              <span className="block mt-2 text-rose-500 font-bold">NOT FOR: Signal seekers, shortcut beginners, or copy traders.</span>
-            </p>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+            Auto-sync trades from MetaTrader 5, validate strategies against rules, track prop firm challenges, and master your discipline with AI-powered analytics.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+            {[
+              "MT5 Auto-Sync",
+              "Prop Firm Tracker",
+              "AI Analysis",
+              "Rule Validation",
+              "Education Hub",
+              "Risk Calculators"
+            ].map((tag) => (
+              <Badge key={tag} variant="outline" className="bg-muted/50 border-border text-muted-foreground text-[10px] font-bold uppercase tracking-widest py-1 px-3">
+                {tag}
+              </Badge>
+            ))}
           </div>
 
           <Link to="/early-access" className="inline-block mb-6">
@@ -67,12 +89,12 @@ export default function Landing() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/signup">
-              <Button className="w-full sm:w-auto h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400 shadow-xl shadow-emerald-500/20">
-                Create Account
+              <Button className="w-full sm:w-auto h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400 shadow-xl shadow-emerald-500/20" data-testid="button-hero-signup">
+                Create Free Account
               </Button>
             </Link>
             <Link to="/pricing">
-              <Button variant="outline" className="w-full sm:w-auto h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted">
+              <Button variant="outline" className="w-full sm:w-auto h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted" data-testid="button-hero-pricing">
                 View Plans
               </Button>
             </Link>
@@ -104,6 +126,11 @@ export default function Landing() {
                     title: "Strategy Drift",
                     desc: "Track when trades deviate from your documented strategy rules. Measure consistency over time.",
                     icon: <TrendingUp className="text-blue-500" />
+                  },
+                  {
+                    title: "Challenge Rule Violations",
+                    desc: "Prop firm traders risk failing challenges from unmonitored drawdowns. Tradify tracks every limit in real time.",
+                    icon: <Trophy className="text-purple-500" />
                   }
                 ].map((item, i) => (
                   <div key={i} className="flex gap-4 p-4 rounded-2xl border border-border bg-background/50">
@@ -157,10 +184,10 @@ export default function Landing() {
             <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent hidden md:block" />
             
             {[
-              { step: "01", title: "MT5 Integration", desc: "Terminal connection via secure local bridge.", icon: <Zap /> },
-              { step: "02", title: "Data Ingestion", desc: "Automated read-only trade log retrieval.", icon: <Lock /> },
-              { step: "03", title: "Rule Validation", desc: "Objective grading against strategy parameters.", icon: <ShieldCheck /> },
-              { step: "04", title: "Analytics", desc: "Session efficiency and expectancy calculation.", icon: <BarChart3 /> }
+              { step: "01", title: "MT5 Integration", desc: "Multi-account terminal connection via secure local bridge.", icon: <MonitorSmartphone /> },
+              { step: "02", title: "Data Ingestion", desc: "Automated read-only trade log retrieval and equity snapshots.", icon: <Lock /> },
+              { step: "03", title: "Rule Validation", desc: "Objective grading against strategy parameters and prop firm rules.", icon: <ShieldCheck /> },
+              { step: "04", title: "AI Analytics", desc: "Session efficiency, expectancy calculation, and AI performance review.", icon: <Brain /> }
             ].map((item, i) => (
               <div key={i} className="relative z-10 group">
                 <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-6 mx-auto transition-colors">
@@ -175,57 +202,112 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Core Capabilities */}
+      {/* Core Features - Expanded */}
       <section className="py-24 bg-muted/30 border-y border-border">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Functional <span className="text-emerald-500">Specifications</span>
+              Complete <span className="text-emerald-500">Feature Set</span>
             </h2>
-            <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">Terminal integration architecture</p>
+            <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">Everything you need to master disciplined trading</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                title: "MT5 Local Bridge",
-                desc: "Secure read-only terminal polling for real-time equity and position tracking.",
-                icon: <Zap className="text-amber-500" />
+                title: "MT5 Multi-Account Bridge",
+                desc: "Connect multiple MetaTrader 5 accounts simultaneously. Auto-sync trades, equity curves, and open positions across all your trading accounts.",
+                icon: <MonitorSmartphone className="text-cyan-500" />,
+                tier: null
               },
               {
-                title: "Risk Parameters",
-                desc: "Calculation of Max Drawdown, Recovery Factor, and expectancy metrics.",
-                icon: <Activity className="text-emerald-500" />
+                title: "Trade Journal",
+                desc: "Chronological trade tracking with filtering by account, date range, and instrument. Log manual trades or auto-import from MT5.",
+                icon: <FileText className="text-emerald-500" />,
+                tier: null
               },
               {
-                title: "Logic Validation",
-                desc: "Post-trade auditing against predefined strategy rules and execution parameters.",
-                icon: <ShieldCheck className="text-blue-500" />
+                title: "Strategy Validation",
+                desc: "Build custom trading frameworks with rule-based entry and exit criteria. Validate every trade against your strategy rules automatically.",
+                icon: <ShieldCheck className="text-blue-500" />,
+                tier: null
               },
               {
-                title: "Operational Metrics",
-                desc: "Efficiency analysis by session, day, and risk-reward ratios.",
-                icon: <TrendingUp className="text-purple-500" />
+                title: "Risk & Position Calculators",
+                desc: "Built-in risk calculators for position sizing, stop loss placement, and risk-reward analysis before entering any trade.",
+                icon: <Calculator className="text-amber-500" />,
+                tier: null
+              },
+              {
+                title: "Interactive Dashboard",
+                desc: "Customizable performance metrics, equity curves, win rate analysis, profit factor, and expectancy all in one command center.",
+                icon: <BarChart3 className="text-purple-500" />,
+                tier: null
               },
               {
                 title: "Education Hub",
-                desc: "20 comprehensive lessons covering trading psychology, price action, smart money concepts, and advanced strategies.",
-                icon: <BookOpen className="text-cyan-500" />
+                desc: "20 comprehensive lessons covering trading psychology, price action, smart money concepts, order blocks, FVGs, and advanced strategies.",
+                icon: <BookOpen className="text-cyan-500" />,
+                tier: "3 free lessons"
               },
               {
-                title: "Strategy Framework",
-                desc: "Build and validate custom trading strategies with rule-based entry and exit criteria.",
-                icon: <BarChart3 className="text-rose-500" />
+                title: "Prop Firm Challenge Tracker",
+                desc: "Track FTMO, MyFundedFX, The Funded Trader, and custom challenges. Monitor profit targets, drawdown limits, consistency scores, and days remaining.",
+                icon: <Trophy className="text-amber-500" />,
+                tier: "Pro"
+              },
+              {
+                title: "AI Instrument Analysis",
+                desc: "Get AI-powered analysis of your trading performance on specific instruments. Understand what you trade best and where to improve.",
+                icon: <Brain className="text-emerald-500" />,
+                tier: "Pro"
+              },
+              {
+                title: "Performance Intelligence",
+                desc: "Advanced metrics including profit factor, expectancy, recovery factor, max drawdown analysis, and full historical equity curves.",
+                icon: <LineChart className="text-blue-500" />,
+                tier: "Pro"
+              },
+              {
+                title: "AI Challenge Risk Warnings",
+                desc: "Before you place a trade, check it against your active prop firm challenge rules. See potential drawdown impact and get safer stop loss suggestions.",
+                icon: <AlertCircle className="text-rose-500" />,
+                tier: "Elite"
+              },
+              {
+                title: "Session & Time Analytics",
+                desc: "Performance breakdown by trading session (Asian, London, New York), day of week, and hour. Discover your optimal trading windows.",
+                icon: <Clock className="text-purple-500" />,
+                tier: "Elite"
+              },
+              {
+                title: "Behavioral Risk Flags",
+                desc: "Automated detection of revenge trading, overtrading, risk creep, and strategy deviation patterns with monthly AI performance reviews.",
+                icon: <Activity className="text-rose-500" />,
+                tier: "Elite"
               }
             ].map((feature, i) => (
-              <Card key={i} className="bg-background border-border hover:border-emerald-500/20 transition-all duration-300 group">
-                <CardContent className="p-8 flex items-start gap-6">
-                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border group-hover:bg-emerald-500/10 transition-colors">
-                    {feature.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground uppercase tracking-widest mb-2">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
+              <Card key={i} className="bg-background border-border hover:border-emerald-500/20 transition-all duration-300 group" data-testid={`card-feature-${i}`}>
+                <CardContent className="p-6 flex flex-col gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border group-hover:bg-emerald-500/10 transition-colors">
+                      {feature.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">{feature.title}</h3>
+                        {feature.tier === "Pro" && (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] py-0 uppercase tracking-widest shrink-0">Pro</Badge>
+                        )}
+                        {feature.tier === "Elite" && (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[9px] py-0 uppercase tracking-widest shrink-0">Elite</Badge>
+                        )}
+                        {feature.tier === "3 free lessons" && (
+                          <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[9px] py-0 uppercase tracking-widest shrink-0">3 Free</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -234,24 +316,137 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Prop Firm Spotlight */}
+      <section className="py-24 overflow-hidden" data-testid="section-prop-firm-spotlight">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[10px] uppercase tracking-widest mb-6">
+                Pro + Elite Feature
+              </Badge>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-6">
+                Prop Firm <span className="text-amber-500">Challenge Tracker</span>
+              </h2>
+              <p className="text-muted-foreground mb-8 leading-relaxed">
+                Never lose a prop firm challenge due to unmonitored drawdowns again. Tradify tracks every rule, every limit, and every metric in real time.
+              </p>
+              <div className="space-y-4">
+                {[
+                  "FTMO, MyFundedFX, The Funded Trader presets + custom configs",
+                  "Real-time profit target & drawdown gauges with visual progress",
+                  "Trailing drawdown with high water mark tracking",
+                  "Consistency scoring and days remaining countdown",
+                  "MT5 auto-sync for automated daily stats logging",
+                  "AI risk check: analyze trade impact before you enter (Elite)"
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <CheckCircle2 size={16} className="text-amber-500 mt-0.5 shrink-0" />
+                    <span className="text-sm text-muted-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <div className="rounded-3xl bg-gradient-to-br from-amber-500/5 to-background border border-amber-500/20 p-8 overflow-hidden">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">FTMO Challenge</div>
+                      <div className="text-xl font-black text-foreground">$100,000 Account</div>
+                    </div>
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[9px] uppercase tracking-widest">Active</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-background/50 border border-border">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Profit Target</div>
+                      <div className="text-2xl font-black text-emerald-500">72%</div>
+                      <div className="w-full h-1.5 bg-muted rounded-full mt-2">
+                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: "72%" }} />
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-background/50 border border-border">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Max Drawdown</div>
+                      <div className="text-2xl font-black text-amber-500">34%</div>
+                      <div className="w-full h-1.5 bg-muted rounded-full mt-2">
+                        <div className="h-full bg-amber-500 rounded-full" style={{ width: "34%" }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="p-3 rounded-lg bg-background/50 border border-border">
+                      <div className="text-lg font-black text-foreground">18</div>
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Days Left</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-background/50 border border-border">
+                      <div className="text-lg font-black text-emerald-500">87%</div>
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Consistency</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-background/50 border border-border">
+                      <div className="text-lg font-black text-foreground">12</div>
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Trades</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Founding Member Section */}
+      <section className="py-24 bg-gradient-to-b from-background to-amber-500/5 border-y border-border" data-testid="section-founding-member">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <div className="h-16 w-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-8">
+            <Crown className="text-amber-500" size={32} />
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+            Founding <span className="text-amber-500">Member Program</span>
+          </h2>
+          <p className="text-muted-foreground mb-10 max-w-2xl mx-auto">
+            Join the founding members and shape the future of Tradify. Get exclusive benefits that last forever.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            {[
+              { title: "3 Months Free", desc: "Pro access at no cost", icon: <Sparkles className="text-amber-400" size={20} /> },
+              { title: "30% Off Forever", desc: "Lifetime discount on all plans", icon: <Target className="text-amber-400" size={20} /> },
+              { title: "Feature Influence", desc: "Vote on upcoming features", icon: <Users className="text-amber-400" size={20} /> },
+              { title: "Exclusive Badge", desc: "Founding member crown badge", icon: <Crown className="text-amber-400" size={20} /> }
+            ].map((benefit, i) => (
+              <div key={i} className="p-5 rounded-2xl bg-background/50 border border-amber-500/20">
+                <div className="mb-3">{benefit.icon}</div>
+                <h4 className="font-bold text-foreground text-sm uppercase tracking-widest mb-1">{benefit.title}</h4>
+                <p className="text-xs text-muted-foreground">{benefit.desc}</p>
+              </div>
+            ))}
+          </div>
+          <Link to="/early-access">
+            <Button className="h-14 px-10 bg-amber-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-amber-400 shadow-xl shadow-amber-500/20" data-testid="button-founding-member-cta">
+              Claim Founding Member Spot
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
       {/* Trust Section */}
       <section className="py-24 border-b border-border">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-8">
-            <Lock className="text-emerald-500" size={32} />
+            <Shield className="text-emerald-500" size={32} />
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase italic mb-8">
             Trust & <span className="text-emerald-500">Reliability</span>
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              "No broker credentials stored",
-              "Read-only trade data",
-              "No signals, no execution"
-            ].map((text, i) => (
-              <div key={i} className="flex flex-col items-center gap-3">
-                <CheckCircle2 className="text-emerald-500" size={20} />
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{text}</span>
+              { text: "No broker credentials stored", icon: <Lock size={18} /> },
+              { text: "Read-only trade data", icon: <ShieldCheck size={18} /> },
+              { text: "No signals, no execution", icon: <AlertCircle size={18} /> },
+              { text: "Email verified accounts", icon: <CheckCircle2 size={18} /> }
+            ].map((item, i) => (
+              <div key={i} className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-muted/30 border border-border">
+                <div className="text-emerald-500">{item.icon}</div>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center">{item.text}</span>
               </div>
             ))}
           </div>
@@ -275,16 +470,16 @@ export default function Landing() {
                   Standardize your<br />execution.
                 </h2>
                 <p className="text-muted-foreground mb-8 max-w-md">
-                  Deploy Tradify to enforce systematic discipline and utilize institutional-grade analytics.
+                  Deploy Tradify to enforce systematic discipline and utilize institutional-grade analytics. Start free, upgrade when ready.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link to="/signup">
-                    <Button className="h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400">
+                    <Button className="h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400" data-testid="button-cta-signup">
                       Access Terminal
                     </Button>
                   </Link>
                   <Link to="/pricing">
-                    <Button variant="ghost" className="h-14 px-8 text-foreground font-bold uppercase tracking-widest text-xs group">
+                    <Button variant="ghost" className="h-14 px-8 text-foreground font-bold uppercase tracking-widest text-xs group" data-testid="button-cta-pricing">
                       Subscription Tiers <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
                     </Button>
                   </Link>
@@ -294,26 +489,32 @@ export default function Landing() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 sm:p-6 rounded-2xl bg-background/50 border border-border">
                   <div className="text-2xl sm:text-3xl font-black text-foreground mb-1">FREE</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Core Implementation</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Core Tools</div>
                   <ul className="space-y-2">
-                    <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Live MT5 Data Connection</li>
-                    <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> 30-Day Trade Journal History</li>
+                    <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> MT5 Multi-Account Sync</li>
+                    <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Trade Journal (30 Days)</li>
+                    <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Risk Calculators</li>
+                    <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> 3 Education Lessons</li>
                   </ul>
                 </div>
                 <div className="p-4 sm:p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
                   <div className="text-2xl sm:text-3xl font-black text-emerald-500 mb-1">PRO</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-4">$29/mo</div>
                   <ul className="space-y-2">
-                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Performance Intelligence Layer</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Prop Firm Tracker</li>
                     <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> AI Instrument Analysis</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> Full Education Hub</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> PDF & CSV Export</li>
                   </ul>
                 </div>
                 <div className="p-4 sm:p-6 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-2xl shadow-amber-500/10">
                   <div className="text-2xl sm:text-3xl font-black text-amber-500 mb-1">ELITE</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-4">$59/mo</div>
                   <ul className="space-y-2">
-                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> Session Performance Analytics</li>
-                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> Monthly AI Performance Review</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> AI Challenge Risk Warnings</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> Session Analytics</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> Behavioral Risk Flags</li>
+                    <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> Monthly AI Review</li>
                   </ul>
                 </div>
               </div>
