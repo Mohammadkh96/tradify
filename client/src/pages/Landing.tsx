@@ -252,7 +252,7 @@ export default function Landing() {
               },
               {
                 title: "Prop Firm Challenge Tracker",
-                desc: "Track FTMO, MyFundedFX, The Funded Trader, and custom challenges. Monitor profit targets, drawdown limits, consistency scores, and days remaining.",
+                desc: "Track any prop firm challenge with custom configurations. Monitor profit targets, drawdown limits, consistency scores, and days remaining in real time.",
                 icon: <Trophy className="text-amber-500" />,
                 tier: "Pro"
               },
@@ -332,7 +332,7 @@ export default function Landing() {
               </p>
               <div className="space-y-4">
                 {[
-                  "FTMO, MyFundedFX, The Funded Trader presets + custom configs",
+                  "Popular firm presets and fully custom challenge configurations",
                   "Real-time profit target & drawdown gauges with visual progress",
                   "Trailing drawdown with high water mark tracking",
                   "Consistency scoring and days remaining countdown",
@@ -351,7 +351,7 @@ export default function Landing() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">FTMO Challenge</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Prop Firm Challenge</div>
                       <div className="text-xl font-black text-foreground">$100,000 Account</div>
                     </div>
                     <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[9px] uppercase tracking-widest">Active</Badge>
