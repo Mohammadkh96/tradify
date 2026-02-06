@@ -1,0 +1,153 @@
+rop firm rules are often misunderstood. Add auto-calculated clarifications under inputs.
+
+Example
+
+Daily Drawdown Limit = 5%
+
+Show:
+
+“Max daily loss: $5,000 (based on starting balance)”
+
+Profit Target = 10%
+
+Show:
+
+“Target equity: $110,000”
+
+This prevents disputes and positions Tradify as rule-aware, not just a calculator.
+
+2. Drawdown Type Selector (Very Important)
+
+Many firms differ here.
+
+Add a dropdown:
+
+⭕ Static (balance-based)
+
+⭕ Equity-based
+
+⭕ Trailing (balance / equity)
+
+When “Trailing Drawdown” is checked, require:
+
+Trailing method
+
+Trailing stop behavior (locks after profit or always trails)
+
+This avoids ambiguity and reduces support issues later.
+
+3. Validation & Warnings (Inline, Not Modals)
+
+Add live rule sanity checks, e.g.:
+
+Profit target > max drawdown → ⚠️ warning
+
+Max trading days < min trading days → ❌ block creation
+
+Start date + max trading days exceeds end date → ⚠️ warning
+
+This signals professional-grade risk logic.
+
+2. Nice-to-Have Enhancements (UX & Adoption Boost)
+4. Preset Transparency Panel
+
+When a preset is selected (FTMO, MFF, TFT), show a read-only rule summary:
+
+FTMO Phase 1 Rules
+• Profit target: 10%
+• Daily DD: 5%
+• Max DD: 10%
+• Min days: 4
+• Trailing: No
+
+This builds trust and reduces user second-guessing.
+
+5. Currency Selector
+
+Account Size ($) assumes USD.
+
+Add:
+
+Currency dropdown (USD, EUR, GBP)
+
+Auto-convert for display only (not trading logic)
+
+Even if cosmetic initially, it signals global readiness.
+
+6. Progress Preview (Mini Dashboard)
+
+Before “Create Challenge”, show a static preview:
+
+Remaining profit to target
+
+Max loss allowed today
+
+Max loss remaining overall
+
+Days left
+
+This bridges setup → execution mentally, which traders value.
+
+3. Advanced Enhancements (Tradify Differentiators)
+
+These are where you separate from generic prop trackers.
+
+7. Rule-Linked Trade Blocking (Power Feature)
+
+Option:
+☑️ “Warn me when a trade would violate challenge rules”
+
+Later, this can:
+
+Flag oversized risk
+
+Highlight trades that would exceed daily DD
+
+Mark trades as “invalid for challenge” (not just losing)
+
+This aligns perfectly with Tradify’s discipline-first positioning.
+
+8. Consistency Rule — Make It Explicit
+
+Right now:
+
+“Max Day Profit % (consistency)”
+
+Most traders misunderstand this.
+
+Enhance with:
+
+Tooltip explaining:
+
+“No single day can contribute more than X% of total profit target.”
+
+Also auto-calculate:
+
+Max allowed daily profit in $
+
+Remaining consistency allowance
+
+9. Phase Linking (Phase 1 → Phase 2)
+
+Add an option:
+☑️ “This challenge unlocks next phase automatically”
+
+Then:
+
+Phase 2 inherits rules
+
+Equity carries over
+
+Trader sees a progression path, not isolated challenges
+
+This is very prop-firm-realistic and rare in tools.
+
+4. Minor UX Polish (Quick Wins)
+
+Rename “Custom” → “Custom Firm”
+
+Disable “End Date” unless max trading days = unlimited
+
+Default Start Date = today (already good)
+
+Show example values in grey helper text, not placeholders (better accessibility)

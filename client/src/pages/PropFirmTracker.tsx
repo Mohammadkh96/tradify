@@ -68,9 +68,11 @@ const PRESETS: Record<string, Partial<Record<string, any>>> = {
     profitTarget: "10",
     dailyDrawdownLimit: "5",
     maxDrawdownLimit: "10",
-    trailingDrawdown: true,
-    minTradingDays: 10,
+    trailingDrawdown: false,
+    drawdownType: "balance",
+    minTradingDays: 4,
     maxTradingDays: 30,
+    consistencyRule: false,
   },
   MyFundedFX: {
     firmName: "MyFundedFX",
@@ -79,8 +81,11 @@ const PRESETS: Record<string, Partial<Record<string, any>>> = {
     dailyDrawdownLimit: "5",
     maxDrawdownLimit: "8",
     trailingDrawdown: true,
+    drawdownType: "trailing_balance",
+    trailingStopBehavior: "locks_at_breakeven",
     minTradingDays: 5,
     maxTradingDays: 30,
+    consistencyRule: false,
   },
   "The Funded Trader": {
     firmName: "The Funded Trader",
@@ -89,9 +94,49 @@ const PRESETS: Record<string, Partial<Record<string, any>>> = {
     dailyDrawdownLimit: "5",
     maxDrawdownLimit: "10",
     trailingDrawdown: true,
+    drawdownType: "trailing_equity",
+    trailingStopBehavior: "always_trails",
     minTradingDays: 5,
     maxTradingDays: 30,
+    consistencyRule: true,
+    maxDayProfitPercent: "40",
   },
+};
+
+const PRESET_RULES: Record<string, { label: string; value: string }[]> = {
+  FTMO: [
+    { label: "Profit Target", value: "10%" },
+    { label: "Daily Drawdown", value: "5% (balance-based)" },
+    { label: "Max Drawdown", value: "10% (static)" },
+    { label: "Min Trading Days", value: "4" },
+    { label: "Max Trading Days", value: "30" },
+    { label: "Trailing DD", value: "No" },
+    { label: "Consistency Rule", value: "No" },
+  ],
+  MyFundedFX: [
+    { label: "Profit Target", value: "8%" },
+    { label: "Daily Drawdown", value: "5% (balance-based)" },
+    { label: "Max Drawdown", value: "8% (trailing, locks at breakeven)" },
+    { label: "Min Trading Days", value: "5" },
+    { label: "Max Trading Days", value: "30" },
+    { label: "Trailing DD", value: "Yes" },
+    { label: "Consistency Rule", value: "No" },
+  ],
+  "The Funded Trader": [
+    { label: "Profit Target", value: "8%" },
+    { label: "Daily Drawdown", value: "5% (equity-based)" },
+    { label: "Max Drawdown", value: "10% (trailing equity)" },
+    { label: "Min Trading Days", value: "5" },
+    { label: "Max Trading Days", value: "30" },
+    { label: "Trailing DD", value: "Yes (always trails)" },
+    { label: "Consistency Rule", value: "Yes (max 40% of target per day)" },
+  ],
+};
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  EUR: "\u20AC",
+  GBP: "\u00A3",
 };
 
 function CircularGauge({
@@ -171,9 +216,9 @@ function statusBadgeClass(status: string) {
   }
 }
 
-function formatCurrency(val: number | string | null | undefined) {
+function formatCurrency(val: number | string | null | undefined, curr = "USD") {
   const n = typeof val === "string" ? parseFloat(val) : (val ?? 0);
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: curr, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 }
 
 export default function PropFirmTracker() {
@@ -187,16 +232,20 @@ export default function PropFirmTracker() {
     challengeName: "",
     phase: "Phase 1",
     accountSize: "",
+    currency: "USD",
     profitTarget: "",
     dailyDrawdownLimit: "",
     maxDrawdownLimit: "",
     trailingDrawdown: false,
+    drawdownType: "static",
+    trailingStopBehavior: "always_trails",
     minTradingDays: 0,
     maxTradingDays: 30,
     consistencyRule: false,
     maxDayProfitPercent: "",
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
+    phaseLink: false,
   });
 
   const [dailyForm, setDailyForm] = useState({
@@ -351,24 +400,28 @@ export default function PropFirmTracker() {
       challengeName: "",
       phase: "Phase 1",
       accountSize: "",
+      currency: "USD",
       profitTarget: "",
       dailyDrawdownLimit: "",
       maxDrawdownLimit: "",
       trailingDrawdown: false,
+      drawdownType: "static",
+      trailingStopBehavior: "always_trails",
       minTradingDays: 0,
       maxTradingDays: 30,
       consistencyRule: false,
       maxDayProfitPercent: "",
       startDate: new Date().toISOString().split("T")[0],
       endDate: "",
+      phaseLink: false,
     });
     setSelectedPreset("");
   }
 
   function applyPreset(name: string) {
-    if (name === "Custom") {
+    if (name === "Custom Firm") {
       resetForm();
-      setSelectedPreset("Custom");
+      setSelectedPreset("Custom Firm");
       return;
     }
     const p = PRESETS[name];
@@ -381,16 +434,48 @@ export default function PropFirmTracker() {
         dailyDrawdownLimit: p.dailyDrawdownLimit || "",
         maxDrawdownLimit: p.maxDrawdownLimit || "",
         trailingDrawdown: p.trailingDrawdown || false,
+        drawdownType: p.drawdownType || "static",
+        trailingStopBehavior: p.trailingStopBehavior || "always_trails",
         minTradingDays: p.minTradingDays || 0,
         maxTradingDays: p.maxTradingDays || 30,
+        consistencyRule: p.consistencyRule || false,
+        maxDayProfitPercent: p.maxDayProfitPercent || "",
       }));
       setSelectedPreset(name);
     }
   }
 
+  const acctSizeNum = parseFloat(formData.accountSize) || 0;
+  const profitTargetNum = parseFloat(formData.profitTarget) || 0;
+  const dailyDDNum = parseFloat(formData.dailyDrawdownLimit) || 0;
+  const maxDDNum = parseFloat(formData.maxDrawdownLimit) || 0;
+  const consistencyPctNum = parseFloat(formData.maxDayProfitPercent) || 0;
+  const currSymbol = CURRENCY_SYMBOLS[formData.currency] || "$";
+
+  const formWarnings: { level: "error" | "warning"; message: string }[] = [];
+  if (profitTargetNum > 0 && maxDDNum > 0 && profitTargetNum > maxDDNum) {
+    formWarnings.push({ level: "warning", message: "Profit target is larger than max drawdown — this challenge has unfavorable risk-reward." });
+  }
+  if (formData.minTradingDays > 0 && formData.maxTradingDays > 0 && formData.minTradingDays > formData.maxTradingDays) {
+    formWarnings.push({ level: "error", message: "Min trading days cannot exceed max trading days." });
+  }
+  if (formData.startDate && formData.endDate && formData.maxTradingDays > 0) {
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    const daysBetween = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysBetween < formData.maxTradingDays) {
+      formWarnings.push({ level: "warning", message: `End date allows only ${daysBetween} calendar days, but max trading days is ${formData.maxTradingDays}.` });
+    }
+  }
+  const hasBlockingError = formWarnings.some((w) => w.level === "error");
+
   function handleCreateSubmit() {
     if (!formData.firmName || !formData.accountSize || !formData.profitTarget) {
       toast({ title: "Missing fields", description: "Please fill in all required fields.", variant: "destructive" });
+      return;
+    }
+    if (hasBlockingError) {
+      toast({ title: "Cannot create", description: "Fix the errors before creating.", variant: "destructive" });
       return;
     }
     createMutation.mutate({
@@ -444,7 +529,7 @@ export default function PropFirmTracker() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-wrap gap-2">
-              {["FTMO", "MyFundedFX", "The Funded Trader", "Custom"].map((name) => (
+              {["FTMO", "MyFundedFX", "The Funded Trader", "Custom Firm"].map((name) => (
                 <Button
                   key={name}
                   data-testid={`button-preset-${name.toLowerCase().replace(/\s+/g, "-")}`}
@@ -456,6 +541,24 @@ export default function PropFirmTracker() {
               ))}
             </div>
 
+            {selectedPreset && selectedPreset !== "Custom Firm" && PRESET_RULES[selectedPreset] && (
+              <Card className="bg-muted/20 border-muted">
+                <CardContent className="p-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    {selectedPreset} Rules Summary
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1.5">
+                    {PRESET_RULES[selectedPreset].map((rule, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm" data-testid={`text-preset-rule-${i}`}>
+                        <span className="text-muted-foreground">{rule.label}:</span>
+                        <span className="font-medium">{rule.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Firm Name</label>
@@ -463,8 +566,8 @@ export default function PropFirmTracker() {
                   data-testid="input-firm-name"
                   value={formData.firmName}
                   onChange={(e) => setFormData((p) => ({ ...p, firmName: e.target.value }))}
-                  placeholder="e.g. FTMO"
                 />
+                <p className="text-xs text-muted-foreground">e.g. FTMO, MyFundedFX</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Challenge Name</label>
@@ -472,8 +575,8 @@ export default function PropFirmTracker() {
                   data-testid="input-challenge-name"
                   value={formData.challengeName}
                   onChange={(e) => setFormData((p) => ({ ...p, challengeName: e.target.value }))}
-                  placeholder="e.g. 100K Phase 1"
                 />
+                <p className="text-xs text-muted-foreground">e.g. 100K Challenge, 200K Aggressive</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Phase</label>
@@ -492,14 +595,30 @@ export default function PropFirmTracker() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Account Size ($)</label>
+                <label className="text-sm font-medium text-muted-foreground">Currency</label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(v) => setFormData((p) => ({ ...p, currency: v }))}
+                >
+                  <SelectTrigger data-testid="select-currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (&euro;)</SelectItem>
+                    <SelectItem value="GBP">GBP (&pound;)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-muted-foreground">Account Size ({currSymbol})</label>
                 <Input
                   data-testid="input-account-size"
                   type="number"
                   value={formData.accountSize}
                   onChange={(e) => setFormData((p) => ({ ...p, accountSize: e.target.value }))}
-                  placeholder="100000"
                 />
+                <p className="text-xs text-muted-foreground">e.g. 100000</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Profit Target (%)</label>
@@ -508,8 +627,13 @@ export default function PropFirmTracker() {
                   type="number"
                   value={formData.profitTarget}
                   onChange={(e) => setFormData((p) => ({ ...p, profitTarget: e.target.value }))}
-                  placeholder="10"
                 />
+                {acctSizeNum > 0 && profitTargetNum > 0 && (
+                  <p className="text-xs text-emerald-400">
+                    Target equity: {currSymbol}{(acctSizeNum + acctSizeNum * profitTargetNum / 100).toLocaleString()}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">e.g. 10</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Daily Drawdown Limit (%)</label>
@@ -518,8 +642,13 @@ export default function PropFirmTracker() {
                   type="number"
                   value={formData.dailyDrawdownLimit}
                   onChange={(e) => setFormData((p) => ({ ...p, dailyDrawdownLimit: e.target.value }))}
-                  placeholder="5"
                 />
+                {acctSizeNum > 0 && dailyDDNum > 0 && (
+                  <p className="text-xs text-amber-400">
+                    Max daily loss: {currSymbol}{(acctSizeNum * dailyDDNum / 100).toLocaleString()} (based on starting balance)
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">e.g. 5</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Max Drawdown Limit (%)</label>
@@ -528,9 +657,71 @@ export default function PropFirmTracker() {
                   type="number"
                   value={formData.maxDrawdownLimit}
                   onChange={(e) => setFormData((p) => ({ ...p, maxDrawdownLimit: e.target.value }))}
-                  placeholder="10"
                 />
+                {acctSizeNum > 0 && maxDDNum > 0 && (
+                  <p className="text-xs text-rose-400">
+                    Max total loss: {currSymbol}{(acctSizeNum * maxDDNum / 100).toLocaleString()} — breach at {currSymbol}{(acctSizeNum - acctSizeNum * maxDDNum / 100).toLocaleString()}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">e.g. 10</p>
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">Drawdown Calculation Type</label>
+                <Select
+                  value={formData.drawdownType}
+                  onValueChange={(v) => {
+                    const isTrailing = v.startsWith("trailing");
+                    setFormData((p) => ({ ...p, drawdownType: v, trailingDrawdown: isTrailing }));
+                  }}
+                >
+                  <SelectTrigger data-testid="select-drawdown-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="static">Static (balance-based) — fixed from initial balance</SelectItem>
+                    <SelectItem value="balance">Balance-based — resets from daily starting balance</SelectItem>
+                    <SelectItem value="equity">Equity-based — calculated from real-time equity</SelectItem>
+                    <SelectItem value="trailing_balance">Trailing (balance) — DD floor rises with profit</SelectItem>
+                    <SelectItem value="trailing_equity">Trailing (equity) — DD floor rises with equity HWM</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {formData.drawdownType === "static" && "Drawdown limit measured from your initial account balance — never changes."}
+                  {formData.drawdownType === "balance" && "Daily drawdown measured from each day's opening balance."}
+                  {formData.drawdownType === "equity" && "Drawdown measured from real-time equity (includes floating P&L)."}
+                  {formData.drawdownType === "trailing_balance" && "Max drawdown floor rises as your balance grows — locks profits into your safety net."}
+                  {formData.drawdownType === "trailing_equity" && "Max drawdown floor rises with your equity high-water mark — most restrictive type."}
+                </p>
+              </div>
+
+              {formData.trailingDrawdown && (
+                <div className="space-y-2 pl-4 border-l-2 border-amber-500/30">
+                  <label className="text-sm font-medium text-muted-foreground">Trailing Stop Behavior</label>
+                  <Select
+                    value={formData.trailingStopBehavior}
+                    onValueChange={(v) => setFormData((p) => ({ ...p, trailingStopBehavior: v }))}
+                  >
+                    <SelectTrigger data-testid="select-trailing-behavior">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="always_trails">Always trails — DD floor continues rising indefinitely</SelectItem>
+                      <SelectItem value="locks_at_breakeven">Locks at breakeven — stops trailing once floor reaches initial balance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.trailingStopBehavior === "always_trails"
+                      ? "The drawdown floor keeps rising as you profit. This is the strictest trailing mode."
+                      : "The trailing floor stops moving once it reaches your initial balance — you can't lose the initial capital."}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Min Trading Days</label>
                 <Input
@@ -539,6 +730,7 @@ export default function PropFirmTracker() {
                   value={formData.minTradingDays}
                   onChange={(e) => setFormData((p) => ({ ...p, minTradingDays: parseInt(e.target.value) || 0 }))}
                 />
+                <p className="text-xs text-muted-foreground">e.g. 4 — minimum days you must trade</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Max Trading Days</label>
@@ -548,6 +740,7 @@ export default function PropFirmTracker() {
                   value={formData.maxTradingDays}
                   onChange={(e) => setFormData((p) => ({ ...p, maxTradingDays: parseInt(e.target.value) || 30 }))}
                 />
+                <p className="text-xs text-muted-foreground">e.g. 30 — calendar days allowed for the challenge</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Start Date</label>
@@ -559,54 +752,130 @@ export default function PropFirmTracker() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">End Date (optional)</label>
+                <label className="text-sm font-medium text-muted-foreground">End Date</label>
                 <Input
                   data-testid="input-end-date"
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))}
                 />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Max Day Profit % (consistency)</label>
-                <Input
-                  data-testid="input-max-day-profit"
-                  type="number"
-                  value={formData.maxDayProfitPercent}
-                  onChange={(e) => setFormData((p) => ({ ...p, maxDayProfitPercent: e.target.value }))}
-                  placeholder="e.g. 40"
-                />
+                <p className="text-xs text-muted-foreground">
+                  Leave blank to auto-calculate from start + max days
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  data-testid="checkbox-trailing-dd"
-                  type="checkbox"
-                  checked={formData.trailingDrawdown}
-                  onChange={(e) => setFormData((p) => ({ ...p, trailingDrawdown: e.target.checked }))}
-                  className="rounded border-border"
-                />
-                <span className="text-sm">Trailing Drawdown</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  data-testid="checkbox-consistency-rule"
-                  type="checkbox"
-                  checked={formData.consistencyRule}
-                  onChange={(e) => setFormData((p) => ({ ...p, consistencyRule: e.target.checked }))}
-                  className="rounded border-border"
-                />
-                <span className="text-sm">Consistency Rule</span>
-              </label>
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    data-testid="checkbox-consistency-rule"
+                    type="checkbox"
+                    checked={formData.consistencyRule}
+                    onChange={(e) => setFormData((p) => ({ ...p, consistencyRule: e.target.checked }))}
+                    className="rounded border-border"
+                  />
+                  <span className="text-sm">Consistency Rule</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    data-testid="checkbox-phase-link"
+                    type="checkbox"
+                    checked={formData.phaseLink}
+                    onChange={(e) => setFormData((p) => ({ ...p, phaseLink: e.target.checked }))}
+                    className="rounded border-border"
+                  />
+                  <span className="text-sm">Links to next phase automatically</span>
+                </label>
+              </div>
+
+              {formData.consistencyRule && (
+                <div className="space-y-2 pl-4 border-l-2 border-cyan-500/30">
+                  <label className="text-sm font-medium text-muted-foreground">Max Single Day Profit (%)</label>
+                  <Input
+                    data-testid="input-max-day-profit"
+                    type="number"
+                    value={formData.maxDayProfitPercent}
+                    onChange={(e) => setFormData((p) => ({ ...p, maxDayProfitPercent: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    No single day can contribute more than this % of your total profit target.
+                  </p>
+                  {acctSizeNum > 0 && profitTargetNum > 0 && consistencyPctNum > 0 && (
+                    <p className="text-xs text-cyan-400">
+                      Max allowed daily profit: {currSymbol}{((acctSizeNum * profitTargetNum / 100) * consistencyPctNum / 100).toLocaleString()} per day
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">e.g. 40 means your best day can't exceed 40% of the profit target</p>
+                </div>
+              )}
+
+              {formData.phaseLink && (
+                <div className="pl-4 border-l-2 border-blue-500/30">
+                  <p className="text-xs text-blue-400">
+                    When this phase is passed, a new challenge will be created for the next phase with inherited rules and carried-over equity.
+                  </p>
+                </div>
+              )}
             </div>
+
+            {formWarnings.length > 0 && (
+              <div className="space-y-2">
+                {formWarnings.map((w, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex items-center gap-2 p-3 rounded-md text-sm",
+                      w.level === "error"
+                        ? "bg-rose-500/10 border border-rose-500/30 text-rose-300"
+                        : "bg-amber-500/10 border border-amber-500/30 text-amber-300"
+                    )}
+                    data-testid={`text-form-warning-${i}`}
+                  >
+                    {w.level === "error" ? <XCircle size={16} className="shrink-0" /> : <AlertTriangle size={16} className="shrink-0" />}
+                    {w.message}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {acctSizeNum > 0 && profitTargetNum > 0 && dailyDDNum > 0 && maxDDNum > 0 && (
+              <Card className="bg-muted/20 border-muted">
+                <CardContent className="p-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    Challenge Preview
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="text-center p-3 rounded-md bg-background/50">
+                      <p className="text-xs text-muted-foreground">Profit Target</p>
+                      <p className="font-bold text-emerald-400">{currSymbol}{(acctSizeNum * profitTargetNum / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">to reach {currSymbol}{(acctSizeNum + acctSizeNum * profitTargetNum / 100).toLocaleString()}</p>
+                    </div>
+                    <div className="text-center p-3 rounded-md bg-background/50">
+                      <p className="text-xs text-muted-foreground">Max Daily Loss</p>
+                      <p className="font-bold text-amber-400">{currSymbol}{(acctSizeNum * dailyDDNum / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">per day</p>
+                    </div>
+                    <div className="text-center p-3 rounded-md bg-background/50">
+                      <p className="text-xs text-muted-foreground">Max Total Loss</p>
+                      <p className="font-bold text-rose-400">{currSymbol}{(acctSizeNum * maxDDNum / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">breach at {currSymbol}{(acctSizeNum - acctSizeNum * maxDDNum / 100).toLocaleString()}</p>
+                    </div>
+                    <div className="text-center p-3 rounded-md bg-background/50">
+                      <p className="text-xs text-muted-foreground">Trading Window</p>
+                      <p className="font-bold">{formData.minTradingDays}–{formData.maxTradingDays}</p>
+                      <p className="text-xs text-muted-foreground">days</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </CardContent>
           <CardFooter className="flex gap-3 flex-wrap">
             <Button
               data-testid="button-create-challenge"
               onClick={handleCreateSubmit}
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || hasBlockingError}
             >
               {createMutation.isPending && <Loader2 className="animate-spin" />}
               Create Challenge
