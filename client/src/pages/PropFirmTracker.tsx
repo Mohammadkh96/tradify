@@ -29,10 +29,21 @@ import {
   Info,
   Zap,
   OctagonAlert,
+  History,
+  Lock,
+  DollarSign,
+  Award,
+  Gauge,
 } from "lucide-react";
 import type { PropFirmChallenge, PropFirmDailyStat } from "@shared/schema";
 
 type ViewState = "list" | "create" | "detail";
+
+type RuleEvent = {
+  date: string;
+  event: string;
+  severity: string;
+};
 
 type ChallengeProgress = {
   currentBalance: number;
@@ -46,12 +57,26 @@ type ChallengeProgress = {
   dailyDDUsedPercent: number;
   dailyDDRemaining: number;
   dailyDDAmount: number;
+  dailyStartBalance: number;
   uniqueTradingDays: number;
   minTradingDays: number;
   daysElapsed: number;
   daysRemaining: number | null;
   consistencyScore: number;
   worstDayProfitPercent: number;
+  consistencyTodayUsed: number;
+  consistencyMaxAllowedAmount: number;
+  todayPl: number;
+  distanceToProfitTarget: number;
+  distanceToMaxLoss: number;
+  distanceToDailyDDLimit: number;
+  healthStatus: "healthy" | "caution" | "at_risk";
+  healthMessage: string;
+  passEligible: boolean;
+  failTriggered: boolean;
+  profitTargetMet: boolean;
+  minDaysMet: boolean;
+  ruleEvents: RuleEvent[];
   status: string;
 };
 
@@ -488,16 +513,17 @@ export default function PropFirmTracker() {
   }
 
   function handleDailySubmit() {
-    if (!dailyForm.startingBalance || !dailyForm.endingBalance) {
-      toast({ title: "Missing fields", description: "Starting and ending balance required.", variant: "destructive" });
+    if (!dailyForm.endingBalance) {
+      toast({ title: "Missing fields", description: "Ending balance is required.", variant: "destructive" });
       return;
     }
+    const startBal = dailyForm.startingBalance || String(detailData?.progress?.currentBalance || 0);
     dailyStatMutation.mutate({
       challengeId: selectedId,
       date: new Date().toISOString(),
-      startingBalance: dailyForm.startingBalance,
+      startingBalance: startBal,
       endingBalance: dailyForm.endingBalance,
-      dayPl: String(parseFloat(dailyForm.endingBalance) - parseFloat(dailyForm.startingBalance)),
+      dayPl: String(parseFloat(dailyForm.endingBalance) - parseFloat(startBal)),
       tradesCount: dailyForm.tradesCount,
     });
   }
@@ -921,6 +947,9 @@ export default function PropFirmTracker() {
     const profitTargetPct = parseFloat(challenge.profitTarget);
     const profitTargetAmt = progress.profitTargetAmount;
 
+    const curr = challenge.currency || "USD";
+    const fc = (v: number | string | null | undefined) => formatCurrency(v, curr);
+
     return (
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -936,7 +965,7 @@ export default function PropFirmTracker() {
             <div>
               <h1 className="font-black text-2xl tracking-tighter uppercase italic">{challenge.firmName}</h1>
               <p className="text-muted-foreground text-sm">
-                {challenge.challengeName} &middot; {challenge.phase} &middot; {formatCurrency(acctSize)}
+                {challenge.challengeName} &middot; {challenge.phase} &middot; {fc(acctSize)}
               </p>
             </div>
             <Badge
@@ -949,24 +978,49 @@ export default function PropFirmTracker() {
           </div>
           {challenge.status === "active" && (
             <div className="flex gap-2 flex-wrap">
-              <Button
-                data-testid="button-pass-challenge"
-                variant="outline"
-                onClick={() => updateStatusMutation.mutate({ id: challenge.id, status: "passed" })}
-                disabled={updateStatusMutation.isPending}
-              >
-                <CheckCircle2 className="text-blue-400" />
-                Pass
-              </Button>
-              <Button
-                data-testid="button-fail-challenge"
-                variant="destructive"
-                onClick={() => updateStatusMutation.mutate({ id: challenge.id, status: "failed" })}
-                disabled={updateStatusMutation.isPending}
-              >
-                <XCircle />
-                Fail
-              </Button>
+              {progress.passEligible ? (
+                <Button
+                  data-testid="button-pass-challenge"
+                  variant="outline"
+                  className="border-emerald-500/30 text-emerald-400"
+                  onClick={() => updateStatusMutation.mutate({ id: challenge.id, status: "passed" })}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <Award size={16} className="text-emerald-400" />
+                  Eligible - Pass Challenge
+                </Button>
+              ) : (
+                <Button
+                  data-testid="button-pass-challenge"
+                  variant="outline"
+                  onClick={() => updateStatusMutation.mutate({ id: challenge.id, status: "passed" })}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <CheckCircle2 className="text-blue-400" />
+                  Pass (Manual)
+                </Button>
+              )}
+              {progress.failTriggered ? (
+                <Button
+                  data-testid="button-fail-challenge"
+                  variant="destructive"
+                  onClick={() => updateStatusMutation.mutate({ id: challenge.id, status: "failed" })}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <OctagonAlert size={16} />
+                  Rule Breach - Fail
+                </Button>
+              ) : (
+                <Button
+                  data-testid="button-fail-challenge"
+                  variant="destructive"
+                  onClick={() => updateStatusMutation.mutate({ id: challenge.id, status: "failed" })}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <XCircle />
+                  Fail (Manual)
+                </Button>
+              )}
               <Button
                 data-testid="button-delete-challenge"
                 variant="ghost"
@@ -980,6 +1034,40 @@ export default function PropFirmTracker() {
           )}
         </div>
 
+        {challenge.status === "active" && (
+          <div
+            data-testid="banner-challenge-health"
+            className={cn(
+              "flex items-center gap-3 p-4 rounded-md border",
+              progress.healthStatus === "healthy"
+                ? "bg-emerald-500/10 border-emerald-500/30"
+                : progress.healthStatus === "caution"
+                  ? "bg-amber-500/10 border-amber-500/30"
+                  : "bg-rose-500/10 border-rose-500/30"
+            )}
+          >
+            {progress.healthStatus === "healthy" ? (
+              <CheckCircle2 size={20} className="text-emerald-400 shrink-0" />
+            ) : progress.healthStatus === "caution" ? (
+              <AlertTriangle size={20} className="text-amber-400 shrink-0" />
+            ) : (
+              <OctagonAlert size={20} className="text-rose-400 shrink-0" />
+            )}
+            <span className={cn(
+              "font-semibold text-sm",
+              progress.healthStatus === "healthy" ? "text-emerald-300" :
+                progress.healthStatus === "caution" ? "text-amber-300" : "text-rose-300"
+            )} data-testid="text-health-message">
+              {progress.healthMessage}
+            </span>
+            {progress.passEligible && (
+              <Badge variant="outline" className="ml-auto bg-emerald-500/10 text-emerald-400 border-emerald-500/20" data-testid="badge-pass-eligible">
+                PASS ELIGIBLE
+              </Badge>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
@@ -991,10 +1079,10 @@ export default function PropFirmTracker() {
                 value={progress.profitProgress}
                 color={getGaugeColor(progress.profitProgress, true)}
                 label={`${progress.profitProgress.toFixed(1)}%`}
-                sublabel={`${formatCurrency(progress.currentProfit)} / ${formatCurrency(profitTargetAmt)}`}
+                sublabel={`${fc(progress.currentProfit)} / ${fc(profitTargetAmt)}`}
               />
               <p className="text-xs text-muted-foreground">
-                Remaining: {formatCurrency(profitTargetAmt - progress.currentProfit)}
+                Remaining: {fc(progress.distanceToProfitTarget)}
               </p>
             </CardContent>
           </Card>
@@ -1011,9 +1099,10 @@ export default function PropFirmTracker() {
                 label={`${progress.dailyDDUsedPercent.toFixed(1)}%`}
                 sublabel="of daily limit used"
               />
-              <p className="text-xs text-muted-foreground">
-                Remaining: {formatCurrency(progress.dailyDDRemaining)} of {formatCurrency(progress.dailyDDAmount)}
-              </p>
+              <div className="text-xs text-muted-foreground text-center space-y-0.5">
+                <p>Remaining: {fc(progress.dailyDDRemaining)} of {fc(progress.dailyDDAmount)}</p>
+                <p className="text-[10px] opacity-70">Resets at broker day close (00:00 server time)</p>
+              </div>
             </CardContent>
           </Card>
 
@@ -1032,9 +1121,9 @@ export default function PropFirmTracker() {
                 sublabel="of max limit used"
               />
               <div className="text-xs text-muted-foreground text-center space-y-0.5">
-                <p>HWM: {formatCurrency(progress.highWaterMark)}</p>
-                {challenge.trailingDrawdown && <p>Floor: {formatCurrency(progress.trailingDDFloor)}</p>}
-                <p>Buffer: {formatCurrency(progress.maxDDRemaining)}</p>
+                <p>HWM: {fc(progress.highWaterMark)}</p>
+                {challenge.trailingDrawdown && <p>Floor: {fc(progress.trailingDDFloor)}</p>}
+                <p>Buffer: {fc(progress.maxDDRemaining)}</p>
               </div>
             </CardContent>
           </Card>
@@ -1045,16 +1134,33 @@ export default function PropFirmTracker() {
                 <CardTitle className="text-sm font-medium">Consistency</CardTitle>
                 <ShieldCheck size={16} className="text-emerald-500" />
               </CardHeader>
-              <CardContent className="flex flex-col items-center gap-2">
-                <CircularGauge
-                  value={progress.consistencyScore}
-                  color={progress.consistencyScore >= 70 ? "#10b981" : progress.consistencyScore >= 40 ? "#f59e0b" : "#f43f5e"}
-                  label={`${progress.consistencyScore.toFixed(0)}%`}
-                  sublabel="consistency score"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Worst day: {progress.worstDayProfitPercent.toFixed(1)}%
-                </p>
+              <CardContent className="space-y-3">
+                <div className="flex flex-col items-center gap-2">
+                  <CircularGauge
+                    value={progress.consistencyScore}
+                    color={progress.consistencyScore >= 70 ? "#10b981" : progress.consistencyScore >= 40 ? "#f59e0b" : "#f43f5e"}
+                    label={`${progress.consistencyScore.toFixed(0)}%`}
+                    sublabel="consistency score"
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t border-border/50">
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <span>Max Daily Contribution</span>
+                    <span className="font-semibold text-foreground">{fc(progress.consistencyMaxAllowedAmount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Today Used</span>
+                    <span className={cn("font-semibold", progress.consistencyTodayUsed > progress.consistencyMaxAllowedAmount ? "text-rose-400" : "text-foreground")}>
+                      {fc(progress.consistencyTodayUsed)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Remaining</span>
+                    <span className="font-semibold text-foreground">
+                      {fc(Math.max(0, progress.consistencyMaxAllowedAmount - progress.consistencyTodayUsed))}
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -1077,8 +1183,12 @@ export default function PropFirmTracker() {
                   style={{ width: `${Math.min((progress.uniqueTradingDays / Math.max(progress.minTradingDays, 1)) * 100, 100)}%` }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground text-center">
-                {progress.daysElapsed} days elapsed
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>{progress.minDaysMet ? <CheckCircle2 size={12} className="inline text-emerald-400 mr-1" /> : <Clock size={12} className="inline text-amber-400 mr-1" />}{progress.minDaysMet ? "Min days met" : `${Math.max(0, progress.minTradingDays - progress.uniqueTradingDays)} days remaining`}</span>
+                <span>{progress.daysElapsed}d elapsed</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground/70 text-center">
+                A trading day is counted when at least one trade is executed
               </p>
             </CardContent>
           </Card>
@@ -1113,16 +1223,38 @@ export default function PropFirmTracker() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
-            <TrendingUp size={16} className="text-emerald-500" />
+            <DollarSign size={16} className="text-emerald-500" />
           </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-black tracking-tighter">{formatCurrency(progress.currentBalance)}</span>
-            <span className={cn(
-              "ml-3 text-sm font-semibold",
-              progress.currentProfit >= 0 ? "text-emerald-400" : "text-rose-400"
-            )}>
-              {progress.currentProfit >= 0 ? "+" : ""}{formatCurrency(progress.currentProfit)}
-            </span>
+          <CardContent className="space-y-4">
+            <div>
+              <span className="text-3xl font-black tracking-tighter">{fc(progress.currentBalance)}</span>
+              <span className={cn(
+                "ml-3 text-sm font-semibold",
+                progress.currentProfit >= 0 ? "text-emerald-400" : "text-rose-400"
+              )}>
+                {progress.currentProfit >= 0 ? "+" : ""}{fc(progress.currentProfit)}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="flex items-center justify-between gap-2 p-2.5 rounded-md bg-muted/20">
+                <span className="text-xs text-muted-foreground">To Profit Target</span>
+                <span className={cn("text-sm font-bold", progress.distanceToProfitTarget <= 0 ? "text-emerald-400" : "text-foreground")}>
+                  {progress.distanceToProfitTarget <= 0 ? "TARGET MET" : `+${fc(progress.distanceToProfitTarget)}`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 p-2.5 rounded-md bg-muted/20">
+                <span className="text-xs text-muted-foreground">To {challenge.trailingDrawdown ? "Trail Floor" : "Max Loss"}</span>
+                <span className={cn("text-sm font-bold", progress.distanceToMaxLoss < acctSize * 0.02 ? "text-rose-400" : "text-foreground")}>
+                  -{fc(progress.distanceToMaxLoss)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 p-2.5 rounded-md bg-muted/20">
+                <span className="text-xs text-muted-foreground">Daily DD Left</span>
+                <span className={cn("text-sm font-bold", progress.distanceToDailyDDLimit < progress.dailyDDAmount * 0.3 ? "text-amber-400" : "text-foreground")}>
+                  -{fc(progress.distanceToDailyDDLimit)}
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -1135,14 +1267,17 @@ export default function PropFirmTracker() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Starting Balance</label>
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Lock size={10} /> Starting Balance (auto-filled)
+                  </label>
                   <Input
                     data-testid="input-daily-start-balance"
                     type="number"
-                    value={dailyForm.startingBalance}
-                    onChange={(e) => setDailyForm((p) => ({ ...p, startingBalance: e.target.value }))}
-                    placeholder={String(progress.currentBalance)}
+                    value={dailyForm.startingBalance || String(progress.currentBalance)}
+                    readOnly
+                    className="opacity-70"
                   />
+                  <p className="text-[10px] text-muted-foreground/70">Locked to current balance for accuracy</p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs text-muted-foreground">Ending Balance</label>
@@ -1151,7 +1286,7 @@ export default function PropFirmTracker() {
                     type="number"
                     value={dailyForm.endingBalance}
                     onChange={(e) => setDailyForm((p) => ({ ...p, endingBalance: e.target.value }))}
-                    placeholder="0"
+                    placeholder="Enter today's ending balance"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1161,9 +1296,21 @@ export default function PropFirmTracker() {
                     type="number"
                     value={dailyForm.tradesCount}
                     onChange={(e) => setDailyForm((p) => ({ ...p, tradesCount: parseInt(e.target.value) || 0 }))}
+                    placeholder="Number of trades executed"
                   />
                 </div>
               </div>
+              {dailyForm.endingBalance && (
+                <div className="mt-3 p-3 rounded-md bg-muted/20 text-xs text-muted-foreground">
+                  <span className="font-medium">Preview: </span>
+                  P&L = <span className={cn("font-semibold",
+                    parseFloat(dailyForm.endingBalance) - progress.currentBalance >= 0 ? "text-emerald-400" : "text-rose-400"
+                  )}>
+                    {parseFloat(dailyForm.endingBalance) - progress.currentBalance >= 0 ? "+" : ""}
+                    {fc(parseFloat(dailyForm.endingBalance) - progress.currentBalance)}
+                  </span>
+                </div>
+              )}
             </CardContent>
             <CardFooter>
               <Button
@@ -1273,10 +1420,44 @@ export default function PropFirmTracker() {
               </Button>
 
               {riskResult && (
-                <div className="space-y-3 pt-2">
-                  {riskResult.warnings.length > 0 ? (
+                <div className="space-y-4 pt-2">
+                  <div className={cn(
+                    "flex items-center gap-3 p-4 rounded-md border",
+                    riskResult.warnings.some((w: any) => w.level === "critical")
+                      ? "bg-rose-500/10 border-rose-500/30"
+                      : riskResult.warnings.some((w: any) => w.level === "warning")
+                        ? "bg-amber-500/10 border-amber-500/30"
+                        : "bg-emerald-500/10 border-emerald-500/30"
+                  )} data-testid="risk-verdict">
+                    {riskResult.warnings.some((w: any) => w.level === "critical") ? (
+                      <OctagonAlert size={22} className="text-rose-400 shrink-0" />
+                    ) : riskResult.warnings.some((w: any) => w.level === "warning") ? (
+                      <AlertTriangle size={22} className="text-amber-400 shrink-0" />
+                    ) : (
+                      <CheckCircle2 size={22} className="text-emerald-400 shrink-0" />
+                    )}
+                    <div>
+                      <p className={cn("font-bold text-sm",
+                        riskResult.warnings.some((w: any) => w.level === "critical") ? "text-rose-300" :
+                          riskResult.warnings.some((w: any) => w.level === "warning") ? "text-amber-300" : "text-emerald-300"
+                      )}>
+                        {riskResult.warnings.some((w: any) => w.level === "critical")
+                          ? "Trade would breach challenge rules"
+                          : riskResult.warnings.some((w: any) => w.level === "warning")
+                            ? "Trade risks violating challenge limits"
+                            : "Trade complies with all challenge rules"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {riskResult.warnings.length === 0
+                          ? "All drawdown limits and rules are within safe parameters."
+                          : `${riskResult.warnings.length} issue${riskResult.warnings.length > 1 ? "s" : ""} detected`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {riskResult.warnings.length > 0 && (
                     <div className="space-y-2">
-                      {riskResult.warnings.map((w, i) => (
+                      {riskResult.warnings.map((w: any, i: number) => (
                         <div
                           key={i}
                           className={cn(
@@ -1305,25 +1486,20 @@ export default function PropFirmTracker() {
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 p-3 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm" data-testid="risk-clear">
-                      <CheckCircle2 size={18} />
-                      <span>Trade is within safe risk parameters for this challenge.</span>
-                    </div>
                   )}
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="text-center p-2 rounded-md bg-muted/20">
                       <p className="text-xs text-muted-foreground">Potential Loss</p>
-                      <p className="font-bold text-rose-400">{formatCurrency(riskResult.metrics.potentialLoss)}</p>
+                      <p className="font-bold text-rose-400">{fc(riskResult.metrics.potentialLoss)}</p>
                     </div>
                     <div className="text-center p-2 rounded-md bg-muted/20">
                       <p className="text-xs text-muted-foreground">Daily DD Left</p>
-                      <p className="font-bold">{formatCurrency(riskResult.metrics.dailyDDRemaining)}</p>
+                      <p className="font-bold">{fc(riskResult.metrics.dailyDDRemaining)}</p>
                     </div>
                     <div className="text-center p-2 rounded-md bg-muted/20">
                       <p className="text-xs text-muted-foreground">Max DD Left</p>
-                      <p className="font-bold">{formatCurrency(riskResult.metrics.maxDDRemaining)}</p>
+                      <p className="font-bold">{fc(riskResult.metrics.maxDDRemaining)}</p>
                     </div>
                     {riskResult.metrics.suggestedMaxSL && (
                       <div className="text-center p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
@@ -1332,8 +1508,88 @@ export default function PropFirmTracker() {
                       </div>
                     )}
                   </div>
+
+                  {riskResult.metrics.potentialLoss > 0 && (
+                    <Card className="border-border/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-medium flex items-center gap-2">
+                          <Gauge size={14} className="text-amber-400" />
+                          If You Lose This Trade
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                          <div>
+                            <p className="text-muted-foreground">New Balance</p>
+                            <p className="font-bold text-rose-400">
+                              {fc(progress.currentBalance - riskResult.metrics.potentialLoss)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">New {challenge.trailingDrawdown ? "Trail" : "Max"} DD Buffer</p>
+                            <p className={cn("font-bold",
+                              progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0 ? "text-rose-400" : "text-amber-400"
+                            )}>
+                              {fc(Math.max(0, progress.distanceToMaxLoss - riskResult.metrics.potentialLoss))}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Daily DD Remaining</p>
+                            <p className={cn("font-bold",
+                              progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0 ? "text-rose-400" : "text-amber-400"
+                            )}>
+                              {fc(Math.max(0, progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss))}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Challenge Status</p>
+                            <p className={cn("font-bold",
+                              progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0
+                                ? "text-rose-400" : progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0
+                                  ? "text-rose-400" : "text-emerald-400"
+                            )}>
+                              {progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0
+                                ? "FAILED"
+                                : progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0
+                                  ? "DAILY BREACH"
+                                  : "SAFE"}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {progress.ruleEvents && progress.ruleEvents.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <History size={16} className="text-muted-foreground" />
+                Rule Events
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {progress.ruleEvents.map((evt, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 text-xs"
+                    data-testid={`rule-event-${i}`}
+                  >
+                    <span className="text-muted-foreground shrink-0 w-20">{evt.date}</span>
+                    <span className={cn(
+                      evt.severity === "critical" ? "text-rose-400" : "text-amber-400"
+                    )}>
+                      {evt.event}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
@@ -1363,10 +1619,10 @@ export default function PropFirmTracker() {
                           <td className="py-2 pr-4 text-muted-foreground">
                             {new Date(stat.date).toLocaleDateString()}
                           </td>
-                          <td className="py-2 pr-4">{formatCurrency(stat.startingBalance)}</td>
-                          <td className="py-2 pr-4">{formatCurrency(stat.endingBalance)}</td>
+                          <td className="py-2 pr-4">{fc(stat.startingBalance)}</td>
+                          <td className="py-2 pr-4">{fc(stat.endingBalance)}</td>
                           <td className={cn("py-2 pr-4 font-semibold", pl >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                            {pl >= 0 ? "+" : ""}{formatCurrency(pl)}
+                            {pl >= 0 ? "+" : ""}{fc(pl)}
                           </td>
                           <td className="py-2">{stat.tradesCount ?? 0}</td>
                         </tr>

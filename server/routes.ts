@@ -4437,14 +4437,97 @@ Guidelines:
       // Consistency check
       let consistencyScore = 100;
       let worstDayProfitPercent = 0;
-      if (challenge.consistencyRule && dailyStats.length > 0) {
-        const totalProfit = dailyStats.reduce((sum, s) => sum + Math.max(0, parseFloat(s.dayPl)), 0);
-        if (totalProfit > 0) {
+      const maxAllowedPct = parseFloat(challenge.maxDayProfitPercent || "40");
+      let todayPl = 0;
+      let consistencyTodayUsed = 0;
+      let consistencyMaxAllowedAmount = 0;
+      if (challenge.consistencyRule) {
+        const totalProfit = dailyStats.length > 0
+          ? dailyStats.reduce((sum, s) => sum + Math.max(0, parseFloat(s.dayPl)), 0)
+          : 0;
+        consistencyMaxAllowedAmount = accountSize * (maxAllowedPct / 100);
+        if (totalProfit > 0 && dailyStats.length > 0) {
           const maxDayProfit = Math.max(...dailyStats.map(s => Math.max(0, parseFloat(s.dayPl))));
           worstDayProfitPercent = (maxDayProfit / totalProfit) * 100;
-          const maxAllowed = parseFloat(challenge.maxDayProfitPercent || "40");
-          consistencyScore = Math.min(100, (maxAllowed / Math.max(worstDayProfitPercent, 1)) * 100);
+          consistencyScore = Math.min(100, (maxAllowedPct / Math.max(worstDayProfitPercent, 1)) * 100);
         }
+      }
+      if (todayStat) {
+        todayPl = parseFloat(todayStat.dayPl) || 0;
+        if (challenge.consistencyRule) {
+          consistencyTodayUsed = Math.max(0, todayPl);
+        }
+      }
+
+      // Rule violation events
+      const ruleEvents: { date: string; event: string; severity: string }[] = [];
+      for (const stat of dailyStats) {
+        const statStartBal = parseFloat(stat.startingBalance);
+        const statEndBal = parseFloat(stat.endingBalance);
+        const statDate = new Date(stat.date).toLocaleDateString();
+        const statDailyLoss = Math.max(0, statStartBal - statEndBal);
+        const statDailyDDLimit = statStartBal * (dailyDDLimit / 100);
+        const dailyUsagePct = statDailyDDLimit > 0 ? (statDailyLoss / statDailyDDLimit) * 100 : 0;
+        if (dailyUsagePct >= 80) {
+          ruleEvents.push({
+            date: statDate,
+            event: `Daily DD reached ${dailyUsagePct.toFixed(0)}%`,
+            severity: dailyUsagePct >= 100 ? "critical" : "warning",
+          });
+        }
+        if (challenge.trailingDrawdown) {
+          const statHWM = parseFloat(challenge.highWaterMark || challenge.accountSize);
+          const floor = statHWM * (1 - maxDDLimit / 100);
+          const buffer = statEndBal - floor;
+          if (buffer < accountSize * 0.01) {
+            ruleEvents.push({
+              date: statDate,
+              event: `Trailing DD buffer critically low ($${buffer.toFixed(0)})`,
+              severity: "critical",
+            });
+          }
+        }
+        if (challenge.consistencyRule && parseFloat(stat.dayPl) > 0) {
+          const dayProfitPct = (parseFloat(stat.dayPl) / accountSize) * 100;
+          if (dayProfitPct > maxAllowedPct) {
+            ruleEvents.push({
+              date: statDate,
+              event: `Day profit (${dayProfitPct.toFixed(1)}%) exceeded max allowed (${maxAllowedPct}%)`,
+              severity: "warning",
+            });
+          }
+        }
+      }
+
+      // Pass eligibility
+      const profitTargetMet = currentProfit >= profitTargetAmount;
+      const minDaysMet = uniqueTradingDays >= (challenge.minTradingDays || 0);
+      const noRuleBreach = maxDDRemaining > 0 && dailyDDUsedPercent < 100;
+      const passEligible = profitTargetMet && minDaysMet && noRuleBreach;
+      const failTriggered = maxDDRemaining <= 0;
+
+      // Distance-to metrics
+      const distanceToProfitTarget = profitTargetAmount - currentProfit;
+      const distanceToMaxLoss = maxDDRemaining;
+      const distanceToDailyDDLimit = Math.max(0, dailyDDAmount - dailyLoss);
+
+      // Challenge health status
+      let healthStatus: "healthy" | "caution" | "at_risk" = "healthy";
+      let healthMessage = "Challenge Healthy - All rules intact";
+      if (failTriggered) {
+        healthStatus = "at_risk";
+        healthMessage = "FAILED - Max drawdown breached";
+      } else if (maxDDRemaining < accountSize * 0.01) {
+        healthStatus = "at_risk";
+        healthMessage = `At Risk - ${challenge.trailingDrawdown ? "Trailing" : "Max"} DD buffer below $${maxDDRemaining.toFixed(0)}`;
+      } else if (dailyDDUsedPercent > 70) {
+        healthStatus = dailyDDUsedPercent > 90 ? "at_risk" : "caution";
+        healthMessage = dailyDDUsedPercent > 90
+          ? `At Risk - ${dailyDDUsedPercent.toFixed(0)}% of daily drawdown used`
+          : `Caution - ${(100 - dailyDDUsedPercent).toFixed(0)}% of daily drawdown remaining`;
+      } else if (daysRemaining !== null && daysRemaining <= 3 && !profitTargetMet) {
+        healthStatus = "caution";
+        healthMessage = `Caution - Only ${daysRemaining} days remaining, profit target not met`;
       }
 
       res.json({
@@ -4462,12 +4545,26 @@ Guidelines:
           dailyDDUsedPercent: Math.max(0, Math.min(100, dailyDDUsedPercent)),
           dailyDDRemaining: Math.max(0, dailyDDAmount - dailyLoss),
           dailyDDAmount,
+          dailyStartBalance,
           uniqueTradingDays,
           minTradingDays: challenge.minTradingDays || 0,
           daysElapsed,
           daysRemaining,
           consistencyScore,
           worstDayProfitPercent,
+          consistencyTodayUsed,
+          consistencyMaxAllowedAmount,
+          todayPl,
+          distanceToProfitTarget,
+          distanceToMaxLoss,
+          distanceToDailyDDLimit,
+          healthStatus,
+          healthMessage,
+          passEligible,
+          failTriggered,
+          profitTargetMet,
+          minDaysMet,
+          ruleEvents: ruleEvents.slice(-10),
           status: challenge.status,
         },
       });
