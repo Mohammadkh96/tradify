@@ -493,6 +493,8 @@ export const propFirmChallenges = pgTable("prop_firm_challenges", {
   status: text("status").notNull().default("active"),
   currentBalance: text("current_balance"),
   highWaterMark: text("high_water_mark"),
+  mt5AccountId: text("mt5_account_id"),
+  mt5AutoSync: boolean("mt5_auto_sync").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

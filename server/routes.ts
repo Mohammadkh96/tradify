@@ -859,6 +859,113 @@ export async function registerRoutes(
         });
       }
 
+      // 5. Auto-sync prop firm challenges linked to this MT5 account
+      try {
+        const linkedChallenges = await db.select().from(schema.propFirmChallenges)
+          .where(and(
+            eq(schema.propFirmChallenges.userId, userId),
+            eq(schema.propFirmChallenges.mt5AccountId, accountId),
+            eq(schema.propFirmChallenges.mt5AutoSync, true),
+            eq(schema.propFirmChallenges.status, "active")
+          ));
+
+        if (linkedChallenges.length > 0) {
+          const currentBalance = parseFloat(String(balance || 0));
+          const currentEquity = parseFloat(String(equity || 0));
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          // Count today's closed trades from MT5 history
+          let todayTradesCount = 0;
+          let todayNetPl = 0;
+          if (history && Array.isArray(history)) {
+            for (const trade of history) {
+              const closeTime = trade.closeTime ? new Date(trade.closeTime) : null;
+              if (closeTime) {
+                const closeDay = new Date(closeTime);
+                closeDay.setHours(0, 0, 0, 0);
+                if (closeDay.getTime() === today.getTime()) {
+                  todayTradesCount++;
+                  todayNetPl += parseFloat(trade.netPl || trade.grossPl || "0");
+                }
+              }
+            }
+          }
+
+          for (const challenge of linkedChallenges) {
+            // Check if we already have a daily stat for today
+            const existingStats = await db.select().from(schema.propFirmDailyStats)
+              .where(and(
+                eq(schema.propFirmDailyStats.challengeId, challenge.id),
+                eq(schema.propFirmDailyStats.userId, userId)
+              ))
+              .orderBy(desc(schema.propFirmDailyStats.date));
+
+            const todayStat = existingStats.find(s => {
+              const d = new Date(s.date);
+              d.setHours(0, 0, 0, 0);
+              return d.getTime() === today.getTime();
+            });
+
+            // Determine starting balance for today: use today's existing start, or yesterday's ending, or challenge's last known balance
+            let dayStartBalance: number;
+            if (todayStat) {
+              dayStartBalance = parseFloat(todayStat.startingBalance);
+            } else {
+              // Use the most recent ending balance or the account size
+              const lastStat = existingStats.length > 0 ? existingStats[0] : null;
+              dayStartBalance = lastStat 
+                ? parseFloat(lastStat.endingBalance) 
+                : parseFloat(challenge.currentBalance || challenge.accountSize);
+            }
+
+            const dayPl = currentBalance - dayStartBalance;
+            const newHWM = Math.max(
+              parseFloat(challenge.highWaterMark || challenge.accountSize),
+              currentBalance
+            );
+
+            if (todayStat) {
+              // Update existing daily stat
+              await db.update(schema.propFirmDailyStats)
+                .set({
+                  endingBalance: String(currentBalance),
+                  dayPl: String(dayPl),
+                  tradesCount: todayTradesCount,
+                  dailyDrawdownUsed: String(Math.max(0, dayStartBalance - currentBalance)),
+                  highWaterMark: String(newHWM),
+                })
+                .where(eq(schema.propFirmDailyStats.id, todayStat.id));
+            } else if (todayTradesCount > 0 || Math.abs(dayPl) > 0.01) {
+              // Create new daily stat only if there was trading activity
+              await db.insert(schema.propFirmDailyStats).values({
+                challengeId: challenge.id,
+                userId,
+                date: new Date(),
+                startingBalance: String(dayStartBalance),
+                endingBalance: String(currentBalance),
+                dayPl: String(dayPl),
+                tradesCount: todayTradesCount,
+                dailyDrawdownUsed: String(Math.max(0, dayStartBalance - currentBalance)),
+                highWaterMark: String(newHWM),
+              });
+            }
+
+            // Update challenge balance and HWM
+            await db.update(schema.propFirmChallenges)
+              .set({
+                currentBalance: String(currentBalance),
+                highWaterMark: String(newHWM),
+                updatedAt: new Date(),
+              })
+              .where(eq(schema.propFirmChallenges.id, challenge.id));
+          }
+          console.log(`[MT5 Sync] Auto-synced ${linkedChallenges.length} prop firm challenge(s) for ${userId}`);
+        }
+      } catch (propFirmErr) {
+        console.error("[MT5 Sync] Prop firm auto-sync error (non-fatal):", propFirmErr);
+      }
+
       res.json({ success: true, status: "CONNECTED", accountNumber: accountId, timestamp: new Date().toISOString() });
     } catch (error) {
       console.error("[MT5 Sync Error]:", error);
@@ -4357,6 +4464,45 @@ Guidelines:
 
   // ==================== PROP FIRM CHALLENGE ENDPOINTS ====================
 
+  // Get MT5 accounts with balance data for prop firm challenge creation
+  app.get("/api/prop-firm/mt5-accounts", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const accounts = await storage.getMT5Accounts(userId);
+      
+      const accountsWithData = await Promise.all(
+        accounts.map(async (account: any) => {
+          const [mt5DataRow] = await db.select().from(schema.mt5Data)
+            .where(and(
+              eq(schema.mt5Data.userId, userId),
+              eq(schema.mt5Data.mt5AccountId, account.accountNumber)
+            ))
+            .limit(1);
+          
+          return {
+            accountNumber: account.accountNumber,
+            accountName: account.accountName || `Account ${account.accountNumber}`,
+            broker: account.broker,
+            server: account.server,
+            currency: account.currency || "USD",
+            isActive: account.isActive,
+            balance: mt5DataRow ? mt5DataRow.balance : null,
+            equity: mt5DataRow ? mt5DataRow.equity : null,
+            lastSync: mt5DataRow ? mt5DataRow.lastUpdate : null,
+            isOnline: mt5DataRow?.lastUpdate 
+              ? (Date.now() - new Date(mt5DataRow.lastUpdate).getTime()) < 45000
+              : false,
+          };
+        })
+      );
+      
+      res.json(accountsWithData);
+    } catch (error) {
+      console.error("Error fetching MT5 accounts for prop firm:", error);
+      res.status(500).json({ message: "Failed to fetch MT5 accounts" });
+    }
+  });
+
   // Get all challenges for the current user
   app.get("/api/prop-firm/challenges", requireAuth, async (req, res) => {
     try {
@@ -4598,6 +4744,8 @@ Guidelines:
         status: "active",
         currentBalance: data.accountSize,
         highWaterMark: data.accountSize,
+        mt5AccountId: data.mt5AccountId || null,
+        mt5AutoSync: data.mt5AutoSync || false,
       }).returning();
       res.status(201).json(challenge);
     } catch (error) {
@@ -4874,6 +5022,128 @@ Guidelines:
     } catch (error) {
       console.error("AI risk check error:", error);
       res.status(500).json({ message: "Failed to analyze trade risk" });
+    }
+  });
+
+  // Auto-analyze MT5 open positions against linked challenge
+  app.get("/api/prop-firm/mt5-risk/:challengeId", requireAuth, async (req, res) => {
+    try {
+      const challengeId = parseInt(req.params.challengeId);
+      const userId = req.session.userId!;
+
+      const [challenge] = await db.select().from(schema.propFirmChallenges)
+        .where(and(
+          eq(schema.propFirmChallenges.id, challengeId),
+          eq(schema.propFirmChallenges.userId, userId)
+        ));
+
+      if (!challenge || !challenge.mt5AccountId) {
+        return res.status(404).json({ message: "No MT5-linked challenge found" });
+      }
+
+      // Get MT5 live data with open positions
+      const [mt5DataRow] = await db.select().from(schema.mt5Data)
+        .where(and(
+          eq(schema.mt5Data.userId, userId),
+          eq(schema.mt5Data.mt5AccountId, challenge.mt5AccountId)
+        ))
+        .limit(1);
+
+      if (!mt5DataRow) {
+        return res.json({ positions: [], warnings: [], connected: false });
+      }
+
+      const isOnline = mt5DataRow.lastUpdate
+        ? (Date.now() - new Date(mt5DataRow.lastUpdate).getTime()) < 45000
+        : false;
+
+      const positions = Array.isArray(mt5DataRow.positions) ? mt5DataRow.positions as any[] : [];
+      const floatingPl = parseFloat(mt5DataRow.floatingPl || "0");
+
+      const accountSize = parseFloat(challenge.accountSize);
+      const currentBalance = parseFloat(challenge.currentBalance || challenge.accountSize);
+      const highWaterMark = parseFloat(challenge.highWaterMark || challenge.accountSize);
+      const dailyDDLimit = parseFloat(challenge.dailyDrawdownLimit);
+      const maxDDLimit = parseFloat(challenge.maxDrawdownLimit);
+
+      // Get today's starting balance
+      const dailyStats = await db.select().from(schema.propFirmDailyStats)
+        .where(eq(schema.propFirmDailyStats.challengeId, challenge.id))
+        .orderBy(desc(schema.propFirmDailyStats.date))
+        .limit(1);
+      const todayStartBalance = dailyStats.length > 0 ? parseFloat(dailyStats[0].startingBalance) : currentBalance;
+
+      // Calculate current risk exposure
+      const dailyDDAmount = dailyDDLimit > 0 ? todayStartBalance * (dailyDDLimit / 100) : 0;
+      const currentDailyLoss = Math.max(0, todayStartBalance - currentBalance) + (floatingPl < 0 ? Math.abs(floatingPl) : 0);
+      const dailyDDRemaining = dailyDDAmount > 0 ? dailyDDAmount - currentDailyLoss : 0;
+      const dailyDDUsedPercent = dailyDDAmount > 0 ? (currentDailyLoss / dailyDDAmount) * 100 : 0;
+
+      const trailingDDFloor = challenge.trailingDrawdown
+        ? highWaterMark * (1 - maxDDLimit / 100)
+        : accountSize * (1 - maxDDLimit / 100);
+      const maxDDRemaining = (currentBalance + floatingPl) - trailingDDFloor;
+
+      const warnings: { level: string; message: string; suggestion?: string }[] = [];
+
+      // Floating P&L warning
+      if (floatingPl < 0 && dailyDDAmount > 0) {
+        const absFloating = Math.abs(floatingPl);
+        if (absFloating > dailyDDRemaining) {
+          warnings.push({
+            level: "critical",
+            message: `Open positions are floating -$${absFloating.toFixed(2)}, exceeding daily DD remaining ($${dailyDDRemaining.toFixed(2)}).`,
+            suggestion: "Close losing positions immediately to protect your challenge.",
+          });
+        } else if (absFloating > dailyDDRemaining * 0.5) {
+          warnings.push({
+            level: "warning",
+            message: `Open positions are floating -$${absFloating.toFixed(2)} (${((absFloating / dailyDDAmount) * 100).toFixed(0)}% of daily DD limit).`,
+            suggestion: "Monitor closely. Consider partial closes or tightening stop-losses.",
+          });
+        }
+
+        if (absFloating > maxDDRemaining * 0.7) {
+          warnings.push({
+            level: "critical",
+            message: `Floating loss ($${absFloating.toFixed(2)}) is approaching max drawdown limit ($${maxDDRemaining.toFixed(2)} remaining).`,
+            suggestion: "Reduce exposure immediately to avoid challenge failure.",
+          });
+        }
+      }
+
+      if (positions.length === 0 && floatingPl === 0) {
+        warnings.push({
+          level: "info",
+          message: "No open positions. You're safe.",
+        });
+      }
+
+      res.json({
+        connected: isOnline,
+        lastSync: mt5DataRow.lastUpdate,
+        floatingPl,
+        equity: mt5DataRow.equity,
+        positionsCount: positions.length,
+        positions: positions.slice(0, 10).map((p: any) => ({
+          symbol: p.symbol,
+          direction: p.type === 0 ? "Buy" : "Sell",
+          volume: p.volume,
+          profit: p.profit,
+          openPrice: p.openPrice,
+          sl: p.sl,
+          tp: p.tp,
+        })),
+        warnings,
+        metrics: {
+          dailyDDUsedPercent: Math.min(100, dailyDDUsedPercent),
+          dailyDDRemaining,
+          maxDDRemaining,
+        },
+      });
+    } catch (error) {
+      console.error("MT5 risk analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze MT5 positions" });
     }
   });
 

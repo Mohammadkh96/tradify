@@ -34,6 +34,10 @@ import {
   DollarSign,
   Award,
   Gauge,
+  Link2,
+  Wifi,
+  WifiOff,
+  Monitor,
 } from "lucide-react";
 import type { PropFirmChallenge, PropFirmDailyStat } from "@shared/schema";
 
@@ -84,6 +88,19 @@ type ChallengeDetail = {
   challenge: PropFirmChallenge;
   dailyStats: PropFirmDailyStat[];
   progress: ChallengeProgress;
+};
+
+type MT5AccountInfo = {
+  accountNumber: string;
+  accountName: string;
+  broker: string | null;
+  server: string | null;
+  currency: string;
+  isActive: boolean;
+  balance: string | null;
+  equity: string | null;
+  lastSync: string | null;
+  isOnline: boolean;
 };
 
 const PRESETS: Record<string, Partial<Record<string, any>>> = {
@@ -246,6 +263,145 @@ function formatCurrency(val: number | string | null | undefined, curr = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: curr, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 }
 
+function MT5PositionsPanel({ challengeId }: { challengeId: number }) {
+  const { data, isLoading } = useQuery<any>({
+    queryKey: [`/api/prop-firm/mt5-risk/${challengeId}`],
+    refetchInterval: 15000,
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="border-cyan-500/20">
+        <CardContent className="flex items-center justify-center p-6">
+          <Loader2 className="animate-spin text-cyan-400" size={20} />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data) return null;
+
+  const fc = (v: number) => formatCurrency(v);
+
+  return (
+    <Card className="border-cyan-500/20">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+        <div className="space-y-1">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Monitor size={16} className="text-cyan-400" />
+            MT5 Live Positions
+            {data.connected ? (
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
+                <Wifi size={8} className="mr-1" /> LIVE
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-muted text-muted-foreground border-muted text-[10px]">
+                <WifiOff size={8} className="mr-1" /> OFFLINE
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Real-time position monitoring against challenge rules
+          </CardDescription>
+        </div>
+        {data.floatingPl !== undefined && data.floatingPl !== 0 && (
+          <span className={cn("text-lg font-bold", data.floatingPl >= 0 ? "text-emerald-400" : "text-rose-400")}>
+            {data.floatingPl >= 0 ? "+" : ""}{fc(data.floatingPl)}
+          </span>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {data.warnings && data.warnings.length > 0 && (
+          <div className="space-y-2">
+            {data.warnings.map((w: any, i: number) => (
+              <div
+                key={i}
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-md border",
+                  w.level === "critical"
+                    ? "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                    : w.level === "warning"
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                      : "bg-blue-500/10 border-blue-500/30 text-blue-300"
+                )}
+                data-testid={`mt5-risk-warning-${i}`}
+              >
+                {w.level === "critical" ? (
+                  <OctagonAlert size={18} className="shrink-0 mt-0.5" />
+                ) : w.level === "warning" ? (
+                  <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                ) : (
+                  <Info size={18} className="shrink-0 mt-0.5" />
+                )}
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium">{w.message}</p>
+                  {w.suggestion && (
+                    <p className="text-xs opacity-80">{w.suggestion}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {data.positions && data.positions.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-medium">Open Positions ({data.positionsCount})</p>
+            <div className="space-y-1.5">
+              {data.positions.map((pos: any, i: number) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/20 text-xs"
+                  data-testid={`mt5-position-${i}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={cn("text-[9px] py-0",
+                      pos.direction === "Buy" ? "text-emerald-400 border-emerald-500/20" : "text-rose-400 border-rose-500/20"
+                    )}>
+                      {pos.direction}
+                    </Badge>
+                    <span className="font-medium">{pos.symbol}</span>
+                    <span className="text-muted-foreground">{pos.volume} lots</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {pos.sl && <span className="text-muted-foreground">SL: {pos.sl}</span>}
+                    {pos.tp && <span className="text-muted-foreground">TP: {pos.tp}</span>}
+                    <span className={cn("font-bold", pos.profit >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                      {pos.profit >= 0 ? "+" : ""}{fc(pos.profit)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {data.metrics && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-2 rounded-md bg-muted/20">
+              <p className="text-xs text-muted-foreground">Daily DD Used</p>
+              <p className={cn("font-bold text-sm",
+                data.metrics.dailyDDUsedPercent > 70 ? "text-rose-400" :
+                  data.metrics.dailyDDUsedPercent > 40 ? "text-amber-400" : "text-emerald-400"
+              )}>
+                {data.metrics.dailyDDUsedPercent.toFixed(0)}%
+              </p>
+            </div>
+            <div className="text-center p-2 rounded-md bg-muted/20">
+              <p className="text-xs text-muted-foreground">Daily DD Left</p>
+              <p className="font-bold text-sm">{fc(data.metrics.dailyDDRemaining)}</p>
+            </div>
+            <div className="text-center p-2 rounded-md bg-muted/20">
+              <p className="text-xs text-muted-foreground">Max DD Left</p>
+              <p className="font-bold text-sm">{fc(data.metrics.maxDDRemaining)}</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function PropFirmTracker() {
   const { toast } = useToast();
   const [view, setView] = useState<ViewState>("list");
@@ -271,6 +427,8 @@ export default function PropFirmTracker() {
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
     phaseLink: false,
+    mt5AccountId: "",
+    mt5AutoSync: false,
   });
 
   const [dailyForm, setDailyForm] = useState({
@@ -286,6 +444,11 @@ export default function PropFirmTracker() {
   const { data: detailData, isLoading: isLoadingDetail } = useQuery<ChallengeDetail>({
     queryKey: ["/api/prop-firm/challenges", selectedId],
     enabled: view === "detail" && selectedId !== null,
+  });
+
+  const { data: mt5Accounts } = useQuery<MT5AccountInfo[]>({
+    queryKey: ["/api/prop-firm/mt5-accounts"],
+    enabled: view === "create",
   });
 
   const createMutation = useMutation({
@@ -439,8 +602,27 @@ export default function PropFirmTracker() {
       startDate: new Date().toISOString().split("T")[0],
       endDate: "",
       phaseLink: false,
+      mt5AccountId: "",
+      mt5AutoSync: false,
     });
     setSelectedPreset("");
+  }
+
+  function selectMT5Account(accountNumber: string) {
+    if (!accountNumber) {
+      setFormData((p) => ({ ...p, mt5AccountId: "", mt5AutoSync: false }));
+      return;
+    }
+    const account = mt5Accounts?.find((a) => a.accountNumber === accountNumber);
+    if (account) {
+      setFormData((p) => ({
+        ...p,
+        mt5AccountId: account.accountNumber,
+        mt5AutoSync: true,
+        currency: account.currency || "USD",
+        accountSize: account.balance ? String(Math.floor(parseFloat(account.balance))) : p.accountSize,
+      }));
+    }
   }
 
   function applyPreset(name: string) {
@@ -547,6 +729,88 @@ export default function PropFirmTracker() {
           </Button>
           <h1 className="font-black text-2xl tracking-tighter uppercase italic">New Challenge</h1>
         </div>
+
+        {mt5Accounts && mt5Accounts.length > 0 && (
+          <Card className="border-cyan-500/20">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Monitor size={16} className="text-cyan-400" />
+                Link MT5 Account
+              </CardTitle>
+              <CardDescription>Connect a MetaTrader 5 account for automated daily tracking</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {mt5Accounts.map((acct) => (
+                  <button
+                    key={acct.accountNumber}
+                    type="button"
+                    data-testid={`button-mt5-account-${acct.accountNumber}`}
+                    className={cn(
+                      "flex items-start gap-3 p-3 rounded-md text-left transition-colors",
+                      formData.mt5AccountId === acct.accountNumber
+                        ? "bg-cyan-500/15 border border-cyan-500/40"
+                        : "bg-muted/20 border border-transparent hover-elevate"
+                    )}
+                    onClick={() => selectMT5Account(
+                      formData.mt5AccountId === acct.accountNumber ? "" : acct.accountNumber
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm truncate">{acct.accountName}</span>
+                        {acct.isOnline ? (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
+                            <Wifi size={8} className="mr-1" /> Live
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">
+                            <WifiOff size={8} className="mr-1" /> Offline
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                        <span>#{acct.accountNumber}</span>
+                        {acct.broker && <span>{acct.broker}</span>}
+                        {acct.balance && (
+                          <span className="font-medium text-foreground">
+                            {formatCurrency(acct.balance, acct.currency)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {formData.mt5AccountId === acct.accountNumber && (
+                      <CheckCircle2 size={18} className="text-cyan-400 shrink-0 mt-0.5" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              {formData.mt5AccountId && (
+                <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+                  <label className="flex items-center gap-2 cursor-pointer" data-testid="label-mt5-auto-sync">
+                    <input
+                      data-testid="checkbox-mt5-auto-sync"
+                      type="checkbox"
+                      checked={formData.mt5AutoSync}
+                      onChange={(e) => setFormData((p) => ({ ...p, mt5AutoSync: e.target.checked }))}
+                      className="rounded border-border"
+                    />
+                    <span className="text-sm">Auto-sync daily results from MT5</span>
+                  </label>
+                  <Badge variant="outline" className="text-[10px] text-cyan-400 border-cyan-500/20">
+                    <Link2 size={8} className="mr-1" /> Linked
+                  </Badge>
+                </div>
+              )}
+              {!formData.mt5AccountId && (
+                <p className="text-xs text-muted-foreground">
+                  Select an MT5 account to auto-fill balance and currency, and enable automated daily tracking.
+                  Skip this step for manual tracking.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -975,6 +1239,17 @@ export default function PropFirmTracker() {
             >
               {challenge.status.toUpperCase()}
             </Badge>
+            {challenge.mt5AccountId && (
+              <Badge
+                data-testid="badge-mt5-linked"
+                variant="outline"
+                className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+              >
+                <Link2 size={10} className="mr-1" />
+                MT5 #{challenge.mt5AccountId}
+                {challenge.mt5AutoSync && " (Auto)"}
+              </Badge>
+            )}
           </div>
           {challenge.status === "active" && (
             <div className="flex gap-2 flex-wrap">
@@ -1259,10 +1534,21 @@ export default function PropFirmTracker() {
         </Card>
 
         {challenge.status === "active" && (
-          <Card>
+          <Card className={challenge.mt5AutoSync ? "border-cyan-500/20" : ""}>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Log Daily Results</CardTitle>
-              <CardDescription>Record today's trading performance</CardDescription>
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                Log Daily Results
+                {challenge.mt5AutoSync && (
+                  <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[10px]">
+                    <Link2 size={8} className="mr-1" /> Auto-Synced from MT5
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {challenge.mt5AutoSync
+                  ? "Daily results are automatically recorded from your MT5 account. You can still log manually if needed."
+                  : "Record today's trading performance"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
@@ -1564,6 +1850,10 @@ export default function PropFirmTracker() {
           </Card>
         )}
 
+        {challenge.mt5AccountId && challenge.status === "active" && (
+          <MT5PositionsPanel challengeId={challenge.id} />
+        )}
+
         {progress.ruleEvents && progress.ruleEvents.length > 0 && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
@@ -1689,7 +1979,14 @@ export default function PropFirmTracker() {
                 <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
                   <div className="space-y-1">
                     <CardTitle className="text-base font-bold">{c.firmName}</CardTitle>
-                    <CardDescription>{c.challengeName} &middot; {c.phase}</CardDescription>
+                    <CardDescription className="flex items-center gap-2 flex-wrap">
+                      <span>{c.challengeName} &middot; {c.phase}</span>
+                      {c.mt5AccountId && (
+                        <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[9px] py-0">
+                          <Link2 size={8} className="mr-0.5" /> MT5
+                        </Badge>
+                      )}
+                    </CardDescription>
                   </div>
                   <Badge
                     variant="outline"
