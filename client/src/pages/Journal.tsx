@@ -48,6 +48,15 @@ export default function Journal() {
       queryClient.invalidateQueries({ queryKey: ['/api/mt5/accounts'] });
       queryClient.invalidateQueries({ queryKey: [`/api/mt5/history/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/mt5/status/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/equity-curve/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/trades'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/performance/intelligence/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/session-analytics/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/time-patterns/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/behavioral-risks/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/strategy-deviation/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/instruments/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/ai/insights/${userId}`] });
     },
   });
 
