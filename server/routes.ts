@@ -1095,6 +1095,18 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Access denied" });
       }
 
+      const linkedChallenges = await db.select({ id: schema.propFirmChallenges.id })
+        .from(schema.propFirmChallenges)
+        .where(and(eq(schema.propFirmChallenges.userId, userId), eq(schema.propFirmChallenges.mt5AccountId, accountNumber)));
+
+      if (linkedChallenges.length > 0) {
+        const challengeIds = linkedChallenges.map(c => c.id);
+        for (const cId of challengeIds) {
+          await db.delete(schema.propFirmDailyStats)
+            .where(and(eq(schema.propFirmDailyStats.challengeId, cId), eq(schema.propFirmDailyStats.userId, userId)));
+        }
+      }
+
       await db.delete(schema.mt5History)
         .where(and(eq(schema.mt5History.userId, userId), eq(schema.mt5History.mt5AccountId, accountNumber)));
 

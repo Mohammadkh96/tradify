@@ -124,6 +124,16 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: [`/api/mt5/status/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/mt5/history/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/equity-curve/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/trades'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/performance/intelligence/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/session-analytics/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/time-patterns/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/behavioral-risks/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/strategy-deviation/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/instruments/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/ai/insights/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/compliance/score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/prop-firm'] });
       toast({
         title: "Account Deleted",
         description: "MT5 account and all associated data have been removed.",
@@ -364,16 +374,57 @@ export default function Dashboard() {
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
-        <header className="mb-8 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-2">
-                <LayoutDashboard className="text-emerald-500" />
-                Trader Dashboard
-              </h1>
-              {user?.foundingMember && <FoundingMemberBadge size="md" />}
+        <header className="mb-8 space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-2">
+                  <LayoutDashboard className="text-emerald-500" />
+                  Trader Dashboard
+                </h1>
+                {user?.foundingMember && <FoundingMemberBadge size="md" />}
+              </div>
+              <p className="text-muted-foreground text-sm mt-1">Market Overview & Performance Metrics</p>
             </div>
-            <p className="text-muted-foreground text-sm mt-1">Market Overview & Performance Metrics</p>
+            {mt5?.status === "CONNECTED" ? (
+              <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">MT5 Live Sync</span>
+                </div>
+                <div className="w-px h-5 bg-border" />
+                <div className="text-[10px] text-muted-foreground font-mono font-bold uppercase">
+                  ACTIVE
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">Terminal Offline</span>
+                  </div>
+                  {mt5?.lastSync && (
+                    <>
+                      <div className="w-px h-5 bg-border" />
+                      <div className="text-[10px] text-muted-foreground font-mono font-bold">
+                        Last: {format(new Date(mt5.lastSync), 'MMM d, HH:mm')}
+                      </div>
+                    </>
+                  )}
+                </div>
+                {mt5?.error && (
+                  <span className="text-[9px] text-amber-500 font-bold uppercase tracking-tighter pr-4">
+                    Status: {mt5.error}
+                  </span>
+                )}
+                {!mt5?.lastSync && (
+                  <Link to="/traders-hub">
+                    <Button variant="ghost" className="text-[10px] text-emerald-500 h-auto p-0 font-bold uppercase">Setup Bridge</Button>
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
@@ -445,145 +496,108 @@ export default function Dashboard() {
               </Popover>
             </div>
             
-            {/* MT5 Account Selector - Shows when multiple accounts are connected */}
-            {mt5Accounts && mt5Accounts.length >= 1 && (<>
-              <Select
-                value={activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || ""}
-                onValueChange={(value) => {
-                  if (value) {
-                    switchAccountMutation.mutate(value);
-                  }
-                }}
-              >
-                <SelectTrigger 
-                  className="w-[180px] h-8 text-xs border-border bg-background"
-                  data-testid="mt5-account-selector"
+            {mt5Accounts && mt5Accounts.length >= 1 && (
+              <div className="flex items-center gap-2">
+                <Select
+                  value={activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || ""}
+                  onValueChange={(value) => {
+                    if (value) {
+                      switchAccountMutation.mutate(value);
+                    }
+                  }}
                 >
-                  <SelectValue placeholder="Select MT5 Account">
-                    {activeAccount ? (
-                      <span className="flex items-center gap-2">
-                        <CircleCheck className="h-3 w-3 text-emerald-500" />
-                        {activeAccount.accountName || activeAccount.accountNumber}
-                      </span>
-                    ) : mt5Accounts[0] ? (
-                      <span className="flex items-center gap-2">
-                        <CircleCheck className="h-3 w-3 text-emerald-500" />
-                        {mt5Accounts[0].accountName || mt5Accounts[0].accountNumber}
-                      </span>
-                    ) : (
-                      <span>Select Account</span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {mt5Accounts.map((account) => (
-                    <SelectItem 
-                      key={account.accountNumber} 
-                      value={account.accountNumber}
-                      data-testid={`mt5-account-option-${account.accountNumber}`}
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {account.accountName || account.accountNumber}
+                  <SelectTrigger 
+                    className="w-[180px] text-xs border-border bg-background"
+                    data-testid="mt5-account-selector"
+                  >
+                    <SelectValue placeholder="Select MT5 Account">
+                      {activeAccount ? (
+                        <span className="flex items-center gap-2">
+                          <CircleCheck className="h-3 w-3 text-emerald-500" />
+                          {activeAccount.accountName || activeAccount.accountNumber}
                         </span>
-                        {account.broker && (
-                          <span className="text-[10px] text-muted-foreground">
-                            {account.broker}
+                      ) : mt5Accounts[0] ? (
+                        <span className="flex items-center gap-2">
+                          <CircleCheck className="h-3 w-3 text-emerald-500" />
+                          {mt5Accounts[0].accountName || mt5Accounts[0].accountNumber}
+                        </span>
+                      ) : (
+                        <span>Select Account</span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mt5Accounts.map((account) => (
+                      <SelectItem 
+                        key={account.accountNumber} 
+                        value={account.accountNumber}
+                        data-testid={`mt5-account-option-${account.accountNumber}`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {account.accountName || account.accountNumber}
                           </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <AlertDialog open={!!accountToDelete} onOpenChange={(open) => !open && setAccountToDelete(null)}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground"
-                  onClick={() => setAccountToDelete(activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || "")}
-                  data-testid="button-delete-mt5-account"
-                >
-                  <Trash2 size={14} />
-                </Button>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete MT5 Account?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete account #{accountToDelete} and all its trade history, equity snapshots, and synced data. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-destructive text-destructive-foreground"
-                      onClick={() => accountToDelete && deleteAccountMutation.mutate(accountToDelete)}
-                      data-testid="button-confirm-delete-account"
-                    >
-                      {deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>)}
-          </div>
-          <div className="flex items-center gap-3">
-            {userId && (
-              <PdfExportButton 
-                userId={userId} 
-                startDate={dateFilter === "custom" ? customStartDate : undefined}
-                endDate={dateFilter === "custom" ? customEndDate : undefined}
-              />
-            )}
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="rounded-full border-border bg-card text-muted-foreground"
-              onClick={handleFullRefresh}
-              disabled={isRefreshing}
-              data-testid="button-refresh-dashboard"
-            >
-              <RefreshCw size={16} className={cn(isRefreshing && "animate-spin")} />
-            </Button>
-            {mt5?.status === "CONNECTED" ? (
-              <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">MT5 Live Sync</span>
-                </div>
-                <div className="w-px h-5 bg-border" />
-                <div className="text-[10px] text-muted-foreground font-mono font-bold uppercase">
-                  ACTIVE
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">Terminal Offline</span>
-                  </div>
-                  {mt5?.lastSync && (
-                    <>
-                      <div className="w-px h-5 bg-border" />
-                      <div className="text-[10px] text-muted-foreground font-mono font-bold">
-                        Last: {format(new Date(mt5.lastSync), 'MMM d, HH:mm')}
-                      </div>
-                    </>
-                  )}
-                </div>
-                {mt5?.error && (
-                  <span className="text-[9px] text-amber-500 font-bold uppercase tracking-tighter pr-4">
-                    Status: {mt5.error}
-                  </span>
-                )}
-                {!mt5?.lastSync && (
-                  <Link to="/traders-hub">
-                    <Button variant="ghost" className="text-[10px] text-emerald-500 h-auto p-0 font-bold uppercase hover:bg-transparent">Setup Bridge →</Button>
-                  </Link>
-                )}
+                          {account.broker && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {account.broker}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <AlertDialog open={!!accountToDelete} onOpenChange={(open) => !open && setAccountToDelete(null)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground"
+                    onClick={() => setAccountToDelete(activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || "")}
+                    data-testid="button-delete-mt5-account"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete MT5 Account?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete account #{accountToDelete} and all its trade history, equity snapshots, prop firm daily stats, and synced data. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground"
+                        onClick={() => accountToDelete && deleteAccountMutation.mutate(accountToDelete)}
+                        data-testid="button-confirm-delete-account"
+                      >
+                        {deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             )}
+
+            <div className="flex items-center gap-2 ml-auto">
+              {userId && (
+                <PdfExportButton 
+                  userId={userId} 
+                  startDate={dateFilter === "custom" ? customStartDate : undefined}
+                  endDate={dateFilter === "custom" ? customEndDate : undefined}
+                />
+              )}
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="rounded-full border-border bg-card text-muted-foreground"
+                onClick={handleFullRefresh}
+                disabled={isRefreshing}
+                data-testid="button-refresh-dashboard"
+              >
+                <RefreshCw size={16} className={cn(isRefreshing && "animate-spin")} />
+              </Button>
+            </div>
           </div>
         </header>
 
