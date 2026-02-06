@@ -1,0 +1,124 @@
+1. MT5 Multi-Account Bridge ✅ (Strong)
+
+Keep as-is, but shorten copy.
+
+Current issue
+Too descriptive.
+
+Fix
+Focus on outcome:
+
+“Connect and sync multiple MT5 accounts in real time.”
+
+2. Trade Journal ⚠️ (Overlap Risk)
+
+Overlaps with:
+
+Interactive Dashboard
+
+Performance Intelligence
+
+Fix
+Reframe as source of truth:
+
+“Your complete execution log. Every trade, every account.”
+
+3. Strategy Validation ✅ (Core Differentiator)
+
+This is one of Tradify’s strongest ideas.
+
+Enhancement
+Make it sharper:
+
+“Validate every trade against your own rules. No signals. No opinions.”
+
+This aligns with your philosophy.
+
+4. Risk & Position Calculators ⚠️ (Undersold)
+
+This sounds basic, but it isn’t.
+
+Fix
+Tie it to rule enforcement:
+
+“Pre-trade risk calculations aligned with your challenge and strategy rules.”
+
+5. Interactive Dashboard ⚠️ (Generic Name)
+
+“Interactive Dashboard” is vague.
+
+Fix (rename)
+
+“Command Center”
+or
+
+“Trader Control Panel”
+
+Then:
+
+“One view of equity, risk, compliance, and performance.”
+
+6. Education Hub ⚠️ (Positioning Issue)
+
+It reads like a generic course platform.
+
+Fix
+Make it outcome-driven:
+
+“Structured lessons focused on discipline, execution, and decision-making.”
+
+Avoid buzzwords like “advanced strategies”.
+
+7. Prop Firm Challenge Tracker ✅ (Very Good)
+
+This is clear and differentiated.
+
+Minor tweak
+Add independence signal:
+
+“Track any prop firm challenge — firm-agnostic and customizable.”
+
+8. AI Instrument Analysis ⚠️ (Needs Guardrails)
+
+Sounds like “AI advice” (dangerous perception).
+
+Fix
+Clarify it’s descriptive, not prescriptive:
+
+“Analyze performance by instrument. Identify strengths and weaknesses.”
+
+9. Performance Intelligence ⚠️ (Overlap)
+
+Overlaps with Dashboard + Instrument Analysis.
+
+Fix
+Define it as long-term analytics:
+
+“Advanced performance metrics and historical equity analysis.”
+
+10. AI Challenge Risk Warnings ✅ (Excellent)
+
+This is a killer feature.
+
+Enhancement
+Remove “AI” from headline, keep it inside:
+
+“Challenge Risk Warnings”
+
+AI should support, not headline.
+
+11. Session & Time Analytics ⚠️ (Too Detailed)
+
+Too much detail in a card.
+
+Fix
+
+“Discover when you trade best — by session, day, and time.”
+
+12. Behavioral Risk Flags ✅ (Elite-Worthy)
+
+This is premium and well-positioned.
+
+Minor tweak
+
+“Detect behavioral risk patterns before they damage your account.”

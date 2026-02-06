@@ -216,73 +216,73 @@ export default function Landing() {
             {[
               {
                 title: "MT5 Multi-Account Bridge",
-                desc: "Connect multiple MetaTrader 5 accounts simultaneously. Auto-sync trades, equity curves, and open positions across all your trading accounts.",
+                desc: "Connect and sync multiple MT5 accounts in real time.",
                 icon: <MonitorSmartphone className="text-cyan-500" />,
                 tier: null
               },
               {
                 title: "Trade Journal",
-                desc: "Chronological trade tracking with filtering by account, date range, and instrument. Log manual trades or auto-import from MT5.",
+                desc: "Your complete execution log. Every trade, every account.",
                 icon: <FileText className="text-emerald-500" />,
                 tier: null
               },
               {
                 title: "Strategy Validation",
-                desc: "Build custom trading frameworks with rule-based entry and exit criteria. Validate every trade against your strategy rules automatically.",
+                desc: "Validate every trade against your own rules. No signals. No opinions.",
                 icon: <ShieldCheck className="text-blue-500" />,
                 tier: null
               },
               {
                 title: "Risk & Position Calculators",
-                desc: "Built-in risk calculators for position sizing, stop loss placement, and risk-reward analysis before entering any trade.",
+                desc: "Pre-trade risk calculations aligned with your challenge and strategy rules.",
                 icon: <Calculator className="text-amber-500" />,
                 tier: null
               },
               {
-                title: "Interactive Dashboard",
-                desc: "Customizable performance metrics, equity curves, win rate analysis, profit factor, and expectancy all in one command center.",
+                title: "Command Center",
+                desc: "One view of equity, risk, compliance, and performance.",
                 icon: <BarChart3 className="text-purple-500" />,
                 tier: null
               },
               {
                 title: "Education Hub",
-                desc: "20 comprehensive lessons covering trading psychology, price action, smart money concepts, order blocks, FVGs, and advanced strategies.",
+                desc: "Structured lessons focused on discipline, execution, and decision-making.",
                 icon: <BookOpen className="text-cyan-500" />,
                 tier: "3 free lessons"
               },
               {
                 title: "Prop Firm Challenge Tracker",
-                desc: "Track any prop firm challenge with custom configurations. Monitor profit targets, drawdown limits, consistency scores, and days remaining in real time.",
+                desc: "Track any prop firm challenge \u2014 firm-agnostic and fully customizable.",
                 icon: <Trophy className="text-amber-500" />,
                 tier: "Pro"
               },
               {
-                title: "AI Instrument Analysis",
-                desc: "Get AI-powered analysis of your trading performance on specific instruments. Understand what you trade best and where to improve.",
+                title: "Instrument Analysis",
+                desc: "Analyze performance by instrument. Identify strengths and weaknesses.",
                 icon: <Brain className="text-emerald-500" />,
                 tier: "Pro"
               },
               {
                 title: "Performance Intelligence",
-                desc: "Advanced metrics including profit factor, expectancy, recovery factor, max drawdown analysis, and full historical equity curves.",
+                desc: "Advanced performance metrics and historical equity analysis.",
                 icon: <LineChart className="text-blue-500" />,
                 tier: "Pro"
               },
               {
-                title: "AI Challenge Risk Warnings",
-                desc: "Before you place a trade, check it against your active prop firm challenge rules. See potential drawdown impact and get safer stop loss suggestions.",
+                title: "Challenge Risk Warnings",
+                desc: "Before you place a trade, check it against your active challenge rules. See potential drawdown impact and get safer stop loss suggestions.",
                 icon: <AlertCircle className="text-rose-500" />,
                 tier: "Elite"
               },
               {
                 title: "Session & Time Analytics",
-                desc: "Performance breakdown by trading session (Asian, London, New York), day of week, and hour. Discover your optimal trading windows.",
+                desc: "Discover when you trade best \u2014 by session, day, and time.",
                 icon: <Clock className="text-purple-500" />,
                 tier: "Elite"
               },
               {
                 title: "Behavioral Risk Flags",
-                desc: "Automated detection of revenge trading, overtrading, risk creep, and strategy deviation patterns with monthly AI performance reviews.",
+                desc: "Detect behavioral risk patterns before they damage your account.",
                 icon: <Activity className="text-rose-500" />,
                 tier: "Elite"
               }
