@@ -14,6 +14,7 @@ Key capabilities include:
 - Premium features (PRO/ELITE tiers) such as AI Instrument Analysis, Session and Time-Based Performance Analytics, Behavioral Risk Flags, Strategy Deviation Analysis, Monthly Self-Review Reports, and Professional PDF Reports.
 - A tiered plan system (Free, Pro, Elite) with feature gating and differentiated trade history retention.
 - **Founding Member Program:** Early access signup at `/early-access` with exclusive benefits (3 months free Pro, lifetime 30% discount, feature influence, exclusive badge). Founding members display amber-styled Crown badge in navigation, dashboard, and profile. Tracked via `foundingMember` field on users and `early_access_signups` table for pre-launch signups.
+- **Prop Firm Challenge Tracker:** Full prop firm challenge management at `/prop-firm` (Pro+Elite). Tracks FTMO, MyFundedFX, The Funded Trader presets plus custom configs. Features: circular SVG gauges for profit target/drawdown, daily stats logging, trailing drawdown with HWM tracking, consistency scoring, days remaining countdown. AI Risk Analysis panel (Elite) lets users check proposed trade parameters against challenge rules before entry — calculates potential loss, daily/max DD impact, and suggests tighter SL. `PropFirmRiskBanner` on Strategy Validator alerts users with active challenges. DB tables: `prop_firm_challenges`, `prop_firm_daily_stats`. API: `/api/prop-firm/*` routes including `POST /api/prop-firm/ai-risk-check`.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

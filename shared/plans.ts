@@ -16,6 +16,8 @@ export interface PlanFeatures {
   advancedEquityCurve: boolean;
   performanceIntelligence: boolean;
   fullEducationAccess: boolean;
+  propFirmTracker: boolean;
+  propFirmAiWarnings: boolean;
 }
 
 export interface PlanConfig {
@@ -46,6 +48,8 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     advancedEquityCurve: false,
     performanceIntelligence: false,
     fullEducationAccess: false,
+    propFirmTracker: false,
+    propFirmAiWarnings: false,
   },
   PRO: {
     maxStrategies: -1,
@@ -63,6 +67,8 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     advancedEquityCurve: true,
     performanceIntelligence: true,
     fullEducationAccess: true,
+    propFirmTracker: true,
+    propFirmAiWarnings: false,
   },
   ELITE: {
     maxStrategies: -1,
@@ -80,6 +86,8 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     advancedEquityCurve: true,
     performanceIntelligence: true,
     fullEducationAccess: true,
+    propFirmTracker: true,
+    propFirmAiWarnings: true,
   },
 };
 
@@ -274,5 +282,13 @@ export const FEATURE_DESCRIPTIONS: Record<keyof PlanFeatures, { name: string; de
   fullEducationAccess: {
     name: "Full Education Access",
     description: "Access to all trading education lessons and materials",
+  },
+  propFirmTracker: {
+    name: "Prop Firm Tracker",
+    description: "Track prop firm challenge progress with drawdown monitoring, consistency scoring, and deadline tracking",
+  },
+  propFirmAiWarnings: {
+    name: "AI Challenge Warnings",
+    description: "AI-powered warnings when approaching challenge rule violations during trade logging",
   },
 };

@@ -4355,6 +4355,431 @@ Guidelines:
     }
   });
 
+  // ==================== PROP FIRM CHALLENGE ENDPOINTS ====================
+
+  // Get all challenges for the current user
+  app.get("/api/prop-firm/challenges", requireAuth, async (req, res) => {
+    try {
+      const challenges = await db.select().from(schema.propFirmChallenges)
+        .where(eq(schema.propFirmChallenges.userId, req.session.userId!))
+        .orderBy(desc(schema.propFirmChallenges.createdAt));
+      res.json(challenges);
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+      res.status(500).json({ message: "Failed to fetch challenges" });
+    }
+  });
+
+  // Get single challenge with full progress data
+  app.get("/api/prop-firm/challenges/:id", requireAuth, async (req, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const [challenge] = await db.select().from(schema.propFirmChallenges)
+        .where(and(
+          eq(schema.propFirmChallenges.id, challengeId),
+          eq(schema.propFirmChallenges.userId, req.session.userId!)
+        ));
+      
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      // Get daily stats
+      const dailyStats = await db.select().from(schema.propFirmDailyStats)
+        .where(eq(schema.propFirmDailyStats.challengeId, challengeId))
+        .orderBy(schema.propFirmDailyStats.date);
+
+      // Calculate progress metrics
+      const accountSize = parseFloat(challenge.accountSize);
+      const currentBalance = parseFloat(challenge.currentBalance || challenge.accountSize);
+      const highWaterMark = parseFloat(challenge.highWaterMark || challenge.accountSize);
+      const profitTarget = parseFloat(challenge.profitTarget);
+      const dailyDDLimit = parseFloat(challenge.dailyDrawdownLimit);
+      const maxDDLimit = parseFloat(challenge.maxDrawdownLimit);
+
+      // Profit progress
+      const profitTargetAmount = accountSize * (profitTarget / 100);
+      const currentProfit = currentBalance - accountSize;
+      const profitProgress = profitTargetAmount > 0 ? Math.min((currentProfit / profitTargetAmount) * 100, 100) : 0;
+
+      // Trailing drawdown calculations
+      const trailingDDFloor = challenge.trailingDrawdown
+        ? highWaterMark * (1 - maxDDLimit / 100)
+        : accountSize * (1 - maxDDLimit / 100);
+      const maxDDRemaining = currentBalance - trailingDDFloor;
+      const maxDDUsedPercent = ((highWaterMark - currentBalance) / (highWaterMark * (maxDDLimit / 100))) * 100;
+
+      // Daily drawdown for today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStat = dailyStats.find(s => {
+        const d = new Date(s.date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === today.getTime();
+      });
+      const dailyStartBalance = todayStat ? parseFloat(todayStat.startingBalance) : currentBalance;
+      const dailyDDAmount = dailyStartBalance * (dailyDDLimit / 100);
+      const dailyLoss = Math.max(0, dailyStartBalance - currentBalance);
+      const dailyDDUsedPercent = dailyDDAmount > 0 ? (dailyLoss / dailyDDAmount) * 100 : 0;
+
+      // Trading days
+      const uniqueTradingDays = new Set(dailyStats.filter(s => parseInt(s.tradesCount?.toString() || "0") > 0).map(s => {
+        const d = new Date(s.date);
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      })).size;
+
+      // Days remaining
+      const startDate = new Date(challenge.startDate);
+      const endDate = challenge.endDate ? new Date(challenge.endDate) : null;
+      const daysElapsed = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysRemaining = endDate ? Math.max(0, Math.floor((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+
+      // Consistency check
+      let consistencyScore = 100;
+      let worstDayProfitPercent = 0;
+      if (challenge.consistencyRule && dailyStats.length > 0) {
+        const totalProfit = dailyStats.reduce((sum, s) => sum + Math.max(0, parseFloat(s.dayPl)), 0);
+        if (totalProfit > 0) {
+          const maxDayProfit = Math.max(...dailyStats.map(s => Math.max(0, parseFloat(s.dayPl))));
+          worstDayProfitPercent = (maxDayProfit / totalProfit) * 100;
+          const maxAllowed = parseFloat(challenge.maxDayProfitPercent || "40");
+          consistencyScore = Math.min(100, (maxAllowed / Math.max(worstDayProfitPercent, 1)) * 100);
+        }
+      }
+
+      res.json({
+        challenge,
+        dailyStats,
+        progress: {
+          currentBalance,
+          currentProfit,
+          profitTargetAmount,
+          profitProgress: Math.max(0, profitProgress),
+          highWaterMark,
+          trailingDDFloor,
+          maxDDRemaining: Math.max(0, maxDDRemaining),
+          maxDDUsedPercent: Math.max(0, Math.min(100, maxDDUsedPercent)),
+          dailyDDUsedPercent: Math.max(0, Math.min(100, dailyDDUsedPercent)),
+          dailyDDRemaining: Math.max(0, dailyDDAmount - dailyLoss),
+          dailyDDAmount,
+          uniqueTradingDays,
+          minTradingDays: challenge.minTradingDays || 0,
+          daysElapsed,
+          daysRemaining,
+          consistencyScore,
+          worstDayProfitPercent,
+          status: challenge.status,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching challenge details:", error);
+      res.status(500).json({ message: "Failed to fetch challenge details" });
+    }
+  });
+
+  // Create a new challenge
+  app.post("/api/prop-firm/challenges", requireAuth, async (req, res) => {
+    try {
+      const data = req.body;
+      const [challenge] = await db.insert(schema.propFirmChallenges).values({
+        userId: req.session.userId!,
+        firmName: data.firmName,
+        challengeName: data.challengeName,
+        phase: data.phase || "Phase 1",
+        accountSize: data.accountSize,
+        currency: data.currency || "USD",
+        profitTarget: data.profitTarget,
+        dailyDrawdownLimit: data.dailyDrawdownLimit,
+        maxDrawdownLimit: data.maxDrawdownLimit,
+        trailingDrawdown: data.trailingDrawdown || false,
+        minTradingDays: data.minTradingDays || 0,
+        maxTradingDays: data.maxTradingDays || null,
+        consistencyRule: data.consistencyRule || false,
+        maxDayProfitPercent: data.maxDayProfitPercent || null,
+        startDate: new Date(data.startDate),
+        endDate: data.endDate ? new Date(data.endDate) : null,
+        status: "active",
+        currentBalance: data.accountSize,
+        highWaterMark: data.accountSize,
+      }).returning();
+      res.status(201).json(challenge);
+    } catch (error) {
+      console.error("Error creating challenge:", error);
+      res.status(500).json({ message: "Failed to create challenge" });
+    }
+  });
+
+  // Update challenge (balance, status, etc.)
+  app.patch("/api/prop-firm/challenges/:id", requireAuth, async (req, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const data = req.body;
+      
+      const [existing] = await db.select().from(schema.propFirmChallenges)
+        .where(and(
+          eq(schema.propFirmChallenges.id, challengeId),
+          eq(schema.propFirmChallenges.userId, req.session.userId!)
+        ));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      const updateData: any = { updatedAt: new Date() };
+      if (data.status) updateData.status = data.status;
+      if (data.currentBalance) {
+        updateData.currentBalance = data.currentBalance;
+        const newBalance = parseFloat(data.currentBalance);
+        const currentHWM = parseFloat(existing.highWaterMark || existing.accountSize);
+        if (newBalance > currentHWM) {
+          updateData.highWaterMark = data.currentBalance;
+        }
+      }
+      if (data.challengeName) updateData.challengeName = data.challengeName;
+      if (data.phase) updateData.phase = data.phase;
+
+      const [updated] = await db.update(schema.propFirmChallenges)
+        .set(updateData)
+        .where(eq(schema.propFirmChallenges.id, challengeId))
+        .returning();
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating challenge:", error);
+      res.status(500).json({ message: "Failed to update challenge" });
+    }
+  });
+
+  // Delete a challenge
+  app.delete("/api/prop-firm/challenges/:id", requireAuth, async (req, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      await db.delete(schema.propFirmDailyStats)
+        .where(eq(schema.propFirmDailyStats.challengeId, challengeId));
+      await db.delete(schema.propFirmChallenges)
+        .where(and(
+          eq(schema.propFirmChallenges.id, challengeId),
+          eq(schema.propFirmChallenges.userId, req.session.userId!)
+        ));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting challenge:", error);
+      res.status(500).json({ message: "Failed to delete challenge" });
+    }
+  });
+
+  // Record daily stats for a challenge
+  app.post("/api/prop-firm/challenges/:id/daily-stat", requireAuth, async (req, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const { date, startingBalance, endingBalance, dayPl, tradesCount } = req.body;
+      
+      const [challenge] = await db.select().from(schema.propFirmChallenges)
+        .where(and(
+          eq(schema.propFirmChallenges.id, challengeId),
+          eq(schema.propFirmChallenges.userId, req.session.userId!)
+        ));
+      
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      const newBalance = parseFloat(endingBalance);
+      const currentHWM = parseFloat(challenge.highWaterMark || challenge.accountSize);
+      const newHWM = Math.max(currentHWM, newBalance);
+
+      const [stat] = await db.insert(schema.propFirmDailyStats).values({
+        challengeId,
+        userId: req.session.userId!,
+        date: new Date(date),
+        startingBalance,
+        endingBalance,
+        dayPl,
+        tradesCount: tradesCount || 0,
+        dailyDrawdownUsed: String(Math.max(0, parseFloat(startingBalance) - newBalance)),
+        highWaterMark: String(newHWM),
+      }).returning();
+
+      // Update challenge balance and HWM
+      await db.update(schema.propFirmChallenges)
+        .set({
+          currentBalance: endingBalance,
+          highWaterMark: String(newHWM),
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.propFirmChallenges.id, challengeId));
+
+      res.status(201).json(stat);
+    } catch (error) {
+      console.error("Error recording daily stat:", error);
+      res.status(500).json({ message: "Failed to record daily stat" });
+    }
+  });
+
+  // Get active challenge for current user (for trade logging integration)
+  app.get("/api/prop-firm/active-challenge", requireAuth, async (req, res) => {
+    try {
+      const [challenge] = await db.select().from(schema.propFirmChallenges)
+        .where(and(
+          eq(schema.propFirmChallenges.userId, req.session.userId!),
+          eq(schema.propFirmChallenges.status, "active")
+        ))
+        .orderBy(desc(schema.propFirmChallenges.createdAt))
+        .limit(1);
+      
+      if (!challenge) {
+        return res.json(null);
+      }
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error fetching active challenge:", error);
+      res.status(500).json({ message: "Failed to fetch active challenge" });
+    }
+  });
+
+  // AI Risk Analysis for trade against active challenge
+  app.post("/api/prop-firm/ai-risk-check", requireAuth, async (req, res) => {
+    try {
+      const { challengeId, tradeDirection, pair, entryPrice, stopLoss, lotSize, currentPl } = req.body;
+      
+      const [challenge] = await db.select().from(schema.propFirmChallenges)
+        .where(and(
+          eq(schema.propFirmChallenges.id, parseInt(challengeId)),
+          eq(schema.propFirmChallenges.userId, req.session.userId!)
+        ));
+      
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      const accountSize = parseFloat(challenge.accountSize);
+      const currentBalance = parseFloat(challenge.currentBalance || challenge.accountSize);
+      const highWaterMark = parseFloat(challenge.highWaterMark || challenge.accountSize);
+      const dailyDDLimit = parseFloat(challenge.dailyDrawdownLimit);
+      const maxDDLimit = parseFloat(challenge.maxDrawdownLimit);
+      const profitTarget = parseFloat(challenge.profitTarget);
+
+      const profitTargetAmount = accountSize * (profitTarget / 100);
+      const currentProfit = currentBalance - accountSize;
+      const remainingToTarget = profitTargetAmount - currentProfit;
+
+      // Calculate risk from proposed trade
+      const entry = parseFloat(entryPrice || "0");
+      const sl = parseFloat(stopLoss || "0");
+      const lots = parseFloat(lotSize || "0.01");
+      let potentialLoss = 0;
+      if (entry && sl) {
+        const pipDiff = Math.abs(entry - sl);
+        potentialLoss = pipDiff * lots * 100000; // Approximate for forex
+        if (pair && (pair.includes("JPY") || pair.includes("jpy"))) {
+          potentialLoss = pipDiff * lots * 1000;
+        }
+      }
+
+      // Daily drawdown check
+      const dailyStats = await db.select().from(schema.propFirmDailyStats)
+        .where(eq(schema.propFirmDailyStats.challengeId, challenge.id))
+        .orderBy(desc(schema.propFirmDailyStats.date))
+        .limit(1);
+      
+      const todayStartBalance = dailyStats.length > 0 ? parseFloat(dailyStats[0].startingBalance) : currentBalance;
+      const dailyDDAmount = todayStartBalance * (dailyDDLimit / 100);
+      const todayLoss = Math.max(0, todayStartBalance - currentBalance) + (parseFloat(currentPl || "0") < 0 ? Math.abs(parseFloat(currentPl || "0")) : 0);
+      const dailyDDRemaining = dailyDDAmount - todayLoss;
+      const dailyDDUsedPercent = (todayLoss / dailyDDAmount) * 100;
+
+      // Max/trailing drawdown check
+      const trailingDDFloor = challenge.trailingDrawdown
+        ? highWaterMark * (1 - maxDDLimit / 100)
+        : accountSize * (1 - maxDDLimit / 100);
+      const maxDDRemaining = currentBalance - trailingDDFloor;
+
+      const warnings: { level: string; message: string; suggestion?: string }[] = [];
+
+      // Check if potential loss would breach daily DD
+      if (potentialLoss > 0 && potentialLoss > dailyDDRemaining) {
+        warnings.push({
+          level: "critical",
+          message: `This trade risks $${potentialLoss.toFixed(2)} but you only have $${dailyDDRemaining.toFixed(2)} daily drawdown remaining.`,
+          suggestion: `Reduce lot size to ${(lots * (dailyDDRemaining / potentialLoss) * 0.7).toFixed(2)} lots or tighten your stop-loss.`,
+        });
+      } else if (potentialLoss > 0 && potentialLoss > dailyDDRemaining * 0.6) {
+        warnings.push({
+          level: "warning",
+          message: `This trade uses ${((potentialLoss / dailyDDRemaining) * 100).toFixed(0)}% of your remaining daily drawdown ($${dailyDDRemaining.toFixed(2)} left).`,
+          suggestion: "Consider reducing position size to preserve daily drawdown buffer.",
+        });
+      }
+
+      // Check if potential loss would breach max DD
+      if (potentialLoss > 0 && potentialLoss > maxDDRemaining) {
+        warnings.push({
+          level: "critical",
+          message: `This trade risks $${potentialLoss.toFixed(2)} but max drawdown only allows $${maxDDRemaining.toFixed(2)} more loss before breach.`,
+          suggestion: "STOP trading or significantly reduce your position size.",
+        });
+      } else if (potentialLoss > 0 && potentialLoss > maxDDRemaining * 0.5) {
+        warnings.push({
+          level: "warning",
+          message: `This trade would use ${((potentialLoss / maxDDRemaining) * 100).toFixed(0)}% of your remaining max drawdown buffer.`,
+          suggestion: `Tighten SL to limit risk to under $${(maxDDRemaining * 0.3).toFixed(2)}.`,
+        });
+      }
+
+      // Daily DD usage warning
+      if (dailyDDUsedPercent > 70) {
+        warnings.push({
+          level: dailyDDUsedPercent > 90 ? "critical" : "warning",
+          message: `You've used ${dailyDDUsedPercent.toFixed(0)}% of today's daily drawdown limit.`,
+          suggestion: dailyDDUsedPercent > 90 ? "Stop trading for today to protect your challenge." : "Be very selective with remaining trades today.",
+        });
+      }
+
+      // Near profit target
+      if (remainingToTarget > 0 && remainingToTarget < profitTargetAmount * 0.15) {
+        warnings.push({
+          level: "info",
+          message: `You're ${((currentProfit / profitTargetAmount) * 100).toFixed(0)}% to your profit target! Only $${remainingToTarget.toFixed(2)} to go.`,
+          suggestion: "Protect your gains with tighter risk management. Don't give back profits near the finish line.",
+        });
+      }
+
+      // Calculate suggested max SL
+      let suggestedMaxSL = null;
+      if (entry && lots > 0) {
+        const safeRisk = Math.min(dailyDDRemaining * 0.3, maxDDRemaining * 0.2);
+        let safePipDistance: number;
+        if (pair && (pair.includes("JPY") || pair.includes("jpy"))) {
+          safePipDistance = safeRisk / (lots * 1000);
+        } else {
+          safePipDistance = safeRisk / (lots * 100000);
+        }
+        if (tradeDirection === "Long" || tradeDirection === "Buy") {
+          suggestedMaxSL = (entry - safePipDistance).toFixed(5);
+        } else {
+          suggestedMaxSL = (entry + safePipDistance).toFixed(5);
+        }
+      }
+
+      res.json({
+        warnings,
+        metrics: {
+          dailyDDUsedPercent: Math.min(100, dailyDDUsedPercent),
+          dailyDDRemaining,
+          maxDDRemaining,
+          maxDDUsedPercent: Math.min(100, ((highWaterMark - currentBalance) / (highWaterMark * (maxDDLimit / 100))) * 100),
+          potentialLoss,
+          profitProgress: Math.min(100, (currentProfit / profitTargetAmount) * 100),
+          currentProfit,
+          remainingToTarget,
+          suggestedMaxSL,
+        },
+      });
+    } catch (error) {
+      console.error("AI risk check error:", error);
+      res.status(500).json({ message: "Failed to analyze trade risk" });
+    }
+  });
+
   return httpServer;
 }
 

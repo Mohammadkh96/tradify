@@ -17,7 +17,8 @@ import {
   FolderOpen,
   Plus,
   ClipboardCheck,
-  Sparkles
+  Sparkles,
+  Trophy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -31,6 +32,7 @@ import { usePlan } from "@/hooks/usePlan";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/journal", label: "Journal", icon: HistoryIcon },
+  { href: "/prop-firm", label: "Prop Firm", icon: Trophy },
   { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
   { href: "/traders-hub", label: "Traders Hub", icon: Users },
   { href: "/knowledge-base", label: "Education", icon: BookOpen },

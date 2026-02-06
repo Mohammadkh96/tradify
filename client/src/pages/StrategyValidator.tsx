@@ -24,7 +24,10 @@ import {
   CheckCircle2,
   XCircle,
   ChevronRight,
+  Trophy,
+  ArrowRight,
 } from "lucide-react";
+import type { PropFirmChallenge } from "@shared/schema";
 import {
   RuleCategory,
   RULE_TYPE_CATALOG,
@@ -68,6 +71,49 @@ const CATEGORY_LABELS: Record<RuleCategoryType, { label: string; color: string }
   [RuleCategory.RISK_EXECUTION]: { label: "Risk & Execution", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
   [RuleCategory.CONTEXT]: { label: "Context", color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
 };
+
+function PropFirmRiskBanner() {
+  const { data: challenges } = useQuery<PropFirmChallenge[]>({
+    queryKey: ["/api/prop-firm/challenges"],
+  });
+
+  const activeChallenges = useMemo(() => {
+    return challenges?.filter((c) => c.status === "active") || [];
+  }, [challenges]);
+
+  if (activeChallenges.length === 0) return null;
+
+  return (
+    <Card className="p-4 mb-6 border-amber-500/20 bg-amber-500/5">
+      <div className="flex items-start gap-3">
+        <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+          <Trophy size={16} className="text-amber-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                Active Prop Firm Challenge{activeChallenges.length > 1 ? "s" : ""}
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+                  {activeChallenges.length}
+                </Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {activeChallenges.map((c) => `${c.firmName} ${c.phase}`).join(", ")} &mdash; Use the AI Risk Analyzer before entering trades to protect your challenge.
+              </p>
+            </div>
+            <Link to="/prop-firm">
+              <Button variant="outline" size="sm" data-testid="button-goto-risk-check">
+                Risk Check
+                <ArrowRight size={14} />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default function StrategyValidator() {
   const [selectedStrategyId, setSelectedStrategyId] = useState<number | null>(null);
@@ -372,6 +418,8 @@ export default function StrategyValidator() {
             </div>
           </div>
         </Card>
+
+        <PropFirmRiskBanner />
 
         <Card className="p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

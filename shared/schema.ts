@@ -467,3 +467,51 @@ export const quizResults = pgTable("quiz_results", {
 export const insertQuizResultSchema = createInsertSchema(quizResults).omit({ id: true, completedAt: true });
 export type QuizResult = typeof quizResults.$inferSelect;
 export type InsertQuizResult = z.infer<typeof insertQuizResultSchema>;
+
+// ==================== PROP FIRM CHALLENGES ====================
+export const propFirmChallenges = pgTable("prop_firm_challenges", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  firmName: text("firm_name").notNull(),
+  challengeName: text("challenge_name").notNull(),
+  phase: text("phase").notNull().default("Phase 1"),
+  accountSize: text("account_size").notNull(),
+  currency: text("currency").default("USD"),
+  profitTarget: text("profit_target").notNull(),
+  dailyDrawdownLimit: text("daily_drawdown_limit").notNull(),
+  maxDrawdownLimit: text("max_drawdown_limit").notNull(),
+  trailingDrawdown: boolean("trailing_drawdown").default(false),
+  minTradingDays: integer("min_trading_days").default(0),
+  maxTradingDays: integer("max_trading_days"),
+  consistencyRule: boolean("consistency_rule").default(false),
+  maxDayProfitPercent: text("max_day_profit_percent"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  status: text("status").notNull().default("active"),
+  currentBalance: text("current_balance"),
+  highWaterMark: text("high_water_mark"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const propFirmDailyStats = pgTable("prop_firm_daily_stats", {
+  id: serial("id").primaryKey(),
+  challengeId: integer("challenge_id").notNull(),
+  userId: text("user_id").notNull(),
+  date: timestamp("date").notNull(),
+  startingBalance: text("starting_balance").notNull(),
+  endingBalance: text("ending_balance").notNull(),
+  dayPl: text("day_pl").notNull(),
+  tradesCount: integer("trades_count").default(0),
+  dailyDrawdownUsed: text("daily_drawdown_used"),
+  highWaterMark: text("high_water_mark"),
+});
+
+export const insertPropFirmChallengeSchema = createInsertSchema(propFirmChallenges).omit({ id: true, createdAt: true, updatedAt: true });
+export const updatePropFirmChallengeSchema = insertPropFirmChallengeSchema.partial();
+export type PropFirmChallenge = typeof propFirmChallenges.$inferSelect;
+export type InsertPropFirmChallenge = z.infer<typeof insertPropFirmChallengeSchema>;
+
+export const insertPropFirmDailyStatSchema = createInsertSchema(propFirmDailyStats).omit({ id: true });
+export type PropFirmDailyStat = typeof propFirmDailyStats.$inferSelect;
+export type InsertPropFirmDailyStat = z.infer<typeof insertPropFirmDailyStatSchema>;
