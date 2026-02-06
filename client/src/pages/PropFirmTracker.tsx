@@ -1265,7 +1265,7 @@ export default function PropFirmTracker() {
               <CardDescription>Record today's trading performance</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                 <div className="space-y-1.5">
                   <label className="text-xs text-muted-foreground flex items-center gap-1">
                     <Lock size={10} /> Starting Balance (auto-filled)
@@ -1277,7 +1277,6 @@ export default function PropFirmTracker() {
                     readOnly
                     className="opacity-70"
                   />
-                  <p className="text-[10px] text-muted-foreground/70">Locked to current balance for accuracy</p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs text-muted-foreground">Ending Balance</label>
