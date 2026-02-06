@@ -42,7 +42,7 @@ import { Link } from "react-router-dom";
 import { format, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, parseISO, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Type for MT5 Account
@@ -113,6 +113,8 @@ export default function Dashboard() {
   const { data: intelligence } = useQuery<any>({
     queryKey: [`/api/performance/intelligence/${userId}`],
     staleTime: 0,
+    enabled: !!userId,
+    refetchInterval: 60000,
   });
 
   // Equity curve from cumulative trade P&L (SINGLE SOURCE OF TRUTH)
@@ -120,6 +122,7 @@ export default function Dashboard() {
     queryKey: [`/api/equity-curve/${userId}`],
     staleTime: 0,
     enabled: !!userId,
+    refetchInterval: 30000,
   });
 
   const { isPaid: isPro, isElite, canAccess } = usePlan();
@@ -133,6 +136,7 @@ export default function Dashboard() {
   const { data: instrumentsData } = useQuery<{ symbols: string[] }>({
     queryKey: [`/api/instruments/${userId}`],
     enabled: !!userId,
+    refetchInterval: 60000,
   });
 
   // Mutation for generating instrument analysis
@@ -171,7 +175,34 @@ export default function Dashboard() {
     queryKey: ['/api/compliance/score'],
     enabled: !!userId,
     staleTime: 30000,
+    refetchInterval: 60000,
   });
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleFullRefresh = useCallback(async () => {
+    if (!userId) return;
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [`/api/mt5/status/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/equity-curve/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/mt5/history/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/mt5/accounts', userId] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/performance/intelligence/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/session-analytics/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/time-patterns/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/behavioral-risks/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/strategy-deviation/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/instruments/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/ai/insights/${userId}`] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/compliance/score'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/trades'] }),
+      ]);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [userId]);
 
   const allTrades = trades || [];
   
@@ -456,11 +487,12 @@ export default function Dashboard() {
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full h-10 w-10 border-border bg-card text-muted-foreground"
-              onClick={() => refetchStatus()}
+              className="rounded-full border-border bg-card text-muted-foreground"
+              onClick={handleFullRefresh}
+              disabled={isRefreshing}
               data-testid="button-refresh-dashboard"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={16} className={cn(isRefreshing && "animate-spin")} />
             </Button>
             {mt5?.status === "CONNECTED" ? (
               <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm">
