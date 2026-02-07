@@ -171,7 +171,7 @@ export default function Pricing() {
                   disabled
                   data-testid="button-downgrade-pro"
                 >
-                  Current: Elite
+                  Downgrade
                 </Button>
               ) : (
                 <Button 
