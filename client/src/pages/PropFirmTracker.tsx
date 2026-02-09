@@ -459,7 +459,10 @@ export default function PropFirmTracker() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to create challenge");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.message || "Failed to create challenge");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -699,6 +702,8 @@ export default function PropFirmTracker() {
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
       minTradingDays: Number(formData.minTradingDays) || 0,
       maxTradingDays: Number(formData.maxTradingDays) || null,
+      maxDayProfitPercent: formData.maxDayProfitPercent || null,
+      mt5AccountId: formData.mt5AccountId || null,
     });
   }
 
