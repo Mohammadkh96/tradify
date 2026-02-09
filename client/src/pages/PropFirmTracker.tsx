@@ -677,12 +677,16 @@ export default function PropFirmTracker() {
   const hasBlockingError = formWarnings.some((w) => w.level === "error");
 
   function handleCreateSubmit() {
-    if (!formData.firmName || !formData.challengeName || !formData.accountSize || !formData.profitTarget || !formData.dailyDrawdownLimit || !formData.maxDrawdownLimit) {
-      toast({ title: "Missing fields", description: "Please fill in all required fields (Firm Name, Challenge Name, Account Size, Profit Target, Daily Drawdown, Max Drawdown).", variant: "destructive" });
-      return;
-    }
-    if (!formData.startDate) {
-      toast({ title: "Missing start date", description: "Please select a start date for the challenge.", variant: "destructive" });
+    const missing: string[] = [];
+    if (!formData.firmName) missing.push("Firm Name");
+    if (!formData.challengeName) missing.push("Challenge Name");
+    if (!formData.accountSize) missing.push("Account Size");
+    if (!formData.profitTarget) missing.push("Profit Target");
+    if (!formData.dailyDrawdownLimit) missing.push("Daily Drawdown Limit");
+    if (!formData.maxDrawdownLimit) missing.push("Max Drawdown Limit");
+    if (!formData.startDate) missing.push("Start Date");
+    if (missing.length > 0) {
+      toast({ title: "Missing fields", description: `Please fill in: ${missing.join(", ")}.`, variant: "destructive" });
       return;
     }
     if (hasBlockingError) {
