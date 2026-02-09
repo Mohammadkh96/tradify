@@ -66,6 +66,56 @@ export async function ensureSchemaColumns() {
     await pool.query(`
       ALTER TABLE early_access_signups ADD COLUMN IF NOT EXISTS registered_user_id TEXT;
     `);
+
+    // Create prop firm challenges table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS prop_firm_challenges (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        firm_name TEXT NOT NULL,
+        challenge_name TEXT NOT NULL,
+        phase TEXT NOT NULL DEFAULT 'Phase 1',
+        account_size TEXT NOT NULL,
+        currency TEXT DEFAULT 'USD',
+        profit_target TEXT NOT NULL,
+        daily_drawdown_limit TEXT NOT NULL,
+        max_drawdown_limit TEXT NOT NULL,
+        trailing_drawdown BOOLEAN DEFAULT false,
+        drawdown_type TEXT DEFAULT 'static',
+        trailing_stop_behavior TEXT DEFAULT 'always_trails',
+        phase_link BOOLEAN DEFAULT false,
+        min_trading_days INTEGER DEFAULT 0,
+        max_trading_days INTEGER,
+        consistency_rule BOOLEAN DEFAULT false,
+        max_day_profit_percent TEXT,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP,
+        status TEXT NOT NULL DEFAULT 'active',
+        current_balance TEXT,
+        high_water_mark TEXT,
+        mt5_account_id TEXT,
+        mt5_auto_sync BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Create prop firm daily stats table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS prop_firm_daily_stats (
+        id SERIAL PRIMARY KEY,
+        challenge_id INTEGER NOT NULL,
+        user_id TEXT NOT NULL,
+        date TIMESTAMP NOT NULL,
+        starting_balance TEXT NOT NULL,
+        ending_balance TEXT NOT NULL,
+        day_pl TEXT NOT NULL,
+        trades_count INTEGER DEFAULT 0,
+        daily_drawdown_used TEXT,
+        high_water_mark TEXT
+      );
+    `);
+
     console.log('Schema columns verified');
   } catch (error) {
     console.error('Schema migration error:', error);
