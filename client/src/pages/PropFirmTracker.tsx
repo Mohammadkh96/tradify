@@ -468,8 +468,8 @@ export default function PropFirmTracker() {
       setView("list");
       resetForm();
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create challenge.", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ title: "Error", description: error?.message || "Failed to create challenge.", variant: "destructive" });
     },
   });
 
@@ -677,8 +677,12 @@ export default function PropFirmTracker() {
   const hasBlockingError = formWarnings.some((w) => w.level === "error");
 
   function handleCreateSubmit() {
-    if (!formData.firmName || !formData.accountSize || !formData.profitTarget) {
-      toast({ title: "Missing fields", description: "Please fill in all required fields.", variant: "destructive" });
+    if (!formData.firmName || !formData.challengeName || !formData.accountSize || !formData.profitTarget || !formData.dailyDrawdownLimit || !formData.maxDrawdownLimit) {
+      toast({ title: "Missing fields", description: "Please fill in all required fields (Firm Name, Challenge Name, Account Size, Profit Target, Daily Drawdown, Max Drawdown).", variant: "destructive" });
+      return;
+    }
+    if (!formData.startDate) {
+      toast({ title: "Missing start date", description: "Please select a start date for the challenge.", variant: "destructive" });
       return;
     }
     if (hasBlockingError) {
@@ -689,8 +693,8 @@ export default function PropFirmTracker() {
       ...formData,
       startDate: new Date(formData.startDate).toISOString(),
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-      minTradingDays: Number(formData.minTradingDays),
-      maxTradingDays: Number(formData.maxTradingDays),
+      minTradingDays: Number(formData.minTradingDays) || 0,
+      maxTradingDays: Number(formData.maxTradingDays) || null,
     });
   }
 

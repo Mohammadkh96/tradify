@@ -3103,21 +3103,28 @@ End with: "Review your charts for current market structure."`;
 
       const { category, title, description } = req.body;
       if (!category || !title || !description) {
-        return res.status(400).json({ message: "All fields are required" });
+        return res.status(400).json({ message: "All fields are required: category, title, and description" });
+      }
+
+      if (title.length > 200) {
+        return res.status(400).json({ message: "Title must be under 200 characters" });
+      }
+      if (description.length > 2000) {
+        return res.status(400).json({ message: "Description must be under 2000 characters" });
       }
 
       await db.insert(schema.foundingMemberSuggestions).values({
         userId,
         category,
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         status: "pending"
       });
 
       res.status(201).json({ success: true, message: "Suggestion submitted successfully" });
-    } catch (error) {
-      console.error("Error submitting suggestion:", error);
-      res.status(500).json({ message: "Failed to submit suggestion" });
+    } catch (error: any) {
+      console.error("Error submitting suggestion:", error?.message || error);
+      res.status(500).json({ message: "Failed to submit suggestion. Please try again." });
     }
   });
 
@@ -4768,6 +4775,14 @@ Guidelines:
   app.post("/api/prop-firm/challenges", requireAuth, async (req, res) => {
     try {
       const data = req.body;
+      
+      if (!data.firmName || !data.challengeName || !data.accountSize || !data.profitTarget || !data.dailyDrawdownLimit || !data.maxDrawdownLimit) {
+        return res.status(400).json({ message: "Missing required fields: firmName, challengeName, accountSize, profitTarget, dailyDrawdownLimit, maxDrawdownLimit" });
+      }
+      if (!data.startDate) {
+        return res.status(400).json({ message: "Start date is required" });
+      }
+      
       const [challenge] = await db.insert(schema.propFirmChallenges).values({
         userId: req.session.userId!,
         firmName: data.firmName,

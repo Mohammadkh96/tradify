@@ -36,6 +36,25 @@ import RiskDisclaimer from "@/pages/RiskDisclaimer";
 import CookiePolicy from "@/pages/CookiePolicy";
 import { useQuery } from "@tanstack/react-query";
 
+function HybridRoute({ children }: { children: React.ReactNode }) {
+  const { data: userRole, isLoading } = useQuery<any>({
+    queryKey: ["/api/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
+    staleTime: Infinity,
+  });
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Loading...</div>;
+  }
+
+  if (userRole) {
+    return <MainLayout>{children}</MainLayout>;
+  }
+
+  return <>{children}</>;
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { data: userRole, isLoading } = useQuery<any>({
     queryKey: ["/api/user"],
@@ -391,7 +410,7 @@ function AppRoutes() {
       {/* Public Routes */}
       <Route path="/" element={<Landing />} />
       <Route path="/early-access" element={<EarlyAccess />} />
-      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/pricing" element={<HybridRoute><Pricing /></HybridRoute>} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
