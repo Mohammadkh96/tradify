@@ -4974,12 +4974,31 @@ Guidelines:
       const sl = parseFloat(stopLoss || "0");
       const lots = parseFloat(lotSize || "0.01");
       let potentialLoss = 0;
+
+      const getContractMultiplier = (symbol: string): number => {
+        const s = (symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+        if (s.includes("XAUUSD") || s.includes("GOLD")) return 100;
+        if (s.includes("XAGUSD") || s.includes("SILVER")) return 5000;
+        if (s.includes("XTIUSD") || s.includes("USOIL") || s.includes("WTIUSD") || s.includes("CL")) return 1000;
+        if (s.includes("XBRUSD") || s.includes("BRENT") || s.includes("UKOUSD")) return 1000;
+        if (s.includes("XNGUSD") || s.includes("NATGAS") || s.includes("NGAS")) return 10000;
+        if (s.includes("US30") || s.includes("DJ30") || s.includes("DJI")) return 1;
+        if (s.includes("US500") || s.includes("SP500") || s.includes("SPX500")) return 1;
+        if (s.includes("NAS100") || s.includes("USTEC") || s.includes("NDX")) return 1;
+        if (s.includes("US2000") || s.includes("RUSSELL")) return 1;
+        if (s.includes("DE30") || s.includes("DE40") || s.includes("GER40") || s.includes("DAX")) return 1;
+        if (s.includes("UK100") || s.includes("FTSE")) return 1;
+        if (s.includes("JP225") || s.includes("JPN225") || s.includes("NIKKEI")) return 1;
+        if (s.includes("BTCUSD") || s.includes("BITCOIN")) return 1;
+        if (s.includes("ETHUSD") || s.includes("ETHEREUM")) return 1;
+        if (s.includes("JPY")) return 1000;
+        return 100000;
+      }
+
       if (entry && sl) {
-        const pipDiff = Math.abs(entry - sl);
-        potentialLoss = pipDiff * lots * 100000; // Approximate for forex
-        if (pair && (pair.includes("JPY") || pair.includes("jpy"))) {
-          potentialLoss = pipDiff * lots * 1000;
-        }
+        const priceDiff = Math.abs(entry - sl);
+        const multiplier = getContractMultiplier(pair);
+        potentialLoss = priceDiff * lots * multiplier;
       }
 
       // Daily drawdown check
@@ -5054,16 +5073,20 @@ Guidelines:
       let suggestedMaxSL = null;
       if (entry && lots > 0) {
         const safeRisk = Math.min(dailyDDRemaining * 0.3, maxDDRemaining * 0.2);
-        let safePipDistance: number;
-        if (pair && (pair.includes("JPY") || pair.includes("jpy"))) {
-          safePipDistance = safeRisk / (lots * 1000);
-        } else {
-          safePipDistance = safeRisk / (lots * 100000);
-        }
+        const multiplier = getContractMultiplier(pair);
+        const safePriceDistance = safeRisk / (lots * multiplier);
+
+        const s = (pair || "").toUpperCase();
+        let decimals = 5;
+        if (s.includes("JPY") || s.includes("XAU") || s.includes("GOLD")) decimals = 2;
+        else if (s.includes("XAG") || s.includes("SILVER")) decimals = 3;
+        else if (s.includes("US30") || s.includes("NAS") || s.includes("SP500") || s.includes("DE") || s.includes("UK100") || s.includes("JP225")) decimals = 1;
+        else if (s.includes("BTC") || s.includes("ETH")) decimals = 2;
+
         if (tradeDirection === "Long" || tradeDirection === "Buy") {
-          suggestedMaxSL = (entry - safePipDistance).toFixed(5);
+          suggestedMaxSL = (entry - safePriceDistance).toFixed(decimals);
         } else {
-          suggestedMaxSL = (entry + safePipDistance).toFixed(5);
+          suggestedMaxSL = (entry + safePriceDistance).toFixed(decimals);
         }
       }
 
