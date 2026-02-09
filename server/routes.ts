@@ -4810,9 +4810,9 @@ Guidelines:
         mt5AutoSync: data.mt5AutoSync || false,
       }).returning();
       res.status(201).json(challenge);
-    } catch (error) {
-      console.error("Error creating challenge:", error);
-      res.status(500).json({ message: "Failed to create challenge" });
+    } catch (error: any) {
+      console.error("Error creating challenge:", error?.message || error, error?.stack);
+      res.status(500).json({ message: error?.message || "Failed to create challenge" });
     }
   });
 
