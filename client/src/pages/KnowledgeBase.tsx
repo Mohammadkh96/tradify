@@ -400,15 +400,12 @@ function AITutorSection({ lesson, hasFullAccess }: { lesson: Lesson; hasFullAcce
   const askTutorMutation = useMutation({
     mutationFn: async (q: string) => {
       const lessonContent = lesson.sections.map(s => `${s.title}: ${s.content}`).join('\n\n').slice(0, 3000);
-      const response = await apiRequest("/api/education/ai-tutor", {
-        method: "POST",
-        body: JSON.stringify({ 
-          question: q, 
-          lessonTitle: lesson.title,
-          lessonContent 
-        }),
+      const response = await apiRequest("POST", "/api/education/ai-tutor", { 
+        question: q, 
+        lessonTitle: lesson.title,
+        lessonContent 
       });
-      return response as { answer: string };
+      return await response.json() as { answer: string };
     },
   });
 
