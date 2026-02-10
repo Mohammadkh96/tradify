@@ -2517,6 +2517,7 @@ export function isLessonUnlocked(
 ): boolean {
   const lesson = EDUCATION_LESSONS.find(l => l.id === lessonId);
   if (!lesson) return false;
+  if (completedLessons.has(lessonId)) return true;
   if (!lesson.prerequisite) return true;
   if (!completedLessons.has(lesson.prerequisite)) return false;
   const prereqScore = quizScores.get(lesson.prerequisite) ?? 0;

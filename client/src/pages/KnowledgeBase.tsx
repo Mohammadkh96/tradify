@@ -101,7 +101,7 @@ function LessonNode({
   onSelect: (id: number) => void;
 }) {
   const colors = phaseColorMap[phaseColor] || phaseColorMap.slate;
-  const canOpen = isUnlocked && hasAccess;
+  const canOpen = (isUnlocked || isCompleted) && hasAccess;
   const quizPassed = quizScore >= lesson.requiredScore;
 
   return (
