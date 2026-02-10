@@ -1,13 +1,14 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { 
+import {
   BookOpen, TrendingUp, Brain, Target, Heart, Zap,
   Lock, Clock, ChevronRight, Crown, Star, Search,
   GraduationCap, CheckCircle, ArrowLeft, AlertTriangle,
   Lightbulb, Play, XCircle, CircleCheck, Link2, HelpCircle,
   Bookmark, BookmarkCheck, MessageSquare, Send, Loader2,
-  ArrowUp
+  ArrowUp, Compass, Layers, Droplets, Crosshair, Shield,
+  Trophy, ChevronDown, Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,12 +20,15 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   EDUCATION_LESSONS,
-  LESSON_CATEGORIES,
+  EDUCATION_PHASES,
   type Lesson,
-  type LessonCategory,
+  type Phase,
   type QuizQuestion,
   type DiagramType,
+  type AccessTier,
   canAccessLesson,
+  isLessonUnlocked,
+  getPhaseProgress,
 } from "@/data/educationLessons";
 import { DIAGRAM_TYPES } from "@/components/TradingDiagrams";
 
@@ -52,200 +56,324 @@ type QuizResult = {
   completedAt: string;
 };
 
-const categoryIcons: Record<string, typeof BookOpen> = {
-  fundamentals: BookOpen,
-  "price-action": TrendingUp,
-  "smart-money": Brain,
-  strategies: Target,
-  psychology: Heart,
-  advanced: Zap,
+const phaseIcons: Record<string, typeof BookOpen> = {
+  Compass,
+  Layers,
+  Droplets,
+  Crosshair,
+  Target,
+  Shield,
+  Brain,
+  Trophy,
 };
 
-const difficultyColors: Record<string, string> = {
-  Beginner: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-  Intermediate: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-  Advanced: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+const tierBadgeStyles: Record<AccessTier, string> = {
+  FREE: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  PRO: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  ELITE: "bg-purple-500/10 text-purple-500 border-purple-500/20",
 };
 
-function LessonCard({
+const phaseColorMap: Record<string, { bg: string; border: string; text: string; glow: string }> = {
+  slate: { bg: "bg-slate-500/10", border: "border-slate-500/30", text: "text-slate-400", glow: "shadow-slate-500/20" },
+  emerald: { bg: "bg-emerald-500/10", border: "border-emerald-500/30", text: "text-emerald-500", glow: "shadow-emerald-500/20" },
+  blue: { bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-400", glow: "shadow-blue-500/20" },
+  violet: { bg: "bg-violet-500/10", border: "border-violet-500/30", text: "text-violet-400", glow: "shadow-violet-500/20" },
+  amber: { bg: "bg-amber-500/10", border: "border-amber-500/30", text: "text-amber-500", glow: "shadow-amber-500/20" },
+  rose: { bg: "bg-rose-500/10", border: "border-rose-500/30", text: "text-rose-400", glow: "shadow-rose-500/20" },
+  purple: { bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-400", glow: "shadow-purple-500/20" },
+};
+
+function LessonNode({
   lesson,
-  hasFullAccess,
-  onSelectLesson,
+  isUnlocked,
   isCompleted,
-  isBookmarked,
-  onToggleBookmark,
+  hasAccess,
+  quizScore,
+  phaseColor,
+  onSelect,
 }: {
   lesson: Lesson;
-  hasFullAccess: boolean;
-  onSelectLesson: (id: number) => void;
+  isUnlocked: boolean;
   isCompleted: boolean;
-  isBookmarked: boolean;
-  onToggleBookmark: (lessonId: number) => void;
+  hasAccess: boolean;
+  quizScore: number;
+  phaseColor: string;
+  onSelect: (id: number) => void;
 }) {
-  const canAccess = canAccessLesson(lesson.id, hasFullAccess);
-  const CategoryIcon = categoryIcons[lesson.category] || BookOpen;
+  const colors = phaseColorMap[phaseColor] || phaseColorMap.slate;
+  const canOpen = isUnlocked && hasAccess;
+  const quizPassed = quizScore >= lesson.requiredScore;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3, delay: lesson.order * 0.1 }}
+      className="relative"
     >
-      <Card
+      <button
+        onClick={() => canOpen && onSelect(lesson.id)}
+        disabled={!canOpen}
         className={cn(
-          "relative overflow-visible transition-all duration-200 h-full",
-          canAccess
-            ? "hover:border-emerald-500/50 cursor-pointer hover-elevate"
-            : "opacity-75",
-          isCompleted && "border-emerald-500/30"
+          "w-full text-left p-4 rounded-lg border transition-all duration-200 group",
+          canOpen && !isCompleted && "hover-elevate cursor-pointer",
+          isCompleted && quizPassed
+            ? "border-emerald-500/40 bg-emerald-500/5"
+            : isCompleted
+              ? "border-amber-500/40 bg-amber-500/5"
+              : canOpen
+                ? `${colors.border} ${colors.bg}`
+                : "border-border/50 bg-muted/30 opacity-60"
         )}
-        onClick={() => canAccess && onSelectLesson(lesson.id)}
-        data-testid={`lesson-card-${lesson.id}`}
+        data-testid={`lesson-node-${lesson.id}`}
       >
-        <div className="absolute top-3 right-3 flex items-center gap-2">
-          {isCompleted && (
-            <CheckCircle className="w-5 h-5 text-emerald-500" data-testid={`completed-${lesson.id}`} />
-          )}
-          {canAccess && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleBookmark(lesson.id);
-              }}
-              className="p-1 hover:bg-muted rounded"
-              data-testid={`bookmark-toggle-${lesson.id}`}
-            >
-              {isBookmarked ? (
-                <BookmarkCheck className="w-4 h-4 text-amber-500" />
-              ) : (
-                <Bookmark className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-start gap-3">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-black",
+            isCompleted && quizPassed
+              ? "bg-emerald-500 text-white"
+              : isCompleted
+                ? "bg-amber-500 text-white"
+                : canOpen
+                  ? `${colors.bg} ${colors.text} border ${colors.border}`
+                  : "bg-muted text-muted-foreground"
+          )}>
+            {isCompleted && quizPassed ? (
+              <CheckCircle size={18} />
+            ) : isCompleted ? (
+              <span>{lesson.order}</span>
+            ) : !canOpen ? (
+              <Lock size={14} />
+            ) : (
+              <span>{lesson.order}</span>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h4 className={cn(
+              "font-bold text-sm line-clamp-2 mb-1",
+              canOpen ? "text-foreground" : "text-muted-foreground"
+            )} data-testid={`text-lesson-title-${lesson.id}`}>
+              {lesson.title}
+            </h4>
+            <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+              {lesson.description}
+            </p>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 text-muted-foreground text-[10px]">
+                <Clock size={10} />
+                <span>{lesson.duration}</span>
+              </div>
+              <div className="flex items-center gap-1 text-muted-foreground text-[10px]">
+                <BookOpen size={10} />
+                <span>{lesson.sections.length} sections</span>
+              </div>
+              {isCompleted && quizScore > 0 && (
+                <Badge variant="outline" className={cn(
+                  "text-[10px] font-bold",
+                  quizPassed ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"
+                )}>
+                  Quiz: {quizScore}%
+                </Badge>
               )}
-            </button>
-          )}
-          {lesson.isFree && !isCompleted && (
-            <Badge className="bg-emerald-500 text-white text-[10px] font-black">
-              FREE
-            </Badge>
-          )}
-          {!canAccess && (
-            <Badge variant="outline" className="text-[10px] font-black gap-1">
-              <Lock size={10} />
-              PRO
-            </Badge>
+              {!hasAccess && (
+                <Badge variant="outline" className="text-[10px] font-black gap-1">
+                  <Lock size={8} />
+                  {lesson.accessTier}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {canOpen && (
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
           )}
         </div>
+      </button>
+    </motion.div>
+  );
+}
 
-        <CardContent className="p-4 sm:p-6">
+function PhaseCard({
+  phase,
+  lessons,
+  completedLessons,
+  quizScores,
+  userTier,
+  onSelectLesson,
+  isExpanded,
+  onToggleExpand,
+}: {
+  phase: Phase;
+  lessons: Lesson[];
+  completedLessons: Set<number>;
+  quizScores: Map<number, number>;
+  userTier: AccessTier;
+  onSelectLesson: (id: number) => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+}) {
+  const { completed, total, percentage } = getPhaseProgress(phase.id, completedLessons);
+  const PhaseIcon = phaseIcons[phase.icon] || BookOpen;
+  const colors = phaseColorMap[phase.color] || phaseColorMap.slate;
+  const hasAccess = canAccessLesson(lessons[0]?.id ?? 0, userTier);
+
+  const allPhaseLessonsCompleted = completed === total;
+  const isPhaseAvailable = lessons.some(l => {
+    const unlocked = isLessonUnlocked(l.id, completedLessons, quizScores);
+    const accessible = canAccessLesson(l.id, userTier);
+    return unlocked && accessible && !completedLessons.has(l.id);
+  });
+
+  const nextLesson = lessons.find(l => {
+    const unlocked = isLessonUnlocked(l.id, completedLessons, quizScores);
+    const accessible = canAccessLesson(l.id, userTier);
+    return unlocked && accessible && !completedLessons.has(l.id);
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: phase.id * 0.08 }}
+      className="relative"
+    >
+      {phase.id > 0 && (
+        <div className="absolute -top-6 left-8 w-0.5 h-6 bg-border" />
+      )}
+
+      <Card className={cn(
+        "overflow-visible transition-all duration-300",
+        allPhaseLessonsCompleted && "border-emerald-500/30",
+        isPhaseAvailable && !allPhaseLessonsCompleted && colors.border,
+        !hasAccess && "opacity-70"
+      )}>
+        <button
+          onClick={onToggleExpand}
+          className="w-full text-left p-4 sm:p-5"
+          data-testid={`phase-toggle-${phase.id}`}
+        >
           <div className="flex items-start gap-4">
-            <div
-              className={cn(
-                "p-3 rounded-lg shrink-0",
-                isCompleted
-                  ? "bg-emerald-500/10"
-                  : lesson.isFree
-                    ? "bg-emerald-500/10"
-                    : "bg-muted"
-              )}
-            >
-              <CategoryIcon
-                className={cn(
-                  "w-5 h-5",
-                  isCompleted ? "text-emerald-500" : lesson.isFree ? "text-emerald-500" : "text-muted-foreground"
-                )}
-              />
+            <div className={cn(
+              "w-12 h-12 rounded-lg flex items-center justify-center shrink-0",
+              allPhaseLessonsCompleted
+                ? "bg-emerald-500/10"
+                : isPhaseAvailable
+                  ? colors.bg
+                  : "bg-muted"
+            )}>
+              <PhaseIcon className={cn(
+                "w-6 h-6",
+                allPhaseLessonsCompleted
+                  ? "text-emerald-500"
+                  : isPhaseAvailable
+                    ? colors.text
+                    : "text-muted-foreground"
+              )} />
             </div>
 
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-foreground text-sm sm:text-base mb-1 line-clamp-2" data-testid={`text-card-title-${lesson.id}`}>
-                {lesson.title}
-              </h3>
-              <p className="text-muted-foreground text-xs sm:text-sm line-clamp-2 mb-3" data-testid={`text-card-description-${lesson.id}`}>
-                {lesson.description}
-              </p>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge
-                  variant="outline"
-                  className={cn("text-[10px] font-bold", difficultyColors[lesson.difficulty])}
-                >
-                  {lesson.difficulty}
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <Badge variant="outline" className={cn("text-[10px] font-black", tierBadgeStyles[phase.accessTier])}>
+                  {phase.accessTier === "FREE" ? "FREE" : phase.accessTier}
                 </Badge>
-                <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                  <Clock size={12} />
-                  <span>{lesson.duration}</span>
-                </div>
-                <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                  <BookOpen size={12} />
-                  <span>{lesson.sections.length} sections</span>
-                </div>
-                {lesson.quiz && lesson.quiz.length > 0 && (
-                  <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                    <HelpCircle size={12} />
-                    <span>Quiz</span>
-                  </div>
+                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                  Phase {phase.id}
+                </span>
+                {allPhaseLessonsCompleted && (
+                  <Badge className="bg-emerald-500 text-white text-[10px] font-black gap-1">
+                    <CheckCircle size={10} />
+                    Complete
+                  </Badge>
                 )}
+              </div>
+
+              <h3 className="text-lg font-black text-foreground tracking-tight" data-testid={`text-phase-title-${phase.id}`}>
+                {phase.title}
+              </h3>
+              <p className="text-sm text-muted-foreground italic">{phase.subtitle}</p>
+
+              <div className="mt-3 flex items-center gap-3">
+                <div className="flex-1 bg-muted rounded-full h-1.5 max-w-[200px]">
+                  <div
+                    className={cn(
+                      "h-1.5 rounded-full transition-all duration-500",
+                      allPhaseLessonsCompleted ? "bg-emerald-500" : isPhaseAvailable ? "bg-blue-500" : "bg-muted-foreground/30"
+                    )}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground font-bold">
+                  {completed}/{total}
+                </span>
               </div>
             </div>
 
-            {canAccess && (
-              <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 hidden sm:block" />
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {!hasAccess && (
+                <Lock className="w-4 h-4 text-muted-foreground" />
+              )}
+              <ChevronDown className={cn(
+                "w-5 h-5 text-muted-foreground transition-transform duration-200",
+                isExpanded && "rotate-180"
+              )} />
+            </div>
           </div>
-        </CardContent>
+
+          {!isExpanded && nextLesson && (
+            <div className={cn("mt-3 ml-16 px-3 py-2 rounded-md text-xs font-medium flex items-center gap-2", colors.bg, colors.text)}>
+              <Play size={12} />
+              <span>Next: {nextLesson.title}</span>
+            </div>
+          )}
+        </button>
+
+        {isExpanded && (
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5">
+            <p className="text-sm text-muted-foreground mb-4 ml-16">
+              {phase.description}
+            </p>
+
+            <div className="space-y-3 ml-4 sm:ml-16">
+              {lessons.map((lesson) => {
+                const unlocked = isLessonUnlocked(lesson.id, completedLessons, quizScores);
+                const accessible = canAccessLesson(lesson.id, userTier);
+                const lessonCompleted = completedLessons.has(lesson.id);
+                const score = quizScores.get(lesson.id) ?? 0;
+
+                return (
+                  <LessonNode
+                    key={lesson.id}
+                    lesson={lesson}
+                    isUnlocked={unlocked}
+                    isCompleted={lessonCompleted}
+                    hasAccess={accessible}
+                    quizScore={score}
+                    phaseColor={phase.color}
+                    onSelect={onSelectLesson}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
       </Card>
     </motion.div>
   );
 }
 
-function CategoryFilter({
-  categories,
-  selectedCategory,
-  onSelectCategory,
-  lessonCounts,
+function QuizSection({
+  quiz,
+  lessonId,
+  requiredScore,
+  onQuizPass,
 }: {
-  categories: LessonCategory[];
-  selectedCategory: string | null;
-  onSelectCategory: (id: string | null) => void;
-  lessonCounts: Record<string, number>;
+  quiz: QuizQuestion[];
+  lessonId: number;
+  requiredScore: number;
+  onQuizPass?: () => void;
 }) {
-  return (
-    <div className="flex flex-wrap gap-2 mb-6">
-      <Button
-        variant={selectedCategory === null ? "default" : "outline"}
-        size="sm"
-        onClick={() => onSelectCategory(null)}
-        className="font-bold"
-        data-testid="filter-all"
-      >
-        All Lessons
-        <Badge variant="secondary" className="ml-2 text-[10px]">
-          {EDUCATION_LESSONS.length}
-        </Badge>
-      </Button>
-      {categories.map((cat) => {
-        const Icon = categoryIcons[cat.id] || BookOpen;
-        return (
-          <Button
-            key={cat.id}
-            variant={selectedCategory === cat.id ? "default" : "outline"}
-            size="sm"
-            onClick={() => onSelectCategory(cat.id)}
-            className="font-bold gap-2"
-            data-testid={`filter-${cat.id}`}
-          >
-            <Icon size={14} />
-            <span className="hidden sm:inline">{cat.name}</span>
-            <Badge variant="secondary" className="ml-1 text-[10px]">
-              {lessonCounts[cat.id] || 0}
-            </Badge>
-          </Button>
-        );
-      })}
-    </div>
-  );
-}
-
-function QuizSection({ quiz, lessonId }: { quiz: QuizQuestion[]; lessonId: number }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(false);
 
@@ -266,11 +394,15 @@ function QuizSection({ quiz, lessonId }: { quiz: QuizQuestion[]; lessonId: numbe
   const checkAnswers = () => {
     setShowResults(true);
     const score = quiz.filter(q => answers[q.id] === q.correctAnswer).length;
+    const percentage = Math.round((score / quiz.length) * 100);
     saveQuizResultMutation.mutate({
       score,
       totalQuestions: quiz.length,
       answers,
     });
+    if (percentage >= requiredScore && onQuizPass) {
+      onQuizPass();
+    }
   };
 
   const resetQuiz = () => {
@@ -279,91 +411,98 @@ function QuizSection({ quiz, lessonId }: { quiz: QuizQuestion[]; lessonId: numbe
   };
 
   const correctCount = quiz.filter(q => answers[q.id] === q.correctAnswer).length;
+  const scorePercentage = Math.round((correctCount / quiz.length) * 100);
+  const passed = scorePercentage >= requiredScore;
 
   return (
     <div className="mt-8 p-6 bg-gradient-to-r from-amber-500/5 to-transparent rounded-xl border border-amber-500/20">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <h2 className="text-lg font-black text-foreground uppercase tracking-tight flex items-center gap-2">
           <HelpCircle className="text-amber-500" size={20} />
-          Knowledge Check
+          Level Assessment
         </h2>
-        {showResults && (
-          <Badge className={cn(
-            "font-bold",
-            correctCount === quiz.length ? "bg-emerald-500" : correctCount >= quiz.length / 2 ? "bg-amber-500" : "bg-rose-500"
-          )}>
-            {correctCount}/{quiz.length} Correct
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[10px] font-bold">
+            Pass: {requiredScore}%
           </Badge>
-        )}
+          {showResults && (
+            <Badge className={cn(
+              "font-bold",
+              passed ? "bg-emerald-500" : "bg-rose-500"
+            )}>
+              {scorePercentage}% — {passed ? "PASSED" : "FAILED"}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
-        {quiz.map((question, qIdx) => {
-          const userAnswer = answers[question.id];
-          const isCorrect = userAnswer === question.correctAnswer;
-          const showAnswer = showResults && userAnswer !== undefined;
+        {quiz.map((q, qi) => {
+          const userAnswer = answers[q.id];
+          const isAnswered = userAnswer !== undefined;
+          const isCorrect = userAnswer === q.correctAnswer;
 
           return (
-            <div key={question.id} className="space-y-3" data-testid={`quiz-question-${lessonId}-${qIdx}`}>
-              <p className="font-bold text-foreground">
-                {qIdx + 1}. {question.question}
+            <div key={q.id} className="space-y-3">
+              <p className="font-bold text-foreground text-sm">
+                <span className="text-muted-foreground mr-2">{qi + 1}.</span>
+                {q.question}
               </p>
               <div className="grid gap-2">
-                {question.options.map((option, oIdx) => {
-                  const isSelected = userAnswer === oIdx;
-                  const isCorrectAnswer = question.correctAnswer === oIdx;
-
-                  return (
-                    <button
-                      key={oIdx}
-                      onClick={() => handleAnswer(question.id, oIdx)}
-                      disabled={showResults}
-                      className={cn(
-                        "text-left p-3 rounded-lg border transition-all text-sm",
-                        !showResults && "hover:border-amber-500/50",
-                        isSelected && !showResults && "border-amber-500 bg-amber-500/10",
-                        showResults && isCorrectAnswer && "border-emerald-500 bg-emerald-500/10",
-                        showResults && isSelected && !isCorrect && "border-rose-500 bg-rose-500/10",
-                        !isSelected && !showResults && "border-border"
-                      )}
-                      data-testid={`quiz-option-${lessonId}-${qIdx}-${oIdx}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                          isSelected && !showResults && "bg-amber-500 text-white",
-                          showResults && isCorrectAnswer && "bg-emerald-500 text-white",
-                          showResults && isSelected && !isCorrect && "bg-rose-500 text-white",
-                          !isSelected && "bg-muted text-muted-foreground"
-                        )}>
-                          {showResults && isCorrectAnswer ? (
-                            <CheckCircle size={14} />
-                          ) : showResults && isSelected && !isCorrect ? (
-                            <XCircle size={14} />
-                          ) : (
-                            String.fromCharCode(65 + oIdx)
-                          )}
-                        </div>
-                        <span className={cn(
-                          showResults && isCorrectAnswer && "text-emerald-500 font-medium",
-                          showResults && isSelected && !isCorrect && "text-rose-500"
-                        )}>
-                          {option}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+                {q.options.map((option, oi) => (
+                  <button
+                    key={oi}
+                    onClick={() => handleAnswer(q.id, oi)}
+                    disabled={showResults}
+                    className={cn(
+                      "text-left p-3 rounded-lg border text-sm transition-all",
+                      showResults
+                        ? oi === q.correctAnswer
+                          ? "border-emerald-500/50 bg-emerald-500/10 text-foreground"
+                          : oi === userAnswer
+                            ? "border-rose-500/50 bg-rose-500/10 text-foreground"
+                            : "border-border/30 text-muted-foreground"
+                        : userAnswer === oi
+                          ? "border-blue-500/50 bg-blue-500/10 text-foreground"
+                          : "border-border hover-elevate text-foreground"
+                    )}
+                    data-testid={`quiz-option-${q.id}-${oi}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border",
+                        showResults
+                          ? oi === q.correctAnswer
+                            ? "border-emerald-500 text-emerald-500"
+                            : oi === userAnswer
+                              ? "border-rose-500 text-rose-500"
+                              : "border-border text-muted-foreground"
+                          : userAnswer === oi
+                            ? "border-blue-500 text-blue-500 bg-blue-500/10"
+                            : "border-border text-muted-foreground"
+                      )}>
+                        {showResults && oi === q.correctAnswer ? (
+                          <CircleCheck size={14} />
+                        ) : showResults && oi === userAnswer ? (
+                          <XCircle size={14} />
+                        ) : (
+                          String.fromCharCode(65 + oi)
+                        )}
+                      </span>
+                      <span>{option}</span>
+                    </div>
+                  </button>
+                ))}
               </div>
-              {showAnswer && (
+              {showResults && (
                 <div className={cn(
                   "p-3 rounded-lg text-sm",
-                  isCorrect ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-rose-500/10 border border-rose-500/20"
+                  isCorrect ? "bg-emerald-500/5 border border-emerald-500/20" : "bg-amber-500/5 border border-amber-500/20"
                 )}>
-                  <p className={cn("font-medium", isCorrect ? "text-emerald-500" : "text-rose-500")}>
-                    {isCorrect ? "Correct!" : "Incorrect"}
-                  </p>
-                  <p className="text-muted-foreground mt-1">{question.explanation}</p>
+                  <div className="flex items-start gap-2">
+                    <Lightbulb size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-muted-foreground">{q.explanation}</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -371,37 +510,51 @@ function QuizSection({ quiz, lessonId }: { quiz: QuizQuestion[]; lessonId: numbe
         })}
       </div>
 
-      <div className="mt-6 flex gap-3">
+      <div className="mt-6 flex items-center gap-3 flex-wrap">
         {!showResults ? (
-          <Button 
-            onClick={checkAnswers} 
-            disabled={Object.keys(answers).length !== quiz.length}
-            className="font-bold"
+          <Button
+            onClick={checkAnswers}
+            disabled={Object.keys(answers).length < quiz.length}
+            className="font-bold gap-2"
             data-testid="button-check-answers"
           >
-            Check Answers
+            <Sparkles size={14} />
+            Submit Assessment
           </Button>
         ) : (
-          <Button onClick={resetQuiz} variant="outline" className="font-bold" data-testid="button-retry-quiz">
-            Try Again
-          </Button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button onClick={resetQuiz} variant="outline" className="font-bold" data-testid="button-retry-quiz">
+              Try Again
+            </Button>
+            {passed && (
+              <p className="text-sm text-emerald-500 font-bold flex items-center gap-1">
+                <CheckCircle size={14} />
+                Next lesson unlocked!
+              </p>
+            )}
+            {!passed && (
+              <p className="text-sm text-muted-foreground">
+                You need {requiredScore}% to unlock the next lesson. Review the material and try again.
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function AITutorSection({ lesson, hasFullAccess }: { lesson: Lesson; hasFullAccess: boolean }) {
+function AITutorSection({ lesson, hasProAccess }: { lesson: Lesson; hasProAccess: boolean }) {
   const [question, setQuestion] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const askTutorMutation = useMutation({
     mutationFn: async (q: string) => {
       const lessonContent = lesson.sections.map(s => `${s.title}: ${s.content}`).join('\n\n').slice(0, 3000);
-      const response = await apiRequest("POST", "/api/education/ai-tutor", { 
-        question: q, 
+      const response = await apiRequest("POST", "/api/education/ai-tutor", {
+        question: q,
         lessonTitle: lesson.title,
-        lessonContent 
+        lessonContent
       });
       return await response.json() as { answer: string };
     },
@@ -412,7 +565,7 @@ function AITutorSection({ lesson, hasFullAccess }: { lesson: Lesson; hasFullAcce
     askTutorMutation.mutate(question);
   };
 
-  if (!hasFullAccess) {
+  if (!hasProAccess) {
     return (
       <div className="mt-10 p-6 bg-gradient-to-r from-purple-500/5 to-transparent rounded-xl border border-purple-500/20">
         <div className="flex items-center justify-between">
@@ -445,13 +598,13 @@ function AITutorSection({ lesson, hasFullAccess }: { lesson: Lesson; hasFullAcce
         </div>
         <ChevronRight className={cn("w-5 h-5 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
       </button>
-      
+
       {isOpen && (
         <div className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">
             Ask any question about this lesson and get a personalized explanation based on the content.
           </p>
-          
+
           <div className="flex gap-2">
             <Input
               placeholder="e.g., Can you explain order blocks in simpler terms?"
@@ -461,8 +614,8 @@ function AITutorSection({ lesson, hasFullAccess }: { lesson: Lesson; hasFullAcce
               disabled={askTutorMutation.isPending}
               data-testid="input-ai-question"
             />
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               disabled={askTutorMutation.isPending || !question.trim()}
               data-testid="button-ask-ai"
             >
@@ -473,7 +626,7 @@ function AITutorSection({ lesson, hasFullAccess }: { lesson: Lesson; hasFullAcce
               )}
             </Button>
           </div>
-          
+
           {askTutorMutation.isSuccess && askTutorMutation.data && (
             <div className="p-4 bg-muted/50 rounded-lg border border-border">
               <div className="flex items-center gap-2 text-purple-500 text-xs font-black tracking-widest uppercase mb-2">
@@ -487,7 +640,7 @@ function AITutorSection({ lesson, hasFullAccess }: { lesson: Lesson; hasFullAcce
               </div>
             </div>
           )}
-          
+
           {askTutorMutation.isError && (
             <div className="p-4 bg-rose-500/10 rounded-lg border border-rose-500/20">
               <p className="text-sm text-rose-500">Failed to get response. Please try again.</p>
@@ -503,29 +656,36 @@ function LessonViewer({
   lesson,
   onClose,
   onSelectLesson,
-  hasFullAccess,
+  userTier,
   isCompleted,
   isBookmarked,
   onMarkComplete,
   onToggleBookmark,
+  quizScore,
+  nextLesson,
 }: {
   lesson: Lesson;
   onClose: () => void;
   onSelectLesson: (id: number) => void;
-  hasFullAccess: boolean;
+  userTier: AccessTier;
   isCompleted: boolean;
   isBookmarked: boolean;
   onMarkComplete: (lessonId: number, completed: boolean) => void;
   onToggleBookmark: (lessonId: number) => void;
+  quizScore: number;
+  nextLesson: Lesson | null;
 }) {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
+  const hasProAccess = userTier === "PRO" || userTier === "ELITE";
+
+  const phase = EDUCATION_PHASES.find(p => p.id === lesson.phaseId);
+  const colors = phaseColorMap[phase?.color || "slate"] || phaseColorMap.slate;
 
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 400);
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -538,11 +698,7 @@ function LessonViewer({
     topRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [lesson.id]);
 
-  const relatedLessonObjects = useMemo(() => {
-    return lesson.relatedLessons
-      .map(id => EDUCATION_LESSONS.find(l => l.id === id))
-      .filter((l): l is Lesson => l !== undefined);
-  }, [lesson.relatedLessons]);
+  const quizPassed = quizScore >= lesson.requiredScore;
 
   return (
     <div className="pb-20 md:pb-0" ref={topRef}>
@@ -555,9 +711,14 @@ function LessonViewer({
             data-testid="button-back-to-lessons"
           >
             <ArrowLeft size={16} />
-            Back to Lessons
+            Back to Phases
           </Button>
           <div className="flex items-center gap-2">
+            {phase && (
+              <Badge variant="outline" className={cn("text-[10px] font-bold", colors.text)}>
+                Phase {phase.id} — {phase.title}
+              </Badge>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -577,233 +738,202 @@ function LessonViewer({
                 </>
               )}
             </Button>
-            <Badge
-              variant="outline"
-              className={cn("font-bold", difficultyColors[lesson.difficulty])}
-            >
+            <Badge variant="outline" className={cn(
+              "text-[10px] font-bold",
+              lesson.difficulty === "Beginner"
+                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                : lesson.difficulty === "Intermediate"
+                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                  : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+            )}>
               {lesson.difficulty}
             </Badge>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-10">
-        <div className="bg-card border border-border rounded-xl overflow-hidden" data-testid={`lesson-viewer-${lesson.id}`}>
-          <div className="p-6 sm:p-8 border-b border-border bg-gradient-to-r from-emerald-500/5 to-transparent">
-            <div className="flex items-center gap-2 text-emerald-500 text-xs font-black tracking-widest uppercase mb-2">
-              <GraduationCap size={14} />
-              <span data-testid="text-lesson-number">Lesson {lesson.id}</span>
+      <div className="px-4 sm:px-6 lg:px-10">
+        <div className="max-w-4xl mx-auto py-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <span>Lesson {lesson.phaseId}.{lesson.order}</span>
+              <span className="text-border">|</span>
+              <Clock size={12} />
+              <span>{lesson.duration}</span>
+              <span className="text-border">|</span>
+              <BookOpen size={12} />
+              <span>{lesson.sections.length} sections</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-foreground mb-3" data-testid="text-lesson-title">
+            <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight mb-3" data-testid="text-lesson-heading">
               {lesson.title}
             </h1>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-2xl" data-testid="text-lesson-description">
-              {lesson.description}
-            </p>
-            <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Clock size={14} />
-                <span>{lesson.duration}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <BookOpen size={14} />
-                <span>{lesson.sections.length} sections</span>
-              </div>
-              {lesson.quiz && lesson.quiz.length > 0 && (
-                <div className="flex items-center gap-1">
-                  <HelpCircle size={14} />
-                  <span>{lesson.quiz.length} quiz questions</span>
-                </div>
-              )}
-            </div>
+            <p className="text-muted-foreground text-base italic">{lesson.description}</p>
           </div>
 
-          <div className="p-6 sm:p-8">
-            <div className="mb-8">
-              <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
-                <CheckCircle className="text-emerald-500" size={18} />
-                Key Takeaways
+          {lesson.sections.map((section, idx) => (
+            <div key={idx} className="mb-10">
+              <h2 className="text-lg font-black text-foreground mb-4 tracking-tight flex items-center gap-2">
+                <span className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold", colors.bg, colors.text)}>
+                  {idx + 1}
+                </span>
+                {section.title}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {lesson.keyPoints.map((point, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-3 p-4 bg-emerald-500/5 rounded-lg border border-emerald-500/20"
-                    data-testid={`keypoint-${idx}`}
-                  >
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                      <span className="text-emerald-500 text-xs font-black">
-                        {idx + 1}
-                      </span>
-                    </div>
-                    <p className="text-sm text-foreground font-medium" data-testid={`text-keypoint-${idx}`}>{point}</p>
-                  </div>
+
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                {section.content.split('\n\n').map((paragraph, pidx) => (
+                  <p key={pidx} className="text-foreground/90 mb-4 leading-relaxed text-sm">
+                    {paragraph}
+                  </p>
                 ))}
               </div>
-            </div>
 
-            <div className="space-y-10">
-              {lesson.sections.map((section, sectionIdx) => (
-                <div key={sectionIdx} data-testid={`section-${sectionIdx}`}>
-                  <h3 className="text-xl font-black text-foreground mb-4 flex items-center gap-2" data-testid={`text-section-title-${sectionIdx}`}>
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                      <span className="text-emerald-500 text-sm font-black">{sectionIdx + 1}</span>
-                    </div>
-                    {section.title}
-                  </h3>
-                  
-                  {section.content && (
-                    <div className="prose prose-sm dark:prose-invert max-w-none mb-4">
-                      {section.content.split('\n\n').map((paragraph, pIdx) => (
-                        <p key={pIdx} className="text-muted-foreground leading-relaxed mb-4">
-                          {paragraph}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-
-                  {section.bullets && section.bullets.length > 0 && (
-                    <ul className="space-y-2 mb-4">
-                      {section.bullets.map((bullet, bIdx) => (
-                        <li key={bIdx} className="flex items-start gap-3 text-muted-foreground">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
-                          <span className="text-sm leading-relaxed">{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {section.tradingExample && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg border border-blue-500/20">
-                      <div className="flex items-center gap-2 text-blue-500 text-xs font-black tracking-widest uppercase mb-3">
-                        <Play size={14} />
-                        <span>Trading Example</span>
-                      </div>
-                      <div className="grid gap-3">
-                        <div>
-                          <p className="text-xs font-bold text-blue-400 uppercase mb-1">Setup</p>
-                          <p className="text-sm text-muted-foreground">{section.tradingExample.setup}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-blue-400 uppercase mb-1">Entry</p>
-                          <p className="text-sm text-muted-foreground">{section.tradingExample.entry}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-blue-400 uppercase mb-1">Management</p>
-                          <p className="text-sm text-muted-foreground">{section.tradingExample.management}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-emerald-400 uppercase mb-1">Outcome</p>
-                          <p className="text-sm text-foreground font-medium">{section.tradingExample.outcome}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {lesson.diagrams && lesson.diagrams.length > 0 && (
-              <div className="mt-10">
-                <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
-                  <TrendingUp className="text-cyan-500" size={18} />
-                  Visual Reference
-                </h2>
-                <div className="grid gap-6">
-                  {lesson.diagrams.map((diagramType: DiagramType) => {
-                    const DiagramComponent = DIAGRAM_TYPES[diagramType];
-                    return DiagramComponent ? <DiagramComponent key={diagramType} /> : null;
-                  })}
-                </div>
-              </div>
-            )}
-
-            {lesson.commonMistakes && lesson.commonMistakes.length > 0 && (
-              <div className="mt-10 p-6 bg-rose-500/5 rounded-xl border border-rose-500/20">
-                <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
-                  <AlertTriangle className="text-rose-500" size={18} />
-                  Common Mistakes to Avoid
-                </h2>
-                <ul className="space-y-3">
-                  {lesson.commonMistakes.map((mistake, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <XCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-                      <span className="text-sm text-muted-foreground">{mistake}</span>
+              {section.bullets && section.bullets.length > 0 && (
+                <ul className="mt-4 space-y-2">
+                  {section.bullets.map((bullet, bidx) => (
+                    <li key={bidx} className="flex items-start gap-2 text-sm text-foreground/80">
+                      <ChevronRight size={14} className={cn("mt-0.5 shrink-0", colors.text)} />
+                      <span>{bullet}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
+              )}
 
-            {lesson.quiz && lesson.quiz.length > 0 && (
-              <QuizSection quiz={lesson.quiz} lessonId={lesson.id} />
-            )}
-
-            <AITutorSection lesson={lesson} hasFullAccess={hasFullAccess} />
-
-            {lesson.relatedLessons && relatedLessonObjects.length > 0 && (
-              <div className="mt-10">
-                <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
-                  <Link2 className="text-emerald-500" size={18} />
-                  Related Lessons
-                </h2>
-                <div className="grid gap-3">
-                  {relatedLessonObjects.map((related) => {
-                    const canAccess = canAccessLesson(related.id, hasFullAccess);
-                    return (
-                      <button
-                        key={related.id}
-                        onClick={() => canAccess && onSelectLesson(related.id)}
-                        disabled={!canAccess}
-                        className={cn(
-                          "text-left p-4 rounded-lg border transition-all flex items-center justify-between gap-4",
-                          canAccess ? "hover:border-emerald-500/50 hover-elevate" : "opacity-60"
-                        )}
-                        data-testid={`related-lesson-${related.id}`}
-                      >
-                        <div>
-                          <p className="font-bold text-foreground text-sm">{related.title}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{related.description.slice(0, 80)}...</p>
-                        </div>
-                        {canAccess ? (
-                          <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
-                        ) : (
-                          <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
+              {section.tradingExample && (
+                <div className="mt-6 p-4 bg-card rounded-lg border border-border">
+                  <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <Target size={12} />
+                    Trading Example
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <span className="font-bold text-foreground">Setup: </span>
+                      <span className="text-foreground/80">{section.tradingExample.setup}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-foreground">Entry: </span>
+                      <span className="text-foreground/80">{section.tradingExample.entry}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-foreground">Management: </span>
+                      <span className="text-foreground/80">{section.tradingExample.management}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-foreground">Outcome: </span>
+                      <span className="text-foreground/80">{section.tradingExample.outcome}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          ))}
 
-            <div className="mt-12 pt-8 border-t border-border">
-              <div className="flex flex-col items-center gap-4">
+          {lesson.diagrams && lesson.diagrams.length > 0 && (
+            <div className="mt-8 space-y-6">
+              {lesson.diagrams.map((diagramType) => {
+                const diagramInfo = DIAGRAM_TYPES[diagramType];
+                if (!diagramInfo) return null;
+                const DiagramComponent = diagramInfo.component;
+                return (
+                  <div key={diagramType} className="p-4 bg-card rounded-lg border border-border">
+                    <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <TrendingUp size={12} />
+                      {diagramInfo.title}
+                    </h3>
+                    <DiagramComponent />
+                    <p className="text-xs text-muted-foreground mt-3 italic">{diagramInfo.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {lesson.keyPoints && lesson.keyPoints.length > 0 && (
+            <div className="mt-10 p-6 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+              <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
+                <Lightbulb className="text-emerald-500" size={20} />
+                Key Takeaways
+              </h2>
+              <ul className="space-y-2">
+                {lesson.keyPoints.map((point, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-foreground/80">
+                    <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {lesson.commonMistakes && lesson.commonMistakes.length > 0 && (
+            <div className="mt-6 p-6 bg-rose-500/5 rounded-xl border border-rose-500/20">
+              <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
+                <AlertTriangle className="text-rose-500" size={20} />
+                Common Mistakes
+              </h2>
+              <ul className="space-y-2">
+                {lesson.commonMistakes.map((mistake, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-foreground/80">
+                    <XCircle size={14} className="text-rose-500 mt-0.5 shrink-0" />
+                    <span>{mistake}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <AITutorSection lesson={lesson} hasProAccess={hasProAccess} />
+
+          {lesson.quiz && lesson.quiz.length > 0 && (
+            <QuizSection
+              quiz={lesson.quiz}
+              lessonId={lesson.id}
+              requiredScore={lesson.requiredScore}
+              onQuizPass={() => {
+                if (!isCompleted) {
+                  onMarkComplete(lesson.id, true);
+                }
+              }}
+            />
+          )}
+
+          <div className="mt-12 pt-8 border-t border-border">
+            <div className="flex flex-col items-center gap-4">
+              <Button
+                variant={isCompleted ? "outline" : "default"}
+                onClick={() => onMarkComplete(lesson.id, !isCompleted)}
+                className={cn(
+                  "font-bold gap-2 px-8",
+                  isCompleted && "border-emerald-500/50"
+                )}
+                data-testid="button-mark-complete"
+              >
+                {isCompleted ? (
+                  <>
+                    <CheckCircle size={16} className="text-emerald-500" />
+                    Lesson Completed
+                  </>
+                ) : (
+                  <>
+                    <CircleCheck size={16} />
+                    Mark as Complete
+                  </>
+                )}
+              </Button>
+
+              {isCompleted && nextLesson && (
                 <Button
-                  variant={isCompleted ? "outline" : "default"}
-                  onClick={() => onMarkComplete(lesson.id, !isCompleted)}
-                  className={cn(
-                    "font-bold gap-2 px-8",
-                    isCompleted && "border-emerald-500/50"
-                  )}
-                  data-testid="button-mark-complete"
+                  onClick={() => onSelectLesson(nextLesson.id)}
+                  className="font-bold gap-2"
+                  data-testid="button-next-lesson"
                 >
-                  {isCompleted ? (
-                    <>
-                      <CheckCircle size={16} className="text-emerald-500" />
-                      Lesson Completed
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={16} />
-                      Mark Lesson as Complete
-                    </>
-                  )}
+                  Next: {nextLesson.title}
+                  <ChevronRight size={16} />
                 </Button>
-                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest text-center">
-                  Educational content only. Not financial advice.
-                </p>
-              </div>
+              )}
+
+              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest text-center">
+                Educational content only. Not financial advice.
+              </p>
             </div>
           </div>
         </div>
@@ -812,7 +942,7 @@ function LessonViewer({
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-20 md:bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all hover:bg-emerald-700"
+          className="fixed bottom-20 md:bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all"
           data-testid="button-scroll-to-top"
           aria-label="Scroll to top"
         >
@@ -824,14 +954,12 @@ function LessonViewer({
 }
 
 export default function KnowledgeBase() {
-  const { canAccess } = usePlan();
+  const { tier, isPaid, isElite } = usePlan();
   const [, navigate] = useLocation();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showBookmarked, setShowBookmarked] = useState(false);
+  const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set([0]));
 
-  const hasFullAccess = canAccess("fullEducationAccess");
+  const userTier: AccessTier = (tier as AccessTier) || "FREE";
 
   const { data: progress = [] } = useQuery<LessonProgress[]>({
     queryKey: ["/api/education/progress"],
@@ -839,6 +967,10 @@ export default function KnowledgeBase() {
 
   const { data: bookmarks = [] } = useQuery<LessonBookmark[]>({
     queryKey: ["/api/education/bookmarks"],
+  });
+
+  const { data: quizResults = [] } = useQuery<QuizResult[]>({
+    queryKey: ["/api/education/quiz-results"],
   });
 
   const progressMutation = useMutation({
@@ -876,6 +1008,18 @@ export default function KnowledgeBase() {
     return new Set(bookmarks.map(b => b.lessonId));
   }, [bookmarks]);
 
+  const quizScores = useMemo(() => {
+    const scores = new Map<number, number>();
+    quizResults.forEach(result => {
+      const percentage = Math.round((result.score / result.totalQuestions) * 100);
+      const existing = scores.get(result.lessonId) ?? 0;
+      if (percentage > existing) {
+        scores.set(result.lessonId, percentage);
+      }
+    });
+    return scores;
+  }, [quizResults]);
+
   const handleToggleBookmark = (lessonId: number) => {
     if (bookmarkedLessonIds.has(lessonId)) {
       removeBookmarkMutation.mutate(lessonId);
@@ -888,47 +1032,66 @@ export default function KnowledgeBase() {
     progressMutation.mutate({ lessonId, completed });
   };
 
-  const lessonCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    EDUCATION_LESSONS.forEach((lesson) => {
-      counts[lesson.category] = (counts[lesson.category] || 0) + 1;
+  const togglePhase = (phaseId: number) => {
+    setExpandedPhases(prev => {
+      const next = new Set(prev);
+      if (next.has(phaseId)) {
+        next.delete(phaseId);
+      } else {
+        next.add(phaseId);
+      }
+      return next;
     });
-    return counts;
-  }, []);
+  };
 
-  const filteredLessons = useMemo(() => {
-    let lessons = EDUCATION_LESSONS;
-    
-    if (showBookmarked) {
-      lessons = lessons.filter(l => bookmarkedLessonIds.has(l.id));
-    }
-    
-    if (selectedCategory) {
-      lessons = lessons.filter((l) => l.category === selectedCategory);
-    }
-    
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      lessons = lessons.filter(
-        (l) =>
-          l.title.toLowerCase().includes(query) ||
-          l.description.toLowerCase().includes(query) ||
-          l.sections.some((s) => s.title.toLowerCase().includes(query))
-      );
-    }
-    
-    return lessons;
-  }, [selectedCategory, searchQuery, showBookmarked, bookmarkedLessonIds]);
+  const phaseLessonsMap = useMemo(() => {
+    const map = new Map<number, Lesson[]>();
+    EDUCATION_PHASES.forEach(p => {
+      map.set(p.id, EDUCATION_LESSONS.filter(l => l.phaseId === p.id).sort((a, b) => a.order - b.order));
+    });
+    return map;
+  }, []);
 
   const selectedLesson = useMemo(() => {
     if (!selectedLessonId) return null;
     return EDUCATION_LESSONS.find((l) => l.id === selectedLessonId) || null;
   }, [selectedLessonId]);
 
-  const freeLessonsCount = EDUCATION_LESSONS.filter((l) => l.isFree).length;
-  const paidLessonsCount = EDUCATION_LESSONS.filter((l) => !l.isFree).length;
+  const nextLessonForSelected = useMemo(() => {
+    if (!selectedLesson) return null;
+    const nextInPhase = EDUCATION_LESSONS.find(
+      l => l.phaseId === selectedLesson.phaseId && l.order === selectedLesson.order + 1
+    );
+    if (nextInPhase) return nextInPhase;
+    const nextPhase = EDUCATION_PHASES.find(p => p.id === selectedLesson.phaseId + 1);
+    if (nextPhase) {
+      return EDUCATION_LESSONS.find(l => l.phaseId === nextPhase.id && l.order === 1) || null;
+    }
+    return null;
+  }, [selectedLesson]);
+
+  const totalLessons = EDUCATION_LESSONS.length;
   const completedCount = completedLessonIds.size;
-  const progressPercentage = Math.round((completedCount / EDUCATION_LESSONS.length) * 100);
+  const overallPercentage = Math.round((completedCount / totalLessons) * 100);
+
+  const currentPhase = useMemo(() => {
+    for (let i = EDUCATION_PHASES.length - 1; i >= 0; i--) {
+      const phase = EDUCATION_PHASES[i];
+      const phaseLessons = phaseLessonsMap.get(phase.id) || [];
+      if (phaseLessons.some(l => completedLessonIds.has(l.id))) {
+        const allDone = phaseLessons.every(l => completedLessonIds.has(l.id));
+        if (allDone && i < EDUCATION_PHASES.length - 1) return EDUCATION_PHASES[i + 1];
+        return phase;
+      }
+    }
+    return EDUCATION_PHASES[0];
+  }, [completedLessonIds, phaseLessonsMap]);
+
+  useEffect(() => {
+    if (currentPhase && !expandedPhases.has(currentPhase.id)) {
+      setExpandedPhases(prev => new Set([...prev, currentPhase.id]));
+    }
+  }, [currentPhase]);
 
   if (selectedLesson) {
     return (
@@ -937,11 +1100,13 @@ export default function KnowledgeBase() {
           lesson={selectedLesson}
           onClose={() => setSelectedLessonId(null)}
           onSelectLesson={setSelectedLessonId}
-          hasFullAccess={hasFullAccess}
+          userTier={userTier}
           isCompleted={completedLessonIds.has(selectedLesson.id)}
           isBookmarked={bookmarkedLessonIds.has(selectedLesson.id)}
           onMarkComplete={handleMarkComplete}
           onToggleBookmark={handleToggleBookmark}
+          quizScore={quizScores.get(selectedLesson.id) ?? 0}
+          nextLesson={nextLessonForSelected}
         />
       </div>
     );
@@ -949,7 +1114,7 @@ export default function KnowledgeBase() {
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background min-h-screen">
-      <main className="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto">
+      <main className="p-4 sm:p-6 lg:p-10 max-w-4xl mx-auto">
         <header className="mb-8">
           <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
             <div className="flex items-center gap-3">
@@ -958,10 +1123,15 @@ export default function KnowledgeBase() {
                 Education Hub
               </h1>
             </div>
-            {hasFullAccess ? (
+            {isElite ? (
+              <Badge className="bg-gradient-to-r from-purple-500 to-violet-500 text-white font-bold gap-1">
+                <Star size={12} />
+                Elite Access
+              </Badge>
+            ) : isPaid ? (
               <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold gap-1">
                 <Star size={12} />
-                Full Access
+                Pro Access
               </Badge>
             ) : (
               <Button
@@ -976,39 +1146,43 @@ export default function KnowledgeBase() {
             )}
           </div>
           <p className="text-muted-foreground mt-1 italic font-medium max-w-2xl">
-            Master institutional trading concepts with {EDUCATION_LESSONS.length} comprehensive lessons
-            covering price action, smart money concepts, psychology, and advanced strategies.
+            Master trading through {EDUCATION_PHASES.length} progressive phases.
+            Complete each lesson and pass the quiz to unlock the next level.
           </p>
-          
+
           <div className="mt-4 p-4 bg-card border border-border rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-foreground">Your Progress</span>
-              <span className="text-sm text-muted-foreground">{completedCount} / {EDUCATION_LESSONS.length} lessons</span>
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-foreground">Overall Progress</span>
+                {currentPhase && (
+                  <Badge variant="outline" className="text-[10px] font-bold">
+                    Phase {currentPhase.id}: {currentPhase.title}
+                  </Badge>
+                )}
+              </div>
+              <span className="text-sm text-muted-foreground">{completedCount} / {totalLessons} lessons</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2.5">
-              <div 
-                className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" 
-                style={{ width: `${progressPercentage}%` }}
+              <div
+                className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${overallPercentage}%` }}
                 data-testid="progress-bar"
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">{progressPercentage}% complete</p>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-muted-foreground">{overallPercentage}% complete</p>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-emerald-500 font-bold flex items-center gap-1">
+                  <CheckCircle size={10} />
+                  {completedCount} completed
+                </span>
+                <span className="text-muted-foreground">
+                  {totalLessons - completedCount} remaining
+                </span>
+              </div>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-4 mt-4 text-sm flex-wrap">
-            <span className="text-emerald-500 font-bold">
-              {freeLessonsCount} Free Lessons
-            </span>
-            <span className="text-muted-foreground">|</span>
-            <span className="text-muted-foreground">
-              {paidLessonsCount} Pro Lessons
-            </span>
-            <span className="text-muted-foreground">|</span>
-            <span className="text-muted-foreground flex items-center gap-1">
-              <HelpCircle size={12} />
-              Quizzes Included
-            </span>
-          </div>
+
           <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-3 border-l-2 border-amber-500/50 pl-2">
             Educational content only. Not financial advice.{" "}
             <Link
@@ -1019,59 +1193,25 @@ export default function KnowledgeBase() {
             </Link>
           </p>
         </header>
-        
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input
-              placeholder="Search lessons by title, topic, or concept..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 font-medium"
-              data-testid="input-search-lessons"
-            />
-          </div>
-          <Button
-            variant={showBookmarked ? "default" : "outline"}
-            onClick={() => setShowBookmarked(!showBookmarked)}
-            className="font-bold gap-2"
-            data-testid="button-show-bookmarks"
-          >
-            <Bookmark size={16} />
-            Bookmarked ({bookmarks.length})
-          </Button>
+
+        <div className="space-y-6">
+          {EDUCATION_PHASES.map((phase) => {
+            const lessons = phaseLessonsMap.get(phase.id) || [];
+            return (
+              <PhaseCard
+                key={phase.id}
+                phase={phase}
+                lessons={lessons}
+                completedLessons={completedLessonIds}
+                quizScores={quizScores}
+                userTier={userTier}
+                onSelectLesson={(id) => setSelectedLessonId(id)}
+                isExpanded={expandedPhases.has(phase.id)}
+                onToggleExpand={() => togglePhase(phase.id)}
+              />
+            );
+          })}
         </div>
-
-        <CategoryFilter
-          categories={LESSON_CATEGORIES}
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-          lessonCounts={lessonCounts}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-          {filteredLessons.map((lesson) => (
-            <LessonCard
-              key={lesson.id}
-              lesson={lesson}
-              hasFullAccess={hasFullAccess}
-              onSelectLesson={setSelectedLessonId}
-              isCompleted={completedLessonIds.has(lesson.id)}
-              isBookmarked={bookmarkedLessonIds.has(lesson.id)}
-              onToggleBookmark={handleToggleBookmark}
-            />
-          ))}
-        </div>
-
-        {filteredLessons.length === 0 && (
-          <div className="text-center py-12">
-            <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground font-medium">
-              {showBookmarked ? "No bookmarked lessons yet." : "No lessons found."}
-            </p>
-          </div>
-        )}
-
       </main>
     </div>
   );
