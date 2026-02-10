@@ -884,6 +884,7 @@ function LessonViewer({
 
           {lesson.quiz && lesson.quiz.length > 0 && (
             <QuizSection
+              key={lesson.id}
               quiz={lesson.quiz}
               lessonId={lesson.id}
               requiredScore={lesson.requiredScore}
