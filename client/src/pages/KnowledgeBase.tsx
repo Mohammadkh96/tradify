@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   BookOpen, TrendingUp, Brain, Target, Heart, Zap,
   Lock, Clock, ChevronRight, Crown, Star, Search,
   GraduationCap, CheckCircle, ArrowLeft, AlertTriangle,
   Lightbulb, Play, XCircle, CircleCheck, Link2, HelpCircle,
-  Bookmark, BookmarkCheck, MessageSquare, Send, Loader2
+  Bookmark, BookmarkCheck, MessageSquare, Send, Loader2,
+  ArrowUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -250,10 +251,7 @@ function QuizSection({ quiz, lessonId }: { quiz: QuizQuestion[]; lessonId: numbe
 
   const saveQuizResultMutation = useMutation({
     mutationFn: async (data: { score: number; totalQuestions: number; answers: Record<number, number> }) => {
-      return apiRequest("/api/education/quiz-results", {
-        method: "POST",
-        body: JSON.stringify({ lessonId, ...data }),
-      });
+      return apiRequest("POST", "/api/education/quiz-results", { lessonId, ...data });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/education/quiz-results"] });
@@ -520,6 +518,26 @@ function LessonViewer({
   onMarkComplete: (lessonId: number, completed: boolean) => void;
   onToggleBookmark: (lessonId: number) => void;
 }) {
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    topRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    topRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [lesson.id]);
+
   const relatedLessonObjects = useMemo(() => {
     return lesson.relatedLessons
       .map(id => EDUCATION_LESSONS.find(l => l.id === id))
@@ -527,14 +545,9 @@ function LessonViewer({
   }, [lesson.relatedLessons]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-background z-50 overflow-y-auto"
-    >
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-10">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <div className="pb-20 md:pb-0" ref={topRef}>
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-4 sm:px-6 lg:px-10 py-3">
+        <div className="flex items-center justify-between flex-wrap gap-3 max-w-4xl mx-auto">
           <Button
             variant="outline"
             onClick={onClose}
@@ -564,25 +577,6 @@ function LessonViewer({
                 </>
               )}
             </Button>
-            <Button
-              variant={isCompleted ? "outline" : "default"}
-              size="sm"
-              onClick={() => onMarkComplete(lesson.id, !isCompleted)}
-              className={cn("font-bold gap-2", isCompleted && "border-emerald-500/50")}
-              data-testid="button-mark-complete"
-            >
-              {isCompleted ? (
-                <>
-                  <CheckCircle size={14} className="text-emerald-500" />
-                  Completed
-                </>
-              ) : (
-                <>
-                  <CheckCircle size={14} />
-                  Mark Complete
-                </>
-              )}
-            </Button>
             <Badge
               variant="outline"
               className={cn("font-bold", difficultyColors[lesson.difficulty])}
@@ -591,7 +585,9 @@ function LessonViewer({
             </Badge>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-10">
         <div className="bg-card border border-border rounded-xl overflow-hidden" data-testid={`lesson-viewer-${lesson.id}`}>
           <div className="p-6 sm:p-8 border-b border-border bg-gradient-to-r from-emerald-500/5 to-transparent">
             <div className="flex items-center gap-2 text-emerald-500 text-xs font-black tracking-widest uppercase mb-2">
@@ -782,14 +778,48 @@ function LessonViewer({
             )}
 
             <div className="mt-12 pt-8 border-t border-border">
-              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest text-center">
-                Educational content only. Not financial advice.
-              </p>
+              <div className="flex flex-col items-center gap-4">
+                <Button
+                  variant={isCompleted ? "outline" : "default"}
+                  onClick={() => onMarkComplete(lesson.id, !isCompleted)}
+                  className={cn(
+                    "font-bold gap-2 px-8",
+                    isCompleted && "border-emerald-500/50"
+                  )}
+                  data-testid="button-mark-complete"
+                >
+                  {isCompleted ? (
+                    <>
+                      <CheckCircle size={16} className="text-emerald-500" />
+                      Lesson Completed
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={16} />
+                      Mark Lesson as Complete
+                    </>
+                  )}
+                </Button>
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest text-center">
+                  Educational content only. Not financial advice.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </motion.div>
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-20 md:bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all hover:bg-emerald-700"
+          data-testid="button-scroll-to-top"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp size={18} />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -813,10 +843,7 @@ export default function KnowledgeBase() {
 
   const progressMutation = useMutation({
     mutationFn: async ({ lessonId, completed }: { lessonId: number; completed: boolean }) => {
-      return apiRequest("/api/education/progress", {
-        method: "POST",
-        body: JSON.stringify({ lessonId, completed }),
-      });
+      return apiRequest("POST", "/api/education/progress", { lessonId, completed });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/education/progress"] });
@@ -825,10 +852,7 @@ export default function KnowledgeBase() {
 
   const addBookmarkMutation = useMutation({
     mutationFn: async (lessonId: number) => {
-      return apiRequest("/api/education/bookmarks", {
-        method: "POST",
-        body: JSON.stringify({ lessonId }),
-      });
+      return apiRequest("POST", "/api/education/bookmarks", { lessonId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/education/bookmarks"] });
@@ -837,9 +861,7 @@ export default function KnowledgeBase() {
 
   const removeBookmarkMutation = useMutation({
     mutationFn: async (lessonId: number) => {
-      return apiRequest(`/api/education/bookmarks/${lessonId}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/education/bookmarks/${lessonId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/education/bookmarks"] });
@@ -907,6 +929,23 @@ export default function KnowledgeBase() {
   const paidLessonsCount = EDUCATION_LESSONS.filter((l) => !l.isFree).length;
   const completedCount = completedLessonIds.size;
   const progressPercentage = Math.round((completedCount / EDUCATION_LESSONS.length) * 100);
+
+  if (selectedLesson) {
+    return (
+      <div className="flex-1 text-foreground bg-background min-h-screen">
+        <LessonViewer
+          lesson={selectedLesson}
+          onClose={() => setSelectedLessonId(null)}
+          onSelectLesson={setSelectedLessonId}
+          hasFullAccess={hasFullAccess}
+          isCompleted={completedLessonIds.has(selectedLesson.id)}
+          isBookmarked={bookmarkedLessonIds.has(selectedLesson.id)}
+          onMarkComplete={handleMarkComplete}
+          onToggleBookmark={handleToggleBookmark}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background min-h-screen">
@@ -1033,20 +1072,6 @@ export default function KnowledgeBase() {
           </div>
         )}
 
-        <AnimatePresence>
-          {selectedLesson && (
-            <LessonViewer
-              lesson={selectedLesson}
-              onClose={() => setSelectedLessonId(null)}
-              onSelectLesson={setSelectedLessonId}
-              hasFullAccess={hasFullAccess}
-              isCompleted={completedLessonIds.has(selectedLesson.id)}
-              isBookmarked={bookmarkedLessonIds.has(selectedLesson.id)}
-              onMarkComplete={handleMarkComplete}
-              onToggleBookmark={handleToggleBookmark}
-            />
-          )}
-        </AnimatePresence>
       </main>
     </div>
   );
