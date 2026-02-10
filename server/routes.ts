@@ -3123,8 +3123,11 @@ End with: "Review your charts for current market structure."`;
 
       res.status(201).json({ success: true, message: "Suggestion submitted successfully" });
     } catch (error: any) {
-      console.error("Error submitting suggestion:", error?.message || error);
-      res.status(500).json({ message: "Failed to submit suggestion. Please try again." });
+      console.error("Error submitting suggestion:", error?.message || error, error?.stack);
+      const msg = error?.message?.includes("relation") 
+        ? "Database table not found. Please contact support."
+        : "Failed to submit suggestion. Please try again.";
+      res.status(500).json({ message: msg });
     }
   });
 

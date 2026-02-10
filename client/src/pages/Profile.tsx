@@ -86,9 +86,17 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
       });
     },
     onError: (error: any) => {
+      let errorMsg = "Please try again later.";
+      try {
+        const parsed = error.message?.match(/\d+:\s*(.*)/);
+        if (parsed?.[1]) {
+          const json = JSON.parse(parsed[1]);
+          errorMsg = json.message || errorMsg;
+        }
+      } catch { }
       toast({
         title: "Failed to submit",
-        description: error.message || "Please try again later.",
+        description: errorMsg,
         variant: "destructive",
       });
     },

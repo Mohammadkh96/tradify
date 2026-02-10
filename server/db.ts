@@ -116,6 +116,20 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Create founding member suggestions table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS founding_member_suggestions (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        admin_notes TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     console.log('Schema columns verified');
   } catch (error) {
     console.error('Schema migration error:', error);
