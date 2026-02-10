@@ -830,17 +830,16 @@ function LessonViewer({
           {lesson.diagrams && lesson.diagrams.length > 0 && (
             <div className="mt-8 space-y-6">
               {lesson.diagrams.map((diagramType) => {
-                const diagramInfo = DIAGRAM_TYPES[diagramType];
-                if (!diagramInfo) return null;
-                const DiagramComponent = diagramInfo.component;
+                const DiagramComponent = DIAGRAM_TYPES[diagramType];
+                if (!DiagramComponent) return null;
+                const label = diagramType.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                 return (
                   <div key={diagramType} className="p-4 bg-card rounded-lg border border-border">
                     <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
                       <TrendingUp size={12} />
-                      {diagramInfo.title}
+                      {label}
                     </h3>
                     <DiagramComponent />
-                    <p className="text-xs text-muted-foreground mt-3 italic">{diagramInfo.description}</p>
                   </div>
                 );
               })}
