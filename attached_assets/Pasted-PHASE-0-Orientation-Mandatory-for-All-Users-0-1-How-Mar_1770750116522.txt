@@ -1,0 +1,273 @@
+PHASE 0 — Orientation (Mandatory for All Users)
+0.1 How Markets Actually Move (Mindset Reset)
+
+Goal: Remove retail misconceptions.
+
+Why indicators don’t cause price
+
+Why patterns fail
+
+Difference between outcome vs decision quality
+
+What Tradify measures (rules, discipline, process)
+
+✅ Unlocks all other content
+❌ No skipping
+
+PHASE 1 — Market Foundations (BEGINNER)
+
+Without this phase, everything else is noise.
+
+1.1 What Is Trading? Markets & Price Delivery
+
+What price really represents
+
+Orders, liquidity, participants
+
+Timeframes are perspectives, not signals
+
+Dependency: None
+Unlocks: Market Structure
+
+1.2 Market Structure: The Foundation of All Analysis
+
+Highs / lows
+
+Trend definition
+
+Expansion vs consolidation
+
+Structure ≠ trendlines
+
+Dependency: 1.1
+Unlocks: BOS / CHoCH
+
+1.3 Break of Structure (BOS) vs Change of Character (CHoCH)
+
+Continuation vs reversal
+
+Why most traders misuse CHoCH
+
+HTF vs LTF structure alignment
+
+Dependency: 1.2
+Unlocks: Liquidity
+
+PHASE 2 — Liquidity & Intent (INTERMEDIATE)
+
+This is where traders start separating from retail.
+
+2.1 Liquidity: The Fuel That Moves Markets
+
+Buy-side vs sell-side liquidity
+
+Equal highs/lows
+
+Why stops exist
+
+Liquidity ≠ support/resistance
+
+Dependency: 1.3
+Unlocks: Inducement
+
+2.2 Inducement & Liquidity Engineering
+
+Why price moves “the wrong way first”
+
+Inducement vs continuation
+
+Fake breakouts explained correctly
+
+Dependency: 2.1
+Unlocks: Displacement
+
+2.3 Displacement & Momentum
+
+What real momentum looks like
+
+Displacement candles vs random volatility
+
+Why this matters before entries
+
+Dependency: 2.2
+Unlocks: Order Blocks & FVG
+
+PHASE 3 — Smart Money Tools (INTERMEDIATE → ADVANCED)
+
+Tools are meaningless without the earlier logic.
+
+3.1 Order Blocks: Institutional Price Memory
+
+What an order block actually is
+
+Valid vs invalid OBs
+
+Mitigated vs unmitigated
+
+Why most OBs fail
+
+Dependency: 2.3
+Unlocks: FVG
+
+3.2 Fair Value Gaps (Imbalance)
+
+What imbalance really represents
+
+When FVGs matter
+
+When they are irrelevant
+
+OB + FVG relationship
+
+Dependency: 3.1
+Unlocks: Entry logic
+
+3.3 Breaker Blocks & Mitigation
+
+Failed order blocks
+
+Role reversal logic
+
+Continuation vs reversal scenarios
+
+Dependency: 3.2
+Unlocks: Execution models
+
+PHASE 4 — Execution & Confirmation (ADVANCED)
+
+Entries are the last step, not the first.
+
+4.1 Timeframe Alignment (Top-Down Analysis)
+
+HTF narrative
+
+LTF execution
+
+Avoiding timeframe conflict
+
+Dependency: Phase 3 complete
+Unlocks: Entry models
+
+4.2 Candlestick Confirmation (Context-Only)
+
+🚨 Rename this — critical
+
+Candles are confirmations, not signals
+
+Valid candle behavior after liquidity + structure
+
+Why standalone patterns are useless
+
+Dependency: 4.1
+Unlocks: Entry models
+
+4.3 Entry Models (Rule-Based)
+
+Model A: Continuation
+
+Model B: Reversal
+
+Model C: Range expansion
+
+Each with:
+
+Conditions
+
+Invalidation
+
+Execution rules
+
+Dependency: 4.2
+Unlocks: Risk management
+
+PHASE 5 — Risk, Execution & Trade Management (ADVANCED)
+5.1 Position Sizing & Risk Mathematics
+
+R-based thinking
+
+Risk of ruin
+
+Why win rate is irrelevant without expectancy
+
+Dependency: 4.3
+Unlocks: Trade management
+
+5.2 Trade Management (Rules, Not Emotion)
+
+Partial exits
+
+BE logic
+
+When NOT to manage
+
+Dependency: 5.1
+Unlocks: Psychology
+
+PHASE 6 — Psychology & Discipline (ADVANCED)
+
+Psychology only matters after rules exist.
+
+6.1 Trading Psychology: Emotional Control vs Systems
+
+Why discipline fails without structure
+
+Emotional triggers
+
+Process confidence
+
+Dependency: Phase 5
+Unlocks: Advanced psychology
+
+6.2 Cognitive Biases in Trading
+
+Recency bias
+
+Revenge trading
+
+Overconfidence after wins
+
+Dependency: 6.1
+Unlocks: System building
+
+PHASE 7 — System Building & Confluence (ELITE)
+7.1 Confluence Trading (Done Correctly)
+
+What confluence actually means
+
+Why stacking indicators fails
+
+Rule alignment vs confirmation addiction
+
+Dependency: Phase 6
+Unlocks: System building
+
+7.2 Building Your Trading System (Capstone)
+
+Define:
+
+Market conditions
+
+Setup rules
+
+Entry rules
+
+Risk rules
+
+Behavioral rules
+
+System validation checklist
+
+Dependency: All phases complete
+🎯 Directly integrates with Tradify Strategy Builder
+
+Why This Curriculum Works
+
+No skipped logic
+
+No isolated concepts
+
+No misleading shortcuts
+
+Education → Rules → Accountability → Review
+
+This structure matches exactly what Tradify stands for.

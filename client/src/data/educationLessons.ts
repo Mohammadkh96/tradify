@@ -20,6 +20,18 @@ export interface QuizQuestion {
 
 export type DiagramType = "market-structure" | "order-block" | "fvg" | "liquidity-sweep" | "bos-choch" | "candlestick-patterns" | "sessions" | "risk-reward" | "breaker-block" | "inducement" | "multi-timeframe" | "entry-model";
 
+export type AccessTier = "FREE" | "PRO" | "ELITE";
+
+export interface Phase {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: string;
+  accessTier: AccessTier;
+  color: string;
+}
+
 export interface Lesson {
   id: number;
   title: string;
@@ -27,7 +39,11 @@ export interface Lesson {
   category: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   duration: string;
-  isFree: boolean;
+  phaseId: number;
+  order: number;
+  accessTier: AccessTier;
+  requiredScore: number;
+  prerequisite: number | null;
   sections: LessonSection[];
   keyPoints: string[];
   commonMistakes: string[];
@@ -43,6 +59,7 @@ export interface LessonCategory {
   icon: string;
 }
 
+// Legacy categories kept for reference
 export const LESSON_CATEGORIES: LessonCategory[] = [
   {
     id: "fundamentals",
@@ -82,15 +99,191 @@ export const LESSON_CATEGORIES: LessonCategory[] = [
   },
 ];
 
+export const EDUCATION_PHASES: Phase[] = [
+  {
+    id: 0,
+    title: "Orientation",
+    subtitle: "Mandatory for All Users",
+    description: "Remove retail misconceptions and understand what Tradify measures",
+    icon: "Compass",
+    accessTier: "FREE",
+    color: "slate",
+  },
+  {
+    id: 1,
+    title: "Market Foundations",
+    subtitle: "The Language of Price",
+    description: "Without this phase, everything else is noise.",
+    icon: "Layers",
+    accessTier: "FREE",
+    color: "emerald",
+  },
+  {
+    id: 2,
+    title: "Liquidity & Intent",
+    subtitle: "Separating From Retail",
+    description: "This is where traders start separating from retail.",
+    icon: "Droplets",
+    accessTier: "PRO",
+    color: "blue",
+  },
+  {
+    id: 3,
+    title: "Smart Money Tools",
+    subtitle: "Institutional Precision",
+    description: "Tools are meaningless without the earlier logic.",
+    icon: "Crosshair",
+    accessTier: "PRO",
+    color: "violet",
+  },
+  {
+    id: 4,
+    title: "Execution & Confirmation",
+    subtitle: "Precision Entries",
+    description: "Entries are the last step, not the first.",
+    icon: "Target",
+    accessTier: "PRO",
+    color: "amber",
+  },
+  {
+    id: 5,
+    title: "Risk & Trade Management",
+    subtitle: "Capital Preservation",
+    description: "The mathematics of survival.",
+    icon: "Shield",
+    accessTier: "PRO",
+    color: "rose",
+  },
+  {
+    id: 6,
+    title: "Psychology & Discipline",
+    subtitle: "Master Your Mind",
+    description: "Psychology only matters after rules exist.",
+    icon: "Brain",
+    accessTier: "ELITE",
+    color: "purple",
+  },
+  {
+    id: 7,
+    title: "System Building",
+    subtitle: "The Capstone",
+    description: "Building your complete trading framework.",
+    icon: "Trophy",
+    accessTier: "ELITE",
+    color: "amber",
+  },
+];
+
 export const EDUCATION_LESSONS: Lesson[] = [
   {
     id: 1,
+    title: "How Markets Actually Move (Mindset Reset)",
+    description: "Before learning any strategy, you must unlearn the myths that keep retail traders losing. This lesson resets your understanding of what moves price, why most trading education fails, and what Tradify actually measures.",
+    category: "fundamentals",
+    difficulty: "Beginner",
+    duration: "20 min",
+    phaseId: 0,
+    order: 1,
+    accessTier: "FREE",
+    requiredScore: 70,
+    prerequisite: null,
+    sections: [
+      {
+        title: "Why Indicators Don't Cause Price Movement",
+        content: "One of the most damaging misconceptions in retail trading is the belief that indicators predict or cause price movement. Indicators such as RSI, MACD, Stochastic, Bollinger Bands, and moving averages are mathematical calculations applied to past price data. They are derived FROM price - they do not drive price. An RSI reading of 70 does not cause price to reverse. A MACD crossover does not cause momentum to shift. These are lagging reflections of what has already happened, not leading signals of what will happen next.\n\nThe retail trading industry promotes indicators as predictive tools because they are easy to sell, easy to understand visually, and create the illusion of certainty. A green arrow on a chart feels comforting. An oscillator bouncing off a line feels precise. But this precision is an illusion. Indicators cannot see order flow, cannot detect institutional positioning, and cannot anticipate liquidity sweeps. They simply repackage price history into a different visual format.\n\nPrice moves because of one thing: the interaction between buy orders and sell orders. When aggressive buying overwhelms available selling at a price level, price rises. When aggressive selling overwhelms available buying, price falls. This is order flow. No indicator can see the resting orders in the market, the stop loss clusters above swing highs, or the institutional algorithms executing billion-dollar positions. Understanding that price is driven by order flow - not by indicator readings - is the first step toward thinking like a professional trader rather than a retail gambler.",
+        bullets: [
+          "Indicators are lagging mathematical calculations derived FROM past price data",
+          "RSI, MACD, moving averages do not cause price to move - they reflect what already happened",
+          "Price moves because of order flow: the interaction between buy and sell orders",
+          "No indicator can see resting orders, stop loss clusters, or institutional positioning",
+          "The retail industry promotes indicators because they are easy to sell, not because they work"
+        ]
+      },
+      {
+        title: "Why Patterns Fail",
+        content: "Head and shoulders. Double tops. Triangles. Flags. These chart patterns are taught in every beginner trading course as reliable signals. The problem is not that these patterns do not exist on charts - they do. The problem is that they fail far more often than retail education suggests, and smart money actively uses pattern recognition against retail traders.\n\nChart patterns fail because they are recognized by everyone. When millions of retail traders see the same 'textbook double top' forming, they all place short orders at the same level with stop losses at the same predictable location just above the pattern. This creates a concentrated pool of liquidity (buy stops) that institutional traders can target. Smart money drives price above the double top to trigger those stops, collecting the liquidity they need, before reversing price in the direction the pattern originally suggested. The pattern 'worked' - but only after stopping out everyone who traded it the textbook way.\n\nThis does not mean patterns are useless. It means patterns without context are useless. A bearish engulfing pattern at a random location on the chart has almost zero predictive value. The same pattern at a key order block, after a liquidity sweep, in confluence with the higher timeframe trend, during a kill zone - that is a high-probability setup. The pattern itself is just the final confirmation. The context - market structure, liquidity, order flow, and timing - is what makes it work. Throughout this curriculum, you will learn to build that context before ever looking at a pattern.",
+        bullets: [
+          "Chart patterns fail because they are recognized by everyone, making them predictable targets",
+          "Smart money uses retail pattern recognition against retail traders by sweeping their stops",
+          "A pattern without context (structure, liquidity, order flow) has almost zero predictive value",
+          "Patterns are the final confirmation, not the trade thesis",
+          "Context - structure, liquidity, timing - is what makes patterns work when they do work"
+        ]
+      },
+      {
+        title: "Outcome vs Decision Quality",
+        content: "A good trade can lose money. A bad trade can make money. This is one of the most counterintuitive but essential truths in trading. If you judge the quality of every trade by its profit or loss, you will inevitably destroy your edge by reinforcing bad habits and punishing good ones.\n\nConsider two trades. Trade A: you followed your rules perfectly, entered at a valid order block with confluence, managed risk at 1%, and the trade hit your stop loss for a -1R loss. This is a GOOD trade. The process was correct; the outcome was simply one of the losing trades that any edge produces. Trade B: you impulsively entered a trade with no setup, doubled your position size because you 'felt confident,' and the trade happened to hit target for a +2R win. This is a BAD trade. The outcome was profitable, but the process was reckless. If you repeat Trade B's process 100 times, you will blow your account. If you repeat Trade A's process 100 times, you will be profitable.\n\nThe best traders in the world focus obsessively on process execution, not on individual trade outcomes. They know that any single trade is essentially a coin flip within their edge's probability distribution. What matters is executing the process consistently over hundreds of trades, allowing the statistical edge to manifest. When you review your trading journal, the first question should never be 'did this trade make money?' It should be 'did I follow my rules?' This mindset shift is what separates professional traders from gamblers.",
+        bullets: [
+          "A good trade can lose money - the outcome does not determine the quality of the decision",
+          "A bad trade can make money - a profitable outcome from a broken process is dangerous",
+          "Judge every trade by process adherence, not by P&L",
+          "Repeating a good process 100 times produces profits; repeating a bad process produces ruin",
+          "The best traders focus on consistent rule execution, not individual trade outcomes"
+        ]
+      },
+      {
+        title: "What Tradify Measures",
+        content: "Tradify is not a signal service. It does not predict where price will go. It does not use indicators. It does not tell you when to buy or sell. Understanding what Tradify actually does - and what it does not do - is essential before you proceed through this curriculum.\n\nTradify measures rules compliance, discipline, and process quality. It tracks whether you are following YOUR trading rules - the rules you will build throughout this curriculum. Are you entering at valid zones? Are you waiting for confirmation? Are you sizing your positions correctly? Are you respecting your stop losses? Are you trading during your designated sessions? Are you maintaining your journal? These are the metrics that determine long-term trading success, and these are what Tradify holds you accountable for.\n\nThe reason Tradify focuses on process rather than predictions is grounded in statistical reality. No system, algorithm, or tool can predict markets with certainty. But a trader who follows a validated set of rules with positive expectancy, who sizes positions correctly, who manages risk mechanically, and who maintains discipline through drawdowns - that trader will be profitable over a large enough sample of trades. Tradify's job is to ensure you become that trader by measuring and reinforcing the behaviors that produce consistency. Your job is to learn the rules, prove they work through backtesting, and then execute them with the discipline that Tradify tracks.",
+        bullets: [
+          "Tradify does NOT predict markets, generate signals, or use indicators",
+          "Tradify measures rules compliance, discipline, and process quality",
+          "It tracks whether you follow YOUR trading rules consistently",
+          "Key metrics: zone validity, confirmation adherence, position sizing, stop discipline, journaling",
+          "Process consistency over a large sample of trades is what produces profitability"
+        ]
+      }
+    ],
+    keyPoints: [
+      "Indicators are lagging calculations of past price - they do not cause or predict price movement",
+      "Chart patterns fail without context because smart money uses predictable retail behavior against traders",
+      "A good trade is defined by process adherence, not by whether it made money",
+      "Tradify measures your discipline, rules compliance, and process - not market predictions",
+      "The foundation of profitable trading is consistent execution of a validated edge, not finding perfect entries"
+    ],
+    commonMistakes: [
+      "Believing that indicators predict future price movement rather than reflecting past price",
+      "Trading chart patterns in isolation without considering structure, liquidity, and order flow context",
+      "Judging trade quality by profit or loss instead of by adherence to the trading plan",
+      "Expecting Tradify or any tool to tell you when to buy and sell",
+      "Focusing on finding the 'perfect strategy' instead of developing the discipline to execute any valid strategy consistently"
+    ],
+    relatedLessons: [2, 3, 14],
+    quiz: [
+      {
+        id: 1,
+        question: "Why do technical indicators fail as predictive tools?",
+        options: ["They are too complicated to use correctly", "They are lagging mathematical calculations of past price, not drivers of future price", "They only work on daily timeframes", "Brokers manipulate indicator readings"],
+        correctAnswer: 1,
+        explanation: "Indicators like RSI, MACD, and moving averages are derived FROM past price data. They reflect what has already happened, not what will happen. Price moves because of order flow (buy and sell orders interacting), which no indicator can see or predict."
+      },
+      {
+        id: 2,
+        question: "When should a losing trade be considered a 'good trade'?",
+        options: ["Never - all losing trades are failures", "When the loss is smaller than expected", "When the trade was executed according to the trading plan with proper process", "When the market moved unfairly against the position"],
+        correctAnswer: 2,
+        explanation: "A good trade is defined by process adherence, not outcome. A trade that followed all rules perfectly but hit the stop loss is still a good trade - it is simply one of the statistical losses that any edge produces. Consistent execution of the process over hundreds of trades is what generates profits."
+      },
+      {
+        id: 3,
+        question: "What does Tradify primarily measure?",
+        options: ["Market predictions and price targets", "Indicator signals and pattern recognition", "Rules compliance, discipline, and process quality", "Win rate and total profit"],
+        correctAnswer: 2,
+        explanation: "Tradify measures your adherence to YOUR trading rules - zone validity, confirmation discipline, position sizing, stop loss respect, and journaling consistency. It focuses on process because consistent process execution is what produces long-term profitability, not market predictions."
+      }
+    ]
+  },
+  {
+    id: 2,
     title: "What Is Trading? Markets, Instruments & How Price Moves",
     description: "A comprehensive introduction to financial markets, the instruments you can trade, and the fundamental mechanics of how and why prices move. This is where every serious trader begins.",
     category: "fundamentals",
     difficulty: "Beginner",
     duration: "30 min",
-    isFree: true,
+    phaseId: 1,
+    order: 1,
+    accessTier: "FREE",
+    requiredScore: 70,
+    prerequisite: 1,
     sections: [
       {
         title: "What Are Financial Markets?",
@@ -174,7 +367,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Skipping demo trading and risking real money before developing a plan",
       "Believing price moves randomly rather than understanding supply and demand dynamics"
     ],
-    relatedLessons: [2, 3, 4, 5],
+    relatedLessons: [14, 16, 3, 12],
     quiz: [
       {
         id: 1,
@@ -200,248 +393,17 @@ export const EDUCATION_LESSONS: Lesson[] = [
     ]
   },
   {
-    id: 2,
-    title: "Risk Management: The Only Edge You Need",
-    description: "Risk management is the single most important skill in trading. This lesson teaches you how to size positions, calculate risk-to-reward, and protect your capital so you can survive long enough to become profitable.",
-    category: "fundamentals",
-    difficulty: "Beginner",
-    duration: "35 min",
-    isFree: true,
-    sections: [
-      {
-        title: "Position Sizing and the 1-2% Rule",
-        content: "Position sizing determines how many lots, contracts, or shares you trade on each position. It is the primary tool you use to control how much capital you risk on any single trade. The industry-standard guideline is to risk no more than 1-2% of your total account balance on any single trade. This means on a $10,000 account, your maximum risk per trade should be $100-$200.\n\nThe 1-2% rule exists because of the mathematics of drawdowns. If you risk 2% per trade and hit a losing streak of 10 trades (which happens to every trader), you lose approximately 18% of your account. That is painful but recoverable. If you risk 10% per trade and hit the same losing streak, you lose roughly 65% of your account, requiring a 186% gain just to break even. The larger your drawdown, the exponentially harder it becomes to recover.\n\nNew traders often argue that risking 1-2% is too conservative and limits their profit potential. This is a fundamental misunderstanding. Position sizing does not limit your returns in the long run; it ensures you survive long enough to realize them. Every professional trader and fund manager uses strict position sizing rules. It is not optional; it is the foundation upon which all other trading decisions rest.",
-        bullets: [
-          "Risk no more than 1-2% of total account equity per trade",
-          "A 10-trade losing streak at 2% risk = ~18% drawdown (recoverable)",
-          "A 10-trade losing streak at 10% risk = ~65% drawdown (devastating)",
-          "Position sizing is the primary tool for controlling portfolio risk",
-          "Professional funds typically risk 0.5-1% per position with portfolio-level limits"
-        ],
-        tradingExample: {
-          setup: "A trader with a $5,000 account identifies a setup on GBP/USD with a 30-pip stop loss",
-          entry: "Using the 1% rule: Max risk = $50. At $10/pip for a standard lot, they calculate: $50 / 30 pips = $1.67 per pip, which equals 0.167 lots (approximately 0.17 mini lots)",
-          management: "They enter 0.17 lots with a 30-pip stop loss, risking exactly $51 (approximately 1% of account)",
-          outcome: "Whether the trade wins or loses, their account can absorb many such trades. This position sizing allows them to take 50+ losing trades before a 50% drawdown, providing ample runway to develop their edge"
-        }
-      },
-      {
-        title: "Risk-to-Reward Ratios Explained",
-        content: "The risk-to-reward ratio (R:R or RRR) compares the potential loss of a trade to its potential profit. If you risk 20 pips with a stop loss and target 60 pips of profit, your risk-to-reward ratio is 1:3 (risking 1 unit to potentially gain 3). This ratio is fundamental to understanding whether a trading strategy is mathematically viable over a large sample of trades.\n\nThe power of favorable risk-to-reward becomes clear when you examine the math. With a 1:2 risk-to-reward ratio, you only need to win 34% of your trades to break even (before commissions). With a 1:3 ratio, you need just 25% winners. This means a trader with a mediocre win rate can still be profitable if they consistently achieve favorable risk-to-reward on their trades. Conversely, a trader with a 70% win rate who averages 1:0.5 risk-to-reward (risking twice what they target) will slowly bleed their account dry.\n\nSetting realistic targets is crucial. Your take-profit should be placed at a level where price has a logical reason to reach, such as the next significant support/resistance zone, a previous swing high or low, or a measured move projection. Arbitrary targets like always targeting 3:1 regardless of market context will lead to trades that never hit target and result in unnecessary stop-outs.",
-        bullets: [
-          "Risk-to-reward compares potential loss to potential profit (e.g., 1:2 = risk 1 to gain 2)",
-          "At 1:2 R:R, you only need 34% winners to break even",
-          "At 1:3 R:R, you only need 25% winners to break even",
-          "Targets should be based on market structure, not arbitrary ratios",
-          "A high win rate with poor R:R can still lose money over time"
-        ]
-      },
-      {
-        title: "Why Risk Management Matters More Than Win Rate",
-        content: "Most beginner traders are obsessed with finding a strategy with a high win rate. They want to be right as often as possible. But professional traders know that win rate is only half the equation. What matters is the relationship between win rate and average risk-to-reward, which determines your trading expectancy.\n\nTrading expectancy is calculated as: (Win Rate x Average Win) - (Loss Rate x Average Loss). A trader who wins 40% of the time with an average winner of $300 and an average loser of $100 has an expectancy of ($300 x 0.40) - ($100 x 0.60) = $120 - $60 = $60 per trade. Despite losing more often than they win, every trade they take has a positive expected value of $60. Over 100 trades, this expectancy generates $6,000 in profit.\n\nCompare this to a trader who wins 70% of the time but averages $100 winners and $300 losers: ($100 x 0.70) - ($300 x 0.30) = $70 - $90 = -$20 per trade. Despite their impressive win rate, they lose $20 on average for every trade taken. Over 100 trades, they lose $2,000. Win rate means nothing without considering risk-to-reward. This is why risk management is the only true edge in trading.",
-        bullets: [
-          "Expectancy = (Win Rate x Avg Win) - (Loss Rate x Avg Loss)",
-          "A 40% win rate with 3:1 R:R outperforms a 70% win rate with 1:3 R:R",
-          "Positive expectancy means every trade has a statistical edge over time",
-          "Track expectancy over at least 50-100 trades for statistical significance",
-          "Your edge compounds over time only if position sizing preserves capital"
-        ],
-        tradingExample: {
-          setup: "Trader A wins 65% of trades but moves stops to breakeven too early, averaging 1:0.8 R:R. Trader B wins 42% but lets winners run to 1:2.5 R:R minimum",
-          entry: "Both traders take 100 trades risking $100 per trade",
-          management: "Trader A: (0.65 x $80) - (0.35 x $100) = $52 - $35 = $17/trade. Trader B: (0.42 x $250) - (0.58 x $100) = $105 - $58 = $47/trade",
-          outcome: "Trader B earns $4,700 over 100 trades despite losing more often, while Trader A earns only $1,700. Risk-to-reward dominates win rate in determining profitability"
-        }
-      },
-      {
-        title: "Calculating Position Size with Stop Loss",
-        content: "Position sizing calculation is a mechanical process that every trader must master. The formula is straightforward: Position Size = Account Risk / (Stop Loss Distance x Pip Value). You start by determining how much money you are willing to lose (account risk), then divide that by how far your stop loss is from your entry in terms of dollar value.\n\nFor Forex, the calculation works as follows. Assume a $10,000 account, 1% risk ($100), and a 25-pip stop loss on EUR/USD. One standard lot on EUR/USD is $10 per pip. Position Size = $100 / (25 pips x $10/pip) = $100 / $250 = 0.40 standard lots. For a mini lot ($1/pip), the same calculation yields 4.0 mini lots. For a micro lot ($0.10/pip), it yields 40 micro lots.\n\nThe critical point is that your position size changes with every trade because your stop loss distance varies. A trade with a 15-pip stop will have a larger position size than a trade with a 50-pip stop, but both risk exactly the same dollar amount. This ensures consistent risk exposure regardless of the setup. Never adjust your stop loss to fit a desired position size; always determine the correct stop loss first based on market structure, then calculate the appropriate position size.",
-        bullets: [
-          "Position Size = Account Risk / (Stop Loss in pips x Pip Value)",
-          "Always determine stop loss placement first, then calculate position size",
-          "Tighter stops = larger position size; wider stops = smaller position size",
-          "The dollar risk remains constant regardless of stop loss distance",
-          "Use a position size calculator or spreadsheet to eliminate calculation errors"
-        ]
-      },
-      {
-        title: "Building a Risk Management Framework",
-        content: "Individual trade risk is only one component of a complete risk management framework. Professional traders also implement daily loss limits, weekly loss limits, and maximum drawdown thresholds. A common framework is: 1-2% risk per trade, 3-5% maximum daily loss, 8-10% maximum weekly loss, and a 15-20% maximum drawdown trigger that forces the trader to stop and reassess.\n\nCorrelation risk is another factor many traders overlook. If you have three open positions on EUR/USD, GBP/USD, and AUD/USD, all three are effectively USD trades. If the dollar strengthens unexpectedly, all three positions lose simultaneously. Your effective risk is not 3 x 1% = 3%; it is closer to 3% concentrated in a single direction. Managing correlation ensures that a single market event cannot destroy your account.\n\nThe psychological component of risk management cannot be overstated. When you know exactly how much you can lose on any trade and you have defined maximum loss limits, you trade with clarity and confidence. Fear disappears because you have already accepted the worst-case scenario. This mental freedom allows you to execute your trading plan without hesitation, which is ultimately what separates profitable traders from the rest.",
-        bullets: [
-          "Daily loss limit: 3-5% of account equity",
-          "Weekly loss limit: 8-10% of account equity",
-          "Maximum drawdown threshold: 15-20% triggers mandatory review",
-          "Monitor correlation risk across open positions",
-          "Pre-defined risk rules eliminate emotional decision-making during trades"
-        ]
-      }
-    ],
-    keyPoints: [
-      "Risk no more than 1-2% of your account on any single trade",
-      "Risk-to-reward ratio determines profitability more than win rate",
-      "Positive expectancy = (Win Rate x Avg Win) - (Loss Rate x Avg Loss) > 0",
-      "Always calculate position size based on stop loss distance, not desired profit",
-      "Implement daily, weekly, and maximum drawdown limits as circuit breakers",
-      "Correlation between positions can multiply your actual risk exposure"
-    ],
-    commonMistakes: [
-      "Risking 5-10% per trade because the setup looks perfect",
-      "Moving stop losses wider to avoid being stopped out, increasing risk beyond the plan",
-      "Ignoring risk-to-reward and focusing solely on win rate",
-      "Using the same lot size on every trade regardless of stop loss distance",
-      "Failing to account for correlation when holding multiple positions in the same direction"
-    ],
-    relatedLessons: [1, 3, 4, 11],
-    quiz: [
-      {
-        id: 1,
-        question: "On a $20,000 account using the 1% rule, what is the maximum dollar risk per trade?",
-        options: ["$100", "$200", "$500", "$2,000"],
-        correctAnswer: 1,
-        explanation: "The 1% rule means risking 1% of your total account per trade. 1% of $20,000 = $200. This ensures that even a string of consecutive losses will not critically damage your account."
-      },
-      {
-        id: 2,
-        question: "A trader risks 30 pips with a target of 90 pips. What is the risk-to-reward ratio?",
-        options: ["1:1", "1:2", "1:3", "3:1"],
-        correctAnswer: 2,
-        explanation: "Risk-to-reward is calculated by dividing the target by the risk: 90 / 30 = 3. The ratio is 1:3, meaning for every 1 unit of risk, the potential reward is 3 units. At this ratio, you only need to win 25% of trades to break even."
-      },
-      {
-        id: 3,
-        question: "Why is a 50% drawdown particularly dangerous?",
-        options: ["It triggers margin calls", "You need a 100% gain to recover", "Your broker closes your account", "It means you have no edge"],
-        correctAnswer: 1,
-        explanation: "A 50% drawdown requires a 100% gain just to return to breakeven. If your account drops from $10,000 to $5,000, you need to double the remaining $5,000 to get back to $10,000. This asymmetry makes large drawdowns extremely difficult to recover from."
-      }
-    ],
-    diagrams: ["risk-reward"]
-  },
-  {
     id: 3,
-    title: "Trading Psychology: Mastering Your Mind",
-    description: "Your biggest adversary in trading is not the market, but yourself. This lesson covers the psychological traps that destroy accounts and the mental frameworks that professional traders use to maintain peak performance.",
-    category: "psychology",
-    difficulty: "Beginner",
-    duration: "30 min",
-    isFree: true,
-    sections: [
-      {
-        title: "The Psychology of Fear and Greed",
-        content: "Fear and greed are the two dominant emotions that drive financial markets and individual trading decisions. Fear manifests as hesitation to enter valid setups, premature exit of winning trades, widening stop losses to avoid being stopped out, or complete paralysis after a losing streak. Greed manifests as overtrading, overleveraging, chasing trades that have already moved, and refusing to take profits because the trade might go further.\n\nThese emotions are rooted in evolutionary biology. Fear of loss triggers the same fight-or-flight response that protected our ancestors from predators. The pain of losing $100 is psychologically approximately twice as intense as the pleasure of gaining $100, a phenomenon known as loss aversion. This means traders are biologically wired to make poor trading decisions: cutting winners too short (fear of giving back profit) and letting losers run (refusal to accept the pain of a realized loss).\n\nRecognizing these emotional states in real-time is the first step toward mastering them. Professional traders develop self-awareness practices such as checking in with their emotional state before placing trades, maintaining a feelings log alongside their trade journal, and establishing pre-trade checklists that force rational analysis before execution. The goal is not to eliminate emotions, which is impossible, but to prevent them from influencing trading decisions.",
-        bullets: [
-          "Fear causes hesitation, premature exits, and trading paralysis",
-          "Greed drives overtrading, overleveraging, and chasing missed moves",
-          "Loss aversion: the pain of losing feels 2x stronger than the pleasure of gaining",
-          "Emotions are biological responses that cannot be eliminated, only managed",
-          "Self-awareness and pre-trade checklists create a buffer between emotion and action"
-        ],
-        tradingExample: {
-          setup: "A trader identifies a valid short setup on EUR/USD at a key resistance zone with confluence of an order block and bearish divergence",
-          entry: "Despite the valid setup, they hesitate and do not enter because their last three trades were losers. Price drops 80 pips to target without them",
-          management: "Frustrated at missing the move, they enter a revenge long on the next candle with no setup, doubling their usual position size",
-          outcome: "The revenge trade loses 40 pips. The trader has now compounded a psychological problem: they missed a valid setup due to fear, then took an invalid setup due to greed, resulting in a completely avoidable loss"
-        }
-      },
-      {
-        title: "Revenge Trading and Tilt",
-        content: "Revenge trading is the act of entering trades impulsively after a loss in an attempt to recover the lost money quickly. It is one of the most destructive behavioral patterns in trading and has blown more accounts than any single strategy failure. Tilt, borrowed from poker terminology, is the emotional state of frustration and irrationality that leads to revenge trading.\n\nThe psychology behind revenge trading is straightforward: a loss creates emotional pain, and the brain seeks immediate relief by winning back the money. This urgency causes the trader to abandon their plan, increase position sizes, enter trades without proper setups, and take trades on unfamiliar instruments. Each subsequent loss deepens the tilt state, creating a destructive spiral that can liquidate an account in a single session.\n\nThe antidote to revenge trading is structured rules and physical separation from the screen. Effective rules include: stop trading for the day after two consecutive losses, reduce position size by 50% after three losing trades in a week, walk away from the screen for at least 30 minutes after any loss, and never increase position size to recover losses. These rules must be written, posted near your trading station, and treated as inviolable laws, not suggestions.",
-        bullets: [
-          "Revenge trading: impulsive trades taken to recover losses, ignoring the plan",
-          "Tilt creates a destructive spiral of emotional decisions and escalating losses",
-          "The brain seeks immediate relief from loss pain, overriding rational analysis",
-          "Stop trading after 2 consecutive losses or a daily loss limit breach",
-          "Physical separation from the screen is the most effective tilt breaker"
-        ]
-      },
-      {
-        title: "Building Discipline Through Routine",
-        content: "Discipline is not a personality trait; it is a skill built through consistent routines and systems. The most disciplined traders in the world do not rely on willpower to make good decisions. They design environments and workflows that make disciplined behavior the path of least resistance and impulsive behavior difficult to execute.\n\nA professional trading routine typically includes: a pre-market preparation session (reviewing key levels, economic calendar, and overnight developments), a pre-trade checklist that must be completed before any entry, a post-trade review immediately after closing a position, and a daily wrap-up session where all trades are journaled with screenshots and psychological notes. This routine creates structure that replaces emotional decision-making with systematic analysis.\n\nConsistency in execution also means accepting that you will miss valid setups. Not every trade that meets your criteria will be taken because you were not at the screen, or because market conditions changed before you could execute. The disciplined trader accepts missed opportunities without frustration because they know that the market provides new setups every day. Chasing missed moves is a discipline failure that often leads to entering at poor prices with compromised risk-to-reward.",
-        bullets: [
-          "Discipline is a system, not a personality trait; build it through routine",
-          "Pre-market analysis, pre-trade checklist, post-trade review form the core routine",
-          "Design your environment to make impulsive decisions difficult to execute",
-          "Accept missed trades without frustration; the market offers new setups daily",
-          "Consistency in process matters more than consistency in outcomes"
-        ]
-      },
-      {
-        title: "Journaling for Psychological Improvement",
-        content: "A trading journal is the single most powerful tool for psychological improvement. It transforms vague feelings of frustration or confidence into concrete data that can be analyzed and improved upon. Without a journal, you are relying on memory, which is unreliable and biased toward recent events, to evaluate your performance and identify patterns.\n\nAn effective trading journal captures both quantitative and qualitative data. Quantitative data includes: instrument, entry price, stop loss, take profit, position size, risk amount, outcome, and R-multiple. Qualitative data includes: the reason for the trade (what setup did you see?), your emotional state before entering, how you managed the trade, whether you followed your plan, and what you would do differently. The qualitative data is where the psychological insights emerge.\n\nReviewing your journal weekly and monthly reveals patterns that are invisible in real-time. You might discover that you lose money consistently on Mondays, that your win rate drops dramatically when you take more than three trades per day, or that trades taken after a loss have a significantly lower success rate. These insights allow you to create targeted rules that address your specific weaknesses. The best traders treat their journal reviews with the same seriousness as their trading sessions.",
-        bullets: [
-          "Capture both trade data (quantitative) and psychological notes (qualitative)",
-          "Record emotional state, plan adherence, and decision-making quality for each trade",
-          "Weekly and monthly reviews reveal behavioral patterns invisible in real-time",
-          "Data-driven rule creation targets your specific weaknesses and biases",
-          "Treat journal reviews with the same discipline and focus as live trading"
-        ],
-        tradingExample: {
-          setup: "After 3 months of journaling, a trader reviews their data and discovers that trades taken between 2-4 PM (after lunch) have a 28% win rate compared to 55% in the morning session",
-          entry: "They also find that trades entered within 10 minutes of a losing trade have only a 22% win rate, clear evidence of revenge trading",
-          management: "Armed with this data, they implement two rules: no new trades after 2 PM, and a mandatory 30-minute cooling period after any loss",
-          outcome: "Over the next month, their win rate improves from 41% to 52% and their average R-multiple improves from 1.1 to 1.6, simply by eliminating their worst behavioral patterns identified through journaling"
-        }
-      },
-      {
-        title: "Developing a Peak Performance Mindset",
-        content: "Peak performance in trading requires treating it as a professional endeavor, not a gambling hobby. Professional traders approach every trading day with preparation, focus, and detachment from outcomes. They understand that any single trade is statistically irrelevant; what matters is their performance over hundreds and thousands of trades.\n\nProcess-oriented thinking is the hallmark of a peak performance mindset. Instead of evaluating each trade by its profit or loss, evaluate it by how well you executed your plan. A losing trade that was perfectly executed according to your rules is a good trade. A winning trade that violated your plan is a bad trade, even though it made money, because it reinforces undisciplined behavior that will cost you in the long run.\n\nPhysical health directly impacts trading performance. Sleep deprivation impairs cognitive function and emotional regulation. Exercise reduces stress hormones and improves focus. Nutrition affects energy levels and mental clarity. Professional traders treat their physical health as a trading edge because the mind and body are not separate systems. A trader who sleeps 5 hours, skips exercise, and lives on caffeine and processed food is operating at a significant cognitive disadvantage compared to one who prioritizes these fundamentals.",
-        bullets: [
-          "Treat trading as a professional career, not a gambling activity",
-          "Evaluate trades by plan adherence, not by profit or loss",
-          "A losing trade with perfect execution is a good trade; a winning trade that violates rules is bad",
-          "Physical health (sleep, exercise, nutrition) directly impacts cognitive performance",
-          "Detach from individual trade outcomes; focus on statistical edge over large samples"
-        ]
-      }
-    ],
-    keyPoints: [
-      "Fear and greed are biological responses that must be managed, not eliminated",
-      "Revenge trading after losses is the fastest way to destroy an account",
-      "Discipline comes from structured routines and systems, not willpower",
-      "A trading journal is the most powerful tool for identifying and fixing psychological weaknesses",
-      "Process-oriented thinking evaluates trades by plan adherence, not profit/loss",
-      "Physical health (sleep, exercise, nutrition) directly impacts trading performance"
-    ],
-    commonMistakes: [
-      "Trading immediately after a loss without a cooling-off period",
-      "Increasing position size to recover losses (revenge trading)",
-      "Skipping the trading journal because it feels like unnecessary work",
-      "Evaluating trade quality by outcome rather than plan adherence",
-      "Neglecting physical health and expecting peak cognitive performance"
-    ],
-    relatedLessons: [1, 2, 15, 18],
-    quiz: [
-      {
-        id: 1,
-        question: "What is loss aversion and how does it affect trading?",
-        options: ["Avoiding all trades to prevent losses", "The pain of losing feels approximately 2x stronger than the pleasure of gaining, causing poor decisions", "A strategy that never takes losing trades", "Fear of placing any trades at all"],
-        correctAnswer: 1,
-        explanation: "Loss aversion is a cognitive bias where the psychological pain of losing is roughly twice as powerful as the pleasure of an equivalent gain. This causes traders to cut winners too short (fear of giving back profit) and let losers run (refusing to accept the pain of a realized loss)."
-      },
-      {
-        id: 2,
-        question: "What is the most effective response to a losing streak?",
-        options: ["Increase position size to recover faster", "Switch to a different strategy immediately", "Reduce size, follow your rules, and review your journal", "Stop trading permanently"],
-        correctAnswer: 2,
-        explanation: "During a losing streak, the correct response is to reduce position size (lower the emotional pressure), strictly follow your trading rules, and review your journal to determine if the losses are due to market conditions or execution errors. Increasing size or switching strategies compounds the problem."
-      },
-      {
-        id: 3,
-        question: "When should you consider a losing trade a 'good trade'?",
-        options: ["Never, all losing trades are bad", "When the loss is small", "When the trade was executed perfectly according to your plan", "When the market moved unfairly"],
-        correctAnswer: 2,
-        explanation: "A losing trade is a 'good trade' when it was executed perfectly according to your trading plan. The outcome of any single trade is largely random; what matters is consistent execution of a strategy with positive expectancy over a large sample of trades."
-      }
-    ]
-  },
-  {
-    id: 4,
     title: "Market Structure: The Foundation of All Analysis",
     description: "Market structure is the framework that every technical trader must master. Learn to identify trends, ranges, swing points, and structural shifts that reveal the true direction of price on any timeframe.",
     category: "price-action",
     difficulty: "Beginner",
     duration: "35 min",
-    isFree: false,
+    phaseId: 1,
+    order: 2,
+    accessTier: "FREE",
+    requiredScore: 70,
+    prerequisite: 2,
     sections: [
       {
         title: "What Is Market Structure?",
@@ -495,7 +457,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       },
       {
         title: "How to Identify Swing Points Correctly",
-        content: "Accurate identification of swing points is essential for reading market structure correctly. A swing high is formed when a candle (or cluster of candles) creates a high that is higher than the candles on both sides. Similarly, a swing low is formed when a candle creates a low that is lower than the candles on both sides. These are the peaks and valleys of price movement.\n\nThe challenge is distinguishing between major (significant) swing points and minor (noise) swing points. Major swing points are visible on the chart without zooming in; they represent clear turning points where price changed direction decisively. Minor swing points are small fluctuations within a larger move that do not represent meaningful shifts in supply and demand. Trading off minor swing points leads to excessive noise and false signals.\n\nA practical rule for identifying significant swing points is the multi-candle confirmation method: a valid swing high should have at least 2-3 candles with lower highs on each side, and a valid swing low should have at least 2-3 candles with higher lows on each side. This filter eliminates most noise and highlights the swing points that actually matter for determining market structure. Another approach is to use higher timeframe swing points to define structure and lower timeframe price action for entry timing.",
+        content: "Accurate identification of swing points is essential for reading market structure correctly. A swing high is formed when a candle (or cluster of candles) creates a high that is higher than the candles on both sides. Similarly, a swing low is formed when a candle creates a low that is lower than the candles on both sides. These are the peaks and valleys of price movement.\n\nThe challenge is distinguishing between major (significant) swing points and minor (noise) swing points. Major swing points are visible on the chart without zooming in; they represent clear turning points where price changed direction decisively. Minor swing points are small fluctuations within a larger move that do not represent meaningful shifts in supply and demand. Trading off minor swing points leads to excessive noise and false signals.\n\nA practical rule for identifying significant swing points is the multi-candle confirmation method: a valid swing high should have at least 2-3 candles with lower highs on each side, and a valid swing low should have at least 2-3 candles with higher lows on each side. This filter eliminates most noise and highlights the swing points that actually define the market structure.",
         bullets: [
           "Swing high: a high with lower highs on both sides (at least 2-3 candles each side)",
           "Swing low: a low with higher lows on both sides (at least 2-3 candles each side)",
@@ -526,7 +488,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Ignoring range-bound conditions and forcing trend trades in sideways markets",
       "Not waiting for multi-candle confirmation of swing points"
     ],
-    relatedLessons: [1, 5, 6, 7],
+    relatedLessons: [2, 4, 5, 12],
     quiz: [
       {
         id: 1,
@@ -553,242 +515,17 @@ export const EDUCATION_LESSONS: Lesson[] = [
     diagrams: ["market-structure"]
   },
   {
-    id: 5,
-    title: "Candlestick Patterns That Professional Traders Use",
-    description: "Move beyond textbook patterns. Learn the candlestick formations that institutional traders actually rely on, and more importantly, understand the context that makes them work.",
-    category: "price-action",
-    difficulty: "Beginner",
-    duration: "35 min",
-    isFree: false,
-    sections: [
-      {
-        title: "Anatomy of a Candlestick (OHLC)",
-        content: "Every candlestick on a chart represents four pieces of data for a specific time period: the Open (where price started), the High (the highest price reached), the Low (the lowest price reached), and the Close (where price ended). The body of the candlestick is the filled area between the open and close, while the wicks (also called shadows) extend from the body to the high and low.\n\nA bullish (green/white) candle has a close above the open, indicating buyers pushed price higher during that period. A bearish (red/black) candle has a close below the open, indicating sellers pushed price lower. The size of the body relative to the wicks tells you about the conviction behind the move. A large body with small wicks shows strong directional conviction. A small body with large wicks shows indecision or rejection.\n\nProfessional traders do not just see candlesticks as shapes; they interpret them as a story of the battle between buyers and sellers during that time period. A candle with a long lower wick and a close near the high tells you that sellers pushed price down aggressively, but buyers overwhelmed them and pushed price back up. This narrative approach to reading candles is far more valuable than memorizing pattern names.",
-        bullets: [
-          "OHLC: Open, High, Low, Close are the four data points of every candle",
-          "Body = area between open and close; Wicks = extensions to the high and low",
-          "Large body, small wicks = strong conviction in one direction",
-          "Small body, large wicks = indecision or rejection of a price level",
-          "Read candles as narratives of the buyer-seller battle, not just shapes"
-        ]
-      },
-      {
-        title: "Single Candle Patterns: Hammer, Shooting Star, Doji, Marubozu",
-        content: "The hammer is a bullish reversal candle that forms at the bottom of a move. It has a small body near the top and a long lower wick (at least 2x the body length). The story: sellers pushed price down significantly during the period, but buyers overwhelmed them and pushed price back up near the open. When this forms at a key support zone in an uptrend or after an extended downtrend, it signals potential buying interest.\n\nThe shooting star is the bearish mirror image of the hammer. It has a small body near the bottom and a long upper wick. It forms at the top of a move and tells you that buyers pushed price up, but sellers overwhelmed them and pushed price back down. At key resistance zones, this is a warning sign that the advance may be failing.\n\nThe doji has a very small body (open and close are nearly equal) with wicks on both sides. It represents pure indecision; neither buyers nor sellers won the period. A doji at a key level signals that the current move may be exhausting. The marubozu is the opposite of a doji: it has a large body with little to no wicks, showing complete dominance by one side. A bullish marubozu (large green body, no wicks) shows buyers were in total control. These candles within impulsive moves confirm strong momentum.",
-        bullets: [
-          "Hammer: small body at top, long lower wick (2x+ body) at support = bullish reversal signal",
-          "Shooting star: small body at bottom, long upper wick at resistance = bearish reversal signal",
-          "Doji: open equals close, wicks both sides = indecision at current level",
-          "Marubozu: large body, no/minimal wicks = complete dominance by buyers or sellers",
-          "Single candle patterns are signals, not confirmations; always seek additional confluence"
-        ],
-        tradingExample: {
-          setup: "Gold (XAU/USD) has been trending up. Price pulls back to a previous support zone at $1,920. A 4-hour hammer candle forms with a lower wick that tests $1,915 before closing at $1,923",
-          entry: "The hammer at key support in an uptrend provides a signal. The trader waits for the next candle to close bullish above the hammer's high ($1,925) for confirmation before entering long",
-          management: "Stop loss below the hammer's wick at $1,912 (13 pips from entry), target at the previous swing high of $1,958 (33 pips), giving 1:2.5 R:R",
-          outcome: "Price reverses from the support zone as the hammer suggested. The confirmation candle close prevented entering prematurely on a hammer that could have been followed by more selling"
-        }
-      },
-      {
-        title: "Multi-Candle Patterns: Engulfing, Morning Star, Evening Star",
-        content: "A bullish engulfing pattern occurs when a bearish candle is followed by a larger bullish candle whose body completely covers (engulfs) the previous candle's body. This pattern shows a decisive shift in control from sellers to buyers. The larger the engulfing candle relative to the previous candle, the stronger the signal. A bearish engulfing is the reverse: a bullish candle followed by a larger bearish candle that engulfs it.\n\nEngulfing patterns are among the most reliable candlestick signals when they occur at key levels. The key qualifier is 'at key levels.' A bullish engulfing in the middle of a downtrend with no support nearby is just a temporary bounce. A bullish engulfing at a major support zone, a demand area, or within a bullish order block after a pullback in an uptrend is a high-probability setup.\n\nThe morning star is a three-candle bullish reversal pattern: a bearish candle, followed by a small-bodied candle (the star, indicating indecision), followed by a bullish candle that closes into the body of the first candle. The evening star is the bearish mirror. These patterns tell a complete story: the trend is in control (candle 1), momentum stalls (candle 2, the star), and control shifts to the opposite side (candle 3). The morning star and evening star are considered more reliable than single-candle patterns because they show a three-phase transition in market sentiment.",
-        bullets: [
-          "Bullish engulfing: bearish candle followed by larger bullish candle that engulfs it",
-          "Bearish engulfing: bullish candle followed by larger bearish candle that engulfs it",
-          "Morning star: 3-candle bullish reversal (bearish, small star, bullish close into first body)",
-          "Evening star: 3-candle bearish reversal (bullish, small star, bearish close into first body)",
-          "Multi-candle patterns are more reliable because they show transition over multiple periods"
-        ]
-      },
-      {
-        title: "Context Matters: Patterns at Key Levels vs. Random Locations",
-        content: "The most important rule in candlestick analysis is that patterns are only meaningful when they form at significant price levels. A bullish engulfing candle at a random location in the middle of a chart has almost zero predictive value. The same bullish engulfing at a tested support zone, within a bullish order block, or at a key Fibonacci retracement level in the direction of the higher timeframe trend becomes a high-probability entry signal.\n\nContext includes three dimensions: location, trend alignment, and timeframe. Location means the pattern forms at a key support/resistance zone, order block, or liquidity sweep area. Trend alignment means the pattern signals in the direction of the dominant trend (buying patterns at support in uptrends, selling patterns at resistance in downtrends). Timeframe means higher timeframe patterns (4-hour, daily) are significantly more reliable than lower timeframe patterns (5-minute, 15-minute).\n\nA practical framework for using candlestick patterns is the three-factor confluence model: (1) the pattern forms at a significant level, (2) the pattern aligns with the higher timeframe trend direction, and (3) the pattern occurs on a meaningful timeframe (4H or above for swing trades, 15M or above for intraday). If all three factors are present, the pattern has strong predictive value. If only one or two are present, the pattern is unreliable.",
-        bullets: [
-          "Patterns are meaningless without context; location is everything",
-          "Three dimensions of context: key level, trend alignment, timeframe significance",
-          "Higher timeframe patterns (4H, Daily) are far more reliable than lower timeframe",
-          "Three-factor confluence: key level + trend alignment + meaningful timeframe",
-          "Never trade a pattern in isolation; always require at least two contextual factors"
-        ],
-        tradingExample: {
-          setup: "A trader sees a bearish engulfing on the 15-minute EUR/USD chart. However, the daily chart shows a strong uptrend, and the engulfing formed at no particular level of significance",
-          entry: "The trader correctly identifies this as a low-probability setup: the pattern lacks trend alignment (bearish in an uptrend) and key level context (no S/R, no order block)",
-          management: "Instead of shorting, they wait for price to pull back to a key daily support zone and look for bullish patterns aligned with the daily uptrend",
-          outcome: "The bearish engulfing they skipped led to only a minor 15-pip pullback before the uptrend resumed. The bullish hammer they later traded at daily support gave them a 1:3 winner. Context turned a losing signal into a non-trade"
-        }
-      },
-      {
-        title: "Applying Candlestick Analysis to Your Trading",
-        content: "The practical application of candlestick analysis follows a systematic process. First, identify the higher timeframe trend direction using market structure. Second, mark key levels on your chart where you expect price to react (support, resistance, order blocks, fair value gaps). Third, when price arrives at a key level, drop to your entry timeframe and watch for a candlestick pattern that confirms your directional bias.\n\nThis approach means you are not scanning for patterns across the entire chart. Instead, you have predetermined areas of interest and you are simply waiting for price to arrive there and show you a confirmation signal. This eliminates the common mistake of seeing patterns everywhere and overtrading based on low-quality signals.\n\nThe most effective candlestick patterns for trade entries are engulfing candles, hammers (at support), shooting stars (at resistance), and rejection wicks that show clear supply or demand. These patterns should be used as the final trigger for entry after you have already identified the level, the trend direction, and the confluences. The candlestick pattern is the last piece of the puzzle, not the entire puzzle.",
-        bullets: [
-          "Step 1: Identify HTF trend direction. Step 2: Mark key levels. Step 3: Wait for patterns at those levels",
-          "Do not scan for patterns across the whole chart; focus only on key levels",
-          "Best entry patterns: engulfing, hammers, shooting stars, rejection wicks",
-          "Candlestick patterns are the entry trigger, not the trade thesis",
-          "Combine patterns with market structure and key levels for highest probability"
-        ]
-      }
-    ],
-    keyPoints: [
-      "Every candlestick tells a story of the buyer-seller battle through OHLC data",
-      "Key single patterns: hammer, shooting star, doji, marubozu",
-      "Key multi-candle patterns: engulfing, morning star, evening star",
-      "Context is everything: patterns only matter at key levels with trend alignment",
-      "Higher timeframe patterns are significantly more reliable than lower timeframe",
-      "Use patterns as the final entry trigger after identifying levels and trend, not in isolation"
-    ],
-    commonMistakes: [
-      "Trading candlestick patterns in isolation without any contextual confluence",
-      "Memorizing dozens of exotic patterns instead of mastering 4-5 high-probability ones",
-      "Using patterns on 1-5 minute charts where they have minimal predictive value",
-      "Entering on the pattern candle itself instead of waiting for confirmation on the next candle",
-      "Ignoring the higher timeframe trend when interpreting candlestick signals"
-    ],
-    relatedLessons: [4, 6, 7, 8],
-    quiz: [
-      {
-        id: 1,
-        question: "What does a candlestick with a long lower wick and small body near the high indicate?",
-        options: ["Strong selling pressure", "Indecision", "Sellers pushed price down but buyers overwhelmed them and pushed it back up", "The start of a downtrend"],
-        correctAnswer: 2,
-        explanation: "A long lower wick with a close near the high (hammer) tells you that sellers were aggressive but buyers overwhelmed them during the period. At support zones, this signals potential buying interest and reversal."
-      },
-      {
-        id: 2,
-        question: "When is a bullish engulfing pattern most reliable?",
-        options: ["Anytime it appears on any chart", "When it forms at a key support level in the direction of the higher timeframe uptrend", "Only on the daily timeframe", "After three consecutive red candles"],
-        correctAnswer: 1,
-        explanation: "A bullish engulfing is most reliable when it has contextual confluence: it forms at a key support level (location), aligns with the higher timeframe trend direction (trend alignment), and occurs on a meaningful timeframe (4H+ for swing trades)."
-      },
-      {
-        id: 3,
-        question: "What is the difference between a doji and a marubozu?",
-        options: ["There is no difference", "Doji shows indecision (open = close); Marubozu shows total dominance (large body, no wicks)", "Doji is bullish; Marubozu is bearish", "Doji only forms in downtrends; Marubozu only in uptrends"],
-        correctAnswer: 1,
-        explanation: "A doji has virtually no body (open equals close) showing that neither side won. A marubozu has a large body with no or minimal wicks, showing complete dominance by buyers (bullish marubozu) or sellers (bearish marubozu) during the period."
-      }
-    ],
-    diagrams: ["candlestick-patterns"]
-  },
-  {
-    id: 6,
-    title: "Support & Resistance: Where Institutional Orders Cluster",
-    description: "Support and resistance are not just lines on a chart; they represent zones where significant buying and selling orders cluster. Learn to identify, draw, and trade these critical levels like an institutional trader.",
-    category: "price-action",
-    difficulty: "Intermediate",
-    duration: "35 min",
-    isFree: false,
-    sections: [
-      {
-        title: "Definition and Market Logic Behind S/R",
-        content: "Support and resistance levels are price zones where the balance between supply and demand shifts measurably, causing price to pause, reverse, or accelerate. Support is a zone where buying pressure is strong enough to absorb selling and push price higher. Resistance is a zone where selling pressure is strong enough to absorb buying and push price lower.\n\nThe logic behind these levels is rooted in market microstructure and participant behavior. At support zones, institutional traders, algorithmic systems, and informed participants have previously placed large buy orders, and the market remembers these levels. When price returns, similar orders are often placed again because the conditions that made the level attractive for buying the first time may still be relevant. Additionally, traders who missed the initial bounce at support place orders to catch it the next time.\n\nSupport and resistance is a concept of collective memory and order clustering. Key levels become self-fulfilling to some extent because enough market participants watch and trade them. However, this also means that when levels finally break, the move is often explosive because all the protective orders (stop losses) on the wrong side of the level are triggered simultaneously, adding fuel to the breakout.",
-        bullets: [
-          "Support: zone where buying pressure absorbs selling and reverses price upward",
-          "Resistance: zone where selling pressure absorbs buying and reverses price downward",
-          "Institutional orders cluster at key levels, creating repeatable reaction zones",
-          "Levels are partly self-fulfilling because many participants watch and trade the same levels",
-          "When key levels break, the move is often explosive due to stop loss cascades"
-        ]
-      },
-      {
-        title: "How to Draw Valid S/R Levels",
-        content: "Drawing valid support and resistance levels is both an art and a science. The most reliable levels share several characteristics: they are visually obvious on the chart (if you have to squint to see them, they are not significant), they have been tested multiple times with clear reactions, and they align with levels on higher timeframes.\n\nThe practical process for identifying S/R levels begins on the higher timeframe (daily or weekly) and works down. Start by marking the most obvious turning points where price reversed sharply. Then look for areas where price paused or consolidated before continuing. Pay special attention to levels where multiple swing highs or swing lows cluster within a narrow range, as these confluent zones represent the strongest S/R areas.\n\nA common guideline is to have no more than 5-7 key levels on any single chart. If your chart is cluttered with dozens of levels, you are overcomplicating the analysis and will be paralyzed by conflicting signals. Focus on the levels that are most obvious, have the most touches, and align with higher timeframe structure. These major levels are where institutional orders actually cluster and where the highest probability reactions occur.",
-        bullets: [
-          "Valid S/R levels are visually obvious without squinting or zooming in",
-          "Start on the daily/weekly chart and work down to lower timeframes",
-          "Cluster zones (multiple swing points at similar prices) are the strongest levels",
-          "Limit yourself to 5-7 key levels per chart to avoid analysis paralysis",
-          "The best levels have multiple clear reactions with strong rejection candles"
-        ],
-        tradingExample: {
-          setup: "A trader opens the daily USD/JPY chart and identifies three major levels: 150.00 (psychological and previous major reversal), 148.50 (multiple swing lows clustering), and 152.00 (multiple rejections from the topside)",
-          entry: "Price approaches 148.50 from above. The trader switches to the 1-hour chart and sees a bullish engulfing form right at the zone, with price wicking below 148.40 and closing at 148.70",
-          management: "Stop loss at 147.90 (below the daily zone), target at 150.00 (the next major level), giving 1:2 R:R",
-          outcome: "The 148.50 zone holds as expected because it was a high-quality level: obvious on the daily chart, multiple prior reactions, and aligned with the weekly uptrend support"
-        }
-      },
-      {
-        title: "Zones vs. Exact Lines",
-        content: "One of the most critical distinctions in support and resistance analysis is understanding that these levels are zones, not exact prices. The market does not respect exact prices because orders are distributed across a range. A support 'level' at 1.0800 really means a support zone between approximately 1.0790 and 1.0815, depending on the timeframe and the historical range of reactions at that area.\n\nThe width of a zone depends on the timeframe and the instrument's volatility. On a daily chart for a major Forex pair, zones might be 15-30 pips wide. On a 15-minute chart, zones might be 5-10 pips. For volatile instruments like crypto or commodities, zones are proportionally wider. The zone should encompass the wicks and bodies of the candles that created the level.\n\nDrawing zones instead of exact lines changes how you trade. Instead of placing a limit order at an exact price and hoping price reverses there, you watch for price action confirmation within the zone. You expect price to enter the zone, potentially wick through it, and then show rejection before you enter. This approach requires patience but dramatically improves your hit rate because you are no longer caught by the inevitable slight overshoots that stop out traders using exact-line entries.",
-        bullets: [
-          "S/R levels are zones (price ranges), not exact prices",
-          "Zone width varies by timeframe: 15-30 pips on daily, 5-10 pips on 15M for Forex majors",
-          "Zones should encompass the wicks and bodies of reaction candles at that level",
-          "Wait for price action confirmation within the zone rather than blind limit orders",
-          "Zones prevent premature stop-outs from normal price overshoots and wicks"
-        ]
-      },
-      {
-        title: "How S/R Flips: Support Becomes Resistance",
-        content: "Role reversal, also called S/R flip or polarity, is one of the most reliable phenomena in technical analysis. When a support level is decisively broken to the downside, it frequently becomes resistance when price retests it from below. Conversely, when resistance is broken to the upside, it often becomes support when price pulls back to test it from above.\n\nThe psychology behind role reversal involves trapped traders. Consider a support level at 1.1000 where many traders bought. If price drops below 1.1000 decisively, those buyers are now trapped in losing positions. When price rallies back to 1.1000, many of these trapped traders will sell to exit at breakeven, creating selling pressure that turns the old support into new resistance. This is a structural, repeatable pattern driven by predictable human behavior.\n\nS/R flips provide some of the highest probability trade entries available. After a significant level breaks, wait for price to return to the broken level (the retest), then look for confirmation that the flip is holding (rejection candles, order blocks at the flip zone). These retest entries give you defined risk (stop loss just beyond the flip zone) and clear targets (the next key level in the direction of the break).",
-        bullets: [
-          "Broken support often becomes resistance; broken resistance often becomes support",
-          "Trapped traders create the selling/buying pressure that drives the flip",
-          "S/R flips are among the highest probability setups in technical trading",
-          "Wait for a retest of the broken level and confirmation before entering",
-          "The flip zone provides clear stop loss placement and risk definition"
-        ]
-      },
-      {
-        title: "Dynamic vs. Static Support and Resistance",
-        content: "Static S/R levels are horizontal zones drawn at fixed prices, representing areas where price has previously reacted. These are the levels discussed throughout this lesson: clear horizontal zones on the chart where buying or selling interest has been demonstrated. Static levels remain at the same price until they are broken and potentially undergo role reversal.\n\nDynamic S/R refers to levels that change over time. The most common dynamic levels are moving averages (such as the 20 EMA, 50 SMA, and 200 SMA) and trendlines. In an uptrend, a rising 20 EMA often acts as dynamic support where price bounces during pullbacks. In a downtrend, a falling 20 EMA can act as dynamic resistance. The 200-day moving average is widely regarded as a major dynamic level that separates bullish and bearish territory.\n\nProfessional traders primarily rely on static horizontal levels because they represent actual areas of order clustering. Dynamic levels are used as secondary confluence, not primary analysis. If a horizontal support zone coincides with the 50-day moving average, that confluence strengthens the level. However, trading off a moving average alone, without a horizontal level or other price action confirmation, is generally lower probability because the moving average value changes with every candle and does not represent a specific area of historical order activity.",
-        bullets: [
-          "Static S/R: fixed horizontal levels at prices of previous reactions",
-          "Dynamic S/R: moving averages and trendlines that change over time",
-          "Common dynamic levels: 20 EMA, 50 SMA, 200 SMA",
-          "Horizontal (static) levels are primary; dynamic levels are secondary confluence",
-          "Confluence of static and dynamic levels creates the strongest reaction zones"
-        ]
-      }
-    ],
-    keyPoints: [
-      "S/R levels represent zones where institutional order flow clusters, not arbitrary lines",
-      "Draw S/R as zones (not exact lines) to account for normal price variation",
-      "Keep your chart clean: 5-7 major levels maximum per chart",
-      "Role reversal (broken support becomes resistance) is one of the most reliable patterns",
-      "Static horizontal levels are primary; dynamic levels (MAs) provide secondary confluence",
-      "Always wait for price action confirmation within a zone before entering"
-    ],
-    commonMistakes: [
-      "Drawing too many levels, creating analysis paralysis and cluttered charts",
-      "Using exact price lines instead of zones, leading to premature stop-outs",
-      "Ignoring higher timeframe levels when trading on lower timeframes",
-      "Trading moving averages as primary levels without horizontal confluence",
-      "Assuming levels will hold indefinitely without watching for break and flip scenarios"
-    ],
-    relatedLessons: [4, 5, 7, 8],
-    quiz: [
-      {
-        id: 1,
-        question: "Why should you draw support and resistance as zones rather than exact lines?",
-        options: ["Zones look better on the chart", "Orders are distributed across a price range, not at a single exact price", "Lines are harder to draw", "There is no difference between zones and lines"],
-        correctAnswer: 1,
-        explanation: "Institutional orders and retail orders are placed across a range of prices, not at a single exact point. A support 'level' at 1.0800 really represents a zone of 15-30 pips where orders cluster. Drawing zones captures this reality and prevents premature stop-outs from normal wicks."
-      },
-      {
-        id: 2,
-        question: "What causes broken support to become resistance (role reversal)?",
-        options: ["Broker manipulation", "Trapped traders who bought at support now sell at breakeven when price retests", "Random market behavior", "Moving averages crossing"],
-        correctAnswer: 1,
-        explanation: "When support breaks, traders who bought at that level are trapped in losing positions. When price returns to the broken level, many exit at breakeven, creating selling pressure. This predictable behavior turns old support into new resistance."
-      },
-      {
-        id: 3,
-        question: "How many key S/R levels should you have on a single chart?",
-        options: ["As many as possible for thorough analysis", "1-2 levels", "5-7 major levels to avoid clutter", "Exactly 10 levels"],
-        correctAnswer: 2,
-        explanation: "Limiting yourself to 5-7 major levels prevents analysis paralysis and cluttered charts. Focus on the most obvious levels with multiple clear reactions that align with higher timeframe structure. These are where institutional orders actually cluster."
-      }
-    ]
-  },
-  {
-    id: 7,
+    id: 4,
     title: "Break of Structure (BOS) & Change of Character (CHoCH)",
     description: "BOS and CHoCH are the two most important structural signals in Smart Money trading. Learn the precise definitions, valid vs. invalid breaks, and how to use these signals to time entries with institutional precision.",
     category: "price-action",
     difficulty: "Intermediate",
     duration: "35 min",
-    isFree: false,
+    phaseId: 1,
+    order: 3,
+    accessTier: "FREE",
+    requiredScore: 70,
+    prerequisite: 3,
     sections: [
       {
         title: "Precise Definitions of BOS and CHoCH",
@@ -872,7 +609,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Chasing price after a BOS instead of waiting for the pullback entry",
       "Applying lower timeframe structural breaks to trade against the higher timeframe trend"
     ],
-    relatedLessons: [4, 6, 8, 9],
+    relatedLessons: [3, 8, 9, 5],
     quiz: [
       {
         id: 1,
@@ -899,242 +636,17 @@ export const EDUCATION_LESSONS: Lesson[] = [
     diagrams: ["bos-choch"]
   },
   {
-    id: 8,
-    title: "Order Blocks: Where Smart Money Enters",
-    description: "Order blocks are the footprints of institutional trading activity. Learn to identify the specific candle formations that mark where large orders were placed, and how to trade when price returns to these zones.",
-    category: "smart-money",
-    difficulty: "Intermediate",
-    duration: "40 min",
-    isFree: false,
-    sections: [
-      {
-        title: "What Is an Order Block?",
-        content: "An order block is the last candle (or group of candles) of the opposing color before a strong impulsive move that breaks market structure. In simpler terms, it is the footprint left by institutional traders when they place large orders. A bullish order block is the last bearish candle before a strong bullish impulse that breaks above a swing high (BOS). A bearish order block is the last bullish candle before a strong bearish impulse that breaks below a swing low.\n\nThe logic behind order blocks relates to how institutional traders execute large positions. Banks and hedge funds cannot place their entire position in a single order because the sheer size would move the market against them (slippage). Instead, they accumulate positions over time, often buying during a small pullback (which creates those last opposing candles) before unleashing the remainder of their order, causing the impulsive move. The order block marks the area where this accumulation occurred.\n\nWhen price returns to an order block, it is returning to the zone where institutional orders were originally placed. These same institutions may have additional orders to fill at the same price (scaling into their position), or other institutions with similar analysis may place new orders at the same zone. This creates a measurable tendency for price to react at order blocks, making them powerful trade entry zones when combined with proper confluence.",
-        bullets: [
-          "Bullish OB: last bearish candle before a bullish impulse that breaks structure",
-          "Bearish OB: last bullish candle before a bearish impulse that breaks structure",
-          "OBs represent zones where institutional accumulation occurred before the impulse",
-          "Price returns to OBs because institutions may have unfilled orders at these levels",
-          "Valid OBs must precede an impulsive move that creates a Break of Structure"
-        ]
-      },
-      {
-        title: "Identifying Valid Bullish and Bearish Order Blocks",
-        content: "Not every opposing candle before a move is a valid order block. For an order block to be considered valid, it must meet specific criteria. First, the impulsive move following the order block must break market structure (BOS). If the move does not break a swing point, the candle is just a regular candle, not an order block. This is the most important filter.\n\nSecond, the impulsive move should be strong and decisive. Ideally, it consists of large-bodied candles with minimal wicks, showing genuine institutional momentum. If the move following the supposed order block is weak, grinding, and full of indecision candles, it is less likely to represent genuine institutional activity and the order block is less reliable.\n\nThird, consider the order block's position within the broader market structure. A bullish order block in an uptrend (at a higher low) is higher probability than a bullish order block in a downtrend (counter-trend). An order block that aligns with a higher timeframe support/resistance zone, a fair value gap, or a Fibonacci retracement level has increased confluence and higher probability. The best order blocks have multiple confluences stacking in their favor.",
-        bullets: [
-          "Requirement 1: The impulse following the OB must break market structure (BOS)",
-          "Requirement 2: The impulse should be strong with large-bodied, impulsive candles",
-          "Requirement 3: The OB should align with the higher timeframe trend direction",
-          "Additional confluence: S/R zones, FVGs, Fibonacci levels increase reliability",
-          "Not every opposing candle is a valid OB; the BOS requirement is the primary filter"
-        ],
-        tradingExample: {
-          setup: "On the GBP/USD 1-hour chart, price is in an uptrend. During a pullback, two bearish candles form (the order block zone from the open of the first to the close of the second). Then a strong bullish impulse of three large green candles breaks above the previous swing high, confirming BOS",
-          entry: "The trader marks the bearish candles as a bullish order block. When price retraces to this zone two days later, they wait for a bullish reaction on the 15-minute chart (a CHoCH from bearish to bullish on the 15M)",
-          management: "Entry at 1.2680 (within the OB zone), stop loss at 1.2655 (below the OB low), target at 1.2760 (previous swing high), giving 1:3.2 R:R",
-          outcome: "Price reacts precisely from the order block zone, confirming that institutional orders were indeed present. The 15-minute confirmation prevented entering too early during a brief wick below the OB"
-        }
-      },
-      {
-        title: "Mitigation: What Happens When Price Returns",
-        content: "Mitigation refers to what happens when price returns to an order block. When price revisits an order block, the pending orders in that zone are 'filled' or 'mitigated.' The order block acts like a reload zone where institutional participants fill the remainder of their positions, creating a bounce in the expected direction.\n\nA fully mitigated order block is one where price has already returned, reacted, and moved through the zone completely. Once an order block is fully mitigated (price has traded through it completely), the orders at that level have been filled and the zone is no longer valid. This is an important distinction: order blocks are generally one-time use zones. If price returns to a mitigated OB a second time, the reaction is typically much weaker or nonexistent because the orders have already been absorbed.\n\nThe best reactions from order blocks typically occur on the first touch. Smart money traders focus on fresh, unmitigated order blocks and ignore those that have already been tested. When price approaches an unmitigated order block for the first time, you should be on high alert for entry opportunities. Watch for confirmation through candlestick patterns, lower timeframe structural shifts, or momentum indicators showing reversal at the OB zone.",
-        bullets: [
-          "Mitigation: the process of price returning to an OB and filling pending orders",
-          "Unmitigated OBs (first touch) produce the strongest reactions",
-          "Fully mitigated OBs (price has already traded through) are no longer valid",
-          "Focus exclusively on fresh, unmitigated order blocks for trade entries",
-          "Confirmation at the OB (candlestick pattern, LTF structure shift) reduces risk of failure"
-        ]
-      },
-      {
-        title: "Order Block Refinement on Lower Timeframes",
-        content: "Order block refinement is the process of using a lower timeframe to narrow down the exact zone within a higher timeframe order block where institutional orders are most concentrated. A 4-hour order block might span 40-50 pips, but the actual area of interest within that zone might be much smaller. Refinement allows you to tighten your entry and improve your risk-to-reward ratio.\n\nThe process works as follows: identify an order block on your higher timeframe (e.g., 4-hour chart). Then drop to a lower timeframe (e.g., 15-minute or 5-minute) and examine the price action within that order block candle in more detail. Look for the specific lower timeframe order block, fair value gap, or structural level within the higher timeframe OB zone. This internal structure narrows your entry zone significantly.\n\nFor example, a 4-hour bullish order block might span from 1.2650 to 1.2690 (40 pips). On the 15-minute chart, within that 4-hour candle, you might identify a specific 15-minute order block between 1.2660 and 1.2670 (10 pips). By entering at the refined 15M OB instead of the entire 4H OB, your stop loss tightens from 40+ pips to approximately 15 pips, dramatically improving your risk-to-reward. However, refinement trades have a lower hit rate because you are being more precise, so there is a trade-off between tighter entries and trade frequency.",
-        bullets: [
-          "Refinement: using lower timeframes to narrow the entry zone within an HTF order block",
-          "Process: identify HTF OB, drop to LTF, find the specific OB/FVG within the HTF candle",
-          "Refinement can improve R:R from 1:2 to 1:5+ by tightening the entry and stop loss",
-          "Trade-off: refined entries are more precise but have lower hit rates (tighter zone = more misses)",
-          "Common refinement: 4H OB refined to 15M OB, or Daily OB refined to 1H OB"
-        ]
-      },
-      {
-        title: "Order Block Trading Rules and Best Practices",
-        content: "To trade order blocks consistently and profitably, you need a clear set of rules. First, only trade order blocks that precede a structural break (BOS). This is non-negotiable. Second, trade in the direction of the higher timeframe trend. A bullish OB in a daily uptrend is significantly more reliable than a bullish OB trying to reverse a daily downtrend. Third, focus on unmitigated (fresh) order blocks only.\n\nYour entry process should follow a systematic workflow: (1) identify the trend direction on your higher timeframe, (2) mark valid order blocks that preceded structural breaks, (3) wait for price to return to the order block zone, (4) look for entry confirmation on your entry timeframe (candlestick pattern, LTF CHoCH in the expected direction), (5) enter with a stop loss beyond the order block and a target at the next structural level or liquidity pool.\n\nRisk management for order block trades follows the same principles as all trading: risk 1-2% of your account per trade, ensure a minimum 1:2 risk-to-reward ratio before entering, and respect your stop loss without exception. If an order block is mitigated (price closes through it), the trade thesis is invalidated and you must accept the loss. Never add to a losing position at a broken order block hoping it will still hold.",
-        bullets: [
-          "Rule 1: OB must precede a BOS to be considered valid",
-          "Rule 2: Trade OBs in the direction of the higher timeframe trend",
-          "Rule 3: Only trade fresh, unmitigated order blocks",
-          "Rule 4: Wait for confirmation before entering (candlestick, LTF structure shift)",
-          "Rule 5: If the OB is fully mitigated (price closes through), accept the loss and move on"
-        ]
-      }
-    ],
-    keyPoints: [
-      "An order block is the last opposing candle before an impulsive move that breaks structure",
-      "Valid OBs must precede a BOS; not every opposing candle is an order block",
-      "Unmitigated (fresh) OBs produce the strongest reactions; avoid retesting mitigated OBs",
-      "Lower timeframe refinement narrows the entry zone and improves risk-to-reward",
-      "Trade OBs in the direction of the HTF trend with confirmation for highest probability"
-    ],
-    commonMistakes: [
-      "Marking every opposing candle as an order block without requiring a structural break",
-      "Trading order blocks against the higher timeframe trend direction",
-      "Entering blindly at the OB without waiting for confirmation on the entry timeframe",
-      "Expecting mitigated (already tested) order blocks to produce strong reactions",
-      "Using order blocks on very low timeframes (1M, 5M) where they are unreliable"
-    ],
-    relatedLessons: [4, 7, 9, 10],
-    quiz: [
-      {
-        id: 1,
-        question: "What must happen after a candle for it to be considered a valid order block?",
-        options: ["It must be followed by at least 3 candles", "It must be followed by an impulsive move that breaks market structure (BOS)", "It must be a doji candle", "It must form at a round number"],
-        correctAnswer: 1,
-        explanation: "The defining characteristic of a valid order block is that it must precede an impulsive move that creates a Break of Structure (BOS). Without the subsequent structural break, the candle is just a regular candle and does not represent institutional order placement."
-      },
-      {
-        id: 2,
-        question: "What does 'mitigation' mean in the context of order blocks?",
-        options: ["Drawing the order block on a chart", "Reducing your position size", "Price returning to the order block zone and filling the pending orders there", "Canceling an order block"],
-        correctAnswer: 2,
-        explanation: "Mitigation is the process of price returning to an order block and filling the institutional orders that were placed there. Once an OB is fully mitigated (price trades through the entire zone), the orders have been filled and the zone is no longer valid for future trades."
-      },
-      {
-        id: 3,
-        question: "What is the purpose of order block refinement?",
-        options: ["To make the order block look cleaner on the chart", "To use lower timeframes to narrow the entry zone within a higher timeframe OB, improving R:R", "To confirm whether an order block is valid", "To find more order blocks on different timeframes"],
-        correctAnswer: 1,
-        explanation: "Refinement uses lower timeframe price action to identify the specific zone within a higher timeframe order block where institutional orders are most concentrated. This narrows your entry zone and stop loss, significantly improving risk-to-reward, though at the cost of some hit rate."
-      }
-    ],
-    diagrams: ["order-block"]
-  },
-  {
-    id: 9,
-    title: "Fair Value Gaps: Trading the Imbalance",
-    description: "Fair Value Gaps represent price inefficiencies where supply and demand were so imbalanced that price moved too fast for proper two-sided trading. Learn how these gaps form, why price is drawn to fill them, and how to use them as precision entry zones.",
-    category: "smart-money",
-    difficulty: "Intermediate",
-    duration: "35 min",
-    isFree: false,
-    sections: [
-      {
-        title: "Definition of FVG and How It Forms",
-        content: "A Fair Value Gap (FVG) is a three-candle price pattern that creates a visible gap or imbalance on the chart. It represents an area where price moved so aggressively in one direction that there was no two-sided trading, creating an inefficiency that the market often returns to fill. In the Smart Money Concepts framework, FVGs are considered areas where price delivered inefficiently and where future retracement is likely.\n\nFVGs form during impulsive, momentum-driven moves. When institutional traders execute large orders or when significant news events cause sudden price movement, the resulting candles can be so large that they leave gaps between the wicks of neighboring candles. These gaps indicate that there was no overlap in price trading between the first and third candles of the formation, meaning the market moved through that zone with only one-sided order flow.\n\nThe underlying principle is that markets tend toward efficiency. When price moves too fast in one direction, creating an imbalance, there is a natural tendency for price to return and rebalance that area. This rebalancing creates trading opportunities as price revisits the FVG zone. However, not every FVG will be filled; in strong trends, FVGs may remain open as the momentum continues. The probability of a fill depends on the trend context, the timeframe, and the size of the gap.",
-        bullets: [
-          "FVG: a three-candle pattern creating a visible price gap due to imbalanced order flow",
-          "Forms during impulsive moves where price travels too fast for two-sided trading",
-          "The gap represents an inefficiency that the market often returns to fill",
-          "Markets tend toward efficiency, creating a natural draw for price to revisit FVGs",
-          "Not every FVG will be filled; trend context and timeframe affect fill probability"
-        ]
-      },
-      {
-        title: "The Three-Candle Formation",
-        content: "The FVG formation involves exactly three candles. For a bullish FVG (gap created during an upward move): Candle 1 (C1) establishes the initial range with its high; Candle 2 (C2) is the large impulse candle that creates the move; and Candle 3 (C3) establishes the new range with its low. The FVG exists in the gap between the high of Candle 1 and the low of Candle 3. If the low of C3 is higher than the high of C1, there is a gap, and that gap is the bullish Fair Value Gap.\n\nFor a bearish FVG (gap created during a downward move), the formation is inverted: the FVG exists between the low of Candle 1 and the high of Candle 3. If the high of C3 is lower than the low of C1, there is a gap, and that gap is the bearish Fair Value Gap. The bearish FVG acts as a resistance zone that may cap rallies when price returns to it.\n\nThe size of the FVG matters for both its reliability and how you trade it. Large FVGs (spanning many pips) indicate strong institutional activity and are more likely to attract price for at least a partial fill. Very small FVGs (just a few pips) may be noise and are less reliable as trade setups. A practical rule is to focus on FVGs that are clearly visible on your analysis timeframe without needing to zoom in significantly.",
-        bullets: [
-          "Bullish FVG: gap between C1 high and C3 low (during upward impulse)",
-          "Bearish FVG: gap between C1 low and C3 high (during downward impulse)",
-          "C2 is the impulse candle that creates the imbalance",
-          "Larger FVGs indicate stronger institutional activity and are more reliable",
-          "FVGs should be clearly visible on the analysis timeframe to be considered significant"
-        ],
-        tradingExample: {
-          setup: "On the EUR/USD 1-hour chart, a strong bullish impulse creates three candles: C1 high at 1.0850, C2 is a large bullish candle, C3 low at 1.0865. The gap between 1.0850 and 1.0865 is the bullish FVG",
-          entry: "Price continues up to 1.0900 and then retraces. As price pulls back to the 1.0850-1.0865 FVG zone, the trader watches for bullish confirmation on the 15-minute chart",
-          management: "Entry at 1.0858 (middle of the FVG), stop loss at 1.0843 (below the FVG and C1 high), target at 1.0910 (above the previous high). R:R = 1:3.5",
-          outcome: "Price reacts precisely from the FVG zone, bouncing from 1.0852 and rallying to 1.0915. The FVG acted as an institutional rebalancing zone, providing a precise entry point"
-        }
-      },
-      {
-        title: "Why FVGs Act as Magnets for Price",
-        content: "The market microstructure explanation for why FVGs attract price involves the concept of efficient price delivery. In a healthy market, price should be delivered through a zone with roughly balanced buying and selling. When an FVG forms, price was delivered with only one-sided order flow (all buying or all selling), which is inefficient. Market participants, particularly algorithmic trading systems and institutional traders, recognize this inefficiency and target FVG zones as areas to initiate new positions or rebalance existing ones.\n\nFrom an order flow perspective, an FVG represents a zone where limit orders were not filled during the initial move. For example, during a bullish impulse, sellers who had limit sell orders within the FVG zone were not filled because price moved through too quickly. These unfilled orders may still be resting in the order book, and when price returns, they contribute to the reaction in the FVG zone.\n\nAdditionally, the concept of 'value' plays a role. In a bullish trend, the FVG represents a zone where price was considered fair value by the institutional participants who caused the move. When price retraces to the FVG, it returns to this area of perceived value, making it an attractive entry point for both the original participants (who want to add to their position) and new participants (who recognize the zone as a discounted entry within the trend).",
-        bullets: [
-          "FVGs represent inefficient price delivery that the market naturally corrects",
-          "Algorithmic systems specifically target FVGs as rebalancing zones",
-          "Unfilled limit orders within the FVG zone may still be resting in the order book",
-          "FVGs represent 'fair value' within the trend, attracting new and existing institutional orders",
-          "The tendency to fill FVGs is a structural market behavior, not just a pattern"
-        ]
-      },
-      {
-        title: "Bullish vs. Bearish FVGs",
-        content: "Bullish FVGs form during upward impulsive moves and act as support zones when price retraces to them. They are found below the current price after a bullish impulse. When trading bullish FVGs, you are looking to buy when price pulls back into the gap, expecting the bullish momentum to resume. The entry is within the FVG zone, the stop loss is placed below the FVG (below C1 high), and the target is above the impulse high.\n\nBearish FVGs form during downward impulsive moves and act as resistance zones when price rallies back to them. They are found above the current price after a bearish impulse. When trading bearish FVGs, you look to sell when price rallies into the gap, expecting the bearish momentum to resume. The entry is within the FVG zone, the stop loss is placed above the FVG (above C1 low), and the target is below the impulse low.\n\nThe probability of an FVG trade succeeding depends heavily on trend alignment. A bullish FVG in a higher timeframe uptrend has significantly higher probability than a bullish FVG in a downtrend (which is counter-trend). Similarly, a bearish FVG in a downtrend is more reliable than one in an uptrend. Always assess whether the FVG aligns with the dominant trend before considering it as a trade setup.",
-        bullets: [
-          "Bullish FVGs: support zones below price, buy when price retraces into them",
-          "Bearish FVGs: resistance zones above price, sell when price rallies into them",
-          "Stop loss placement: below the FVG for bullish, above the FVG for bearish",
-          "Trend-aligned FVGs have significantly higher probability than counter-trend FVGs",
-          "The most reliable setups combine FVGs with the dominant higher timeframe trend"
-        ]
-      },
-      {
-        title: "FVG as Confluence with Order Blocks",
-        content: "One of the most powerful setups in the Smart Money Concepts framework is the confluence of a Fair Value Gap with an order block. When an FVG overlaps with an order block, you have two institutional concepts pointing to the same price zone, creating a high-confluence area with increased probability of reaction.\n\nThis confluence typically occurs naturally. When an institutional impulse creates a BOS (validating an order block at the base), the same impulse often creates one or more FVGs within the move. If one of those FVGs overlaps with the order block zone, you have a zone where both the accumulation footprint (OB) and the price inefficiency (FVG) converge. This is considered a premium entry zone.\n\nTo trade this confluence, mark both the order block and the FVG on your chart. The overlapping area is your primary entry zone. If they do not perfectly overlap but are close to each other, the zone between them is your area of interest. Use this confluent zone for your entry and place your stop loss beyond the furthest boundary of both the OB and the FVG. The added confluence justifies higher confidence in the trade, but always remember that no setup is guaranteed and proper risk management remains essential.",
-        bullets: [
-          "FVG + Order Block confluence creates high-probability entry zones",
-          "Both concepts often appear together naturally during institutional impulsive moves",
-          "The overlapping area of the FVG and OB is the optimal entry zone",
-          "Stop loss placement: beyond the furthest boundary of both the OB and FVG",
-          "Confluence increases probability but does not guarantee success; risk management is still primary"
-        ],
-        tradingExample: {
-          setup: "On the NAS100 4-hour chart, a bearish impulse creates a BOS. The last bullish candle before the impulse is the bearish order block (12,450-12,480). Within the impulse, a bearish FVG forms between 12,455-12,470. The OB and FVG overlap between 12,455-12,470",
-          entry: "When price rallies back toward 12,460 (the confluent zone), the trader watches for a bearish rejection on the 15-minute timeframe. A shooting star forms at 12,465",
-          management: "Short entry at 12,462, stop loss at 12,488 (above both OB and FVG), target at 12,350 (previous structural low). R:R = 1:4.3",
-          outcome: "Price rejects sharply from the confluent OB+FVG zone and drops to 12,340. The dual confluence of institutional concepts at the same price zone produced a high-probability reversal"
-        }
-      }
-    ],
-    keyPoints: [
-      "FVGs are three-candle patterns representing price inefficiency and imbalanced order flow",
-      "Bullish FVG: gap between C1 high and C3 low; Bearish FVG: gap between C1 low and C3 high",
-      "Markets tend to return to FVGs to rebalance inefficient price delivery",
-      "Trend-aligned FVGs have significantly higher probability than counter-trend FVGs",
-      "FVG + Order Block confluence creates the highest probability entry zones",
-      "Not every FVG will be filled; strong trends may leave FVGs open indefinitely"
-    ],
-    commonMistakes: [
-      "Trading every FVG regardless of trend context and timeframe significance",
-      "Expecting every FVG to be perfectly filled (partial fills are common)",
-      "Ignoring the trend direction when trading FVGs (counter-trend FVGs are lower probability)",
-      "Placing entries at the edge of the FVG without waiting for price action confirmation",
-      "Using very small FVGs on low timeframes as primary trade setups"
-    ],
-    relatedLessons: [7, 8, 10, 12],
-    quiz: [
-      {
-        id: 1,
-        question: "How is a bullish Fair Value Gap identified?",
-        options: ["Any gap up on the chart", "The gap between Candle 1's high and Candle 3's low in a three-candle bullish impulse", "A single large green candle", "The space between two moving averages"],
-        correctAnswer: 1,
-        explanation: "A bullish FVG is specifically the gap between the high of Candle 1 and the low of Candle 3 in a three-candle formation during an upward impulse. This gap represents a zone where price moved too fast for two-sided trading, creating an inefficiency."
-      },
-      {
-        id: 2,
-        question: "Why do FVGs act as magnets for price?",
-        options: ["Because traders draw them on charts", "Because the market tends to correct inefficient price delivery and rebalance imbalanced zones", "Because of moving average convergence", "Because they are psychological levels"],
-        correctAnswer: 1,
-        explanation: "FVGs represent areas where price was delivered inefficiently with only one-sided order flow. The market naturally tends to correct these inefficiencies through rebalancing. Institutional algorithms and traders specifically target these zones, creating a measurable tendency for price to return."
-      },
-      {
-        id: 3,
-        question: "What makes an FVG + Order Block confluence especially powerful?",
-        options: ["The setup looks better on the chart", "Two independent institutional concepts confirm the same price zone, increasing reaction probability", "It guarantees a winning trade", "It allows for larger position sizes"],
-        correctAnswer: 1,
-        explanation: "When an FVG and an order block overlap at the same price zone, you have two independent confirmations: the OB shows where institutional accumulation occurred, and the FVG shows where price delivery was inefficient. This dual confirmation increases the probability of a significant reaction at that zone."
-      }
-    ],
-    diagrams: ["fvg"]
-  },
-  {
-    id: 10,
+    id: 5,
     title: "Liquidity: The Fuel That Moves Markets",
     description: "Liquidity is the most powerful concept in Smart Money trading. Learn how institutions engineer liquidity sweeps by targeting stop losses and equal highs/lows, and how to trade the resulting reversals with precision.",
     category: "smart-money",
     difficulty: "Advanced",
     duration: "40 min",
-    isFree: false,
+    phaseId: 2,
+    order: 1,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 4,
     sections: [
       {
         title: "What Is Liquidity in Smart Money Context?",
@@ -1219,7 +731,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Ignoring the higher timeframe context when assessing whether a sweep will lead to reversal",
       "Not recognizing that your own stop loss is part of the liquidity pool being targeted"
     ],
-    relatedLessons: [7, 8, 9, 11],
+    relatedLessons: [4, 8, 9, 10],
     quiz: [
       {
         id: 1,
@@ -1244,122 +756,19 @@ export const EDUCATION_LESSONS: Lesson[] = [
       }
     ],
     diagrams: ["liquidity-sweep"]
-  }
-,
-  {
-    id: 11,
-    title: "Breaker Blocks & Mitigation Blocks",
-    description: "Master the advanced smart money concept of breaker blocks - failed order blocks that flip polarity and become powerful trading zones. Learn to distinguish them from mitigation blocks and use both for precision entries.",
-    category: "smart-money",
-    difficulty: "Advanced",
-    duration: "40 min",
-    isFree: false,
-    sections: [
-      {
-        title: "What Are Breaker Blocks?",
-        content: "A breaker block is an order block that has failed. When institutional traders place large orders that create an order block, they expect price to return to that zone and react. However, when opposing institutional flow overwhelms the original orders and price violates the order block entirely, the failed order block transforms into a breaker block. This transformation flips the polarity of the zone: a bullish order block that fails becomes a bearish breaker block, and a bearish order block that fails becomes a bullish breaker block.\n\nThe reason breaker blocks work is rooted in market mechanics. When an order block is violated, the traders who placed orders there are now trapped on the wrong side. Their stop losses have been triggered, and the liquidity from those stops fuels the move through the zone. When price returns to this area, the trapped traders who survived will look to exit at better prices, creating selling pressure at old bullish OBs and buying pressure at old bearish OBs. This dynamic creates reliable reaction zones that smart money traders exploit.\n\nBreaker blocks are considered more reliable than standard order blocks in many scenarios because they represent a confirmed shift in market structure. The violation of the original order block signals that the opposing side has taken definitive control, and the resulting breaker zone captures the point where that control was established.",
-        bullets: [
-          "A breaker block is a failed order block that flips its directional bias",
-          "Bullish OB violated = bearish breaker (expect selling on retest)",
-          "Bearish OB violated = bullish breaker (expect buying on retest)",
-          "Breakers form at points of confirmed structural shifts in the market",
-          "The failure of the original OB traps traders and creates reliable reaction zones"
-        ]
-      },
-      {
-        title: "How a Bullish OB Becomes a Bearish Breaker",
-        content: "To understand this transformation, picture a scenario where price is in an uptrend. A bullish order block forms as the last bearish candle before a strong push higher. Institutional buyers placed orders in this zone, driving price up. Normally, when price pulls back to this bullish OB, it would bounce and continue higher. But what happens when it does not?\n\nIf price returns to the bullish order block and drives straight through it, closing decisively below, the order block has failed. The institutional buyers who were positioned there are now underwater. Their buy orders have been absorbed by stronger selling pressure. This failed bullish OB is now a bearish breaker block. When price retraces back up into this zone, the trapped buyers will look to exit their losing positions by selling, which adds to the selling pressure from new short sellers who recognize the structural shift.\n\nThe inverse applies for bearish-to-bullish breakers. A bearish order block that gets violated to the upside becomes a bullish breaker block. When price pulls back into this zone, trapped sellers cover their positions by buying, adding fuel to the bullish continuation. This is why breaker blocks often produce sharp, clean reactions - you have both trapped traders exiting and new traders entering in the same direction.",
-        bullets: [
-          "Step 1: Identify a valid bullish order block in an uptrend",
-          "Step 2: Price returns to the OB but fails to hold - closes below it",
-          "Step 3: The failed bullish OB is now a bearish breaker block",
-          "Step 4: When price retraces into the breaker, look for short entries",
-          "The same logic applies inversely for bearish OBs becoming bullish breakers"
-        ],
-        tradingExample: {
-          setup: "EUR/USD 1H: A bullish order block formed at 1.0850-1.0860 during an uptrend. Price rallied to 1.0920 but then reversed hard, crashing through the 1.0850 OB and closing at 1.0830. The bullish OB has failed and is now a bearish breaker.",
-          entry: "Price retraces back up to the 1.0850-1.0860 zone (now a bearish breaker). A bearish engulfing candle forms within the zone on the 15M chart. Enter short at 1.0855.",
-          management: "Stop loss at 1.0870 (above the breaker zone). First target at 1.0830 (previous low), second target at 1.0800 (next demand zone). Risk: 15 pips, Reward: 25-55 pips.",
-          outcome: "Price rejects the breaker zone sharply as trapped buyers exit their positions. Price drops to 1.0810, hitting the second target for a 3:1 reward-to-risk trade."
-        }
-      },
-      {
-        title: "Mitigation Blocks vs. Breaker Blocks",
-        content: "Mitigation blocks and breaker blocks are often confused, but they serve different purposes in smart money analysis. A mitigation block is a zone where institutional traders return to manage or 'mitigate' an existing position. This happens when price moves aggressively from a zone, leaves behind inefficiency (such as a fair value gap), and then returns to the origin of that move to allow institutions to adjust their exposure before continuing.\n\nThe key difference is in their formation context. A breaker block forms when an order block fails entirely - the structure breaks through it, and it flips polarity. A mitigation block, on the other hand, forms when price returns to the origin of an impulsive move to allow partial position management. Mitigation blocks do not require a structural failure. They are zones where institutions placed initial orders and need to return to either add to their position, partially close, or hedge before the next leg.\n\nIn practical trading, mitigation blocks tend to produce reactions that continue in the original direction of the impulsive move, because institutions are using the retest to manage existing winning positions. Breaker blocks, by contrast, produce reactions in the opposite direction of the original order block because the structure has flipped. Understanding this distinction prevents you from taking trades in the wrong direction.",
-        bullets: [
-          "Mitigation block: zone where institutions return to manage existing positions",
-          "Breaker block: a failed order block that has flipped its directional bias",
-          "Mitigation blocks continue the original move direction on retest",
-          "Breaker blocks reverse the original direction because structure has shifted",
-          "Both are valid trade zones but require different directional expectations"
-        ]
-      },
-      {
-        title: "Trading Breaker Blocks as Support and Resistance",
-        content: "Breaker blocks function as dynamic support and resistance zones because they represent areas where institutional positioning has definitively shifted. A bearish breaker (failed bullish OB) acts as resistance, while a bullish breaker (failed bearish OB) acts as support. These zones are particularly powerful because they combine two forces: trapped traders exiting and new traders entering.\n\nTo trade breaker blocks effectively, follow a systematic approach. First, identify a clear order block on your analysis timeframe. Second, wait for that order block to be violated with a decisive close through it - this confirms the breaker. Third, mark the breaker zone using the original order block boundaries. Fourth, wait for price to retrace into the breaker zone. Finally, look for a lower timeframe confirmation entry such as a CHoCH, engulfing pattern, or fair value gap fill within the breaker zone.\n\nBreaker blocks are most effective when they align with the higher timeframe trend direction and coincide with other confluences such as Fibonacci retracement levels, session timing, or nearby liquidity pools. A breaker block sitting at the 0.618-0.786 Fibonacci retracement of the move that created it is an exceptionally high-probability setup.",
-        bullets: [
-          "Bearish breakers act as resistance - look for shorts on retest",
-          "Bullish breakers act as support - look for longs on retest",
-          "Always wait for price to retrace into the breaker before entering",
-          "Use LTF confirmation (CHoCH, engulfing, FVG fill) for precise entries",
-          "Best setups combine breakers with Fibonacci levels and session timing"
-        ],
-        tradingExample: {
-          setup: "GBP/USD 4H: A bearish order block at 1.2700-1.2720 was violated to the upside after a CHoCH. The failed bearish OB is now a bullish breaker block. The higher timeframe daily trend is also bullish.",
-          entry: "Price pulls back from 1.2800 toward the bullish breaker at 1.2700-1.2720 during London session. On the 5M chart, a bullish CHoCH forms at 1.2710. Enter long at 1.2715.",
-          management: "Stop loss at 1.2695 (below the breaker zone). Target 1: 1.2770 (previous structure). Target 2: 1.2800 (swing high). Risk: 20 pips.",
-          outcome: "The bullish breaker holds as trapped sellers cover their shorts. Price rallies to 1.2790, hitting near the second target for a 3.75:1 reward-to-risk trade."
-        }
-      }
-    ],
-    keyPoints: [
-      "Breaker blocks are failed order blocks that flip their directional bias",
-      "A violated bullish OB becomes bearish resistance; a violated bearish OB becomes bullish support",
-      "Mitigation blocks manage existing positions; breaker blocks signal structural shifts",
-      "Always wait for price to retrace into the breaker zone before entering",
-      "Combine breaker blocks with Fibonacci levels and LTF confirmation for highest probability"
-    ],
-    commonMistakes: [
-      "Confusing mitigation blocks with breaker blocks and trading in the wrong direction",
-      "Entering at a breaker without waiting for a lower timeframe confirmation signal",
-      "Treating every violated order block as a breaker without confirming structural shift",
-      "Ignoring the higher timeframe trend when trading breaker blocks",
-      "Setting stop losses too tight within the breaker zone instead of beyond it"
-    ],
-    relatedLessons: [6, 7, 8, 12, 15],
-    quiz: [
-      {
-        id: 1,
-        question: "What is a breaker block?",
-        options: ["A strong order block that never fails", "A failed order block that flips its directional bias", "A candlestick pattern at support", "A gap in price action"],
-        correctAnswer: 1,
-        explanation: "A breaker block is an order block that has been violated - price has broken through it entirely. This failure causes the zone to flip polarity: a failed bullish OB becomes bearish resistance, and a failed bearish OB becomes bullish support."
-      },
-      {
-        id: 2,
-        question: "What happens when a bullish order block is violated to the downside?",
-        options: ["It becomes a stronger bullish zone", "It becomes a bearish breaker block", "It becomes a fair value gap", "It disappears and has no further relevance"],
-        correctAnswer: 1,
-        explanation: "When a bullish order block is violated (price breaks and closes below it), it transforms into a bearish breaker block. Trapped buyers at the zone will look to exit on any retest, creating selling pressure that turns the area into resistance."
-      },
-      {
-        id: 3,
-        question: "How do mitigation blocks differ from breaker blocks?",
-        options: ["They are the same concept with different names", "Mitigation blocks require structural failure; breakers do not", "Mitigation blocks manage existing positions; breakers signal structural shifts", "Mitigation blocks only form on daily charts"],
-        correctAnswer: 2,
-        explanation: "Mitigation blocks are zones where institutions return to manage existing positions and typically continue the original move direction. Breaker blocks form when an order block fails entirely and the structure shifts, causing the zone to flip polarity."
-      }
-    ],
-    diagrams: ["breaker-block"]
   },
   {
-    id: 12,
+    id: 6,
     title: "Inducement & Liquidity Engineering",
     description: "Understand how smart money deliberately creates false signals and minor swing points to bait retail traders into positions before executing their real moves. Learn to identify inducement and use it to find true entry zones.",
     category: "smart-money",
     difficulty: "Advanced",
     duration: "40 min",
-    isFree: false,
+    phaseId: 2,
+    order: 2,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 5,
     sections: [
       {
         title: "What Is Inducement in ICT/SMC Methodology?",
@@ -1432,7 +841,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Ignoring the order block or demand zone that sits beyond the inducement level",
       "Not waiting for LTF confirmation after the inducement sweep before entering"
     ],
-    relatedLessons: [6, 7, 8, 11, 15],
+    relatedLessons: [5, 4, 8, 10, 13],
     quiz: [
       {
         id: 1,
@@ -1459,13 +868,451 @@ export const EDUCATION_LESSONS: Lesson[] = [
     diagrams: ["inducement"]
   },
   {
-    id: 13,
+    id: 7,
+    title: "Displacement & Momentum",
+    description: "Learn to identify genuine institutional displacement versus random volatility. Displacement is the bridge between liquidity concepts and smart money tools - without it, order blocks and FVGs are meaningless zones on a chart.",
+    category: "smart-money",
+    difficulty: "Intermediate",
+    duration: "30 min",
+    phaseId: 2,
+    order: 3,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 6,
+    sections: [
+      {
+        title: "What Real Momentum Looks Like",
+        content: "Displacement is when price moves aggressively in one direction with large-bodied candles, minimal wicks, and often increased volume. This type of price action shows institutional commitment - it is the footprint of large orders being executed in the market. Displacement candles are not just 'big candles.' They are candles that demonstrate clear, one-sided control where either buyers or sellers dominated the entire period with minimal opposition.\n\nA genuine displacement move has several key characteristics. First, the candle bodies are significantly larger than the surrounding candles - often 2-3 times the average candle size. Second, the wicks are small relative to the body, indicating that price moved in one direction with little pushback. Third, displacement typically occurs in clusters - two or three consecutive large-bodied candles in the same direction, creating an impulsive leg. Fourth, displacement moves usually leave behind fair value gaps (FVGs) because the move is so aggressive that there is no time for two-sided trading.\n\nNot all big candles are displacement. A single large candle during a news event, without follow-through or structural context, is not necessarily displacement. Context matters enormously. Displacement that occurs after liquidity has been taken, at a key structural point, or at a significant order block carries far more weight than a random large candle in the middle of a consolidation. The institutional narrative must support the displacement for it to be meaningful.",
+        bullets: [
+          "Displacement: aggressive price movement with large bodies, minimal wicks, showing institutional commitment",
+          "Key characteristics: 2-3x average candle size, small wicks, clusters of consecutive impulsive candles",
+          "Displacement moves typically leave behind fair value gaps (FVGs) due to one-sided order flow",
+          "Not all big candles are displacement - context and structural location matter",
+          "Genuine displacement shows clear one-sided dominance with minimal opposition"
+        ]
+      },
+      {
+        title: "Displacement Candles vs Random Volatility",
+        content: "The distinction between institutional displacement and random volatility is critical for avoiding false signals. Random volatility occurs during news spikes, thin liquidity periods (late Friday, holidays), or algorithmic stop hunts that lack structural purpose. These moves produce large candles that look similar to displacement but lack the institutional intent and structural context that make displacement tradeable.\n\nDisplacement occurs AFTER liquidity has been taken or at key structural points. This is the crucial distinguishing factor. When price sweeps a pool of liquidity (equal highs, equal lows, swing point) and then displaces aggressively in the opposite direction, that displacement confirms institutional intent. The liquidity sweep provided the order flow, and the displacement shows where smart money deployed that liquidity. Random volatility, by contrast, occurs without any preceding liquidity event or structural logic.\n\nAnother way to distinguish them is follow-through. Genuine displacement is followed by continuation in the same direction, even if there is a brief pullback first. The impulsive move creates new structure (BOS) and the market respects the levels created by the displacement (order blocks hold, FVGs attract price). Random volatility, on the other hand, is quickly retraced. Price spikes in one direction and then returns to the pre-spike level within a few candles, showing that the move had no lasting institutional impact.\n\nTo train your eye, look for displacement that satisfies the 'narrative test.' Can you explain why smart money would move price this way at this time? Did liquidity get taken first? Is the displacement creating or confirming a structural shift? If the narrative makes sense, the displacement is likely genuine. If the big candle appears random and contextless, treat it with skepticism.",
+        bullets: [
+          "Displacement occurs AFTER liquidity has been taken or at key structural points",
+          "Random volatility happens during news spikes, thin liquidity, or contextless algorithmic activity",
+          "Genuine displacement is followed by continuation; random volatility is quickly retraced",
+          "Check for a preceding liquidity event to validate displacement as institutional",
+          "Apply the 'narrative test': can you explain why smart money moved price this way here?"
+        ]
+      },
+      {
+        title: "Why This Matters Before Entries",
+        content: "Displacement is the validation mechanism for every smart money tool you will learn in the next phase. Order blocks are only valid if the move away from them was displacement - a weak, grinding move away from a candle does not create a valid order block because it does not demonstrate institutional commitment. Fair value gaps are only significant if they were created by displacement - a small gap from a minor move is noise, not an institutional imbalance.\n\nWithout displacement, order blocks and FVGs are just zones on a chart. Displacement confirms intent. When you see aggressive, large-bodied candles breaking structure after a liquidity sweep, you know that institutions have entered the market. The order block at the origin of that displacement is where they entered. The FVGs within the displacement are the imbalances they created. The structural break (BOS) the displacement caused is the confirmation of their direction. Every piece of the smart money puzzle is validated by displacement.\n\nThis is why displacement is taught before order blocks and FVGs in this curriculum. Many traders learn to mark order blocks and FVGs first, but without understanding displacement, they mark zones that have no institutional significance. They enter at order blocks that were created by weak, grinding moves and wonder why price does not react. The answer is simple: there was no displacement, which means there was no institutional commitment, which means the zone has no reason to hold.\n\nPractically, when you are identifying potential trade setups, always ask: 'Was there displacement?' If the move that created the order block was strong, impulsive, and broke structure with large-bodied candles, the zone is worth trading. If the move was weak, choppy, and barely broke structure, the zone is low probability regardless of how clean it looks on the chart.",
+        bullets: [
+          "Displacement validates order blocks - weak moves do not create valid OBs",
+          "Displacement validates FVGs - small gaps from minor moves are noise",
+          "Without displacement, smart money tools are just lines on a chart with no institutional backing",
+          "Always ask 'was there displacement?' before marking any zone as tradeable",
+          "Strong displacement with structural breaks confirms institutional commitment at a zone"
+        ]
+      }
+    ],
+    keyPoints: [
+      "Displacement is aggressive price movement with large bodies and minimal wicks showing institutional commitment",
+      "Genuine displacement occurs after liquidity events or at key structural points - context is everything",
+      "Random volatility looks similar but lacks structural context and is quickly retraced",
+      "Displacement validates order blocks and FVGs - without it, these zones have no institutional backing",
+      "Always confirm displacement before marking any zone as a valid trade setup"
+    ],
+    commonMistakes: [
+      "Treating every large candle as displacement without checking for structural context",
+      "Marking order blocks from weak, grinding moves that lacked displacement",
+      "Trading FVGs created by random volatility rather than institutional displacement",
+      "Ignoring the liquidity event that should precede genuine displacement",
+      "Not checking for follow-through after displacement to confirm it was not random volatility"
+    ],
+    relatedLessons: [5, 6, 8, 9],
+    quiz: [
+      {
+        id: 1,
+        question: "What distinguishes genuine displacement from random volatility?",
+        options: ["Displacement always happens during news events", "Displacement occurs after liquidity is taken at structural points and shows follow-through", "Random volatility has bigger candles than displacement", "There is no reliable way to distinguish them"],
+        correctAnswer: 1,
+        explanation: "Genuine displacement occurs after a liquidity event (sweep of equal highs/lows, stop hunt) at a structural point, and is followed by continuation in the same direction. Random volatility lacks this structural context and is typically retraced quickly."
+      },
+      {
+        id: 2,
+        question: "Why is displacement important for validating order blocks?",
+        options: ["It makes order blocks easier to see on the chart", "Order blocks are only valid if the move away from them was displacement, confirming institutional commitment", "Displacement cancels order blocks", "Order blocks do not require displacement to be valid"],
+        correctAnswer: 1,
+        explanation: "An order block is the footprint of institutional entry. If the move away from the candle was weak and grinding rather than impulsive displacement, there is no evidence of significant institutional activity. Displacement confirms that smart money actually committed capital at that zone."
+      },
+      {
+        id: 3,
+        question: "What characteristics define a genuine displacement candle?",
+        options: ["Any candle larger than average", "Large body relative to surrounding candles, minimal wicks, occurring after a liquidity event with structural context", "A candle that closes at a round number", "The first candle of the trading session"],
+        correctAnswer: 1,
+        explanation: "Displacement candles have bodies 2-3x larger than surrounding candles, minimal wicks showing one-sided control, and occur in structural context (after liquidity sweeps, at key levels). They typically appear in clusters and leave behind fair value gaps."
+      }
+    ],
+    diagrams: ["liquidity-sweep"]
+  },
+  {
+    id: 8,
+    title: "Order Blocks: Where Smart Money Enters",
+    description: "Order blocks are the footprints of institutional trading activity. Learn to identify the specific candle formations that mark where large orders were placed, and how to trade when price returns to these zones.",
+    category: "smart-money",
+    difficulty: "Intermediate",
+    duration: "40 min",
+    phaseId: 3,
+    order: 1,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 7,
+    sections: [
+      {
+        title: "What Is an Order Block?",
+        content: "An order block is the last candle (or group of candles) of the opposing color before a strong impulsive move that breaks market structure. In simpler terms, it is the footprint left by institutional traders when they place large orders. A bullish order block is the last bearish candle before a strong bullish impulse that breaks above a swing high (BOS). A bearish order block is the last bullish candle before a strong bearish impulse that breaks below a swing low.\n\nThe logic behind order blocks relates to how institutional traders execute large positions. Banks and hedge funds cannot place their entire position in a single order because the sheer size would move the market against them (slippage). Instead, they accumulate positions over time, often buying during a small pullback (which creates those last opposing candles) before unleashing the remainder of their order, causing the impulsive move. The order block marks the area where this accumulation occurred.\n\nWhen price returns to an order block, it is returning to the zone where institutional orders were originally placed. These same institutions may have additional orders to fill at the same price (scaling into their position), or other institutions with similar analysis may place new orders at the same zone. This creates a measurable tendency for price to react at order blocks, making them powerful trade entry zones when combined with proper confluence.",
+        bullets: [
+          "Bullish OB: last bearish candle before a bullish impulse that breaks structure",
+          "Bearish OB: last bullish candle before a bearish impulse that breaks structure",
+          "OBs represent zones where institutional accumulation occurred before the impulse",
+          "Price returns to OBs because institutions may have unfilled orders at these levels",
+          "Valid OBs must precede an impulsive move that creates a Break of Structure"
+        ]
+      },
+      {
+        title: "Identifying Valid Bullish and Bearish Order Blocks",
+        content: "Not every opposing candle before a move is a valid order block. For an order block to be considered valid, it must meet specific criteria. First, the impulsive move following the order block must break market structure (BOS). If the move does not break a swing point, the candle is just a regular candle, not an order block. This is the most important filter.\n\nSecond, the impulsive move should be strong and decisive. Ideally, it consists of large-bodied candles with minimal wicks, showing genuine institutional momentum. If the move following the supposed order block is weak, grinding, and full of indecision candles, it is less likely to represent genuine institutional activity and the order block is less reliable.\n\nThird, consider the order block's position within the broader market structure. A bullish order block in an uptrend (at a higher low) is higher probability than a bullish order block in a downtrend (counter-trend). An order block that aligns with a higher timeframe support/resistance zone, a fair value gap, or a Fibonacci retracement level has increased confluence and higher probability. The best order blocks have multiple confluences stacking in their favor.",
+        bullets: [
+          "Requirement 1: The impulse following the OB must break market structure (BOS)",
+          "Requirement 2: The impulse should be strong with large-bodied, impulsive candles",
+          "Requirement 3: The OB should align with the higher timeframe trend direction",
+          "Additional confluence: S/R zones, FVGs, Fibonacci levels increase reliability",
+          "Not every opposing candle is a valid OB; the BOS requirement is the primary filter"
+        ],
+        tradingExample: {
+          setup: "On the GBP/USD 1-hour chart, price is in an uptrend. During a pullback, two bearish candles form (the order block zone from the open of the first to the close of the second). Then a strong bullish impulse of three large green candles breaks above the previous swing high, confirming BOS",
+          entry: "The trader marks the bearish candles as a bullish order block. When price retraces to this zone two days later, they wait for a bullish reaction on the 15-minute chart (a CHoCH from bearish to bullish on the 15M)",
+          management: "Entry at 1.2680 (within the OB zone), stop loss at 1.2655 (below the OB low), target at 1.2760 (previous swing high), giving 1:3.2 R:R",
+          outcome: "Price reacts precisely from the order block zone, confirming that institutional orders were indeed present. The 15-minute confirmation prevented entering too early during a brief wick below the OB"
+        }
+      },
+      {
+        title: "Mitigation: What Happens When Price Returns",
+        content: "Mitigation refers to what happens when price returns to an order block. When price revisits an order block, the pending orders in that zone are 'filled' or 'mitigated.' The order block acts like a reload zone where institutional participants fill the remainder of their positions, creating a bounce in the expected direction.\n\nA fully mitigated order block is one where price has already returned, reacted, and moved through the zone completely. Once an order block is fully mitigated (price has traded through it completely), the orders at that level have been filled and the zone is no longer valid. This is an important distinction: order blocks are generally one-time use zones. If price returns to a mitigated OB a second time, the reaction is typically much weaker or nonexistent because the orders have already been absorbed.\n\nThe best reactions from order blocks typically occur on the first touch. Smart money traders focus on fresh, unmitigated order blocks and ignore those that have already been tested. When price approaches an unmitigated order block for the first time, you should be on high alert for entry opportunities. Watch for confirmation through candlestick patterns, lower timeframe structural shifts, or momentum indicators showing reversal at the OB zone.",
+        bullets: [
+          "Mitigation: the process of price returning to an OB and filling pending orders",
+          "Unmitigated OBs (first touch) produce the strongest reactions",
+          "Fully mitigated OBs (price has already traded through) are no longer valid",
+          "Focus exclusively on fresh, unmitigated order blocks for trade entries",
+          "Confirmation at the OB (candlestick pattern, LTF structure shift) reduces risk of failure"
+        ]
+      },
+      {
+        title: "Order Block Refinement on Lower Timeframes",
+        content: "Order block refinement is the process of using a lower timeframe to narrow down the exact zone within a higher timeframe order block where institutional orders are most concentrated. A 4-hour order block might span 40-50 pips, but the actual area of interest within that zone might be much smaller. Refinement allows you to tighten your entry and improve your risk-to-reward ratio.\n\nThe process works as follows: identify an order block on your higher timeframe (e.g., 4-hour chart). Then drop to a lower timeframe (e.g., 15-minute or 5-minute) and examine the price action within that order block candle in more detail. Look for the specific lower timeframe order block, fair value gap, or structural level within the higher timeframe OB zone. This internal structure narrows your entry zone significantly.\n\nFor example, a 4-hour bullish order block might span from 1.2650 to 1.2690 (40 pips). On the 15-minute chart, within that 4-hour candle, you might identify a specific 15-minute order block between 1.2660 and 1.2670 (10 pips). By entering at the refined 15M OB instead of the entire 4H OB, your stop loss tightens from 40+ pips to approximately 15 pips, dramatically improving your risk-to-reward. However, refinement trades have a lower hit rate because you are being more precise, so there is a trade-off between tighter entries and trade frequency.",
+        bullets: [
+          "Refinement: using lower timeframes to narrow the entry zone within an HTF order block",
+          "Process: identify HTF OB, drop to LTF, find the specific OB/FVG within the HTF candle",
+          "Refinement can improve R:R from 1:2 to 1:5+ by tightening the entry and stop loss",
+          "Trade-off: refined entries are more precise but have lower hit rates (tighter zone = more misses)",
+          "Common refinement: 4H OB refined to 15M OB, or Daily OB refined to 1H OB"
+        ]
+      },
+      {
+        title: "Order Block Trading Rules and Best Practices",
+        content: "To trade order blocks consistently and profitably, you need a clear set of rules. First, only trade order blocks that precede a structural break (BOS). This is non-negotiable. Second, trade in the direction of the higher timeframe trend. A bullish OB in a daily uptrend is significantly more reliable than a bullish OB trying to reverse a daily downtrend. Third, focus on unmitigated (fresh) order blocks only.\n\nYour entry process should follow a systematic workflow: (1) identify the trend direction on your higher timeframe, (2) mark valid order blocks that preceded structural breaks, (3) wait for price to return to the order block zone, (4) look for entry confirmation on your entry timeframe (candlestick pattern, LTF CHoCH in the expected direction), (5) enter with a stop loss beyond the order block and a target at the next structural level or liquidity pool.\n\nRisk management for order block trades follows the same principles as all trading: risk 1-2% of your account per trade, ensure a minimum 1:2 risk-to-reward ratio before entering, and respect your stop loss without exception. If an order block is mitigated (price closes through it), the trade thesis is invalidated and you must accept the loss. Never add to a losing position at a broken order block hoping it will still hold.",
+        bullets: [
+          "Rule 1: OB must precede a BOS to be considered valid",
+          "Rule 2: Trade OBs in the direction of the higher timeframe trend",
+          "Rule 3: Only trade fresh, unmitigated order blocks",
+          "Rule 4: Wait for confirmation before entering (candlestick, LTF structure shift)",
+          "Rule 5: If the OB is fully mitigated (price closes through), accept the loss and move on"
+        ]
+      }
+    ],
+    keyPoints: [
+      "An order block is the last opposing candle before an impulsive move that breaks structure",
+      "Valid OBs must precede a BOS; not every opposing candle is an order block",
+      "Unmitigated (fresh) OBs produce the strongest reactions; avoid retesting mitigated OBs",
+      "Lower timeframe refinement narrows the entry zone and improves risk-to-reward",
+      "Trade OBs in the direction of the HTF trend with confirmation for highest probability"
+    ],
+    commonMistakes: [
+      "Marking every opposing candle as an order block without requiring a structural break",
+      "Trading order blocks against the higher timeframe trend direction",
+      "Entering blindly at the OB without waiting for confirmation on the entry timeframe",
+      "Expecting mitigated (already tested) order blocks to produce strong reactions",
+      "Using order blocks on very low timeframes (1M, 5M) where they are unreliable"
+    ],
+    relatedLessons: [3, 4, 9, 5],
+    quiz: [
+      {
+        id: 1,
+        question: "What must happen after a candle for it to be considered a valid order block?",
+        options: ["It must be followed by at least 3 candles", "It must be followed by an impulsive move that breaks market structure (BOS)", "It must be a doji candle", "It must form at a round number"],
+        correctAnswer: 1,
+        explanation: "The defining characteristic of a valid order block is that it must precede an impulsive move that creates a Break of Structure (BOS). Without the subsequent structural break, the candle is just a regular candle and does not represent institutional order placement."
+      },
+      {
+        id: 2,
+        question: "What does 'mitigation' mean in the context of order blocks?",
+        options: ["Drawing the order block on a chart", "Reducing your position size", "Price returning to the order block zone and filling the pending orders there", "Canceling an order block"],
+        correctAnswer: 2,
+        explanation: "Mitigation is the process of price returning to an order block and filling the institutional orders that were placed there. Once an OB is fully mitigated (price trades through the entire zone), the orders have been filled and the zone is no longer valid for future trades."
+      },
+      {
+        id: 3,
+        question: "What is the purpose of order block refinement?",
+        options: ["To make the order block look cleaner on the chart", "To use lower timeframes to narrow the entry zone within a higher timeframe OB, improving R:R", "To confirm whether an order block is valid", "To find more order blocks on different timeframes"],
+        correctAnswer: 1,
+        explanation: "Refinement uses lower timeframe price action to identify the specific zone within a higher timeframe order block where institutional orders are most concentrated. This narrows your entry zone and stop loss, significantly improving risk-to-reward, though at the cost of some hit rate."
+      }
+    ],
+    diagrams: ["order-block"]
+  },
+  {
+    id: 9,
+    title: "Fair Value Gaps: Trading the Imbalance",
+    description: "Fair Value Gaps represent price inefficiencies where supply and demand were so imbalanced that price moved too fast for proper two-sided trading. Learn how these gaps form, why price is drawn to fill them, and how to use them as precision entry zones.",
+    category: "smart-money",
+    difficulty: "Intermediate",
+    duration: "35 min",
+    phaseId: 3,
+    order: 2,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 8,
+    sections: [
+      {
+        title: "Definition of FVG and How It Forms",
+        content: "A Fair Value Gap (FVG) is a three-candle price pattern that creates a visible gap or imbalance on the chart. It represents an area where price moved so aggressively in one direction that there was no two-sided trading, creating an inefficiency that the market often returns to fill. In the Smart Money Concepts framework, FVGs are considered areas where price delivered inefficiently and where future retracement is likely.\n\nFVGs form during impulsive, momentum-driven moves. When institutional traders execute large orders or when significant news events cause sudden price movement, the resulting candles can be so large that they leave gaps between the wicks of neighboring candles. These gaps indicate that there was no overlap in price trading between the first and third candles of the formation, meaning the market moved through that zone with only one-sided order flow.\n\nThe underlying principle is that markets tend toward efficiency. When price moves too fast in one direction, creating an imbalance, there is a natural tendency for price to return and rebalance that area. This rebalancing creates trading opportunities as price revisits the FVG zone. However, not every FVG will be filled; in strong trends, FVGs may remain open as the momentum continues. The probability of a fill depends on the trend context, the timeframe, and the size of the gap.",
+        bullets: [
+          "FVG: a three-candle pattern creating a visible price gap due to imbalanced order flow",
+          "Forms during impulsive moves where price travels too fast for two-sided trading",
+          "The gap represents an inefficiency that the market often returns to fill",
+          "Markets tend toward efficiency, creating a natural draw for price to revisit FVGs",
+          "Not every FVG will be filled; trend context and timeframe affect fill probability"
+        ]
+      },
+      {
+        title: "The Three-Candle Formation",
+        content: "The FVG formation involves exactly three candles. For a bullish FVG (gap created during an upward move): Candle 1 (C1) establishes the initial range with its high; Candle 2 (C2) is the large impulse candle that creates the move; and Candle 3 (C3) establishes the new range with its low. The FVG exists in the gap between the high of Candle 1 and the low of Candle 3. If the low of C3 is higher than the high of C1, there is a gap, and that gap is the bullish Fair Value Gap.\n\nFor a bearish FVG (gap created during a downward move), the formation is inverted: the FVG exists between the low of Candle 1 and the high of Candle 3. If the high of C3 is lower than the low of C1, there is a gap, and that gap is the bearish Fair Value Gap. The bearish FVG acts as a resistance zone that may cap rallies when price returns to it.\n\nThe size of the FVG matters for both its reliability and how you trade it. Large FVGs (spanning many pips) indicate strong institutional activity and are more likely to attract price for at least a partial fill. Very small FVGs (just a few pips) may be noise and are less reliable as trade setups. A practical rule is to focus on FVGs that are clearly visible on your analysis timeframe without needing to zoom in significantly.",
+        bullets: [
+          "Bullish FVG: gap between C1 high and C3 low (during upward impulse)",
+          "Bearish FVG: gap between C1 low and C3 high (during downward impulse)",
+          "C2 is the impulse candle that creates the imbalance",
+          "Larger FVGs indicate stronger institutional activity and are more reliable",
+          "FVGs should be clearly visible on the analysis timeframe to be considered significant"
+        ],
+        tradingExample: {
+          setup: "On the EUR/USD 1-hour chart, a strong bullish impulse creates three candles: C1 high at 1.0850, C2 is a large bullish candle, C3 low at 1.0865. The gap between 1.0850 and 1.0865 is the bullish FVG",
+          entry: "Price continues up to 1.0900 and then retraces. As price pulls back to the 1.0850-1.0865 FVG zone, the trader watches for bullish confirmation on the 15-minute chart",
+          management: "Entry at 1.0858 (middle of the FVG), stop loss at 1.0843 (below the FVG and C1 high), target at 1.0910 (above the previous high). R:R = 1:3.5",
+          outcome: "Price reacts precisely from the FVG zone, bouncing from 1.0852 and rallying to 1.0915. The FVG acted as an institutional rebalancing zone, providing a precise entry point"
+        }
+      },
+      {
+        title: "Why FVGs Act as Magnets for Price",
+        content: "The market microstructure explanation for why FVGs attract price involves the concept of efficient price delivery. In a healthy market, price should be delivered through a zone with roughly balanced buying and selling. When an FVG forms, price was delivered with only one-sided order flow (all buying or all selling), which is inefficient. Market participants, particularly algorithmic trading systems and institutional traders, recognize this inefficiency and target FVG zones as areas to initiate new positions or rebalance existing ones.\n\nFrom an order flow perspective, an FVG represents a zone where limit orders were not filled during the initial move. For example, during a bullish impulse, sellers who had limit sell orders within the FVG zone were not filled because price moved through too quickly. These unfilled orders may still be resting in the order book, and when price returns, they contribute to the reaction in the FVG zone.\n\nAdditionally, the concept of 'value' plays a role. In a bullish trend, the FVG represents a zone where price was considered fair value by the institutional participants who caused the move. When price retraces to the FVG, it returns to this area of perceived value, making it an attractive entry point for both the original participants (who want to add to their position) and new participants (who recognize the zone as a discounted entry within the trend).",
+        bullets: [
+          "FVGs represent inefficient price delivery that the market naturally corrects",
+          "Algorithmic systems specifically target FVGs as rebalancing zones",
+          "Unfilled limit orders within the FVG zone may still be resting in the order book",
+          "FVGs represent 'fair value' within the trend, attracting new and existing institutional orders",
+          "The tendency to fill FVGs is a structural market behavior, not just a pattern"
+        ]
+      },
+      {
+        title: "Bullish vs. Bearish FVGs",
+        content: "Bullish FVGs form during upward impulsive moves and act as support zones when price retraces to them. They are found below the current price after a bullish impulse. When trading bullish FVGs, you are looking to buy when price pulls back into the gap, expecting the bullish momentum to resume. The entry is within the FVG zone, the stop loss is placed below the FVG (below C1 high), and the target is above the impulse high.\n\nBearish FVGs form during downward impulsive moves and act as resistance zones when price rallies back to them. They are found above the current price after a bearish impulse. When trading bearish FVGs, you look to sell when price rallies into the gap, expecting the bearish momentum to resume. The entry is within the FVG zone, the stop loss is placed above the FVG (above C1 low), and the target is below the impulse low.\n\nThe probability of an FVG trade succeeding depends heavily on trend alignment. A bullish FVG in a higher timeframe uptrend has significantly higher probability than a bullish FVG in a downtrend (which is counter-trend). Similarly, a bearish FVG in a downtrend is more reliable than one in an uptrend. Always assess whether the FVG aligns with the dominant trend before considering it as a trade setup.",
+        bullets: [
+          "Bullish FVGs: support zones below price, buy when price retraces into them",
+          "Bearish FVGs: resistance zones above price, sell when price rallies into them",
+          "Stop loss placement: below the FVG for bullish, above the FVG for bearish",
+          "Trend-aligned FVGs have significantly higher probability than counter-trend FVGs",
+          "The most reliable setups combine FVGs with the dominant higher timeframe trend"
+        ]
+      },
+      {
+        title: "FVG as Confluence with Order Blocks",
+        content: "One of the most powerful setups in the Smart Money Concepts framework is the confluence of a Fair Value Gap with an order block. When an FVG overlaps with an order block, you have two institutional concepts pointing to the same price zone, creating a high-confluence area with increased probability of reaction.\n\nThis confluence typically occurs naturally. When an institutional impulse creates a BOS (validating an order block at the base), the same impulse often creates one or more FVGs within the move. If one of those FVGs overlaps with the order block zone, you have a zone where both the accumulation footprint (OB) and the price inefficiency (FVG) converge. This is considered a premium entry zone.\n\nTo trade this confluence, mark both the order block and the FVG on your chart. The overlapping area is your primary entry zone. If they do not perfectly overlap but are close to each other, the zone between them is your area of interest. Use this confluent zone for your entry and place your stop loss beyond the furthest boundary of both the OB and the FVG. The added confluence justifies higher confidence in the trade, but always remember that no setup is guaranteed and proper risk management remains essential.",
+        bullets: [
+          "FVG + Order Block confluence creates high-probability entry zones",
+          "Both concepts often appear together naturally during institutional impulsive moves",
+          "The overlapping area of the FVG and OB is the optimal entry zone",
+          "Stop loss placement: beyond the furthest boundary of both the OB and FVG",
+          "Confluence increases probability but does not guarantee success; risk management is still primary"
+        ],
+        tradingExample: {
+          setup: "On the NAS100 4-hour chart, a bearish impulse creates a BOS. The last bullish candle before the impulse is the bearish order block (12,450-12,480). Within the impulse, a bearish FVG forms between 12,455-12,470. The OB and FVG overlap between 12,455-12,470",
+          entry: "When price rallies back toward 12,460 (the confluent zone), the trader watches for a bearish rejection on the 15-minute timeframe. A shooting star forms at 12,465",
+          management: "Short entry at 12,462, stop loss at 12,488 (above both OB and FVG), target at 12,350 (previous structural low). R:R = 1:4.3",
+          outcome: "Price rejects sharply from the confluent OB+FVG zone and drops to 12,340. The dual confluence of institutional concepts at the same price zone produced a high-probability reversal"
+        }
+      }
+    ],
+    keyPoints: [
+      "FVGs are three-candle patterns representing price inefficiency and imbalanced order flow",
+      "Bullish FVG: gap between C1 high and C3 low; Bearish FVG: gap between C1 low and C3 high",
+      "Markets tend to return to FVGs to rebalance inefficient price delivery",
+      "Trend-aligned FVGs have significantly higher probability than counter-trend FVGs",
+      "FVG + Order Block confluence creates the highest probability entry zones",
+      "Not every FVG will be filled; strong trends may leave FVGs open indefinitely"
+    ],
+    commonMistakes: [
+      "Trading every FVG regardless of trend context and timeframe significance",
+      "Expecting every FVG to be perfectly filled (partial fills are common)",
+      "Ignoring the trend direction when trading FVGs (counter-trend FVGs are lower probability)",
+      "Placing entries at the edge of the FVG without waiting for price action confirmation",
+      "Using very small FVGs on low timeframes as primary trade setups"
+    ],
+    relatedLessons: [4, 8, 5, 6],
+    quiz: [
+      {
+        id: 1,
+        question: "How is a bullish Fair Value Gap identified?",
+        options: ["Any gap up on the chart", "The gap between Candle 1's high and Candle 3's low in a three-candle bullish impulse", "A single large green candle", "The space between two moving averages"],
+        correctAnswer: 1,
+        explanation: "A bullish FVG is specifically the gap between the high of Candle 1 and the low of Candle 3 in a three-candle formation during an upward impulse. This gap represents a zone where price moved too fast for two-sided trading, creating an inefficiency."
+      },
+      {
+        id: 2,
+        question: "Why do FVGs act as magnets for price?",
+        options: ["Because traders draw them on charts", "Because the market tends to correct inefficient price delivery and rebalance imbalanced zones", "Because of moving average convergence", "Because they are psychological levels"],
+        correctAnswer: 1,
+        explanation: "FVGs represent areas where price was delivered inefficiently with only one-sided order flow. The market naturally tends to correct these inefficiencies through rebalancing. Institutional algorithms and traders specifically target these zones, creating a measurable tendency for price to return."
+      },
+      {
+        id: 3,
+        question: "What makes an FVG + Order Block confluence especially powerful?",
+        options: ["The setup looks better on the chart", "Two independent institutional concepts confirm the same price zone, increasing reaction probability", "It guarantees a winning trade", "It allows for larger position sizes"],
+        correctAnswer: 1,
+        explanation: "When an FVG and an order block overlap at the same price zone, you have two independent confirmations: the OB shows where institutional accumulation occurred, and the FVG shows where price delivery was inefficient. This dual confirmation increases the probability of a significant reaction at that zone."
+      }
+    ],
+    diagrams: ["fvg"]
+  },
+  {
+    id: 10,
+    title: "Breaker Blocks & Mitigation Blocks",
+    description: "Master the advanced smart money concept of breaker blocks - failed order blocks that flip polarity and become powerful trading zones. Learn to distinguish them from mitigation blocks and use both for precision entries.",
+    category: "smart-money",
+    difficulty: "Advanced",
+    duration: "40 min",
+    phaseId: 3,
+    order: 3,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 9,
+    sections: [
+      {
+        title: "What Are Breaker Blocks?",
+        content: "A breaker block is an order block that has failed. When institutional traders place large orders that create an order block, they expect price to return to that zone and react. However, when opposing institutional flow overwhelms the original orders and price violates the order block entirely, the failed order block transforms into a breaker block. This transformation flips the polarity of the zone: a bullish order block that fails becomes a bearish breaker block, and a bearish order block that fails becomes a bullish breaker block.\n\nThe reason breaker blocks work is rooted in market mechanics. When an order block is violated, the traders who placed orders there are now trapped on the wrong side. Their stop losses have been triggered, and the liquidity from those stops fuels the move through the zone. When price returns to this area, the trapped traders who survived will look to exit at better prices, creating selling pressure at old bullish OBs and buying pressure at old bearish OBs. This dynamic creates reliable reaction zones that smart money traders exploit.\n\nBreaker blocks are considered more reliable than standard order blocks in many scenarios because they represent a confirmed shift in market structure. The violation of the original order block signals that the opposing side has taken definitive control, and the resulting breaker zone captures the point where that control was established.",
+        bullets: [
+          "A breaker block is a failed order block that flips its directional bias",
+          "Bullish OB violated = bearish breaker (expect selling on retest)",
+          "Bearish OB violated = bullish breaker (expect buying on retest)",
+          "Breakers form at points of confirmed structural shifts in the market",
+          "The failure of the original OB traps traders and creates reliable reaction zones"
+        ]
+      },
+      {
+        title: "How a Bullish OB Becomes a Bearish Breaker",
+        content: "To understand this transformation, picture a scenario where price is in an uptrend. A bullish order block forms as the last bearish candle before a strong push higher. Institutional buyers placed orders in this zone, driving price up. Normally, when price pulls back to this bullish OB, it would bounce and continue higher. But what happens when it does not?\n\nIf price returns to the bullish order block and drives straight through it, closing decisively below, the order block has failed. The institutional buyers who were positioned there are now underwater. Their buy orders have been absorbed by stronger selling pressure. This failed bullish OB is now a bearish breaker block. When price retraces back up into this zone, the trapped buyers will look to exit their losing positions by selling, which adds to the selling pressure from new short sellers who recognize the structural shift.\n\nThe inverse applies for bearish-to-bullish breakers. A bearish order block that gets violated to the upside becomes a bullish breaker block. When price pulls back into this zone, trapped sellers cover their positions by buying, adding fuel to the bullish continuation. This is why breaker blocks often produce sharp, clean reactions - you have both trapped traders exiting and new traders entering in the same direction.",
+        bullets: [
+          "Step 1: Identify a valid bullish order block in an uptrend",
+          "Step 2: Price returns to the OB but fails to hold - closes below it",
+          "Step 3: The failed bullish OB is now a bearish breaker block",
+          "Step 4: When price retraces into the breaker, look for short entries",
+          "The same logic applies inversely for bearish OBs becoming bullish breakers"
+        ],
+        tradingExample: {
+          setup: "EUR/USD 1H: A bullish order block formed at 1.0850-1.0860 during an uptrend. Price rallied to 1.0920 but then reversed hard, crashing through the 1.0850 OB and closing at 1.0830. The bullish OB has failed and is now a bearish breaker.",
+          entry: "Price retraces back up to the 1.0850-1.0860 zone (now a bearish breaker). A bearish engulfing candle forms within the zone on the 15M chart. Enter short at 1.0855.",
+          management: "Stop loss at 1.0870 (above the breaker zone). First target at 1.0830 (previous low), second target at 1.0800 (next demand zone). Risk: 15 pips, Reward: 25-55 pips.",
+          outcome: "Price rejects the breaker zone sharply as trapped buyers exit their positions. Price drops to 1.0810, hitting the second target for a 3:1 reward-to-risk trade."
+        }
+      },
+      {
+        title: "Mitigation Blocks vs. Breaker Blocks",
+        content: "Mitigation blocks and breaker blocks are often confused, but they serve different purposes in smart money analysis. A mitigation block is a zone where institutional traders return to manage or 'mitigate' an existing position. This happens when price moves aggressively from a zone, leaves behind inefficiency (such as a fair value gap), and then returns to the origin of that move to allow institutions to adjust their exposure before continuing.\n\nThe key difference is in their formation context. A breaker block forms when an order block fails entirely - the structure breaks through it, and it flips polarity. A mitigation block, on the other hand, forms when price returns to the origin of an impulsive move to allow partial position management. Mitigation blocks do not require a structural failure. They are zones where institutions placed initial orders and need to return to either add to their position, partially close, or hedge before the next leg.\n\nIn practical trading, mitigation blocks tend to produce reactions that continue in the original direction of the impulsive move, because institutions are using the retest to manage existing winning positions. Breaker blocks, by contrast, produce reactions in the opposite direction of the original order block because the structure has flipped. Understanding this distinction prevents you from taking trades in the wrong direction.",
+        bullets: [
+          "Mitigation block: zone where institutions return to manage existing positions",
+          "Breaker block: a failed order block that has flipped its directional bias",
+          "Mitigation blocks continue the original move direction on retest",
+          "Breaker blocks reverse the original direction because structure has shifted",
+          "Both are valid trade zones but require different directional expectations"
+        ]
+      },
+      {
+        title: "Trading Breaker Blocks as Support and Resistance",
+        content: "Breaker blocks function as dynamic support and resistance zones because they represent areas where institutional positioning has definitively shifted. A bearish breaker (failed bullish OB) acts as resistance, while a bullish breaker (failed bearish OB) acts as support. These zones are particularly powerful because they combine two forces: trapped traders exiting and new traders entering.\n\nTo trade breaker blocks effectively, follow a systematic approach. First, identify a clear order block on your analysis timeframe. Second, wait for that order block to be violated with a decisive close through it - this confirms the breaker. Third, mark the breaker zone using the original order block boundaries. Fourth, wait for price to retrace into the breaker zone. Finally, look for a lower timeframe confirmation entry such as a CHoCH, engulfing pattern, or fair value gap fill within the breaker zone.\n\nBreaker blocks are most effective when they align with the higher timeframe trend direction and coincide with other confluences such as Fibonacci retracement levels, session timing, or nearby liquidity pools. A breaker block sitting at the 0.618-0.786 Fibonacci retracement of the move that created it is an exceptionally high-probability setup.",
+        bullets: [
+          "Bearish breakers act as resistance - look for shorts on retest",
+          "Bullish breakers act as support - look for longs on retest",
+          "Always wait for price to retrace into the breaker before entering",
+          "Use LTF confirmation (CHoCH, engulfing, FVG fill) for precise entries",
+          "Best setups combine breakers with Fibonacci levels and session timing"
+        ],
+        tradingExample: {
+          setup: "GBP/USD 4H: A bearish order block at 1.2700-1.2720 was violated to the upside after a CHoCH. The failed bearish OB is now a bullish breaker block. The higher timeframe daily trend is also bullish.",
+          entry: "Price pulls back from 1.2800 toward the bullish breaker at 1.2700-1.2720 during London session. On the 5M chart, a bullish CHoCH forms at 1.2710. Enter long at 1.2715.",
+          management: "Stop loss at 1.2695 (below the breaker zone). Target 1: 1.2770 (previous structure). Target 2: 1.2800 (swing high). Risk: 20 pips.",
+          outcome: "The bullish breaker holds as trapped sellers cover their shorts. Price rallies to 1.2790, hitting near the second target for a 3.75:1 reward-to-risk trade."
+        }
+      }
+    ],
+    keyPoints: [
+      "Breaker blocks are failed order blocks that flip their directional bias",
+      "A violated bullish OB becomes bearish resistance; a violated bearish OB becomes bullish support",
+      "Mitigation blocks manage existing positions; breaker blocks signal structural shifts",
+      "Always wait for price to retrace into the breaker zone before entering",
+      "Combine breaker blocks with Fibonacci levels and LTF confirmation for highest probability"
+    ],
+    commonMistakes: [
+      "Confusing mitigation blocks with breaker blocks and trading in the wrong direction",
+      "Entering at a breaker without waiting for a lower timeframe confirmation signal",
+      "Treating every violated order block as a breaker without confirming structural shift",
+      "Ignoring the higher timeframe trend when trading breaker blocks",
+      "Setting stop losses too tight within the breaker zone instead of beyond it"
+    ],
+    relatedLessons: [4, 8, 6, 13],
+    quiz: [
+      {
+        id: 1,
+        question: "What is a breaker block?",
+        options: ["A strong order block that never fails", "A failed order block that flips its directional bias", "A candlestick pattern at support", "A gap in price action"],
+        correctAnswer: 1,
+        explanation: "A breaker block is an order block that has been violated - price has broken through it entirely. This failure causes the zone to flip polarity: a failed bullish OB becomes bearish resistance, and a failed bearish OB becomes bullish support."
+      },
+      {
+        id: 2,
+        question: "What happens when a bullish order block is violated to the downside?",
+        options: ["It becomes a stronger bullish zone", "It becomes a bearish breaker block", "It becomes a fair value gap", "It disappears and has no further relevance"],
+        correctAnswer: 1,
+        explanation: "When a bullish order block is violated (price breaks and closes below it), it transforms into a bearish breaker block. Trapped buyers at the zone will look to exit on any retest, creating selling pressure that turns the area into resistance."
+      },
+      {
+        id: 3,
+        question: "How do mitigation blocks differ from breaker blocks?",
+        options: ["They are the same concept with different names", "Mitigation blocks require structural failure; breakers do not", "Mitigation blocks manage existing positions; breakers signal structural shifts", "Mitigation blocks only form on daily charts"],
+        correctAnswer: 2,
+        explanation: "Mitigation blocks are zones where institutions return to manage existing positions and typically continue the original move direction. Breaker blocks form when an order block fails entirely and the structure shifts, causing the zone to flip polarity."
+      }
+    ],
+    diagrams: ["breaker-block"]
+  },
+  {
+    id: 11,
     title: "Multi-Timeframe Analysis: The Top-Down Approach",
     description: "Learn the professional methodology of analyzing markets from the top down. Understand how to use higher timeframes for bias, mid timeframes for structure, and lower timeframes for precision entries.",
     category: "strategies",
     difficulty: "Intermediate",
     duration: "35 min",
-    isFree: false,
+    phaseId: 4,
+    order: 1,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 10,
     sections: [
       {
         title: "Why Single Timeframe Trading Is Insufficient",
@@ -1532,7 +1379,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Taking LTF entries that conflict with the HTF directional bias",
       "Not giving enough weight to HTF levels when they conflict with MTF setups"
     ],
-    relatedLessons: [2, 5, 14, 15, 19],
+    relatedLessons: [14, 12, 13, 18],
     quiz: [
       {
         id: 1,
@@ -1559,119 +1406,139 @@ export const EDUCATION_LESSONS: Lesson[] = [
     diagrams: ["multi-timeframe"]
   },
   {
-    id: 14,
-    title: "Trading Sessions: When the Market Really Moves",
-    description: "Understand the forex market's session structure and learn why timing your trades to specific windows dramatically improves results. Master session-specific strategies and kill zones.",
-    category: "strategies",
-    difficulty: "Intermediate",
-    duration: "30 min",
-    isFree: false,
+    id: 12,
+    title: "Candlestick Confirmation in Context",
+    description: "Candlestick patterns are confirmations, not signals. Learn to read candlestick formations as the final piece of the puzzle - used only after structure, liquidity, and zone identification are complete. Context transforms unreliable patterns into high-probability entry triggers.",
+    category: "price-action",
+    difficulty: "Beginner",
+    duration: "35 min",
+    phaseId: 4,
+    order: 2,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 11,
     sections: [
       {
-        title: "Forex Session Structure: Asian, London, New York",
-        content: "The forex market operates 24 hours a day, 5 days a week, but not all hours are created equal. The market is divided into three major trading sessions based on the financial centers that dominate activity during those hours: the Asian session (Tokyo), the London session, and the New York session. Each session has distinct characteristics in terms of volume, volatility, and the types of moves that typically occur.\n\nThe Asian session runs approximately from 00:00 to 08:00 GMT (with Tokyo opening at 00:00 GMT). It is characterized by lower volatility and tighter price ranges. Major pairs like EUR/USD and GBP/USD often consolidate during this period, while JPY and AUD pairs may see more activity. The London session runs from approximately 08:00 to 16:00 GMT and is the highest volume session, accounting for roughly 35% of all forex transactions. The New York session runs from 13:00 to 21:00 GMT, with the London-New York overlap (13:00-16:00 GMT) being the most volatile and liquid period of the entire trading day.\n\nUnderstanding sessions is critical because different strategies work at different times. A breakout strategy that works well during the London open will fail during the Asian consolidation. A range-trading strategy that profits from the Asian session will get destroyed by the volatility of the London or New York opens.",
+        title: "Anatomy of a Candlestick (OHLC)",
+        content: "Every candlestick on a chart represents four pieces of data for a specific time period: the Open (where price started), the High (the highest price reached), the Low (the lowest price reached), and the Close (where price ended). The body of the candlestick is the filled area between the open and close, while the wicks (also called shadows) extend from the body to the high and low.\n\nA bullish (green/white) candle has a close above the open, indicating buyers pushed price higher during that period. A bearish (red/black) candle has a close below the open, indicating sellers pushed price lower. The size of the body relative to the wicks tells you about the conviction behind the move. A large body with small wicks shows strong directional conviction. A small body with large wicks shows indecision or rejection.\n\nProfessional traders do not just see candlesticks as shapes; they interpret them as a story of the battle between buyers and sellers during that time period. A candle with a long lower wick and a close near the high tells you that sellers pushed price down aggressively, but buyers overwhelmed them and pushed price back up. This narrative approach to reading candles is far more valuable than memorizing pattern names.",
         bullets: [
-          "Asian session (00:00-08:00 GMT): Low volatility, range-bound, good for JPY/AUD pairs",
-          "London session (08:00-16:00 GMT): Highest volume, ~35% of daily forex volume",
-          "New York session (13:00-21:00 GMT): High volatility, especially during London overlap",
-          "London-New York overlap (13:00-16:00 GMT): Peak volatility and liquidity period",
-          "Matching your strategy to the correct session is essential for consistent results"
+          "OHLC: Open, High, Low, Close are the four data points of every candle",
+          "Body = area between open and close; Wicks = extensions to the high and low",
+          "Large body, small wicks = strong conviction in one direction",
+          "Small body, large wicks = indecision or rejection of a price level",
+          "Read candles as narratives of the buyer-seller battle, not just shapes"
         ]
       },
       {
-        title: "Why London and New York Opens Matter Most",
-        content: "The London and New York session opens are the two most significant events in the daily forex cycle. The London open at 08:00 GMT brings a massive influx of institutional volume as European banks, hedge funds, and commercial traders begin their day. This volume surge often creates the day's most significant directional moves. More importantly, London open frequently sets the daily high or low for major pairs.\n\nThe New York open at 13:00 GMT brings American institutional participants into a market already active from London. This overlap period creates the deepest liquidity of the day, which means price moves during this window tend to be the most decisive and sustainable. Institutional traders in New York often either continue the move established by London or engineer a reversal - making the 13:00-16:00 GMT window critical for determining the day's ultimate direction.\n\nStatistical analysis of major forex pairs shows that the majority of daily ranges are established during these two opens. A trader who only trades during the London and New York open windows will capture the bulk of the day's movement while avoiding the choppy, directionless price action that plagues off-session hours. This is why many professional traders only sit at their screens during these specific windows.",
+        title: "Single Candle Patterns: Hammer, Shooting Star, Doji, Marubozu",
+        content: "The hammer is a bullish reversal candle that forms at the bottom of a move. It has a small body near the top and a long lower wick (at least 2x the body length). The story: sellers pushed price down significantly during the period, but buyers overwhelmed them and pushed price back up near the open. When this forms at a key support zone in an uptrend or after an extended downtrend, it signals potential buying interest.\n\nThe shooting star is the bearish mirror image of the hammer. It has a small body near the bottom and a long upper wick. It forms at the top of a move and tells you that buyers pushed price up, but sellers overwhelmed them and pushed price back down. At key resistance zones, this is a warning sign that the advance may be failing.\n\nThe doji has a very small body (open and close are nearly equal) with wicks on both sides. It represents pure indecision; neither buyers nor sellers won the period. A doji at a key level signals that the current move may be exhausting. The marubozu is the opposite of a doji: it has a large body with little to no wicks, showing complete dominance by one side. A bullish marubozu (large green body, no wicks) shows buyers were in total control. These candles within impulsive moves confirm strong momentum.",
         bullets: [
-          "London open (08:00 GMT) often sets the daily high or low for major pairs",
-          "New York open (13:00 GMT) either continues or reverses the London move",
-          "The London-NY overlap is the deepest liquidity period of the trading day",
-          "Most of the daily range is established during these two session opens",
-          "Trading only during these windows captures maximum movement with minimum screen time"
+          "Hammer: small body at top, long lower wick (2x+ body) at support = bullish reversal signal",
+          "Shooting star: small body at bottom, long upper wick at resistance = bearish reversal signal",
+          "Doji: open equals close, wicks both sides = indecision at current level",
+          "Marubozu: large body, no/minimal wicks = complete dominance by buyers or sellers",
+          "Single candle patterns are signals, not confirmations; always seek additional confluence"
         ],
         tradingExample: {
-          setup: "EUR/USD has been consolidating in a tight 30-pip range during the Asian session between 1.0940 and 1.0970. A daily bullish order block sits just below at 1.0920-1.0935. It is 07:55 GMT - five minutes before London open.",
-          entry: "At London open, price sweeps below the Asian low to 1.0930, tapping the daily OB. A bullish engulfing forms on the 15M chart at 08:15 GMT. Enter long at 1.0940.",
-          management: "Stop loss at 1.0915 (below the daily OB). Target the Asian high at 1.0970, then the previous day's high at 1.1010. Risk: 25 pips.",
-          outcome: "The London open sweep of the Asian range low is a classic setup. Price reverses and trends upward through the morning, reaching 1.1005 by the New York open for a 2.6:1 R:R."
+          setup: "Gold (XAU/USD) has been trending up. Price pulls back to a previous support zone at $1,920. A 4-hour hammer candle forms with a lower wick that tests $1,915 before closing at $1,923",
+          entry: "The hammer at key support in an uptrend provides a signal. The trader waits for the next candle to close bullish above the hammer's high ($1,925) for confirmation before entering long",
+          management: "Stop loss below the hammer's wick at $1,912 (13 pips from entry), target at the previous swing high of $1,958 (33 pips), giving 1:2.5 R:R",
+          outcome: "Price reverses from the support zone as the hammer suggested. The confirmation candle close prevented entering prematurely on a hammer that could have been followed by more selling"
         }
       },
       {
-        title: "Session-Specific Strategies",
-        content: "Each session lends itself to specific strategies because of its unique characteristics. The Asian Range Breakout strategy capitalizes on the consolidation that typically forms during the Asian session. You identify the Asian range (the high and low established between 00:00-08:00 GMT), then trade the breakout of this range during the London session. The direction of the breakout often aligns with the daily bias and can carry for 50-100+ pips on major pairs.\n\nThe London Sweep strategy takes advantage of the institutional practice of sweeping obvious liquidity at the London open before making the real move. Institutions often drive price above the Asian high or below the Asian low to trigger stop losses and gather liquidity, then reverse. You wait for the sweep to occur, look for a reversal signal, and enter in the opposite direction of the sweep. This strategy has a high win rate when combined with HTF bias alignment.\n\nThe New York Reversal strategy focuses on trades during the 13:00-16:00 GMT window when New York institutions may reverse the London move. If London established a strong directional move, NY traders sometimes fade this move at key levels. You look for price to reach a significant HTF level during the NY session, then watch for reversal confirmation. This is particularly effective on days when the London move has been extended and one-directional.",
+        title: "Multi-Candle Patterns: Engulfing, Morning Star, Evening Star",
+        content: "A bullish engulfing pattern occurs when a bearish candle is followed by a larger bullish candle whose body completely covers (engulfs) the previous candle's body. This pattern shows a decisive shift in control from sellers to buyers. The larger the engulfing candle relative to the previous candle, the stronger the signal. A bearish engulfing is the reverse: a bullish candle followed by a larger bearish candle that engulfs it.\n\nEngulfing patterns are among the most reliable candlestick signals when they occur at key levels. The key qualifier is 'at key levels.' A bullish engulfing in the middle of a downtrend with no support nearby is just a temporary bounce. A bullish engulfing at a major support zone, a demand area, or within a bullish order block after a pullback in an uptrend is a high-probability setup.\n\nThe morning star is a three-candle bullish reversal pattern: a bearish candle, followed by a small-bodied candle (the star, indicating indecision), followed by a bullish candle that closes into the body of the first candle. The evening star is the bearish mirror. These patterns tell a complete story: the trend is in control (candle 1), momentum stalls (candle 2, the star), and control shifts to the opposite side (candle 3). The morning star and evening star are considered more reliable than single-candle patterns because they show a three-phase transition in market sentiment.",
         bullets: [
-          "Asian Range Breakout: Trade the London session breakout of the Asian consolidation range",
-          "London Sweep: Wait for the sweep of Asian highs/lows, then trade the reversal",
-          "NY Reversal: Look for reversal of the London move at key HTF levels during NY session",
-          "Each strategy requires alignment with the higher timeframe directional bias",
-          "Combine session strategies with SMC concepts for highest probability setups"
+          "Bullish engulfing: bearish candle followed by larger bullish candle that engulfs it",
+          "Bearish engulfing: bullish candle followed by larger bearish candle that engulfs it",
+          "Morning star: 3-candle bullish reversal (bearish, small star, bullish close into first body)",
+          "Evening star: 3-candle bearish reversal (bullish, small star, bearish close into first body)",
+          "Multi-candle patterns are more reliable because they show transition over multiple periods"
         ]
       },
       {
-        title: "Kill Zones and Optimal Trading Windows",
-        content: "Kill zones are specific windows within each session where the highest probability setups develop. These are the times when institutional traders are most active and when the majority of significant price moves originate. Trading during kill zones and avoiding the dead periods between them dramatically improves your results.\n\nThe London Kill Zone runs from approximately 07:00 to 10:00 GMT (some traders extend it to 08:00-11:00 GMT). This three-hour window captures the initial institutional activity of the European session, including the liquidity sweeps and directional moves that establish the London trend. The New York Kill Zone runs from approximately 12:00 to 15:00 GMT (13:00-16:00 GMT for some traders). This window captures the London-New York overlap, which is the most volatile period of the trading day.\n\nOutside of these kill zones, price action tends to become choppy and directionless. The period between London close and Asian open (17:00-00:00 GMT) is particularly dangerous for traders, as low volume creates erratic price movements that stop out positions in both directions. By restricting your trading to kill zones only, you avoid the low-quality price action that costs traders money through overtrading and unnecessary stop-outs.",
+        title: "Context Matters: Patterns at Key Levels vs. Random Locations",
+        content: "The most important rule in candlestick analysis is that patterns are only meaningful when they form at significant price levels. A bullish engulfing candle at a random location in the middle of a chart has almost zero predictive value. The same bullish engulfing at a tested support zone, within a bullish order block, or at a key Fibonacci retracement level in the direction of the higher timeframe trend becomes a high-probability entry signal.\n\nContext includes three dimensions: location, trend alignment, and timeframe. Location means the pattern forms at a key support/resistance zone, order block, or liquidity sweep area. Trend alignment means the pattern signals in the direction of the dominant trend (buying patterns at support in uptrends, selling patterns at resistance in downtrends). Timeframe means higher timeframe patterns (4-hour, daily) are significantly more reliable than lower timeframe patterns (5-minute, 15-minute).\n\nA practical framework for using candlestick patterns is the three-factor confluence model: (1) the pattern forms at a significant level, (2) the pattern aligns with the higher timeframe trend direction, and (3) the pattern occurs on a meaningful timeframe (4H or above for swing trades, 15M or above for intraday). If all three factors are present, the pattern has strong predictive value. If only one or two are present, the pattern is unreliable.",
         bullets: [
-          "London Kill Zone: 07:00-10:00 GMT (initial institutional moves and sweeps)",
-          "New York Kill Zone: 12:00-15:00 GMT (London-NY overlap, peak volatility)",
-          "Asian Kill Zone: 00:00-03:00 GMT (optional, primarily for JPY and AUD pairs)",
-          "Avoid trading between 17:00-00:00 GMT (low volume, erratic price action)",
-          "Restricting to kill zones prevents overtrading and improves overall win rate"
+          "Patterns are meaningless without context; location is everything",
+          "Three dimensions of context: key level, trend alignment, timeframe significance",
+          "Higher timeframe patterns (4H, Daily) are far more reliable than lower timeframe",
+          "Three-factor confluence: key level + trend alignment + meaningful timeframe",
+          "Never trade a pattern in isolation; always require at least two contextual factors"
         ],
         tradingExample: {
-          setup: "It is 12:30 GMT, the start of the NY Kill Zone. GBP/USD rallied during the London session from 1.2650 to 1.2720. The daily chart shows a supply zone at 1.2730-1.2750. Price is approaching this zone as NY institutions begin trading.",
-          entry: "At 13:00 GMT, price spikes into the supply zone at 1.2740, sweeping the London session high. A bearish CHoCH forms on the 5M chart at 13:15 GMT. Enter short at 1.2735.",
-          management: "Stop loss at 1.2755 (above supply zone). Target the London session origin at 1.2660. Risk: 20 pips, Reward: 75 pips.",
-          outcome: "The NY reversal of the London move is a classic institutional pattern. Price sells off through the afternoon, reaching 1.2670 for a 3.25:1 R:R."
+          setup: "A trader sees a bearish engulfing on the 15-minute EUR/USD chart. However, the daily chart shows a strong uptrend, and the engulfing formed at no particular level of significance",
+          entry: "The trader correctly identifies this as a low-probability setup: the pattern lacks trend alignment (bearish in an uptrend) and key level context (no S/R, no order block)",
+          management: "Instead of shorting, they wait for price to pull back to a key daily support zone and look for bullish patterns aligned with the daily uptrend",
+          outcome: "The bearish engulfing they skipped led to only a minor 15-pip pullback before the uptrend resumed. The bullish hammer they later traded at daily support gave them a 1:3 winner. Context turned a losing signal into a non-trade"
         }
+      },
+      {
+        title: "Applying Candlestick Analysis to Your Trading",
+        content: "The practical application of candlestick analysis follows a systematic process. First, identify the higher timeframe trend direction using market structure. Second, mark key levels on your chart where you expect price to react (support, resistance, order blocks, fair value gaps). Third, when price arrives at a key level, drop to your entry timeframe and watch for a candlestick pattern that confirms your directional bias.\n\nThis approach means you are not scanning for patterns across the entire chart. Instead, you have predetermined areas of interest and you are simply waiting for price to arrive there and show you a confirmation signal. This eliminates the common mistake of seeing patterns everywhere and overtrading based on low-quality signals.\n\nThe most effective candlestick patterns for trade entries are engulfing candles, hammers (at support), shooting stars (at resistance), and rejection wicks that show clear supply or demand. These patterns should be used as the final trigger for entry after you have already identified the level, the trend direction, and the confluences. The candlestick pattern is the last piece of the puzzle, not the entire puzzle.",
+        bullets: [
+          "Step 1: Identify HTF trend direction. Step 2: Mark key levels. Step 3: Wait for patterns at those levels",
+          "Do not scan for patterns across the whole chart; focus only on key levels",
+          "Best entry patterns: engulfing, hammers, shooting stars, rejection wicks",
+          "Candlestick patterns are the entry trigger, not the trade thesis",
+          "Combine patterns with market structure and key levels for highest probability"
+        ]
       }
     ],
     keyPoints: [
-      "The forex market has three major sessions: Asian (range), London (volume), New York (volatility)",
-      "London and New York opens generate the majority of the daily range and significant moves",
-      "Session-specific strategies (Asian breakout, London sweep, NY reversal) exploit predictable patterns",
-      "Kill zones are the optimal trading windows within each session for highest probability",
-      "Avoiding dead periods between sessions prevents overtrading and unnecessary losses"
+      "Every candlestick tells a story of the buyer-seller battle through OHLC data",
+      "Key single patterns: hammer, shooting star, doji, marubozu",
+      "Key multi-candle patterns: engulfing, morning star, evening star",
+      "Context is everything: patterns only matter at key levels with trend alignment",
+      "Higher timeframe patterns are significantly more reliable than lower timeframe",
+      "Use patterns as the final entry trigger after identifying levels and trend, not in isolation"
     ],
     commonMistakes: [
-      "Trading during low-volume periods between sessions expecting significant moves",
-      "Applying breakout strategies during the Asian session when range-trading is more appropriate",
-      "Ignoring the Asian range as a framework for the London and NY sessions",
-      "Trading every session instead of specializing in one or two session strategies",
-      "Not adjusting for daylight saving time changes that shift session times"
+      "Trading candlestick patterns in isolation without any contextual confluence",
+      "Memorizing dozens of exotic patterns instead of mastering 4-5 high-probability ones",
+      "Using patterns on 1-5 minute charts where they have minimal predictive value",
+      "Entering on the pattern candle itself instead of waiting for confirmation on the next candle",
+      "Ignoring the higher timeframe trend when interpreting candlestick signals"
     ],
-    relatedLessons: [5, 13, 15, 16, 19],
+    relatedLessons: [3, 4, 8, 11],
     quiz: [
       {
         id: 1,
-        question: "Which session accounts for the highest percentage of daily forex volume?",
-        options: ["The Asian session", "The London session", "The New York session", "The Sydney session"],
-        correctAnswer: 1,
-        explanation: "The London session accounts for approximately 35% of all daily forex transactions, making it the highest volume session. This is because London is the world's largest financial center for foreign exchange."
+        question: "What does a candlestick with a long lower wick and small body near the high indicate?",
+        options: ["Strong selling pressure", "Indecision", "Sellers pushed price down but buyers overwhelmed them and pushed it back up", "The start of a downtrend"],
+        correctAnswer: 2,
+        explanation: "A long lower wick with a close near the high (hammer) tells you that sellers were aggressive but buyers overwhelmed them during the period. At support zones, this signals potential buying interest and reversal."
       },
       {
         id: 2,
-        question: "What is the London-New York overlap period and why is it significant?",
-        options: ["08:00-12:00 GMT; it has the least volatility", "13:00-16:00 GMT; it is the deepest liquidity and highest volatility period", "16:00-21:00 GMT; it is when Asian markets begin", "There is no overlap between London and New York sessions"],
+        question: "When is a bullish engulfing pattern most reliable?",
+        options: ["Anytime it appears on any chart", "When it forms at a key support level in the direction of the higher timeframe uptrend", "Only on the daily timeframe", "After three consecutive red candles"],
         correctAnswer: 1,
-        explanation: "The London-New York overlap (approximately 13:00-16:00 GMT) is when both European and American institutional traders are active simultaneously. This creates the deepest liquidity and highest volatility of the entire trading day."
+        explanation: "A bullish engulfing is most reliable when it has contextual confluence: it forms at a key support level (location), aligns with the higher timeframe trend direction (trend alignment), and occurs on a meaningful timeframe (4H+ for swing trades)."
       },
       {
         id: 3,
-        question: "What is the Asian Range Breakout strategy?",
-        options: ["Trading breakouts during the Asian session", "Identifying the Asian session high/low range and trading its breakout during London", "Buying whenever price breaks above the Asian session high", "A strategy only for JPY pairs"],
+        question: "What is the difference between a doji and a marubozu?",
+        options: ["There is no difference", "Doji shows indecision (open = close); Marubozu shows total dominance (large body, no wicks)", "Doji is bullish; Marubozu is bearish", "Doji only forms in downtrends; Marubozu only in uptrends"],
         correctAnswer: 1,
-        explanation: "The Asian Range Breakout strategy identifies the consolidation range (high and low) formed during the Asian session, then trades the breakout of this range when London session volume arrives. The direction should align with the higher timeframe bias."
+        explanation: "A doji has virtually no body (open equals close) showing that neither side won. A marubozu has a large body with no or minimal wicks, showing complete dominance by buyers (bullish marubozu) or sellers (bearish marubozu) during the period."
       }
     ],
-    diagrams: ["sessions"]
+    diagrams: ["candlestick-patterns"]
   },
   {
-    id: 15,
+    id: 13,
     title: "Entry Models: Precision Entries for Maximum R:R",
     description: "Master advanced entry techniques including the Optimal Trade Entry (OTE) concept. Learn to combine Fibonacci retracements with order blocks and FVGs for precision entries that maximize reward-to-risk ratios.",
     category: "strategies",
     difficulty: "Advanced",
     duration: "45 min",
-    isFree: false,
+    phaseId: 4,
+    order: 3,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 12,
     sections: [
       {
         title: "The Optimal Trade Entry (OTE) Concept",
@@ -1686,7 +1553,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       },
       {
         title: "Entry at the 0.618-0.786 Fibonacci Zone",
-        content: "The Fibonacci retracement tool is one of the most widely used instruments in technical analysis, but most traders misuse it. They apply it randomly to any swing, use too many levels, and treat every Fibonacci level as equally significant. The OTE approach distills Fibonacci usage down to its most effective application: the 0.618-0.786 zone during confirmed structural retracements.\n\nWhen applying the Fibonacci tool for OTE, context matters enormously. The impulse you measure should be a clear, strong move that creates a valid BOS (Break of Structure). Weak, choppy moves do not produce reliable Fibonacci zones because there is no clear institutional impulse to measure. The retracementinto the OTE zone should also exhibit specific characteristics: it should move steadily into the zone rather than spike through it violently, and there should be signs of absorption (slowing momentum, decreasing candle sizes) as price reaches the zone.\n\nThe 0.618 level, known as the golden ratio, is the most watched of all Fibonacci levels. The 0.705 level (the midpoint of the OTE zone) is considered the equilibrium of the retracement. The 0.786 level represents the deepest acceptable retracement before the setup becomes questionable. Entries at the deeper end of the zone (0.705-0.786) offer better reward-to-risk ratios but have a slightly lower probability, while entries at the shallow end (0.618-0.705) have higher probability but less reward potential.",
+        content: "The Fibonacci retracement tool is one of the most widely used instruments in technical analysis, but most traders misuse it. They apply it randomly to any swing, use too many levels, and treat every Fibonacci level as equally significant. The OTE approach distills Fibonacci usage down to its most effective application: the 0.618-0.786 zone during confirmed structural retracements.\n\nWhen applying the Fibonacci tool for OTE, context matters enormously. The impulse you measure should be a clear, strong move that creates a valid BOS (Break of Structure). Weak, choppy moves do not produce reliable Fibonacci zones because there is no clear institutional impulse to measure. The retracement into the OTE zone should also exhibit specific characteristics: it should move steadily into the zone rather than spike through it violently, and there should be signs of absorption (slowing momentum, decreasing candle sizes) as price reaches the zone.\n\nThe 0.618 level, known as the golden ratio, is the most watched of all Fibonacci levels. The 0.705 level (the midpoint of the OTE zone) is considered the equilibrium of the retracement. The 0.786 level represents the deepest acceptable retracement before the setup becomes questionable. Entries at the deeper end of the zone (0.705-0.786) offer better reward-to-risk ratios but have a slightly lower probability, while entries at the shallow end (0.618-0.705) have higher probability but less reward potential.",
         bullets: [
           "Only apply Fibonacci to clear, impulsive moves with valid BOS",
           "The 0.618 (golden ratio) is the most watched single Fibonacci level",
@@ -1745,7 +1612,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Ignoring order blocks and FVGs that overlap with the OTE zone for additional confluence",
       "Setting stop losses inside the OTE zone instead of beyond the entire zone or swing point"
     ],
-    relatedLessons: [2, 6, 7, 11, 13, 19],
+    relatedLessons: [14, 4, 10, 11, 18],
     quiz: [
       {
         id: 1,
@@ -1772,14 +1639,85 @@ export const EDUCATION_LESSONS: Lesson[] = [
     diagrams: ["entry-model"]
   },
   {
-    id: 16,
-    title: "Position Sizing & Trade Management",
-    description: "Master the mathematics and psychology of position sizing, scaling, and active trade management. Learn the strategies that protect your capital while maximizing long-term account growth.",
+    id: 14,
+    title: "Position Sizing & Risk Mathematics",
+    description: "Risk management is the single most important skill in trading. This lesson combines position sizing fundamentals, the mathematics of drawdowns, risk-to-reward optimization, and advanced position management strategies to give you a complete risk framework.",
     category: "fundamentals",
-    difficulty: "Intermediate",
-    duration: "30 min",
-    isFree: false,
+    difficulty: "Beginner",
+    duration: "45 min",
+    phaseId: 5,
+    order: 1,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 13,
     sections: [
+      {
+        title: "Position Sizing and the 1-2% Rule",
+        content: "Position sizing determines how many lots, contracts, or shares you trade on each position. It is the primary tool you use to control how much capital you risk on any single trade. The industry-standard guideline is to risk no more than 1-2% of your total account balance on any single trade. This means on a $10,000 account, your maximum risk per trade should be $100-$200.\n\nThe 1-2% rule exists because of the mathematics of drawdowns. If you risk 2% per trade and hit a losing streak of 10 trades (which happens to every trader), you lose approximately 18% of your account. That is painful but recoverable. If you risk 10% per trade and hit the same losing streak, you lose roughly 65% of your account, requiring a 186% gain just to break even. The larger your drawdown, the exponentially harder it becomes to recover.\n\nNew traders often argue that risking 1-2% is too conservative and limits their profit potential. This is a fundamental misunderstanding. Position sizing does not limit your returns in the long run; it ensures you survive long enough to realize them. Every professional trader and fund manager uses strict position sizing rules. It is not optional; it is the foundation upon which all other trading decisions rest.",
+        bullets: [
+          "Risk no more than 1-2% of total account equity per trade",
+          "A 10-trade losing streak at 2% risk = ~18% drawdown (recoverable)",
+          "A 10-trade losing streak at 10% risk = ~65% drawdown (devastating)",
+          "Position sizing is the primary tool for controlling portfolio risk",
+          "Professional funds typically risk 0.5-1% per position with portfolio-level limits"
+        ],
+        tradingExample: {
+          setup: "A trader with a $5,000 account identifies a setup on GBP/USD with a 30-pip stop loss",
+          entry: "Using the 1% rule: Max risk = $50. At $10/pip for a standard lot, they calculate: $50 / 30 pips = $1.67 per pip, which equals 0.167 lots (approximately 0.17 mini lots)",
+          management: "They enter 0.17 lots with a 30-pip stop loss, risking exactly $51 (approximately 1% of account)",
+          outcome: "Whether the trade wins or loses, their account can absorb many such trades. This position sizing allows them to take 50+ losing trades before a 50% drawdown, providing ample runway to develop their edge"
+        }
+      },
+      {
+        title: "Risk-to-Reward Ratios Explained",
+        content: "The risk-to-reward ratio (R:R or RRR) compares the potential loss of a trade to its potential profit. If you risk 20 pips with a stop loss and target 60 pips of profit, your risk-to-reward ratio is 1:3 (risking 1 unit to potentially gain 3). This ratio is fundamental to understanding whether a trading strategy is mathematically viable over a large sample of trades.\n\nThe power of favorable risk-to-reward becomes clear when you examine the math. With a 1:2 risk-to-reward ratio, you only need to win 34% of your trades to break even (before commissions). With a 1:3 ratio, you need just 25% winners. This means a trader with a mediocre win rate can still be profitable if they consistently achieve favorable risk-to-reward on their trades. Conversely, a trader with a 70% win rate who averages 1:0.5 risk-to-reward (risking twice what they target) will slowly bleed their account dry.\n\nSetting realistic targets is crucial. Your take-profit should be placed at a level where price has a logical reason to reach, such as the next significant support/resistance zone, a previous swing high or low, or a measured move projection. Arbitrary targets like always targeting 3:1 regardless of market context will lead to trades that never hit target and result in unnecessary stop-outs.",
+        bullets: [
+          "Risk-to-reward compares potential loss to potential profit (e.g., 1:2 = risk 1 to gain 2)",
+          "At 1:2 R:R, you only need 34% winners to break even",
+          "At 1:3 R:R, you only need 25% winners to break even",
+          "Targets should be based on market structure, not arbitrary ratios",
+          "A high win rate with poor R:R can still lose money over time"
+        ]
+      },
+      {
+        title: "Why Risk Management Matters More Than Win Rate",
+        content: "Most beginner traders are obsessed with finding a strategy with a high win rate. They want to be right as often as possible. But professional traders know that win rate is only half the equation. What matters is the relationship between win rate and average risk-to-reward, which determines your trading expectancy.\n\nTrading expectancy is calculated as: (Win Rate x Average Win) - (Loss Rate x Average Loss). A trader who wins 40% of the time with an average winner of $300 and an average loser of $100 has an expectancy of ($300 x 0.40) - ($100 x 0.60) = $120 - $60 = $60 per trade. Despite losing more often than they win, every trade they take has a positive expected value of $60. Over 100 trades, this expectancy generates $6,000 in profit.\n\nCompare this to a trader who wins 70% of the time but averages $100 winners and $300 losers: ($100 x 0.70) - ($300 x 0.30) = $70 - $90 = -$20 per trade. Despite their impressive win rate, they lose $20 on average for every trade taken. Over 100 trades, they lose $2,000. Win rate means nothing without considering risk-to-reward. This is why risk management is the only true edge in trading.",
+        bullets: [
+          "Expectancy = (Win Rate x Avg Win) - (Loss Rate x Avg Loss)",
+          "A 40% win rate with 3:1 R:R outperforms a 70% win rate with 1:3 R:R",
+          "Positive expectancy means every trade has a statistical edge over time",
+          "Track expectancy over at least 50-100 trades for statistical significance",
+          "Your edge compounds over time only if position sizing preserves capital"
+        ],
+        tradingExample: {
+          setup: "Trader A wins 65% of trades but moves stops to breakeven too early, averaging 1:0.8 R:R. Trader B wins 42% but lets winners run to 1:2.5 R:R minimum",
+          entry: "Both traders take 100 trades risking $100 per trade",
+          management: "Trader A: (0.65 x $80) - (0.35 x $100) = $52 - $35 = $17/trade. Trader B: (0.42 x $250) - (0.58 x $100) = $105 - $58 = $47/trade",
+          outcome: "Trader B earns $4,700 over 100 trades despite losing more often, while Trader A earns only $1,700. Risk-to-reward dominates win rate in determining profitability"
+        }
+      },
+      {
+        title: "Calculating Position Size with Stop Loss",
+        content: "Position sizing calculation is a mechanical process that every trader must master. The formula is straightforward: Position Size = Account Risk / (Stop Loss Distance x Pip Value). You start by determining how much money you are willing to lose (account risk), then divide that by how far your stop loss is from your entry in terms of dollar value.\n\nFor Forex, the calculation works as follows. Assume a $10,000 account, 1% risk ($100), and a 25-pip stop loss on EUR/USD. One standard lot on EUR/USD is $10 per pip. Position Size = $100 / (25 pips x $10/pip) = $100 / $250 = 0.40 standard lots. For a mini lot ($1/pip), the same calculation yields 4.0 mini lots. For a micro lot ($0.10/pip), it yields 40 micro lots.\n\nThe critical point is that your position size changes with every trade because your stop loss distance varies. A trade with a 15-pip stop will have a larger position size than a trade with a 50-pip stop, but both risk exactly the same dollar amount. This ensures consistent risk exposure regardless of the setup. Never adjust your stop loss to fit a desired position size; always determine the correct stop loss first based on market structure, then calculate the appropriate position size.",
+        bullets: [
+          "Position Size = Account Risk / (Stop Loss in pips x Pip Value)",
+          "Always determine stop loss placement first, then calculate position size",
+          "Tighter stops = larger position size; wider stops = smaller position size",
+          "The dollar risk remains constant regardless of stop loss distance",
+          "Use a position size calculator or spreadsheet to eliminate calculation errors"
+        ]
+      },
+      {
+        title: "Building a Risk Management Framework",
+        content: "Individual trade risk is only one component of a complete risk management framework. Professional traders also implement daily loss limits, weekly loss limits, and maximum drawdown thresholds. A common framework is: 1-2% risk per trade, 3-5% maximum daily loss, 8-10% maximum weekly loss, and a 15-20% maximum drawdown trigger that forces the trader to stop and reassess.\n\nCorrelation risk is another factor many traders overlook. If you have three open positions on EUR/USD, GBP/USD, and AUD/USD, all three are effectively USD trades. If the dollar strengthens unexpectedly, all three positions lose simultaneously. Your effective risk is not 3 x 1% = 3%; it is closer to 3% concentrated in a single direction. Managing correlation ensures that a single market event cannot destroy your account.\n\nThe psychological component of risk management cannot be overstated. When you know exactly how much you can lose on any trade and you have defined maximum loss limits, you trade with clarity and confidence. Fear disappears because you have already accepted the worst-case scenario. This mental freedom allows you to execute your trading plan without hesitation, which is ultimately what separates profitable traders from the rest.",
+        bullets: [
+          "Daily loss limit: 3-5% of account equity",
+          "Weekly loss limit: 8-10% of account equity",
+          "Maximum drawdown threshold: 15-20% triggers mandatory review",
+          "Monitor correlation risk across open positions",
+          "Pre-defined risk rules eliminate emotional decision-making during trades"
+        ]
+      },
       {
         title: "Fixed Fractional vs. Fixed Dollar Risk",
         content: "Position sizing is arguably the most important aspect of trading, yet it receives far less attention than entry strategies. There are two primary approaches to position sizing: fixed fractional and fixed dollar risk. Understanding the strengths and weaknesses of each approach is essential for long-term capital preservation and growth.\n\nFixed fractional position sizing means risking a set percentage of your account on every trade. If you risk 1% per trade on a $10,000 account, you risk $100. If your account grows to $15,000, you risk $150. If it drops to $8,000, you risk $80. The position size adjusts automatically with your account balance. This method compounds gains during winning periods and reduces exposure during drawdowns, making it the mathematically optimal approach for long-term growth.\n\nFixed dollar risk means risking the same dollar amount regardless of account size. You might risk $100 per trade whether your account is $5,000 or $50,000. This approach is simpler psychologically because the dollar amount at risk is constant, but it has a significant flaw: as your account grows, the percentage risk shrinks (reducing compounding), and if your account shrinks, the percentage risk increases (accelerating drawdowns). For these reasons, fixed fractional is the preferred method among professional traders.",
@@ -1843,53 +1781,236 @@ export const EDUCATION_LESSONS: Lesson[] = [
       }
     ],
     keyPoints: [
-      "Fixed fractional position sizing (percentage of account) is mathematically superior to fixed dollar risk",
+      "Risk no more than 1-2% of your account on any single trade",
+      "Risk-to-reward ratio determines profitability more than win rate",
+      "Positive expectancy = (Win Rate x Avg Win) - (Loss Rate x Avg Loss) > 0",
+      "Always calculate position size based on stop loss distance, not desired profit",
+      "Implement daily, weekly, and maximum drawdown limits as circuit breakers",
+      "Correlation between positions can multiply your actual risk exposure",
+      "Fixed fractional position sizing is mathematically superior to fixed dollar risk",
       "Scale in only with confirmation, never into losing positions; scale out at multiple targets",
       "Moving stop to break even too quickly erodes your edge - wait for structural justification",
-      "Partial profit strategies (thirds or 50/50 method) lock in gains while capturing runners",
       "Drawdown recovery is asymmetric - protecting capital is more important than maximizing entries"
     ],
     commonMistakes: [
+      "Risking 5-10% per trade because the setup looks perfect",
+      "Moving stop losses wider to avoid being stopped out, increasing risk beyond the plan",
+      "Ignoring risk-to-reward and focusing solely on win rate",
+      "Using the same lot size on every trade regardless of stop loss distance",
+      "Failing to account for correlation when holding multiple positions in the same direction",
       "Risking different percentages on different trades based on 'confidence level'",
       "Moving stop loss to break even after only 10-15 pips of favorable movement",
       "Adding to losing positions (averaging down) hoping they will recover",
-      "Using fixed dollar risk which fails to compound gains or reduce drawdown exposure",
       "Not understanding drawdown mathematics and overestimating recovery ability"
     ],
-    relatedLessons: [1, 5, 14, 17, 20],
+    relatedLessons: [2, 11, 15, 16, 19],
     quiz: [
       {
         id: 1,
+        question: "On a $20,000 account using the 1% rule, what is the maximum dollar risk per trade?",
+        options: ["$100", "$200", "$500", "$2,000"],
+        correctAnswer: 1,
+        explanation: "The 1% rule means risking 1% of your total account per trade. 1% of $20,000 = $200. This ensures that even a string of consecutive losses will not critically damage your account."
+      },
+      {
+        id: 2,
+        question: "A trader risks 30 pips with a target of 90 pips. What is the risk-to-reward ratio?",
+        options: ["1:1", "1:2", "1:3", "3:1"],
+        correctAnswer: 2,
+        explanation: "Risk-to-reward is calculated by dividing the target by the risk: 90 / 30 = 3. The ratio is 1:3, meaning for every 1 unit of risk, the potential reward is 3 units. At this ratio, you only need to win 25% of trades to break even."
+      },
+      {
+        id: 3,
+        question: "Why is a 50% drawdown particularly dangerous?",
+        options: ["It triggers margin calls", "You need a 100% gain to recover", "Your broker closes your account", "It means you have no edge"],
+        correctAnswer: 1,
+        explanation: "A 50% drawdown requires a 100% gain just to return to breakeven. If your account drops from $10,000 to $5,000, you need to double the remaining $5,000 to get back to $10,000. This asymmetry makes large drawdowns extremely difficult to recover from."
+      },
+      {
+        id: 4,
         question: "What is the advantage of fixed fractional position sizing over fixed dollar risk?",
         options: ["Fixed fractional is simpler to calculate", "Fixed fractional automatically compounds gains and reduces exposure during drawdowns", "Fixed dollar risk never causes drawdowns", "There is no difference between the two methods"],
         correctAnswer: 1,
         explanation: "Fixed fractional position sizing adjusts automatically: it increases position size as your account grows (compounding) and decreases it during drawdowns (protecting capital). Fixed dollar risk does neither, making it mathematically inferior for long-term growth."
       },
       {
-        id: 2,
+        id: 5,
         question: "When should you move your stop loss to break even?",
         options: ["Immediately after entry", "After 10 pips of favorable movement", "After reaching 1:1 R:R or a new structural point in your direction", "You should never move your stop"],
         correctAnswer: 2,
         explanation: "Moving to break even should wait until a logical justification exists: after achieving 1:1 R:R, after a new BOS in your direction, or after the first partial profit target. Moving too quickly causes unnecessary breakeven exits on trades that would have been winners."
+      }
+    ],
+    diagrams: ["risk-reward"]
+  },
+  {
+    id: 15,
+    title: "Trade Management: Rules, Not Emotion",
+    description: "Learn the systematic approach to managing open trades. From partial exits to breakeven logic to knowing when to let a trade breathe - trade management is where discipline separates professionals from amateurs.",
+    category: "strategies",
+    difficulty: "Advanced",
+    duration: "25 min",
+    phaseId: 5,
+    order: 2,
+    accessTier: "PRO",
+    requiredScore: 70,
+    prerequisite: 14,
+    sections: [
+      {
+        title: "Partial Exits: When and How",
+        content: "Partial exits are one of the most powerful trade management tools, but only when executed according to predefined rules rather than emotional impulses. The purpose of taking partial profits is to lock in gains at logical levels while allowing the remaining position to capture larger moves. This creates a balance between certainty (the locked profit) and opportunity (the remaining runner).\n\nThe most effective partial exit strategy follows a structured approach. Take your first partial at 1:1 risk-to-reward or at the first structural target - whichever comes first. This first partial should close 30-50% of your position and should trigger the move of your stop loss to breakeven on the remaining position. Your second partial, if applicable, targets the next structural level or 2:1 R:R. The final portion runs with a trailing stop behind structural points in your direction.\n\nThe critical rule is this: never take partials based on fear. If price pulls back slightly after you enter and you feel the urge to close part of the position 'just in case,' that is fear, not management. Partial exits should only occur at predetermined levels that were identified BEFORE the trade was entered. If your plan says 'partial at 1:1,' then you take the partial at 1:1 - not at 0.5:1 because you are nervous, and not at 1.5:1 because you got greedy and moved the target. Discipline in partial execution is what makes this tool profitable over the long run.\n\nThe mathematics support partial exits. If you take 50% off at 1:1 and your stop on the remaining 50% is at breakeven, you have locked in 0.5R of profit with zero risk on the remaining position. Even if the remaining position gets stopped at breakeven, you still made 0.5R on the trade. If it runs to 3:1, your total trade profit is 0.5R (from the first half) + 1.5R (from the second half at 3:1) = 2R total. This is superior to an all-or-nothing approach in terms of consistency and psychological sustainability.",
+        bullets: [
+          "Take first partial at 1:1 R:R or first structural target (30-50% of position)",
+          "Move stop to breakeven after first partial is taken",
+          "Second partial at next structural level or 2:1 R:R",
+          "Final portion trails with structural stop behind confirmed swing points",
+          "NEVER take partials based on fear - only at predetermined levels from the trading plan"
+        ]
+      },
+      {
+        title: "Breakeven Logic",
+        content: "Moving your stop loss to breakeven is one of the most commonly discussed trade management techniques - and one of the most commonly misapplied. The breakeven move is a risk management tool designed to eliminate the possibility of a winning trade becoming a loser. It is NOT a comfort tool designed to make you feel better about an open position.\n\nWhen to move to breakeven: after price has reached 1R in your favor (1:1 risk-to-reward), OR after a new structural confirmation in your direction (a new BOS, a higher low forming for longs, a lower high forming for shorts). Both of these conditions indicate that the trade is working and that there is structural justification for protecting the position. Moving to BE after one of these triggers makes logical sense because the market has confirmed your thesis.\n\nWhen NOT to move to breakeven: immediately after entry, after a minor favorable move of 5-10 pips, or because you 'feel nervous.' Premature breakeven moves are one of the biggest edge killers in trading. Normal price retracements within a winning setup will touch your entry price before continuing to target. If your stop is at breakeven during this natural pullback, you get stopped out of a trade that would have been a winner. Over 100 trades, premature BE moves can reduce your win rate by 10-20%, which destroys the profitability of an otherwise solid system.\n\nThe professional approach treats breakeven as a structural decision, not an emotional one. Your stop should be moved to just beyond the most recent structural low (for longs) or structural high (for shorts) that formed AFTER your entry - not to the exact entry price. This gives the trade structural breathing room while still protecting capital. If no new structure has formed since your entry, your original stop loss is still the correct stop loss.",
+        bullets: [
+          "Move to BE after 1R of favorable movement OR after new structural confirmation",
+          "Do NOT move to BE immediately, out of nervousness, or after only minor favorable movement",
+          "BE is a risk management tool, not a comfort tool - do not use it to reduce anxiety",
+          "Place BE stop beyond the nearest structural point, not at exact entry price",
+          "Premature BE moves can reduce win rate by 10-20% over a large sample of trades"
+        ]
+      },
+      {
+        title: "When NOT to Manage",
+        content: "This may be the most counterintuitive lesson in trade management: sometimes the best management is no management at all. If your setup is valid, your entry was confirmed, your stop loss is structural, and your target is logical - the optimal strategy may be to set the trade and walk away. Over-management is one of the most common ways that traders with good analysis sabotage their own results.\n\nOver-management kills winners. A trader who checks their open trade every five minutes will inevitably see price pull back against them. The natural human response to seeing unrealized profit decrease is to close the trade or move the stop tighter. But these pullbacks are normal within any trending move. An order block entry with a 1:3 target might pull back 50% before continuing to target. If you manage it during that pullback, you close a trade that was always going to work.\n\nThe rules for when NOT to manage are straightforward. If your stop loss is placed beyond a structural level (below the order block, below the swing low, above the breaker block), that stop is correct and should not be moved until new structure forms. If price has not reached your first partial target, there is no reason to take any profit. If the higher timeframe trend is still intact and the structural thesis for your trade remains valid, there is no reason to close the trade.\n\nPractically, this means that after you enter a trade and set your stop loss and targets, you should close the chart and set alerts at your management levels. Check back when price reaches a predetermined level - not every 5 minutes. The traders with the best results are often those who set their trades and then do something else entirely. The edge is in the setup and the rules, not in obsessive monitoring of every tick.",
+        bullets: [
+          "If your stop is structural and thesis is valid, the best management may be no management",
+          "Over-management kills winners by closing trades during normal pullbacks within the move",
+          "Do not move stops or take partials until predetermined levels are reached",
+          "Set alerts at management levels instead of watching every tick",
+          "The edge is in the setup and rules, not in obsessive position monitoring"
+        ]
+      }
+    ],
+    keyPoints: [
+      "Partial exits should be taken at predetermined structural levels, never based on fear",
+      "Moving to breakeven requires structural justification (1R achieved or new structure formed)",
+      "Premature breakeven moves are one of the biggest edge killers in trading",
+      "Over-management kills winners - sometimes the best management is no management",
+      "Set alerts at management levels instead of watching every tick of an open trade",
+      "Trade management rules must be defined BEFORE the trade is entered, not during"
+    ],
+    commonMistakes: [
+      "Taking partial profits based on fear rather than at predetermined structural levels",
+      "Moving stop to breakeven immediately after entry before the trade has room to develop",
+      "Closing winning trades prematurely because of normal price pullbacks within the move",
+      "Checking open trades every few minutes and making emotional management decisions",
+      "Not having predefined management rules and making it up as the trade develops",
+      "Over-tightening stops during the trade, eliminating the space the setup needs to work"
+    ],
+    relatedLessons: [14, 16, 13],
+    quiz: [
+      {
+        id: 1,
+        question: "When should you take partial profits on a trade?",
+        options: ["Whenever you feel nervous about the position", "At predetermined structural levels identified before the trade was entered", "After every 10 pips of favorable movement", "Only when the full target is reached"],
+        correctAnswer: 1,
+        explanation: "Partial profits should only be taken at predetermined levels (such as 1:1 R:R or structural targets) that were identified before the trade was entered. Taking partials based on emotion (fear or nervousness) undermines the systematic approach that generates consistent results."
+      },
+      {
+        id: 2,
+        question: "What is the danger of moving your stop to breakeven too quickly?",
+        options: ["It locks in too much profit", "Normal price pullbacks within a winning trade will stop you out, reducing your win rate by 10-20%", "It makes the trade risk-free", "There is no danger in moving to breakeven quickly"],
+        correctAnswer: 1,
+        explanation: "Premature breakeven moves cause you to be stopped out during normal retracements that occur within winning trades. The price naturally pulls back toward your entry before continuing to target. If your stop is at breakeven during these pullbacks, you lose trades that would have been winners."
       },
       {
         id: 3,
-        question: "How much gain is required to recover from a 50% drawdown?",
-        options: ["50% gain", "75% gain", "100% gain", "150% gain"],
-        correctAnswer: 2,
-        explanation: "A 50% drawdown requires a 100% gain to recover to the original balance. If your account drops from $10,000 to $5,000, you need to double your $5,000 to get back to $10,000. This asymmetry demonstrates why capital preservation through proper risk management is the highest priority."
+        question: "When is the best management strategy 'no management at all'?",
+        options: ["Never - you should always actively manage trades", "When your stop is structural, your thesis is valid, and price hasn't reached management levels", "When you are in profit and want to lock it in", "Only on daily timeframe trades"],
+        correctAnswer: 1,
+        explanation: "When your stop loss is placed beyond a structural level, the higher timeframe trend is intact, and your trade thesis remains valid, the optimal approach is to let the trade run without interference. Over-management kills winners by closing trades during normal pullbacks."
       }
     ]
   },
   {
-    id: 17,
-    title: "The Disciplined Trader: Rules, Routines & Recovery",
-    description: "Build the habits, routines, and mental frameworks that separate consistently profitable traders from those who blow up. Learn how to create a trading plan, maintain discipline, and recover from setbacks.",
+    id: 16,
+    title: "Trading Psychology: Emotional Control vs Systems",
+    description: "Your biggest adversary in trading is not the market, but yourself. This comprehensive lesson covers the psychological traps that destroy accounts, the mental frameworks professionals use, building discipline through routine, and recovery protocols for drawdowns.",
     category: "psychology",
-    difficulty: "Intermediate",
-    duration: "30 min",
-    isFree: false,
+    difficulty: "Beginner",
+    duration: "45 min",
+    phaseId: 6,
+    order: 1,
+    accessTier: "ELITE",
+    requiredScore: 70,
+    prerequisite: 15,
     sections: [
+      {
+        title: "The Psychology of Fear and Greed",
+        content: "Fear and greed are the two dominant emotions that drive financial markets and individual trading decisions. Fear manifests as hesitation to enter valid setups, premature exit of winning trades, widening stop losses to avoid being stopped out, or complete paralysis after a losing streak. Greed manifests as overtrading, overleveraging, chasing trades that have already moved, and refusing to take profits because the trade might go further.\n\nThese emotions are rooted in evolutionary biology. Fear of loss triggers the same fight-or-flight response that protected our ancestors from predators. The pain of losing $100 is psychologically approximately twice as intense as the pleasure of gaining $100, a phenomenon known as loss aversion. This means traders are biologically wired to make poor trading decisions: cutting winners too short (fear of giving back profit) and letting losers run (refusal to accept the pain of a realized loss).\n\nRecognizing these emotional states in real-time is the first step toward mastering them. Professional traders develop self-awareness practices such as checking in with their emotional state before placing trades, maintaining a feelings log alongside their trade journal, and establishing pre-trade checklists that force rational analysis before execution. The goal is not to eliminate emotions, which is impossible, but to prevent them from influencing trading decisions.",
+        bullets: [
+          "Fear causes hesitation, premature exits, and trading paralysis",
+          "Greed drives overtrading, overleveraging, and chasing missed moves",
+          "Loss aversion: the pain of losing feels 2x stronger than the pleasure of gaining",
+          "Emotions are biological responses that cannot be eliminated, only managed",
+          "Self-awareness and pre-trade checklists create a buffer between emotion and action"
+        ],
+        tradingExample: {
+          setup: "A trader identifies a valid short setup on EUR/USD at a key resistance zone with confluence of an order block and bearish divergence",
+          entry: "Despite the valid setup, they hesitate and do not enter because their last three trades were losers. Price drops 80 pips to target without them",
+          management: "Frustrated at missing the move, they enter a revenge long on the next candle with no setup, doubling their usual position size",
+          outcome: "The revenge trade loses 40 pips. The trader has now compounded a psychological problem: they missed a valid setup due to fear, then took an invalid setup due to greed, resulting in a completely avoidable loss"
+        }
+      },
+      {
+        title: "Revenge Trading and Tilt",
+        content: "Revenge trading is the act of entering trades impulsively after a loss in an attempt to recover the lost money quickly. It is one of the most destructive behavioral patterns in trading and has blown more accounts than any single strategy failure. Tilt, borrowed from poker terminology, is the emotional state of frustration and irrationality that leads to revenge trading.\n\nThe psychology behind revenge trading is straightforward: a loss creates emotional pain, and the brain seeks immediate relief by winning back the money. This urgency causes the trader to abandon their plan, increase position sizes, enter trades without proper setups, and take trades on unfamiliar instruments. Each subsequent loss deepens the tilt state, creating a destructive spiral that can liquidate an account in a single session.\n\nThe antidote to revenge trading is structured rules and physical separation from the screen. Effective rules include: stop trading for the day after two consecutive losses, reduce position size by 50% after three losing trades in a week, walk away from the screen for at least 30 minutes after any loss, and never increase position size to recover losses. These rules must be written, posted near your trading station, and treated as inviolable laws, not suggestions.",
+        bullets: [
+          "Revenge trading: impulsive trades taken to recover losses, ignoring the plan",
+          "Tilt creates a destructive spiral of emotional decisions and escalating losses",
+          "The brain seeks immediate relief from loss pain, overriding rational analysis",
+          "Stop trading after 2 consecutive losses or a daily loss limit breach",
+          "Physical separation from the screen is the most effective tilt breaker"
+        ]
+      },
+      {
+        title: "Building Discipline Through Routine",
+        content: "Discipline is not a personality trait; it is a skill built through consistent routines and systems. The most disciplined traders in the world do not rely on willpower to make good decisions. They design environments and workflows that make disciplined behavior the path of least resistance and impulsive behavior difficult to execute.\n\nA professional trading routine typically includes: a pre-market preparation session (reviewing key levels, economic calendar, and overnight developments), a pre-trade checklist that must be completed before any entry, a post-trade review immediately after closing a position, and a daily wrap-up session where all trades are journaled with screenshots and psychological notes. This routine creates structure that replaces emotional decision-making with systematic analysis.\n\nConsistency in execution also means accepting that you will miss valid setups. Not every trade that meets your criteria will be taken because you were not at the screen, or because market conditions changed before you could execute. The disciplined trader accepts missed opportunities without frustration because they know that the market provides new setups every day. Chasing missed moves is a discipline failure that often leads to entering at poor prices with compromised risk-to-reward.",
+        bullets: [
+          "Discipline is a system, not a personality trait; build it through routine",
+          "Pre-market analysis, pre-trade checklist, post-trade review form the core routine",
+          "Design your environment to make impulsive decisions difficult to execute",
+          "Accept missed trades without frustration; the market offers new setups daily",
+          "Consistency in process matters more than consistency in outcomes"
+        ]
+      },
+      {
+        title: "Journaling for Psychological Improvement",
+        content: "A trading journal is the single most powerful tool for psychological improvement. It transforms vague feelings of frustration or confidence into concrete data that can be analyzed and improved upon. Without a journal, you are relying on memory, which is unreliable and biased toward recent events, to evaluate your performance and identify patterns.\n\nAn effective trading journal captures both quantitative and qualitative data. Quantitative data includes: instrument, entry price, stop loss, take profit, position size, risk amount, outcome, and R-multiple. Qualitative data includes: the reason for the trade (what setup did you see?), your emotional state before entering, how you managed the trade, whether you followed your plan, and what you would do differently. The qualitative data is where the psychological insights emerge.\n\nReviewing your journal weekly and monthly reveals patterns that are invisible in real-time. You might discover that you lose money consistently on Mondays, that your win rate drops dramatically when you take more than three trades per day, or that trades taken after a loss have a significantly lower success rate. These insights allow you to create targeted rules that address your specific weaknesses. The best traders treat their journal reviews with the same seriousness as their trading sessions.",
+        bullets: [
+          "Capture both trade data (quantitative) and psychological notes (qualitative)",
+          "Record emotional state, plan adherence, and decision-making quality for each trade",
+          "Weekly and monthly reviews reveal behavioral patterns invisible in real-time",
+          "Data-driven rule creation targets your specific weaknesses and biases",
+          "Treat journal reviews with the same discipline and focus as live trading"
+        ],
+        tradingExample: {
+          setup: "After 3 months of journaling, a trader reviews their data and discovers that trades taken between 2-4 PM (after lunch) have a 28% win rate compared to 55% in the morning session",
+          entry: "They also find that trades entered within 10 minutes of a losing trade have only a 22% win rate, clear evidence of revenge trading",
+          management: "Armed with this data, they implement two rules: no new trades after 2 PM, and a mandatory 30-minute cooling period after any loss",
+          outcome: "Over the next month, their win rate improves from 41% to 52% and their average R-multiple improves from 1.1 to 1.6, simply by eliminating their worst behavioral patterns identified through journaling"
+        }
+      },
+      {
+        title: "Developing a Peak Performance Mindset",
+        content: "Peak performance in trading requires treating it as a professional endeavor, not a gambling hobby. Professional traders approach every trading day with preparation, focus, and detachment from outcomes. They understand that any single trade is statistically irrelevant; what matters is their performance over hundreds and thousands of trades.\n\nProcess-oriented thinking is the hallmark of a peak performance mindset. Instead of evaluating each trade by its profit or loss, evaluate it by how well you executed your plan. A losing trade that was perfectly executed according to your rules is a good trade. A winning trade that violated your plan is a bad trade, even though it made money, because it reinforces undisciplined behavior that will cost you in the long run.\n\nPhysical health directly impacts trading performance. Sleep deprivation impairs cognitive function and emotional regulation. Exercise reduces stress hormones and improves focus. Nutrition affects energy levels and mental clarity. Professional traders treat their physical health as a trading edge because the mind and body are not separate systems. A trader who sleeps 5 hours, skips exercise, and lives on caffeine and processed food is operating at a significant cognitive disadvantage compared to one who prioritizes these fundamentals.",
+        bullets: [
+          "Treat trading as a professional career, not a gambling activity",
+          "Evaluate trades by plan adherence, not by profit or loss",
+          "A losing trade with perfect execution is a good trade; a winning trade that violates rules is bad",
+          "Physical health (sleep, exercise, nutrition) directly impacts cognitive performance",
+          "Detach from individual trade outcomes; focus on statistical edge over large samples"
+        ]
+      },
       {
         title: "Creating a Trading Plan and Sticking to It",
         content: "A trading plan is a comprehensive document that defines every aspect of your trading: what you trade, when you trade, how you enter, how you manage risk, and under what conditions you stop trading. It transforms trading from an emotional, impulsive activity into a systematic, rules-based process. Without a plan, you are not trading - you are gambling.\n\nYour trading plan should cover the following elements at minimum: the markets and pairs you trade, the sessions and kill zones you operate within, your multi-timeframe analysis framework, your specific entry criteria (including confluences required), your position sizing method, your stop loss and take profit rules, your maximum daily and weekly loss limits, and your criteria for stepping away from the screen.\n\nSticking to the plan is harder than creating it. The market will constantly tempt you to deviate - to take a trade that 'almost' meets your criteria, to skip your stop loss 'just this once,' or to overtrade because you are bored. The solution is to treat your trading plan as a business contract with yourself. Every deviation is a breach of contract that must be logged, reviewed, and addressed. Traders who stick to their plan 90%+ of the time vastly outperform those who treat their plan as optional guidance.",
@@ -1953,52 +2074,80 @@ export const EDUCATION_LESSONS: Lesson[] = [
       }
     ],
     keyPoints: [
+      "Fear and greed are biological responses that must be managed, not eliminated",
+      "Revenge trading after losses is the fastest way to destroy an account",
+      "Discipline comes from structured routines and systems, not willpower",
+      "A trading journal is the most powerful tool for identifying and fixing psychological weaknesses",
+      "Process-oriented thinking evaluates trades by plan adherence, not profit/loss",
+      "Physical health (sleep, exercise, nutrition) directly impacts trading performance",
       "A comprehensive trading plan transforms trading from gambling into a systematic process",
       "Pre-market routines prepare you analytically and psychologically for each session",
       "Daily and weekly loss limits are circuit breakers that prevent catastrophic drawdowns",
-      "Knowing when to step away is as valuable as knowing when to trade",
       "Drawdown recovery protocols should be written in advance and focus on process, not profits"
     ],
     commonMistakes: [
+      "Trading immediately after a loss without a cooling-off period",
+      "Increasing position size to recover losses (revenge trading)",
+      "Skipping the trading journal because it feels like unnecessary work",
+      "Evaluating trade quality by outcome rather than plan adherence",
+      "Neglecting physical health and expecting peak cognitive performance",
       "Creating a trading plan but treating it as optional when emotions take over",
       "Skipping the pre-market routine and jumping straight into trading",
       "Trying to make back daily losses by increasing position size or taking extra trades",
       "Not having predefined loss limits and continuing to trade through losing streaks",
       "Attempting to recover from drawdowns by taking higher risk trades"
     ],
-    relatedLessons: [1, 16, 18, 20],
+    relatedLessons: [2, 13, 14, 15, 17, 19],
     quiz: [
       {
         id: 1,
+        question: "What is loss aversion and how does it affect trading?",
+        options: ["Avoiding all trades to prevent losses", "The pain of losing feels approximately 2x stronger than the pleasure of gaining, causing poor decisions", "A strategy that never takes losing trades", "Fear of placing any trades at all"],
+        correctAnswer: 1,
+        explanation: "Loss aversion is a cognitive bias where the psychological pain of losing is roughly twice as powerful as the pleasure of an equivalent gain. This causes traders to cut winners too short (fear of giving back profit) and let losers run (refusing to accept the pain of a realized loss)."
+      },
+      {
+        id: 2,
+        question: "What is the most effective response to a losing streak?",
+        options: ["Increase position size to recover faster", "Switch to a different strategy immediately", "Reduce size, follow your rules, and review your journal", "Stop trading permanently"],
+        correctAnswer: 2,
+        explanation: "During a losing streak, the correct response is to reduce position size (lower the emotional pressure), strictly follow your trading rules, and review your journal to determine if the losses are due to market conditions or execution errors. Increasing size or switching strategies compounds the problem."
+      },
+      {
+        id: 3,
+        question: "When should you consider a losing trade a 'good trade'?",
+        options: ["Never, all losing trades are bad", "When the loss is small", "When the trade was executed perfectly according to your plan", "When the market moved unfairly"],
+        correctAnswer: 2,
+        explanation: "A losing trade is a 'good trade' when it was executed perfectly according to your trading plan. The outcome of any single trade is largely random; what matters is consistent execution of a strategy with positive expectancy over a large sample of trades."
+      },
+      {
+        id: 4,
         question: "What should a trader do after hitting their daily loss limit?",
         options: ["Take one more trade to try to recover", "Reduce position size and continue trading", "Stop trading for the rest of the day - no exceptions", "Switch to a different currency pair"],
         correctAnswer: 2,
         explanation: "When your daily loss limit is reached, you must stop trading immediately. This is a non-negotiable circuit breaker. The urge to 'make it back' is the most destructive impulse in trading and leads to the emotional spiral that turns manageable losses into account destruction."
       },
       {
-        id: 2,
+        id: 5,
         question: "What should be the primary focus during drawdown recovery?",
         options: ["Making back the lost money as quickly as possible", "Finding a new strategy that wins more", "Process execution quality and plan compliance percentage", "Increasing position size to recover faster"],
         correctAnswer: 2,
         explanation: "During drawdown recovery, the focus should be on execution quality - tracking what percentage of trades follow your plan exactly. When compliance returns to 90%+ and results confirm your edge, you can gradually return to normal trading. Focusing on recovering money leads to desperate, high-risk decisions."
-      },
-      {
-        id: 3,
-        question: "What should a pre-market routine include?",
-        options: ["Only checking which pairs are moving", "Economic calendar review, top-down analysis, and psychological self-assessment", "Watching YouTube trading videos for ideas", "Setting up automated trades based on yesterday's levels"],
-        correctAnswer: 1,
-        explanation: "A professional pre-market routine includes checking the economic calendar for high-impact events, performing top-down multi-timeframe analysis to identify the day's scenarios, and a psychological self-assessment to determine if you are in the right mental state to trade."
       }
     ]
   },
   {
-    id: 18,
+    id: 17,
     title: "Advanced Trading Psychology: Cognitive Biases",
     description: "Identify and overcome the cognitive biases that sabotage even experienced traders. Learn how confirmation bias, recency bias, anchoring, loss aversion, and sunk cost fallacy distort your trading decisions.",
     category: "psychology",
     difficulty: "Advanced",
     duration: "35 min",
-    isFree: false,
+    phaseId: 6,
+    order: 2,
+    accessTier: "ELITE",
+    requiredScore: 70,
+    prerequisite: 16,
     sections: [
       {
         title: "Confirmation Bias in Chart Analysis",
@@ -2082,7 +2231,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Taking profit at 1:1 on every trade because of loss aversion, destroying the R:R ratio",
       "Removing stop losses on losing trades because the unrealized loss already feels too large"
     ],
-    relatedLessons: [1, 17, 19, 20],
+    relatedLessons: [2, 16, 18, 19],
     quiz: [
       {
         id: 1,
@@ -2108,13 +2257,17 @@ export const EDUCATION_LESSONS: Lesson[] = [
     ]
   },
   {
-    id: 19,
+    id: 18,
     title: "Confluence Trading: Stacking the Odds",
     description: "Learn to combine multiple smart money concepts into a unified confluence framework. Understand how to grade trade setups and build a minimum confluence checklist for consistent, high-probability trading.",
     category: "advanced",
     difficulty: "Advanced",
     duration: "40 min",
-    isFree: false,
+    phaseId: 7,
+    order: 1,
+    accessTier: "ELITE",
+    requiredScore: 70,
+    prerequisite: 17,
     sections: [
       {
         title: "What Confluence Means in Trading",
@@ -2199,7 +2352,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Trading C-grade setups with full position size instead of skipping them or reducing risk",
       "Abandoning the confluence approach during slow periods and overtrading to 'stay active'"
     ],
-    relatedLessons: [6, 7, 8, 13, 14, 15],
+    relatedLessons: [4, 8, 11, 13, 19],
     quiz: [
       {
         id: 1,
@@ -2226,13 +2379,17 @@ export const EDUCATION_LESSONS: Lesson[] = [
     diagrams: ["order-block", "fvg", "liquidity-sweep"]
   },
   {
-    id: 20,
+    id: 19,
     title: "Building Your Trading System: From Concepts to Consistency",
     description: "Transform your trading knowledge into a complete, rules-based trading system. Learn backtesting methodology, strategy checklist creation, trade review processes, and the path from demo to funded trading.",
     category: "advanced",
     difficulty: "Advanced",
     duration: "40 min",
-    isFree: false,
+    phaseId: 7,
+    order: 2,
+    accessTier: "ELITE",
+    requiredScore: 70,
+    prerequisite: 18,
     sections: [
       {
         title: "Defining Your Edge with Rules-Based Criteria",
@@ -2256,7 +2413,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
           "Forward test 30-50 trades in demo to validate real-time execution ability"
         ],
         tradingExample: {
-          setup: "A trader develops a system based on lessons 11-19: trade bullish/bearish breakers at OTE levels with FVG confluence during London Kill Zone, enter on 15M CHoCH, risk 1% per trade.",
+          setup: "A trader develops a system based on the curriculum: trade bullish/bearish breakers at OTE levels with FVG confluence during London Kill Zone, enter on 15M CHoCH, risk 1% per trade.",
           entry: "They backtest 150 trades over 6 months of historical EUR/USD data. Results: 58% win rate, average R:R 2.4:1, expectancy 0.78% per trade. Maximum drawdown: 7.2% (7 consecutive losses).",
           management: "They move to forward testing on a demo account for 8 weeks, taking 42 trades. Results: 55% win rate, average R:R 2.2:1, expectancy 0.65% per trade. Maximum drawdown: 5.8%.",
           outcome: "Forward test results are within 15% of backtest results, confirming the system. The trader begins live trading with 0.5% risk per trade, planning to increase to 1% after 30 profitable live trades."
@@ -2317,7 +2474,7 @@ export const EDUCATION_LESSONS: Lesson[] = [
       "Not journaling trades or reviewing performance regularly for continuous improvement",
       "Attempting prop firm evaluations before proving consistency on a personal account"
     ],
-    relatedLessons: [1, 13, 16, 17, 19],
+    relatedLessons: [2, 11, 14, 16, 18],
     quiz: [
       {
         id: 1,
@@ -2344,8 +2501,34 @@ export const EDUCATION_LESSONS: Lesson[] = [
   }
 ];
 
-export function canAccessLesson(lessonId: number, hasFullAccess: boolean): boolean {
+export function canAccessLesson(lessonId: number, userTier: AccessTier): boolean {
   const lesson = EDUCATION_LESSONS.find(l => l.id === lessonId);
   if (!lesson) return false;
-  return lesson.isFree || hasFullAccess;
+  if (lesson.accessTier === "FREE") return true;
+  if (lesson.accessTier === "PRO") return userTier === "PRO" || userTier === "ELITE";
+  if (lesson.accessTier === "ELITE") return userTier === "ELITE";
+  return false;
+}
+
+export function isLessonUnlocked(
+  lessonId: number,
+  completedLessons: Set<number>,
+  quizScores: Map<number, number>
+): boolean {
+  const lesson = EDUCATION_LESSONS.find(l => l.id === lessonId);
+  if (!lesson) return false;
+  if (!lesson.prerequisite) return true;
+  if (!completedLessons.has(lesson.prerequisite)) return false;
+  const prereqScore = quizScores.get(lesson.prerequisite) ?? 0;
+  const prereqLesson = EDUCATION_LESSONS.find(l => l.id === lesson.prerequisite);
+  return prereqScore >= (prereqLesson?.requiredScore ?? 70);
+}
+
+export function getPhaseProgress(
+  phaseId: number,
+  completedLessons: Set<number>
+): { completed: number; total: number; percentage: number } {
+  const phaseLessons = EDUCATION_LESSONS.filter(l => l.phaseId === phaseId);
+  const completed = phaseLessons.filter(l => completedLessons.has(l.id)).length;
+  return { completed, total: phaseLessons.length, percentage: Math.round((completed / phaseLessons.length) * 100) };
 }
