@@ -412,16 +412,20 @@ export default function Journal() {
               <div className="flex items-center justify-between md:justify-end gap-10">
                 <div className="text-right">
                   <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Duration</div>
-                  <div className="text-sm font-mono text-muted-foreground">
-                    {trade.isMT5 ? (
+                  <div className="text-sm font-mono text-muted-foreground" data-testid={`text-duration-${trade.id}`}>
+                    {trade.duration && trade.duration > 0 ? (
                       (() => {
-                        const seconds = trade.duration || 0;
-                        const h = Math.floor(seconds / 3600);
+                        const seconds = trade.duration;
+                        const d = Math.floor(seconds / 86400);
+                        const h = Math.floor((seconds % 86400) / 3600);
                         const m = Math.floor((seconds % 3600) / 60);
-                        const s = seconds % 60;
-                        return `${h}h ${m}m ${s}s`;
+                        if (d > 0) return `${d}d ${h}h ${m}m`;
+                        if (h > 0) return `${h}h ${m}m`;
+                        return `${m}m ${seconds % 60}s`;
                       })()
-                    ) : "Manual"}
+                    ) : (
+                      <span className="text-muted-foreground/50">--</span>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
