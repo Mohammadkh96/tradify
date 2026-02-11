@@ -47,6 +47,7 @@ integrations = ["javascript_openai_ai_integrations:2.0.0", "stripe:2.0.0", "java
 [userenv.shared]
 PAYPAL_CLIENT_ID = "AbHhMwfn29m4CsTUtqTTrTqV27uXxRho4yCUbLX13PDpKXDObCiFKVU6p3koPuoX4-iRoBp1XT3KFOKD"
 PAYPAL_MODE = "live"
+VITE_GA_MEASUREMENT_ID = "G-7BLQCV91T6"
 
 [userenv.development]
 APP_URL = "https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev"
