@@ -41,6 +41,23 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
     <link rel="shortcut icon" href="/favicon.png" />
     
+    <!-- Google Analytics with Consent Mode v2 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7BLQCV91T6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-7BLQCV91T6', {
+        anonymize_ip: true
+      });
+    </script>
+
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

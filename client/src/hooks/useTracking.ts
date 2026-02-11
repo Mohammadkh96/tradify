@@ -29,33 +29,14 @@ export function useTrackingConsent() {
   return { analytics, marketing };
 }
 
-export function initGoogleAnalytics(measurementId: string) {
-  if (!hasAnalyticsConsent()) {
-    console.log("[Tracking] Google Analytics blocked - no consent");
-    return;
-  }
-
-  if (window.gtag) {
-    console.log("[Tracking] Google Analytics already initialized");
-    return;
-  }
-
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-  document.head.appendChild(script);
-
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag() {
-    window.dataLayer!.push(arguments);
-  };
-  window.gtag("js", new Date());
-  window.gtag("config", measurementId, {
-    anonymize_ip: true,
-    cookie_flags: "SameSite=None;Secure",
+function updateGoogleConsent(granted: boolean) {
+  if (!window.gtag) return;
+  
+  const status = granted ? "granted" : "denied";
+  window.gtag("consent", "update", {
+    analytics_storage: status,
   });
-
-  console.log("[Tracking] Google Analytics initialized");
+  console.log(`[Tracking] Google Analytics consent updated to: ${status}`);
 }
 
 export function trackPageView(path: string) {
@@ -126,10 +107,12 @@ export function usePageTracking() {
 export function useTracking() {
   const { analytics, marketing } = useTrackingConsent();
 
-  const initAnalytics = useCallback((measurementId: string) => {
-    if (analytics) {
-      initGoogleAnalytics(measurementId);
-    }
+  useEffect(() => {
+    updateGoogleConsent(analytics);
+  }, [analytics]);
+
+  const initAnalytics = useCallback((_measurementId: string) => {
+    updateGoogleConsent(analytics);
   }, [analytics]);
 
   const initMarketing = useCallback((pixelId: string) => {
