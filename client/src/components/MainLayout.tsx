@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { Navigation, MobileNav } from "./Navigation";
-import { ChatAssistant } from "./ChatAssistant";
 import { FloatingCalculator } from "./FloatingCalculator";
 import { ThemeToggle } from "./ThemeToggle";
 import { OnboardingTour } from "./OnboardingTour";
@@ -20,7 +19,6 @@ export function MainLayout({ children }: MainLayoutProps) {
         </header>
         {children}
       </main>
-      <ChatAssistant />
       <FloatingCalculator />
       <OnboardingTour />
     </div>
