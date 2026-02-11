@@ -55,11 +55,11 @@ const tourSteps: TourStep[] = [
   },
   {
     id: "calculator",
-    title: "Calculators",
-    description: "Discipline tools to quantify risk before you trade. Calculate position sizes, risk-reward ratios, drawdown recovery, and more.",
+    title: "Quick Calculator",
+    description: "Access risk calculators instantly from anywhere. Click the floating calculator button in the bottom-right corner to calculate position sizes, risk-reward ratios, drawdown recovery, and more.",
     icon: Calculator,
-    highlight: "nav-calculator",
-    position: "right",
+    highlight: "button-floating-calculator",
+    position: "left",
   },
   {
     id: "mt5",

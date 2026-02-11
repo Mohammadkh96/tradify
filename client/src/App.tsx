@@ -15,7 +15,6 @@ import CreateStrategy from "@/pages/CreateStrategy";
 import EditStrategy from "@/pages/EditStrategy";
 import StrategyValidator from "@/pages/StrategyValidator";
 import KnowledgeBase from "@/pages/KnowledgeBase";
-import RiskCalculator from "@/pages/RiskCalculator";
 import MT5Bridge from "@/pages/MT5Bridge";
 import Profile from "@/pages/Profile";
 import Checkout from "@/pages/Checkout";
@@ -359,7 +358,7 @@ function Router() {
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <KnowledgeBase />}
       </Route>
       <Route path="/calculator">
-        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <RiskCalculator />}
+        <Redirect to="/dashboard" />
       </Route>
       <Route path="/mt5-bridge">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <MT5Bridge />}

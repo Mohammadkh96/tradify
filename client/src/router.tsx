@@ -18,7 +18,6 @@ import CreateStrategy from "@/pages/CreateStrategy";
 import EditStrategy from "@/pages/EditStrategy";
 import StrategyValidator from "@/pages/StrategyValidator";
 import KnowledgeBase from "@/pages/KnowledgeBase";
-import RiskCalculator from "@/pages/RiskCalculator";
 import MT5Bridge from "@/pages/MT5Bridge";
 import Profile from "@/pages/Profile";
 import Checkout from "@/pages/Checkout";
@@ -432,8 +431,7 @@ function AppRoutes() {
       <Route path="/strategies/:id/edit" element={<ProtectedRoute><EditStrategy /></ProtectedRoute>} />
       <Route path="/strategies/validate" element={<ProtectedRoute><StrategyValidator /></ProtectedRoute>} />
       <Route path="/knowledge-base" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
-      <Route path="/calculator" element={<ProtectedRoute><RiskCalculator /></ProtectedRoute>} />
-      <Route path="/risk" element={<ProtectedRoute><RiskCalculator /></ProtectedRoute>} />
+      
       <Route path="/mt5-bridge" element={<ProtectedRoute><MT5Bridge /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
