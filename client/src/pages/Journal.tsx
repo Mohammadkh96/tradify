@@ -1,5 +1,5 @@
 import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
-import { format, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, parseISO } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, subDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Trash2, History as HistoryIcon, Plus, Calendar, Monitor } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -127,16 +127,17 @@ export default function Journal() {
       if (dateFilter !== "all" && trade.closeTime) {
         const tradeDate = new Date(trade.closeTime);
         const now = new Date();
+        const todayStart = startOfDay(now);
+        const todayEnd = endOfDay(now);
         if (dateFilter === "today") {
-          matchesDate = isWithinInterval(tradeDate, { start: startOfDay(now), end: endOfDay(now) });
+          const tradeDateLocal = new Date(tradeDate.getTime());
+          const localDateStr = format(tradeDateLocal, 'yyyy-MM-dd');
+          const todayStr = format(now, 'yyyy-MM-dd');
+          matchesDate = localDateStr === todayStr;
         } else if (dateFilter === "7days") {
-          matchesDate = isWithinInterval(tradeDate, { start: subDays(now, 7), end: endOfDay(now) });
+          matchesDate = tradeDate >= subDays(todayStart, 7) && tradeDate <= todayEnd;
         } else if (dateFilter === "30days") {
-          matchesDate = isWithinInterval(tradeDate, { start: subDays(now, 30), end: endOfDay(now) });
-        } else if (dateFilter === "week") {
-          matchesDate = isWithinInterval(tradeDate, { start: startOfWeek(now), end: endOfDay(now) });
-        } else if (dateFilter === "month") {
-          matchesDate = isWithinInterval(tradeDate, { start: startOfMonth(now), end: endOfDay(now) });
+          matchesDate = tradeDate >= subDays(todayStart, 30) && tradeDate <= todayEnd;
         } else if (dateFilter === "custom" && customStartDate && customEndDate) {
           const start = startOfDay(parseISO(customStartDate));
           const end = endOfDay(parseISO(customEndDate));
@@ -256,7 +257,7 @@ export default function Journal() {
               </Link>
             )}
             <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
-              {['all', 'today', '7days', '30days', 'month'].map((filter) => (
+              {['all', 'today', '7days', '30days'].map((filter) => (
                 <Button
                   key={filter}
                   variant={dateFilter === filter ? "default" : "ghost"}
@@ -268,7 +269,7 @@ export default function Journal() {
                   )}
                   data-testid={`filter-${filter}`}
                 >
-                  {filter === 'all' ? 'All Time' : filter === '7days' ? '7 Days' : filter === '30days' ? '30 Days' : filter}
+                  {filter === 'all' ? 'All Time' : filter === 'today' ? 'Today' : filter === '7days' ? '7 Days' : filter === '30days' ? '30 Days' : filter}
                 </Button>
               ))}
               <Popover>
