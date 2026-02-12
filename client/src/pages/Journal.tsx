@@ -94,6 +94,12 @@ export default function Journal() {
       else if (pl < 0) outcome = "Loss";
       else outcome = "Break-even";
       
+      let duration = t.duration || 0;
+      if (duration === 0 && t.openTime && t.closeTime) {
+        const diffMs = new Date(t.closeTime).getTime() - new Date(t.openTime).getTime();
+        if (diffMs > 0) duration = Math.floor(diffMs / 1000);
+      }
+      
       return {
         id: t.id,
         ticket: t.ticket,
@@ -102,14 +108,21 @@ export default function Journal() {
         timeframe: "MT5",
         createdAt: t.openTime,
         closeTime: t.closeTime,
-        duration: t.duration,
+        duration,
         outcome,
         netPl: pl,
         riskReward: "N/A",
         notes: t.notes || `Ticket: ${t.ticket}`,
         tags: t.tags || [],
         source: "MT5",
-        isMT5: true
+        isMT5: true,
+        volume: t.volume,
+        entryPrice: t.entryPrice || t.entry_price,
+        exitPrice: t.exitPrice || t.exit_price,
+        commission: t.commission ? parseFloat(t.commission) : 0,
+        swap: t.swap ? parseFloat(t.swap) : 0,
+        sl: t.sl,
+        tp: t.tp,
       };
     });
 
@@ -367,86 +380,126 @@ export default function Journal() {
 
         <div className="space-y-3">
           {filteredTrades.map((trade: any) => (
-            <div key={trade.id} className="bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-emerald-500/30 transition-colors group relative">
+            <div key={trade.id} className="bg-card border border-border rounded-xl p-5 hover:border-emerald-500/30 transition-colors group relative">
               <button 
                 onClick={() => deleteTrade.mutate(trade.id)}
                 className="absolute top-2 right-2 p-1.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500 hover:text-white z-10"
               >
                 <Trash2 size={14} />
               </button>
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs border",
-                  trade.outcome === "Win" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                )}>
-                  {trade.pair.substring(0, 3)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-black text-foreground group-hover:text-emerald-400 transition-colors">{trade.pair}</span>
-                    <span className={cn(
-                      "text-[9px] font-black px-1.5 py-0.5 rounded border uppercase",
-                      trade.direction === "Long" || trade.direction === "Buy" ? "text-emerald-500 border-emerald-500/20" : "text-rose-500 border-rose-500/20"
-                    )}>
-                      {trade.direction}
-                    </span>
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs border shrink-0",
+                    trade.outcome === "Win" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : trade.outcome === "Loss" ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : "bg-muted text-muted-foreground border-border"
+                  )}>
+                    {trade.pair.substring(0, 3)}
                   </div>
-                  <div className="flex flex-col gap-2">
-                  <div className="text-[10px] text-muted-foreground font-mono mt-0.5 uppercase flex items-center gap-2">
-                    {trade.source === "MT5" ? <span className="text-sky-500 font-bold">MT5 SYNCED</span> : <span className="text-muted-foreground">MANUAL</span>}
-                    {trade.ticket && <span className="text-muted-foreground/50 bg-muted/50 px-1 rounded">#{trade.ticket}</span>}
-                  </div>
-                  {trade.tags && trade.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {trade.tags.map((tag: string) => (
-                        <span key={tag} className="text-[8px] px-1.5 py-0.5 bg-background text-muted-foreground border border-border rounded uppercase font-bold">
-                          {tag}
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-lg font-black text-foreground group-hover:text-emerald-400 transition-colors">{trade.pair}</span>
+                      <span className={cn(
+                        "text-[9px] font-black px-1.5 py-0.5 rounded border uppercase",
+                        trade.direction === "Long" || trade.direction === "Buy" ? "text-emerald-500 border-emerald-500/20" : "text-rose-500 border-rose-500/20"
+                      )}>
+                        {trade.direction}
+                      </span>
+                      {trade.volume && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-border text-muted-foreground uppercase">
+                          {trade.volume} lots
                         </span>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between md:justify-end gap-10">
-                <div className="text-right">
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Duration</div>
-                  <div className="text-sm font-mono text-muted-foreground" data-testid={`text-duration-${trade.id}`}>
-                    {trade.duration && trade.duration > 0 ? (
-                      (() => {
-                        const seconds = trade.duration;
-                        const d = Math.floor(seconds / 86400);
-                        const h = Math.floor((seconds % 86400) / 3600);
-                        const m = Math.floor((seconds % 3600) / 60);
-                        if (d > 0) return `${d}d ${h}h ${m}m`;
-                        if (h > 0) return `${h}h ${m}m`;
-                        return `${m}m ${seconds % 60}s`;
-                      })()
-                    ) : (
-                      <span className="text-muted-foreground/50">--</span>
+                    <div className="text-[10px] text-muted-foreground font-mono mt-0.5 uppercase flex items-center gap-2 flex-wrap">
+                      {trade.source === "MT5" ? <span className="text-sky-500 font-bold">MT5 SYNCED</span> : <span className="text-muted-foreground">MANUAL</span>}
+                      {trade.ticket && <span className="text-muted-foreground/50 bg-muted/50 px-1 rounded">#{trade.ticket}</span>}
+                    </div>
+                    {trade.tags && trade.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {trade.tags.map((tag: string) => (
+                          <span key={tag} className="text-[8px] px-1.5 py-0.5 bg-background text-muted-foreground border border-border rounded uppercase font-bold">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">P&L</div>
-                  <div className={cn(
-                    "text-xl font-black font-mono",
-                    parseFloat(trade.netPl) >= 0 ? "text-emerald-500" : "text-rose-500"
-                  )}>
-                    {trade.netPl !== 0 ? (trade.netPl > 0 ? `+$${parseFloat(trade.netPl).toFixed(2)}` : `-$${Math.abs(parseFloat(trade.netPl)).toFixed(2)}`) : "$0.00"}
+                
+                <div className="flex items-center justify-between md:justify-end gap-6 lg:gap-10 flex-wrap">
+                  <div className="text-right">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Duration</div>
+                    <div className="text-sm font-mono text-muted-foreground" data-testid={`text-duration-${trade.id}`}>
+                      {trade.duration && trade.duration > 0 ? (
+                        (() => {
+                          const seconds = trade.duration;
+                          const d = Math.floor(seconds / 86400);
+                          const h = Math.floor((seconds % 86400) / 3600);
+                          const m = Math.floor((seconds % 3600) / 60);
+                          if (d > 0) return `${d}d ${h}h ${m}m`;
+                          if (h > 0) return `${h}h ${m}m`;
+                          if (m > 0) return `${m}m ${seconds % 60}s`;
+                          return `${seconds}s`;
+                        })()
+                      ) : (
+                        <span className="text-muted-foreground/50">Instant</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right w-24">
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Status</div>
-                  <div className={cn(
-                    "text-sm font-bold px-3 py-1 rounded-full border",
-                    trade.outcome === "Win" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                  )}>
-                    {trade.outcome}
+                  <div className="text-right">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">P&L</div>
+                    <div className={cn(
+                      "text-xl font-black font-mono",
+                      parseFloat(trade.netPl) >= 0 ? "text-emerald-500" : "text-rose-500"
+                    )}>
+                      {trade.netPl !== 0 ? (trade.netPl > 0 ? `+$${parseFloat(trade.netPl).toFixed(2)}` : `-$${Math.abs(parseFloat(trade.netPl)).toFixed(2)}`) : "$0.00"}
+                    </div>
+                  </div>
+                  <div className="text-right w-24">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Status</div>
+                    <div className={cn(
+                      "text-sm font-bold px-3 py-1 rounded-full border",
+                      trade.outcome === "Win" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : trade.outcome === "Loss" ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : "bg-muted/50 text-muted-foreground border-border"
+                    )}>
+                      {trade.outcome}
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {trade.isMT5 && (
+                <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                  <div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Entry</div>
+                    <div className="text-xs font-mono text-foreground">{trade.entryPrice || '--'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Exit</div>
+                    <div className="text-xs font-mono text-foreground">{trade.exitPrice || '--'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Opened</div>
+                    <div className="text-xs font-mono text-muted-foreground">
+                      {trade.createdAt ? format(new Date(trade.createdAt), 'MMM dd, HH:mm') : '--'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Closed</div>
+                    <div className="text-xs font-mono text-muted-foreground">
+                      {trade.closeTime ? format(new Date(trade.closeTime), 'MMM dd, HH:mm') : '--'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Commission</div>
+                    <div className="text-xs font-mono text-muted-foreground">${(trade.commission || 0).toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Swap</div>
+                    <div className="text-xs font-mono text-muted-foreground">${(trade.swap || 0).toFixed(2)}</div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {filteredTrades.length === 0 && (
