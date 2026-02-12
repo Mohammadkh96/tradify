@@ -969,10 +969,13 @@ export class DatabaseStorage implements IStorage {
 
   async syncMT5HistoryWithAccount(userId: string, accountNumber: string, trades: any[]): Promise<void> {
     console.log(`[MT5 Sync] Syncing history for ${userId} account ${accountNumber}. Count: ${trades.length}`);
+    if (trades.length > 0) {
+      console.log(`[MT5 Sync] Sample trade fields:`, JSON.stringify(Object.keys(trades[0])));
+      console.log(`[MT5 Sync] Sample trade data:`, JSON.stringify(trades[0]));
+    }
     for (const trade of trades) {
       try {
         const ticketStr = trade.ticket.toString();
-        // Check for existing ticket in this account
         const [existing] = await db.select().from(mt5History)
           .where(and(
             eq(mt5History.userId, userId), 
@@ -983,14 +986,26 @@ export class DatabaseStorage implements IStorage {
 
         if (!existing) {
           console.log(`[MT5 Sync] NEW DEAL: Ticket ${ticketStr} for ${userId} account ${accountNumber}`);
-          const openTime = new Date(trade.open_time * 1000);
-          const closeTime = new Date(trade.close_time * 1000);
+          
+          const rawOpenTime = trade.open_time || trade.openTime || trade.time;
+          const rawCloseTime = trade.close_time || trade.closeTime || trade.time;
+          const openTime = typeof rawOpenTime === 'number' ? new Date(rawOpenTime * 1000) : new Date(rawOpenTime);
+          const closeTime = typeof rawCloseTime === 'number' ? new Date(rawCloseTime * 1000) : new Date(rawCloseTime);
+          
+          const entryPrice = (trade.open_price || trade.entry_price || trade.price_open || trade.price || 0).toString();
+          const exitPrice = (trade.close_price || trade.exit_price || trade.price_close || trade.price || 0).toString();
+          
+          const durationSecs = typeof rawCloseTime === 'number' && typeof rawOpenTime === 'number'
+            ? rawCloseTime - rawOpenTime
+            : Math.floor((closeTime.getTime() - openTime.getTime()) / 1000);
           
           const commission = parseFloat(trade.commission || 0);
           const swap = parseFloat(trade.swap || 0);
           const profit = parseFloat(trade.profit || 0);
           const netPlNum = profit + commission + swap;
           const netPl = netPlNum.toFixed(2);
+          
+          console.log(`[MT5 Sync] Trade ${ticketStr}: open=${rawOpenTime} close=${rawCloseTime} entry=${entryPrice} exit=${exitPrice} duration=${durationSecs}s`);
           
           await db.insert(mt5History).values({
             userId,
@@ -999,13 +1014,13 @@ export class DatabaseStorage implements IStorage {
             symbol: trade.symbol,
             direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Buy" : "Sell",
             volume: trade.volume.toString(),
-            entryPrice: trade.price?.toString() || "0",
-            exitPrice: trade.price?.toString() || "0",
+            entryPrice,
+            exitPrice,
             sl: trade.sl?.toString(),
             tp: trade.tp?.toString(),
             openTime,
             closeTime,
-            duration: trade.close_time - trade.open_time,
+            duration: durationSecs,
             grossPl: profit.toString(),
             commission: commission.toString(),
             swap: swap.toString(),
