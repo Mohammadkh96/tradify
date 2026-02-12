@@ -984,29 +984,25 @@ export class DatabaseStorage implements IStorage {
           ))
           .limit(1);
 
+        const rawOpenTime = trade.open_time || trade.openTime || trade.time;
+        const rawCloseTime = trade.close_time || trade.closeTime || trade.time;
+        const openTime = typeof rawOpenTime === 'number' ? new Date(rawOpenTime * 1000) : new Date(rawOpenTime);
+        const closeTime = typeof rawCloseTime === 'number' ? new Date(rawCloseTime * 1000) : new Date(rawCloseTime);
+        
+        const entryPrice = (trade.open_price || trade.entry_price || trade.price_open || trade.price || 0).toString();
+        const exitPrice = (trade.close_price || trade.exit_price || trade.price_close || trade.price || 0).toString();
+        
+        const durationSecs = typeof rawCloseTime === 'number' && typeof rawOpenTime === 'number'
+          ? rawCloseTime - rawOpenTime
+          : Math.floor((closeTime.getTime() - openTime.getTime()) / 1000);
+        
+        const commission = parseFloat(trade.commission || 0);
+        const swap = parseFloat(trade.swap || 0);
+        const profit = parseFloat(trade.profit || 0);
+        const netPlNum = profit + commission + swap;
+        const netPl = netPlNum.toFixed(2);
+
         if (!existing) {
-          console.log(`[MT5 Sync] NEW DEAL: Ticket ${ticketStr} for ${userId} account ${accountNumber}`);
-          
-          const rawOpenTime = trade.open_time || trade.openTime || trade.time;
-          const rawCloseTime = trade.close_time || trade.closeTime || trade.time;
-          const openTime = typeof rawOpenTime === 'number' ? new Date(rawOpenTime * 1000) : new Date(rawOpenTime);
-          const closeTime = typeof rawCloseTime === 'number' ? new Date(rawCloseTime * 1000) : new Date(rawCloseTime);
-          
-          const entryPrice = (trade.open_price || trade.entry_price || trade.price_open || trade.price || 0).toString();
-          const exitPrice = (trade.close_price || trade.exit_price || trade.price_close || trade.price || 0).toString();
-          
-          const durationSecs = typeof rawCloseTime === 'number' && typeof rawOpenTime === 'number'
-            ? rawCloseTime - rawOpenTime
-            : Math.floor((closeTime.getTime() - openTime.getTime()) / 1000);
-          
-          const commission = parseFloat(trade.commission || 0);
-          const swap = parseFloat(trade.swap || 0);
-          const profit = parseFloat(trade.profit || 0);
-          const netPlNum = profit + commission + swap;
-          const netPl = netPlNum.toFixed(2);
-          
-          console.log(`[MT5 Sync] Trade ${ticketStr}: open=${rawOpenTime} close=${rawCloseTime} entry=${entryPrice} exit=${exitPrice} duration=${durationSecs}s`);
-          
           await db.insert(mt5History).values({
             userId,
             mt5AccountId: accountNumber,
@@ -1026,6 +1022,22 @@ export class DatabaseStorage implements IStorage {
             swap: swap.toString(),
             netPl,
           });
+        } else {
+          const needsUpdate = existing.entryPrice === existing.exitPrice && entryPrice !== exitPrice
+            || (existing.duration === 0 || existing.duration === null) && durationSecs > 0
+            || existing.openTime?.getTime() === existing.closeTime?.getTime() && openTime.getTime() !== closeTime.getTime();
+          
+          if (needsUpdate) {
+            await db.update(mt5History)
+              .set({
+                entryPrice,
+                exitPrice,
+                openTime,
+                closeTime,
+                duration: durationSecs,
+              })
+              .where(eq(mt5History.id, existing.id));
+          }
         }
       } catch (err) {
         console.error(`[MT5 Sync] Error syncing trade ${trade.ticket}:`, err);
