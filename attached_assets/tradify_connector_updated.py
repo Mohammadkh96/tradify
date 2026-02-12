@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TRADIFY CONNECTOR v3.0 - MT5 Bridge
+TRADIFY CONNECTOR v3.1 - MT5 Bridge
 Double-click this file to run, or use: python tradify_connector.py
 """
 
@@ -125,23 +125,41 @@ def main():
                         "tp": p.tp
                     })
             
-            # Get history
+            # Get history - pair opening and closing deals by position_id
             start_time = datetime(2020, 1, 1).timestamp()
             history = mt5.history_deals_get(start_time, time.time())
             hist_list = []
             if history:
+                # Build a map of opening deals (entry==0) keyed by position_id
+                open_deals = {}
+                for d in history:
+                    if d.entry == 0 and d.position_id > 0:
+                        open_deals[d.position_id] = d
+
+                # Match closing deals (entry==1) with their opening deal
                 for d in history:
                     if d.entry == 1:
+                        opener = open_deals.get(d.position_id)
+                        if opener:
+                            open_price = opener.price
+                            open_time_sec = opener.time
+                        else:
+                            open_price = d.price
+                            open_time_sec = d.time
+
                         hist_list.append({
                             "ticket": d.ticket,
                             "symbol": d.symbol,
                             "type": d.type,
                             "volume": d.volume,
-                            "price": d.price,
+                            "open_price": open_price,
+                            "close_price": d.price,
                             "profit": d.profit,
                             "commission": d.commission,
                             "swap": d.swap,
-                            "open_time": d.time_msc // 1000,
+                            "sl": opener.sl if opener else 0,
+                            "tp": opener.tp if opener else 0,
+                            "open_time": open_time_sec,
                             "close_time": d.time
                         })
             
