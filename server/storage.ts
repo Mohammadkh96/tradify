@@ -296,7 +296,7 @@ export class DatabaseStorage implements IStorage {
             userId,
             ticket: ticketStr,
             symbol: trade.symbol,
-            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Buy" : "Sell",
+            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Sell" : "Buy",
             volume: trade.volume.toString(),
             entryPrice: trade.price?.toString() || "0",
             exitPrice: trade.price?.toString() || "0",
@@ -1008,7 +1008,7 @@ export class DatabaseStorage implements IStorage {
             mt5AccountId: accountNumber,
             ticket: ticketStr,
             symbol: trade.symbol,
-            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Buy" : "Sell",
+            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Sell" : "Buy",
             volume: trade.volume.toString(),
             entryPrice,
             exitPrice,
@@ -1023,13 +1023,17 @@ export class DatabaseStorage implements IStorage {
             netPl,
           });
         } else {
-          const needsUpdate = existing.entryPrice === existing.exitPrice && entryPrice !== exitPrice
+          const correctDirection = (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Sell" : "Buy";
+          const directionWrong = existing.direction !== correctDirection;
+          const needsUpdate = directionWrong
+            || existing.entryPrice === existing.exitPrice && entryPrice !== exitPrice
             || (existing.duration === 0 || existing.duration === null) && durationSecs > 0
             || existing.openTime?.getTime() === existing.closeTime?.getTime() && openTime.getTime() !== closeTime.getTime();
           
           if (needsUpdate) {
             await db.update(mt5History)
               .set({
+                direction: correctDirection,
                 entryPrice,
                 exitPrice,
                 openTime,
