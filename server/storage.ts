@@ -292,11 +292,19 @@ export class DatabaseStorage implements IStorage {
           const netPlNum = profit + commission + swap;
           const netPl = netPlNum.toFixed(2);
           
+          const ep = parseFloat(trade.price?.toString() || "0");
+          let oldDirection: string;
+          if (trade.direction && typeof trade.direction === "string") {
+            oldDirection = trade.direction.toLowerCase().includes("sell") || trade.direction.toLowerCase().includes("short") ? "Sell" : "Buy";
+          } else {
+            oldDirection = (trade.type === 1 || trade.type === "Sell" || trade.type === "DEAL_TYPE_SELL") ? "Sell" : "Buy";
+          }
+          
           await db.insert(mt5History).values({
             userId,
             ticket: ticketStr,
             symbol: trade.symbol,
-            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Sell" : "Buy",
+            direction: oldDirection,
             volume: trade.volume.toString(),
             entryPrice: trade.price?.toString() || "0",
             exitPrice: trade.price?.toString() || "0",
@@ -1002,13 +1010,26 @@ export class DatabaseStorage implements IStorage {
         const netPlNum = profit + commission + swap;
         const netPl = netPlNum.toFixed(2);
 
+        const entryNum = parseFloat(entryPrice);
+        const exitNum = parseFloat(exitPrice);
+        const priceDiff = exitNum - entryNum;
+
+        let direction: string;
+        if (Math.abs(priceDiff) > 0.000001 && Math.abs(profit) > 0.001) {
+          direction = (priceDiff > 0 && profit > 0) || (priceDiff < 0 && profit < 0) ? "Buy" : "Sell";
+        } else if (trade.direction && typeof trade.direction === "string") {
+          direction = trade.direction.toLowerCase().includes("sell") || trade.direction.toLowerCase().includes("short") ? "Sell" : "Buy";
+        } else {
+          direction = (trade.type === 1 || trade.type === "Sell" || trade.type === "DEAL_TYPE_SELL") ? "Sell" : "Buy";
+        }
+
         if (!existing) {
           await db.insert(mt5History).values({
             userId,
             mt5AccountId: accountNumber,
             ticket: ticketStr,
             symbol: trade.symbol,
-            direction: (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Sell" : "Buy",
+            direction,
             volume: trade.volume.toString(),
             entryPrice,
             exitPrice,
@@ -1023,8 +1044,7 @@ export class DatabaseStorage implements IStorage {
             netPl,
           });
         } else {
-          const correctDirection = (trade.type === 0 || trade.type === "Buy" || trade.type === "DEAL_TYPE_BUY") ? "Sell" : "Buy";
-          const directionWrong = existing.direction !== correctDirection;
+          const directionWrong = existing.direction !== direction;
           const needsUpdate = directionWrong
             || existing.entryPrice === existing.exitPrice && entryPrice !== exitPrice
             || (existing.duration === 0 || existing.duration === null) && durationSecs > 0
@@ -1033,7 +1053,7 @@ export class DatabaseStorage implements IStorage {
           if (needsUpdate) {
             await db.update(mt5History)
               .set({
-                direction: correctDirection,
+                direction,
                 entryPrice,
                 exitPrice,
                 openTime,
