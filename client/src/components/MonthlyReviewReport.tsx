@@ -235,10 +235,22 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
     );
   };
 
+  const normalizeMarkdown = (text: string): string[] => {
+    let normalized = text
+      .replace(/\s*###\s+/g, '\n### ')
+      .replace(/\s*##\s+/g, '\n## ')
+      .replace(/\s*---\s*/g, '\n---\n')
+      .replace(/\s*\*([^*]+)\*\s*$/gm, '\n*$1*');
+
+    normalized = normalized.replace(/(?<=\.)\s+- /g, '\n- ');
+    
+    return normalized.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  };
+
   const renderReviewContent = () => {
     if (!data?.insightText) return null;
     
-    const lines = data.insightText.split('\n');
+    const lines = normalizeMarkdown(data.insightText);
     
     return (
       <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="review-content">

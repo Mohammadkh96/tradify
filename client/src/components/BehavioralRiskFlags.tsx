@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   AlertTriangle, 
   Crown,
@@ -10,7 +12,8 @@ import {
   Activity,
   ChevronRight,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Calendar
 } from "lucide-react";
 import { usePlan } from "@/hooks/usePlan";
 import { Link } from "react-router-dom";
@@ -88,11 +91,25 @@ const FLAG_TYPE_ICONS: Record<string, typeof AlertTriangle> = {
   loss_chasing: TrendingUp,
 };
 
+const PERIOD_OPTIONS = [
+  { value: "today", label: "Today" },
+  { value: "7d", label: "Last 7 Days" },
+  { value: "30d", label: "Last 30 Days" },
+  { value: "month", label: "This Month" },
+  { value: "all", label: "All Time" },
+];
+
 export function BehavioralRiskFlags({ userId }: BehavioralRiskFlagsProps) {
   const { isElite } = usePlan();
+  const [period, setPeriod] = useState("all");
 
   const { data, isLoading, error } = useQuery<BehavioralRisksData>({
-    queryKey: [`/api/behavioral-risks/${userId}`],
+    queryKey: ['/api/behavioral-risks', userId, period],
+    queryFn: async () => {
+      const res = await fetch(`/api/behavioral-risks/${userId}?period=${period}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
     enabled: !!userId && isElite,
     staleTime: 60000,
   });
@@ -193,16 +210,31 @@ export function BehavioralRiskFlags({ userId }: BehavioralRiskFlagsProps) {
     return (
       <Card className="bg-card border-border shadow-2xl" data-testid="behavioral-risks-empty">
         <CardHeader className="border-b border-border bg-muted/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-500/10 rounded-lg">
-              <Shield size={20} className="text-amber-500" />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <Shield size={20} className="text-amber-500" />
+              </div>
+              <div>
+                <CardTitle className="text-foreground uppercase italic tracking-tight font-black flex items-center gap-2">
+                  Behavioral Risk Flags
+                  <Crown size={14} className="text-amber-500" />
+                </CardTitle>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-foreground uppercase italic tracking-tight font-black flex items-center gap-2">
-                Behavioral Risk Flags
-                <Crown size={14} className="text-amber-500" />
-              </CardTitle>
-            </div>
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-[140px]" data-testid="select-risk-period-empty">
+                <Calendar className="h-4 w-4 mr-1" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIOD_OPTIONS.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} data-testid={`select-risk-period-empty-${opt.value}`}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent className="p-6">
@@ -222,7 +254,7 @@ export function BehavioralRiskFlags({ userId }: BehavioralRiskFlagsProps) {
   return (
     <Card className="bg-card border-border shadow-2xl" data-testid="behavioral-risks-container">
       <CardHeader className="border-b border-border bg-muted/20">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-amber-500/10 rounded-lg">
               <Shield size={20} className="text-amber-500" />
@@ -237,7 +269,20 @@ export function BehavioralRiskFlags({ userId }: BehavioralRiskFlagsProps) {
               </CardDescription>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-[140px]" data-testid="select-risk-period">
+                <Calendar className="h-4 w-4 mr-1" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIOD_OPTIONS.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} data-testid={`select-risk-period-${opt.value}`}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {summary.highRisk > 0 && (
               <Badge className="bg-red-500/20 text-red-400 border-red-500/30" data-testid="badge-high-risk-count">
                 {summary.highRisk} High

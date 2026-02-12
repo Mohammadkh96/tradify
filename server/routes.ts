@@ -1770,6 +1770,7 @@ export async function registerRoutes(
     try {
       const { userId } = req.params;
       const sessionUserId = req.session.userId!;
+      const period = (req.query.period as string) || "all";
       
       // Access control: ensure user can only access their own data
       if (userId !== sessionUserId) {
@@ -1808,7 +1809,7 @@ export async function registerRoutes(
       }));
 
       // For volume-based analysis, only use MT5 trades (manual trades don't have lot size)
-      const mt5OnlyTrades = mt5Normalized.sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
+      let mt5OnlyTrades = mt5Normalized.sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
       
       // For general analysis (frequency, timing), include all trades
       const manualNormalized: NormalizedTrade[] = (manualTrades || [])
@@ -1820,8 +1821,27 @@ export async function registerRoutes(
           symbol: t.pair || "Unknown",
         }));
 
-      const allTrades = [...mt5Normalized, ...manualNormalized]
+      let allTrades = [...mt5Normalized, ...manualNormalized]
         .sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
+
+      // Apply date filtering based on period (UTC-based for consistency)
+      if (period !== "all") {
+        const now = new Date();
+        let cutoff: Date;
+        if (period === "today") {
+          cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        } else if (period === "7d") {
+          cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        } else if (period === "30d") {
+          cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        } else if (period === "month") {
+          cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        } else {
+          cutoff = new Date(0);
+        }
+        allTrades = allTrades.filter(t => t.closeTime >= cutoff);
+        mt5OnlyTrades = mt5OnlyTrades.filter(t => t.closeTime >= cutoff);
+      }
 
       if (allTrades.length < 5) {
         return res.json({
