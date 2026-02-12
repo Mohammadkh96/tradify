@@ -230,8 +230,6 @@ def main():
                             "profit": d.profit,
                             "commission": d.commission,
                             "swap": d.swap,
-                            "sl": opener.sl if opener else 0,
-                            "tp": opener.tp if opener else 0,
                             "open_time": opener.time if opener else d.time,
                             "close_time": d.time
                         })

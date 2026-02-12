@@ -157,8 +157,6 @@ def main():
                             "profit": d.profit,
                             "commission": d.commission,
                             "swap": d.swap,
-                            "sl": opener.sl if opener else 0,
-                            "tp": opener.tp if opener else 0,
                             "open_time": open_time_sec,
                             "close_time": d.time
                         })
