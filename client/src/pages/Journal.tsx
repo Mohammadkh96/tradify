@@ -481,13 +481,13 @@ export default function Journal() {
                   <div>
                     <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Opened</div>
                     <div className="text-xs font-mono text-muted-foreground">
-                      {trade.createdAt ? format(new Date(trade.createdAt), 'MMM dd, HH:mm') : '--'}
+                      {trade.createdAt ? format(new Date(trade.createdAt), 'MMM dd, HH:mm:ss') : '--'}
                     </div>
                   </div>
                   <div>
                     <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Closed</div>
                     <div className="text-xs font-mono text-muted-foreground">
-                      {trade.closeTime ? format(new Date(trade.closeTime), 'MMM dd, HH:mm') : '--'}
+                      {trade.closeTime ? format(new Date(trade.closeTime), 'MMM dd, HH:mm:ss') : '--'}
                     </div>
                   </div>
                   <div>
