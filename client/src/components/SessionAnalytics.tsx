@@ -333,9 +333,11 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                       borderRadius: '12px',
                       fontSize: '12px',
                       boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4)',
-                      padding: '10px 14px'
+                      padding: '10px 14px',
+                      color: 'hsl(var(--foreground))'
                     }}
                     labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                     cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                   />
                   <Bar dataKey="pnl" radius={[0, 6, 6, 0]} maxBarSize={28}>
@@ -409,9 +411,11 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                       borderRadius: '12px',
                       fontSize: '12px',
                       boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4)',
-                      padding: '10px 14px'
+                      padding: '10px 14px',
+                      color: 'hsl(var(--foreground))'
                     }}
                     labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                     cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                   />
                   <Bar dataKey="winRate" radius={[0, 6, 6, 0]} maxBarSize={28}>
