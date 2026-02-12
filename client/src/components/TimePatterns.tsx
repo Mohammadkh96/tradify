@@ -333,9 +333,11 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
                       borderRadius: '12px',
                       fontSize: '12px',
                       boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4)',
-                      padding: '10px 14px'
+                      padding: '10px 14px',
+                      color: 'hsl(var(--foreground))'
                     }}
                     labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                     formatter={(value: number, name: string) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'P&L']}
                     labelFormatter={(label) => {
                       const day = shortDayNames.find(d => d.shortName === label);
@@ -389,9 +391,11 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
                       borderRadius: '12px',
                       fontSize: '12px',
                       boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4)',
-                      padding: '10px 14px'
+                      padding: '10px 14px',
+                      color: 'hsl(var(--foreground))'
                     }}
                     labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                     formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']}
                     labelFormatter={(label) => {
                       const day = shortDayNames.find(d => d.shortName === label);
