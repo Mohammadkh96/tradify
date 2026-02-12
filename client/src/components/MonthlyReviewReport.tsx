@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePlan } from "@/hooks/usePlan";
 import { Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import { 
   FileText, 
   Calendar,
@@ -235,57 +236,77 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
     );
   };
 
-  const normalizeMarkdown = (text: string): string[] => {
-    let normalized = text
-      .replace(/\s*###\s+/g, '\n### ')
-      .replace(/\s*##\s+/g, '\n## ')
-      .replace(/\s*---\s*/g, '\n---\n')
-      .replace(/\s*\*([^*]+)\*\s*$/gm, '\n*$1*');
-
-    normalized = normalized.replace(/(?<=\.)\s+- /g, '\n- ');
-    
-    return normalized.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  };
-
   const renderReviewContent = () => {
     if (!data?.insightText) return null;
     
-    const lines = normalizeMarkdown(data.insightText);
-    
     return (
-      <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="review-content">
-        {lines.map((line, i) => {
-          if (line.startsWith('## ')) {
-            return <h2 key={i} className="text-xl font-bold mt-0 mb-4 text-foreground" data-testid={`text-heading-${i}`}>{line.replace('## ', '')}</h2>;
-          }
-          if (line.startsWith('### ')) {
-            return <h3 key={i} className="text-lg font-semibold mt-6 mb-3 text-foreground flex items-center gap-2" data-testid={`text-subheading-${i}`}>
-              {line.includes('Improved') && <TrendingUp className="h-4 w-4 text-green-500" />}
-              {line.includes('Attention') && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-              {line.includes('Behavioral') && <Sparkles className="h-4 w-4 text-primary" />}
-              {line.includes('Best') && <TrendingUp className="h-4 w-4 text-emerald-500" />}
-              {line.replace('### ', '')}
-            </h3>;
-          }
-          if (line.startsWith('- ')) {
-            return <p key={i} className="text-sm text-muted-foreground ml-4 mb-2 flex items-start gap-2">
-              <span className="text-primary mt-1">•</span>
-              <span>{line.replace('- ', '')}</span>
-            </p>;
-          }
-          if (line.startsWith('*') && line.endsWith('*')) {
-            return <p key={i} className="text-xs text-muted-foreground italic mt-4 border-t border-border/50 pt-4" data-testid="text-disclaimer">
-              {line.replace(/\*/g, '')}
-            </p>;
-          }
-          if (line.startsWith('---')) {
-            return <hr key={i} className="my-4 border-border/50" />;
-          }
-          if (line.trim()) {
-            return <p key={i} className="text-sm text-foreground mb-2">{line}</p>;
-          }
-          return null;
-        })}
+      <div className="space-y-1" data-testid="review-content">
+        <ReactMarkdown
+          components={{
+            h1: ({ children }) => (
+              <h2 className="text-xl font-bold mt-0 mb-4 text-foreground">{children}</h2>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-xl font-bold mt-0 mb-4 text-foreground">{children}</h2>
+            ),
+            h3: ({ children }) => {
+              const text = String(children);
+              return (
+                <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground flex items-center gap-2">
+                  {text.includes('Improved') && <TrendingUp className="h-4 w-4 text-green-500" />}
+                  {text.includes('Attention') && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                  {text.includes('Behavioral') && <Sparkles className="h-4 w-4 text-primary" />}
+                  {text.includes('Best') && <TrendingUp className="h-4 w-4 text-emerald-500" />}
+                  {children}
+                </h3>
+              );
+            },
+            h4: ({ children }) => {
+              const text = String(children);
+              return (
+                <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground flex items-center gap-2">
+                  {text.includes('Improved') && <TrendingUp className="h-4 w-4 text-green-500" />}
+                  {text.includes('Attention') && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                  {text.includes('Behavioral') && <Sparkles className="h-4 w-4 text-primary" />}
+                  {text.includes('Best') && <TrendingUp className="h-4 w-4 text-emerald-500" />}
+                  {children}
+                </h3>
+              );
+            },
+            p: ({ children }) => (
+              <p className="text-sm text-foreground mb-2">{children}</p>
+            ),
+            ul: ({ children }) => (
+              <ul className="space-y-1 ml-1">{children}</ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="space-y-1 ml-1">{children}</ol>
+            ),
+            li: ({ children }) => (
+              <li className="text-sm text-muted-foreground ml-4 mb-1 flex items-start gap-2">
+                <span className="text-primary mt-1 shrink-0">•</span>
+                <span>{children}</span>
+              </li>
+            ),
+            hr: () => <hr className="my-4 border-border/50" />,
+            em: ({ children }) => {
+              const text = String(children);
+              if (text.includes('auto-generated') || text.includes('not financial advice') || text.includes('review is')) {
+                return (
+                  <p className="text-xs text-muted-foreground italic mt-4 border-t border-border/50 pt-4" data-testid="text-disclaimer">
+                    {children}
+                  </p>
+                );
+              }
+              return <em>{children}</em>;
+            },
+            strong: ({ children }) => (
+              <strong className="font-semibold text-foreground">{children}</strong>
+            ),
+          }}
+        >
+          {data.insightText}
+        </ReactMarkdown>
       </div>
     );
   };
