@@ -42,7 +42,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Link } from "react-router-dom";
-import { format, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, parseISO, subDays } from "date-fns";
+import { format, startOfWeek, startOfMonth, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useMemo, useCallback } from "react";
@@ -258,20 +258,27 @@ export default function Dashboard() {
     
     const now = new Date();
     
+    const tradeDateUTC = tradeDate.toISOString().slice(0, 10);
+    const nowUTC = now.toISOString().slice(0, 10);
+    
     if (dateFilter === "today") {
-      return isWithinInterval(tradeDate, { start: startOfDay(now), end: endOfDay(now) });
+      return tradeDateUTC === nowUTC;
     } else if (dateFilter === "7days") {
-      return isWithinInterval(tradeDate, { start: subDays(now, 7), end: endOfDay(now) });
+      const cutoff = subDays(new Date(nowUTC + "T00:00:00Z"), 7);
+      return tradeDate >= cutoff && tradeDate <= now;
     } else if (dateFilter === "30days") {
-      return isWithinInterval(tradeDate, { start: subDays(now, 30), end: endOfDay(now) });
+      const cutoff = subDays(new Date(nowUTC + "T00:00:00Z"), 30);
+      return tradeDate >= cutoff && tradeDate <= now;
     } else if (dateFilter === "week") {
-      return isWithinInterval(tradeDate, { start: startOfWeek(now), end: endOfDay(now) });
+      const weekStart = startOfWeek(new Date(nowUTC + "T00:00:00Z"));
+      return tradeDate >= weekStart && tradeDate <= now;
     } else if (dateFilter === "month") {
-      return isWithinInterval(tradeDate, { start: startOfMonth(now), end: endOfDay(now) });
+      const monthStart = startOfMonth(new Date(nowUTC + "T00:00:00Z"));
+      return tradeDate >= monthStart && tradeDate <= now;
     } else if (dateFilter === "custom" && customStartDate && customEndDate) {
-      const start = startOfDay(parseISO(customStartDate));
-      const end = endOfDay(parseISO(customEndDate));
-      return isWithinInterval(tradeDate, { start, end });
+      const start = new Date(customStartDate + "T00:00:00Z");
+      const end = new Date(customEndDate + "T23:59:59.999Z");
+      return tradeDate >= start && tradeDate <= end;
     }
     return true;
   };

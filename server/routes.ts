@@ -1196,28 +1196,17 @@ export async function registerRoutes(
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
-      // Calculate today's stats using client timezone offset for accurate "today" boundary
-      const tzOffset = parseInt(req.query.tzOffset as string) || 0;
-      const nowUtc = Date.now();
-      const userNow = new Date(nowUtc + tzOffset * 60000);
-      const todayStartLocal = new Date(userNow);
-      todayStartLocal.setUTCHours(0, 0, 0, 0);
-      const todayEndLocal = new Date(userNow);
-      todayEndLocal.setUTCHours(23, 59, 59, 999);
-      const todayStartUtc = new Date(todayStartLocal.getTime() - tzOffset * 60000);
-      const todayEndUtc = new Date(todayEndLocal.getTime() - tzOffset * 60000);
+      // Calculate today's stats using UTC date matching (timestamps stored as UTC from Unix epochs)
+      const todayUTC = new Date().toISOString().slice(0, 10);
 
       const todayTrades = sortedTrades.filter(t => {
         const d = new Date(t.date);
-        return d >= todayStartUtc && d <= todayEndUtc;
+        return d.toISOString().slice(0, 10) === todayUTC;
       });
       const todayPl = todayTrades.reduce((sum, t) => sum + t.netPl, 0);
       const todayCount = todayTrades.length;
-      console.log(`[Equity Curve] Total: ${sortedTrades.length} trades (MT5: ${mt5Trades.length}, Manual: ${manualTradesFiltered.length}), Active account: ${activeAccount?.accountNumber || 'none'}, tzOffset: ${tzOffset}min`);
-      console.log(`[Equity Curve] Today (${todayStartUtc.toISOString()} - ${todayEndUtc.toISOString()}): ${todayCount} trades, P&L: $${todayPl.toFixed(2)}`);
-      if (todayTrades.length > 0 && todayTrades.length <= 20) {
-        todayTrades.forEach(t => console.log(`  [Today] ${t.symbol} ${t.source} date=${new Date(t.date).toISOString()} netPl=${t.netPl}`));
-      }
+      console.log(`[Equity Curve] Total: ${sortedTrades.length} trades (MT5: ${mt5Trades.length}, Manual: ${manualTradesFiltered.length}), Active account: ${activeAccount?.accountNumber || 'none'}`);
+      console.log(`[Equity Curve] Today (${todayUTC}): ${todayCount} trades, P&L: $${todayPl.toFixed(2)}`);
 
       // Calculate cumulative P&L
       let cumulativePl = 0;
