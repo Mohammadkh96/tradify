@@ -47,6 +47,7 @@ export async function ensureSchemaColumns() {
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS email_verification_expiry TIMESTAMP;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS has_seen_tour BOOLEAN DEFAULT false;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS founding_member BOOLEAN DEFAULT false;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS founding_member_pro_expiry TIMESTAMP;
     `);
     
     // Create early access signups table if not exists
