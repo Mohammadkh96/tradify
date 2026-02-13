@@ -49,7 +49,7 @@ export default function Pricing() {
   const elitePrice = isFoundingMember ? Math.round(59 * (1 - discountRate)) : 59;
 
   const handleManageSubscription = () => {
-    window.open('https://www.paypal.com/myaccount/billing/subscriptions', '_blank');
+    window.open('https://www.paypal.com/myaccount/autopay', '_blank');
   };
 
   return (
