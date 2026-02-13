@@ -240,10 +240,12 @@ export default function Dashboard() {
   
   // Date filtering helper - define as a callback for useMemo to use
   const isWithinDateRange = (dateStr: string | Date | null) => {
-    if (!dateStr) return true;
     if (dateFilter === "all") return true;
+    if (!dateStr) return false;
     
     const tradeDate = new Date(dateStr);
+    if (isNaN(tradeDate.getTime())) return false;
+    
     const now = new Date();
     
     if (dateFilter === "today") {
