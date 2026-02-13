@@ -1196,6 +1196,22 @@ export async function registerRoutes(
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
+      // Debug: Log today's trades (UTC)
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setUTCHours(23, 59, 59, 999);
+      const todayTrades = sortedTrades.filter(t => {
+        const d = new Date(t.date);
+        return d >= todayStart && d <= todayEnd;
+      });
+      const todayPl = todayTrades.reduce((sum, t) => sum + t.netPl, 0);
+      console.log(`[Equity Curve] Total: ${sortedTrades.length} trades (MT5: ${mt5Trades.length}, Manual: ${manualTradesFiltered.length}), Active account: ${activeAccount?.accountNumber || 'none'}`);
+      console.log(`[Equity Curve] Today (UTC ${todayStart.toISOString()} - ${todayEnd.toISOString()}): ${todayTrades.length} trades, P&L: $${todayPl.toFixed(2)}`);
+      if (todayTrades.length > 0 && todayTrades.length <= 20) {
+        todayTrades.forEach(t => console.log(`  [Today] ${t.symbol} ${t.source} date=${new Date(t.date).toISOString()} netPl=${t.netPl}`));
+      }
+
       // Calculate cumulative P&L
       let cumulativePl = 0;
       const equityCurve = sortedTrades.map(trade => {

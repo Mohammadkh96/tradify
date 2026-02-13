@@ -130,6 +130,46 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Backfill NULL mt5_account_id values to 'default' so unique index works
+    try {
+      const backfillResult = await pool.query(`
+        UPDATE mt5_history SET mt5_account_id = 'default' WHERE mt5_account_id IS NULL
+      `);
+      if (backfillResult.rowCount && backfillResult.rowCount > 0) {
+        console.log(`[Startup] Backfilled ${backfillResult.rowCount} NULL mt5_account_id values`);
+      }
+    } catch (e) {
+      console.log('[Startup] MT5 account_id backfill skipped');
+    }
+
+    // Clean up duplicate MT5 history records (keep highest ID per user/account/ticket)
+    try {
+      const dupResult = await pool.query(`
+        DELETE FROM mt5_history 
+        WHERE id NOT IN (
+          SELECT MAX(id) FROM mt5_history 
+          GROUP BY user_id, mt5_account_id, ticket
+        )
+      `);
+      if (dupResult.rowCount && dupResult.rowCount > 0) {
+        console.log(`[Startup] Cleaned ${dupResult.rowCount} duplicate MT5 history records`);
+      }
+    } catch (e) {
+      console.log('[Startup] MT5 dedup cleanup skipped (table may not exist yet)');
+    }
+
+    // Drop old index if it exists (may have NULL issue), recreate cleanly
+    try {
+      await pool.query(`DROP INDEX IF EXISTS mt5_history_unique_ticket`);
+      await pool.query(`
+        CREATE UNIQUE INDEX mt5_history_unique_ticket 
+        ON mt5_history (user_id, mt5_account_id, ticket)
+      `);
+    } catch (e) {
+      // Index may already exist from a previous run
+      console.log('[Startup] MT5 unique index already exists or creation skipped');
+    }
+
     console.log('Schema columns verified');
   } catch (error) {
     console.error('Schema migration error:', error);

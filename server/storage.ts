@@ -1042,32 +1042,25 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (!existing) {
-          try {
-            await db.insert(mt5History).values({
-              userId,
-              mt5AccountId: accountNumber,
-              ticket: ticketStr,
-              symbol: trade.symbol,
-              direction,
-              volume: trade.volume.toString(),
-              entryPrice,
-              exitPrice,
-              sl: trade.sl?.toString(),
-              tp: trade.tp?.toString(),
-              openTime,
-              closeTime,
-              duration: durationSecs,
-              grossPl: profit.toString(),
-              commission: commission.toString(),
-              swap: swap.toString(),
-              netPl,
-            });
-          } catch (insertErr: any) {
-            if (insertErr?.code === '23505') {
-              continue;
-            }
-            throw insertErr;
-          }
+          const result = await db.insert(mt5History).values({
+            userId,
+            mt5AccountId: accountNumber,
+            ticket: ticketStr,
+            symbol: trade.symbol,
+            direction,
+            volume: trade.volume.toString(),
+            entryPrice,
+            exitPrice,
+            sl: trade.sl?.toString(),
+            tp: trade.tp?.toString(),
+            openTime,
+            closeTime,
+            duration: durationSecs,
+            grossPl: profit.toString(),
+            commission: commission.toString(),
+            swap: swap.toString(),
+            netPl,
+          }).onConflictDoNothing();
         } else {
           const directionWrong = existing.direction !== direction;
           const needsUpdate = directionWrong
