@@ -999,16 +999,31 @@ export class DatabaseStorage implements IStorage {
       console.log(`[MT5 Sync] Sample trade fields:`, JSON.stringify(Object.keys(trades[0])));
       console.log(`[MT5 Sync] Sample trade data:`, JSON.stringify(trades[0]));
     }
+
+    const existingRows = await db.select({
+      id: mt5History.id,
+      ticket: mt5History.ticket,
+      direction: mt5History.direction,
+      entryPrice: mt5History.entryPrice,
+      exitPrice: mt5History.exitPrice,
+      openTime: mt5History.openTime,
+      closeTime: mt5History.closeTime,
+      duration: mt5History.duration,
+    }).from(mt5History)
+      .where(and(eq(mt5History.userId, userId), eq(mt5History.mt5AccountId, accountNumber)));
+    
+    const existingMap = new Map<string, typeof existingRows[0]>();
+    for (const row of existingRows) {
+      existingMap.set(row.ticket, row);
+    }
+
+    let inserted = 0;
+    let updated = 0;
+
     for (const trade of trades) {
       try {
         const ticketStr = trade.ticket.toString();
-        const [existing] = await db.select().from(mt5History)
-          .where(and(
-            eq(mt5History.userId, userId), 
-            eq(mt5History.mt5AccountId, accountNumber),
-            eq(mt5History.ticket, ticketStr)
-          ))
-          .limit(1);
+        const existing = existingMap.get(ticketStr);
 
         const rawOpenTime = trade.open_time || trade.openTime || trade.time;
         const rawCloseTime = trade.close_time || trade.closeTime || trade.time;
@@ -1042,7 +1057,7 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (!existing) {
-          const result = await db.insert(mt5History).values({
+          await db.insert(mt5History).values({
             userId,
             mt5AccountId: accountNumber,
             ticket: ticketStr,
@@ -1061,6 +1076,7 @@ export class DatabaseStorage implements IStorage {
             swap: swap.toString(),
             netPl,
           }).onConflictDoNothing();
+          inserted++;
         } else {
           const directionWrong = existing.direction !== direction;
           const needsUpdate = directionWrong
@@ -1079,11 +1095,15 @@ export class DatabaseStorage implements IStorage {
                 duration: durationSecs,
               })
               .where(eq(mt5History.id, existing.id));
+            updated++;
           }
         }
       } catch (err) {
         console.error(`[MT5 Sync] Error syncing trade ${trade.ticket}:`, err);
       }
+    }
+    if (inserted > 0 || updated > 0) {
+      console.log(`[MT5 Sync] Completed: ${inserted} inserted, ${updated} updated out of ${trades.length} trades`);
     }
   }
 }

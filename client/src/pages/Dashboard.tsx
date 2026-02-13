@@ -62,7 +62,7 @@ type MT5Account = {
 };
 
 export default function Dashboard() {
-  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("today");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [selectedInstrument, setSelectedInstrument] = useState<string>("");
@@ -152,6 +152,12 @@ export default function Dashboard() {
   // Equity curve from cumulative trade P&L (SINGLE SOURCE OF TRUTH)
   const { data: equityCurveData } = useQuery<any[]>({
     queryKey: [`/api/equity-curve/${userId}`],
+    queryFn: async () => {
+      const tzOffset = new Date().getTimezoneOffset() * -1;
+      const res = await fetch(`/api/equity-curve/${userId}?tzOffset=${tzOffset}`, { credentials: "include" });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json();
+    },
     staleTime: 0,
     enabled: !!userId,
     refetchInterval: 30000,
@@ -318,6 +324,19 @@ export default function Dashboard() {
   
   const chartData = filteredEquityCurve;
 
+  const todayPl = useMemo(() => {
+    if (!equityCurveData) return 0;
+    const now = new Date();
+    const dayStart = startOfDay(now);
+    const dayEnd = endOfDay(now);
+    return equityCurveData
+      .filter(point => {
+        const d = new Date(point.date);
+        return isWithinInterval(d, { start: dayStart, end: dayEnd });
+      })
+      .reduce((acc, t) => acc + t.netPl, 0);
+  }, [equityCurveData]);
+
   const stats = [
     { 
       label: "Balance", 
@@ -334,11 +353,11 @@ export default function Dashboard() {
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Period P&L", 
-      value: `$${filteredStats.totalPl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      label: "Today P&L", 
+      value: `$${todayPl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: <DollarSign size={18} />, 
-      subtext: dateFilter === "all" ? "ALL TIME" : dateFilter.toUpperCase(),
-      trend: filteredStats.totalPl >= 0 ? "up" : "down" as "up" | "down"
+      subtext: `${format(new Date(), 'MMM d')} • ${filteredStats.total} trades`,
+      trend: todayPl >= 0 ? "up" : "down" as "up" | "down"
     },
     { 
       label: "Win Rate", 
