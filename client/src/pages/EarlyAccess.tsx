@@ -41,7 +41,7 @@ export default function EarlyAccess() {
   const seoElement = (
     <SEO 
       title="Founding Member Program - Early Access | Tradify"
-      description="Join Tradify's Founding Member program. Get 3 months free Pro access, 30% lifetime discount, influence the roadmap, and earn your permanent founder badge."
+      description="Join Tradify's Founding Member program. Get 1 month free Pro access, 30% lifetime discount, influence the roadmap, and earn your permanent founder badge."
       canonical="https://tradifyapp.com/early-access"
     />
   );

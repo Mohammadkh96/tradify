@@ -236,6 +236,11 @@ export async function registerRoutes(
       const verificationToken = crypto.randomBytes(32).toString("hex");
       const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+      // Founding members get 1 month free Pro access
+      const foundingMemberProExpiry = isFoundingMember 
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+        : null;
+
       const [newUser] = await db.insert(schema.userRole).values({
         userId: normalizedEmail,
         password: hashedPassword,
@@ -244,12 +249,13 @@ export async function registerRoutes(
         country,
         phoneNumber: phoneNumber || null,
         timezone,
-        subscriptionTier: "FREE",
+        subscriptionTier: isFoundingMember ? "PRO" : "FREE",
         emailVerified: false,
         emailVerificationToken: verificationToken,
         emailVerificationExpiry: tokenExpiry,
         hasSeenTour: false,
-        foundingMember: isFoundingMember, // Auto-grant founding member status
+        foundingMember: isFoundingMember,
+        foundingMemberProExpiry: foundingMemberProExpiry,
       }).returning();
 
       // If early access signup exists, update it to link to the user (don't block registration)
@@ -464,6 +470,22 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Not authenticated" });
     }
     const user = await storage.getUserRole(req.session.userId);
+    
+    // Check if founding member free Pro has expired
+    if (user && user.foundingMember && user.foundingMemberProExpiry && 
+        user.subscriptionTier === "PRO") {
+      const hasActiveSubscription = user.subscriptionStatus === "ACTIVE" || user.subscriptionStatus === "active";
+      if (!hasActiveSubscription) {
+        const now = new Date();
+        if (now > new Date(user.foundingMemberProExpiry)) {
+          await db.update(schema.userRole)
+            .set({ subscriptionTier: "FREE", updatedAt: new Date() })
+            .where(eq(schema.userRole.userId, req.session.userId!));
+          user.subscriptionTier = "FREE";
+        }
+      }
+    }
+    
     res.json(user);
   });
 

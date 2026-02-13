@@ -75,7 +75,7 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             <Crown className="h-5 w-5 text-slate-900 shrink-0" />
             <span className="text-slate-900 text-xs sm:text-sm font-bold">
-              <span className="hidden sm:inline">Founding Member Program: </span>3 months FREE Pro + 30% off forever
+              <span className="hidden sm:inline">Founding Member Program: </span>1 month FREE Pro + 30% off forever
             </span>
             <Badge className="bg-slate-900/20 text-slate-900 border-slate-900/30 text-[9px] uppercase tracking-widest animate-pulse shrink-0">
               Limited Spots
@@ -528,7 +528,7 @@ export default function Landing() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             {[
-              { title: "3 Months Free", desc: "Full Pro access at zero cost", icon: <Sparkles className="text-amber-400" size={24} /> },
+              { title: "1 Month Free", desc: "Full Pro access at zero cost", icon: <Sparkles className="text-amber-400" size={24} /> },
               { title: "30% Off Forever", desc: "Permanent lifetime discount", icon: <Target className="text-amber-400" size={24} /> },
               { title: "Feature Influence", desc: "Vote on what gets built next", icon: <Users className="text-amber-400" size={24} /> },
               { title: "Founding Badge", desc: "Exclusive crown badge forever", icon: <Crown className="text-amber-400" size={24} /> }
