@@ -36,7 +36,7 @@ export function setCookiePreferences(prefs: CookiePreferences): void {
 
 export function hasAnalyticsConsent(): boolean {
   const prefs = getCookiePreferences();
-  return prefs?.analytics ?? false;
+  return prefs?.analytics ?? true;
 }
 
 export function hasMarketingConsent(): boolean {

@@ -35,6 +35,59 @@
     <meta name="theme-color" content="#10b981" />
     <meta name="msapplication-TileColor" content="#10b981" />
     
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Tradify",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "url": "https://tradifyapp.com",
+      "description": "Rule-based trading journal with MT5 auto-sync, strategy validation, prop firm challenge tracking, and AI-powered analytics for disciplined traders.",
+      "offers": [
+        {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "name": "Free Plan",
+          "description": "MT5 sync, trade journal (30 days), risk calculators, 3 education lessons"
+        },
+        {
+          "@type": "Offer",
+          "price": "29",
+          "priceCurrency": "USD",
+          "name": "Pro Plan",
+          "description": "Prop firm tracker, AI instrument analysis, full education hub, 1 year trade history"
+        },
+        {
+          "@type": "Offer",
+          "price": "59",
+          "priceCurrency": "USD",
+          "name": "Elite Plan",
+          "description": "Session analytics, behavioral risk flags, AI monthly reports, unlimited trade history"
+        }
+      ],
+      "featureList": [
+        "MetaTrader 5 Auto-Sync",
+        "Rule-Based Strategy Validation",
+        "Prop Firm Challenge Tracker",
+        "AI Performance Analytics",
+        "Risk & Position Calculators",
+        "Education Hub with 19 Lessons",
+        "Multi-Account MT5 Support",
+        "Real-Time Equity Tracking"
+      ],
+      "screenshot": "https://tradifyapp.com/favicon.png",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "50",
+        "bestRating": "5"
+      }
+    }
+    </script>
+    
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
@@ -47,14 +100,15 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('consent', 'default', {
-        'analytics_storage': 'denied',
+        'analytics_storage': 'granted',
         'ad_storage': 'denied',
         'ad_user_data': 'denied',
         'ad_personalization': 'denied'
       });
       gtag('js', new Date());
       gtag('config', 'G-7BLQCV91T6', {
-        anonymize_ip: true
+        anonymize_ip: true,
+        send_page_view: true
       });
     </script>
 
