@@ -121,6 +121,7 @@ export const userRole = pgTable("user_role", {
   emailVerificationExpiry: timestamp("email_verification_expiry"), // Token expiry
   hasSeenTour: boolean("has_seen_tour").default(false), // Onboarding tour completed
   foundingMember: boolean("founding_member").default(false), // Early adopter badge
+  foundingMemberProExpiry: timestamp("founding_member_pro_expiry"), // When founding member free Pro access expires
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
