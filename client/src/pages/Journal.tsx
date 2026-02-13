@@ -1,5 +1,5 @@
 import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
-import { format, isWithinInterval, startOfDay, endOfDay, subDays, parseISO } from "date-fns";
+import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Trash2, History as HistoryIcon, Plus, Calendar, Monitor } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -140,21 +140,20 @@ export default function Journal() {
       if (dateFilter !== "all" && trade.closeTime) {
         const tradeDate = new Date(trade.closeTime);
         const now = new Date();
-        const todayStart = startOfDay(now);
-        const todayEnd = endOfDay(now);
+        const tradeDateUTC = tradeDate.toISOString().slice(0, 10);
+        const nowUTC = now.toISOString().slice(0, 10);
         if (dateFilter === "today") {
-          const tradeDateLocal = new Date(tradeDate.getTime());
-          const localDateStr = format(tradeDateLocal, 'yyyy-MM-dd');
-          const todayStr = format(now, 'yyyy-MM-dd');
-          matchesDate = localDateStr === todayStr;
+          matchesDate = tradeDateUTC === nowUTC;
         } else if (dateFilter === "7days") {
-          matchesDate = tradeDate >= subDays(todayStart, 7) && tradeDate <= todayEnd;
+          const cutoff = subDays(new Date(nowUTC + "T00:00:00Z"), 7);
+          matchesDate = tradeDate >= cutoff && tradeDate <= now;
         } else if (dateFilter === "30days") {
-          matchesDate = tradeDate >= subDays(todayStart, 30) && tradeDate <= todayEnd;
+          const cutoff = subDays(new Date(nowUTC + "T00:00:00Z"), 30);
+          matchesDate = tradeDate >= cutoff && tradeDate <= now;
         } else if (dateFilter === "custom" && customStartDate && customEndDate) {
-          const start = startOfDay(parseISO(customStartDate));
-          const end = endOfDay(parseISO(customEndDate));
-          matchesDate = isWithinInterval(tradeDate, { start, end });
+          const start = new Date(customStartDate + "T00:00:00Z");
+          const end = new Date(customEndDate + "T23:59:59.999Z");
+          matchesDate = tradeDate >= start && tradeDate <= end;
         }
       }
       return matchesSearch && matchesOutcome && matchesDate;
