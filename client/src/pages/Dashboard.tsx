@@ -62,7 +62,7 @@ type MT5Account = {
 };
 
 export default function Dashboard() {
-  const [dateFilter, setDateFilter] = useState<string>("today");
+  const [dateFilter, setDateFilter] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [selectedInstrument, setSelectedInstrument] = useState<string>("");
@@ -150,18 +150,22 @@ export default function Dashboard() {
   });
 
   // Equity curve from cumulative trade P&L (SINGLE SOURCE OF TRUTH)
-  const { data: equityCurveData } = useQuery<any[]>({
+  const { data: equityCurveResponse } = useQuery<{ trades: any[], todayStats: { pl: number, count: number } }>({
     queryKey: [`/api/equity-curve/${userId}`],
     queryFn: async () => {
       const tzOffset = new Date().getTimezoneOffset() * -1;
       const res = await fetch(`/api/equity-curve/${userId}?tzOffset=${tzOffset}`, { credentials: "include" });
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
-      return res.json();
+      const data = await res.json();
+      if (Array.isArray(data)) return { trades: data, todayStats: { pl: 0, count: 0 } };
+      return data;
     },
     staleTime: 0,
     enabled: !!userId,
     refetchInterval: 30000,
   });
+  const equityCurveData = equityCurveResponse?.trades;
+  const todayStats = equityCurveResponse?.todayStats;
 
   const { isPaid: isPro, isElite, canAccess } = usePlan();
 
@@ -324,18 +328,13 @@ export default function Dashboard() {
   
   const chartData = filteredEquityCurve;
 
-  const todayPl = useMemo(() => {
-    if (!equityCurveData) return 0;
-    const now = new Date();
-    const dayStart = startOfDay(now);
-    const dayEnd = endOfDay(now);
-    return equityCurveData
-      .filter(point => {
-        const d = new Date(point.date);
-        return isWithinInterval(d, { start: dayStart, end: dayEnd });
-      })
-      .reduce((acc, t) => acc + t.netPl, 0);
-  }, [equityCurveData]);
+  const formatPl = (value: number) => {
+    const formatted = Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return value < 0 ? `-$${formatted}` : `$${formatted}`;
+  };
+
+  const todayPl = todayStats?.pl ?? 0;
+  const todayTradeCount = todayStats?.count ?? 0;
 
   const stats = [
     { 
@@ -353,11 +352,11 @@ export default function Dashboard() {
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Today P&L", 
-      value: `$${todayPl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      label: "Period P&L", 
+      value: formatPl(filteredStats.totalPl), 
       icon: <DollarSign size={18} />, 
-      subtext: `${format(new Date(), 'MMM d')} • ${filteredStats.total} trades`,
-      trend: todayPl >= 0 ? "up" : "down" as "up" | "down"
+      subtext: `${filteredStats.total} trades`,
+      trend: filteredStats.totalPl >= 0 ? "up" : "down" as "up" | "down"
     },
     { 
       label: "Win Rate", 
