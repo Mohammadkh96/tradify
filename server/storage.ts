@@ -359,9 +359,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]> {
-    return await db.select().from(mt5History)
+    const rows = await db.select().from(mt5History)
       .where(eq(mt5History.userId, userId))
-      .orderBy(desc(mt5History.closeTime));
+      .orderBy(desc(mt5History.closeTime), desc(mt5History.id));
+    const seen = new Map<string, any>();
+    for (const r of rows) {
+      if (!seen.has(r.ticket)) {
+        seen.set(r.ticket, r);
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => 
+      new Date(b.closeTime).getTime() - new Date(a.closeTime).getTime()
+    );
   }
 
   async getDailySnapshots(userId: string): Promise<any[]> {
@@ -970,9 +979,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMT5HistoryByAccount(userId: string, accountNumber: string): Promise<any[]> {
-    return await db.select().from(mt5History)
+    const rows = await db.select().from(mt5History)
       .where(and(eq(mt5History.userId, userId), eq(mt5History.mt5AccountId, accountNumber)))
-      .orderBy(desc(mt5History.closeTime));
+      .orderBy(desc(mt5History.closeTime), desc(mt5History.id));
+    const seen = new Map<string, any>();
+    for (const r of rows) {
+      if (!seen.has(r.ticket)) {
+        seen.set(r.ticket, r);
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => 
+      new Date(b.closeTime).getTime() - new Date(a.closeTime).getTime()
+    );
   }
 
   async syncMT5HistoryWithAccount(userId: string, accountNumber: string, trades: any[]): Promise<void> {
@@ -1024,25 +1042,32 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (!existing) {
-          await db.insert(mt5History).values({
-            userId,
-            mt5AccountId: accountNumber,
-            ticket: ticketStr,
-            symbol: trade.symbol,
-            direction,
-            volume: trade.volume.toString(),
-            entryPrice,
-            exitPrice,
-            sl: trade.sl?.toString(),
-            tp: trade.tp?.toString(),
-            openTime,
-            closeTime,
-            duration: durationSecs,
-            grossPl: profit.toString(),
-            commission: commission.toString(),
-            swap: swap.toString(),
-            netPl,
-          });
+          try {
+            await db.insert(mt5History).values({
+              userId,
+              mt5AccountId: accountNumber,
+              ticket: ticketStr,
+              symbol: trade.symbol,
+              direction,
+              volume: trade.volume.toString(),
+              entryPrice,
+              exitPrice,
+              sl: trade.sl?.toString(),
+              tp: trade.tp?.toString(),
+              openTime,
+              closeTime,
+              duration: durationSecs,
+              grossPl: profit.toString(),
+              commission: commission.toString(),
+              swap: swap.toString(),
+              netPl,
+            });
+          } catch (insertErr: any) {
+            if (insertErr?.code === '23505') {
+              continue;
+            }
+            throw insertErr;
+          }
         } else {
           const directionWrong = existing.direction !== direction;
           const needsUpdate = directionWrong

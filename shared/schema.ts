@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -64,7 +64,7 @@ export const mt5Data = pgTable("mt5_data", {
 export const mt5History = pgTable("mt5_history", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
-  mt5AccountId: text("mt5_account_id"), // Links to mt5_accounts.accountNumber
+  mt5AccountId: text("mt5_account_id"),
   ticket: text("ticket").notNull(),
   symbol: text("symbol").notNull(),
   direction: text("direction").notNull(),
@@ -82,7 +82,9 @@ export const mt5History = pgTable("mt5_history", {
   netPl: text("net_pl").notNull(),
   notes: text("notes"),
   tags: text("tags").array().default([]),
-});
+}, (table) => ({
+  uniqueTicket: uniqueIndex("mt5_history_unique_ticket").on(table.userId, table.mt5AccountId, table.ticket),
+}));
 
 export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {
   id: serial("id").primaryKey(),
