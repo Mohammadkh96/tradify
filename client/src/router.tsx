@@ -439,7 +439,7 @@ function AppRoutes() {
       <Route path="/prop-firm" element={<ProtectedRoute><PropFirmTracker /></ProtectedRoute>} />
       
       {/* Admin Routes */}
-      <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
+      <Route path="/admin" element={<AdminRoute><Navigate to="/admin/overview" replace /></AdminRoute>} />
       <Route path="/admin/overview" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/early-access" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
