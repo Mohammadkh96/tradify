@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { emailService } from './emailService';
 
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_PRO_ANNUAL_PLAN_ID, PAYPAL_ELITE_ANNUAL_PLAN_ID, PAYPAL_MODE } = process.env;
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_PRO_ANNUAL_PLAN_ID, PAYPAL_ELITE_ANNUAL_PLAN_ID, PAYPAL_FM_PRO_PLAN_ID, PAYPAL_FM_ELITE_PLAN_ID, PAYPAL_FM_PRO_ANNUAL_PLAN_ID, PAYPAL_FM_ELITE_ANNUAL_PLAN_ID, PAYPAL_MODE } = process.env;
 const PAYPAL_BASE_URL = PAYPAL_MODE === 'live'
   ? 'https://api-m.paypal.com' 
   : 'https://api-m.sandbox.paypal.com';
@@ -16,18 +16,29 @@ const cachedPlanIds: Record<string, string | null> = {
   ELITE_annual: PAYPAL_ELITE_ANNUAL_PLAN_ID || null,
 };
 
+const foundingMemberPlanIds: Record<string, string | null> = {
+  PRO_monthly: PAYPAL_FM_PRO_PLAN_ID || null,
+  ELITE_monthly: PAYPAL_FM_ELITE_PLAN_ID || null,
+  PRO_annual: PAYPAL_FM_PRO_ANNUAL_PLAN_ID || null,
+  ELITE_annual: PAYPAL_FM_ELITE_ANNUAL_PLAN_ID || null,
+};
+
 const ALL_PLAN_IDS = new Set([
   PAYPAL_PLAN_ID,
   PAYPAL_ELITE_PLAN_ID,
   PAYPAL_PRO_ANNUAL_PLAN_ID,
   PAYPAL_ELITE_ANNUAL_PLAN_ID,
+  PAYPAL_FM_PRO_PLAN_ID,
+  PAYPAL_FM_ELITE_PLAN_ID,
+  PAYPAL_FM_PRO_ANNUAL_PLAN_ID,
+  PAYPAL_FM_ELITE_ANNUAL_PLAN_ID,
 ].filter(Boolean));
 
 function getPlanKeyFromId(planId: string): { tier: PlanTier; period: BillingPeriod } | null {
-  if (planId === cachedPlanIds.ELITE_annual || planId === PAYPAL_ELITE_ANNUAL_PLAN_ID) return { tier: 'ELITE', period: 'annual' };
-  if (planId === cachedPlanIds.PRO_annual || planId === PAYPAL_PRO_ANNUAL_PLAN_ID) return { tier: 'PRO', period: 'annual' };
-  if (planId === cachedPlanIds.ELITE_monthly || planId === PAYPAL_ELITE_PLAN_ID) return { tier: 'ELITE', period: 'monthly' };
-  if (planId === cachedPlanIds.PRO_monthly || planId === PAYPAL_PLAN_ID) return { tier: 'PRO', period: 'monthly' };
+  if (planId === cachedPlanIds.ELITE_annual || planId === PAYPAL_ELITE_ANNUAL_PLAN_ID || planId === PAYPAL_FM_ELITE_ANNUAL_PLAN_ID) return { tier: 'ELITE', period: 'annual' };
+  if (planId === cachedPlanIds.PRO_annual || planId === PAYPAL_PRO_ANNUAL_PLAN_ID || planId === PAYPAL_FM_PRO_ANNUAL_PLAN_ID) return { tier: 'PRO', period: 'annual' };
+  if (planId === cachedPlanIds.ELITE_monthly || planId === PAYPAL_ELITE_PLAN_ID || planId === PAYPAL_FM_ELITE_PLAN_ID) return { tier: 'ELITE', period: 'monthly' };
+  if (planId === cachedPlanIds.PRO_monthly || planId === PAYPAL_PLAN_ID || planId === PAYPAL_FM_PRO_PLAN_ID) return { tier: 'PRO', period: 'monthly' };
   return null;
 }
 
@@ -162,8 +173,13 @@ export class PayPalService {
     return planId;
   }
 
-  async createSubscription(userId: string, returnUrl: string, cancelUrl: string, tier: PlanTier = 'PRO', period: BillingPeriod = 'monthly'): Promise<{ subscriptionId: string; approvalUrl: string; tier: PlanTier; period: BillingPeriod }> {
-    const planId = await this.getOrCreatePlanId(tier, period);
+  async createSubscription(userId: string, returnUrl: string, cancelUrl: string, tier: PlanTier = 'PRO', period: BillingPeriod = 'monthly', isFoundingMember: boolean = false): Promise<{ subscriptionId: string; approvalUrl: string; tier: PlanTier; period: BillingPeriod }> {
+    const planKey = `${tier}_${period}`;
+    const fmPlanId = isFoundingMember ? foundingMemberPlanIds[planKey] : null;
+    const planId = fmPlanId || await this.getOrCreatePlanId(tier, period);
+    if (isFoundingMember && fmPlanId) {
+      console.log(`[PayPal] Using founding member plan for ${tier} ${period}: ${fmPlanId}`);
+    }
     const accessToken = await this.getAccessToken();
     
     const response = await fetch(`${PAYPAL_BASE_URL}/v1/billing/subscriptions`, {

@@ -571,6 +571,9 @@ export async function registerRoutes(
       const validTier = tier === 'ELITE' ? 'ELITE' : 'PRO';
       const validPeriod = period === 'annual' ? 'annual' : 'monthly';
       
+      const user = await storage.getUserRole(userId);
+      const isFoundingMember = user?.foundingMember === true;
+      
       const protocol = req.get('x-forwarded-proto') || req.protocol;
       const host = req.get('host');
       const baseUrl = `${protocol}://${host}`;
@@ -580,7 +583,8 @@ export async function registerRoutes(
         `${baseUrl}/checkout?subscription=success&tier=${validTier}&period=${validPeriod}`,
         `${baseUrl}/checkout?subscription=cancelled`,
         validTier,
-        validPeriod as any
+        validPeriod as any,
+        isFoundingMember
       );
       
       res.json(result);
