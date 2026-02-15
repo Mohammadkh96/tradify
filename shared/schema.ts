@@ -115,6 +115,7 @@ export const userRole = pgTable("user_role", {
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   subscriptionProvider: text("subscription_provider"), // 'stripe' or 'paypal'
+  billingPeriod: text("billing_period"), // 'monthly' or 'annual'
   syncToken: text("sync_token"),
   country: text("country"), // ISO country name or code as per spec
   phoneNumber: text("phone_number"),

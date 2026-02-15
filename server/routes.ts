@@ -567,8 +567,9 @@ export async function registerRoutes(
   app.post("/api/paypal/subscribe", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
-      const { tier = 'PRO' } = req.body;
+      const { tier = 'PRO', period = 'monthly' } = req.body;
       const validTier = tier === 'ELITE' ? 'ELITE' : 'PRO';
+      const validPeriod = period === 'annual' ? 'annual' : 'monthly';
       
       const protocol = req.get('x-forwarded-proto') || req.protocol;
       const host = req.get('host');
@@ -576,9 +577,10 @@ export async function registerRoutes(
       
       const result = await paypalService.createSubscription(
         userId,
-        `${baseUrl}/checkout?subscription=success&tier=${validTier}`,
+        `${baseUrl}/checkout?subscription=success&tier=${validTier}&period=${validPeriod}`,
         `${baseUrl}/checkout?subscription=cancelled`,
-        validTier
+        validTier,
+        validPeriod as any
       );
       
       res.json(result);
@@ -605,6 +607,7 @@ export async function registerRoutes(
         nextBillingTime: details.billing_info?.next_billing_time,
         lastPayment: details.billing_info?.last_payment,
         planName: details.plan_id,
+        billingPeriod: user.billingPeriod || 'monthly',
       });
     } catch (error: any) {
       console.error("Get subscription error:", error);

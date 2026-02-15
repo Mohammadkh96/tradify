@@ -1,23 +1,36 @@
 import { storage } from './storage';
 import { emailService } from './emailService';
 
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_MODE } = process.env;
-// Use PAYPAL_MODE=sandbox to force sandbox mode even in production (for testing)
-// Set PAYPAL_MODE=live when ready for real payments
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_PRO_ANNUAL_PLAN_ID, PAYPAL_ELITE_ANNUAL_PLAN_ID, PAYPAL_MODE } = process.env;
 const PAYPAL_BASE_URL = PAYPAL_MODE === 'live'
   ? 'https://api-m.paypal.com' 
   : 'https://api-m.sandbox.paypal.com';
 
-// Plan types
 export type PlanTier = 'PRO' | 'ELITE';
+export type BillingPeriod = 'monthly' | 'annual';
 
-// Cached plan IDs - use env vars or create on demand
-const cachedPlanIds: { PRO: string | null; ELITE: string | null } = {
-  PRO: PAYPAL_PLAN_ID || null,
-  ELITE: PAYPAL_ELITE_PLAN_ID || null,
+const cachedPlanIds: Record<string, string | null> = {
+  PRO_monthly: PAYPAL_PLAN_ID || null,
+  ELITE_monthly: PAYPAL_ELITE_PLAN_ID || null,
+  PRO_annual: PAYPAL_PRO_ANNUAL_PLAN_ID || null,
+  ELITE_annual: PAYPAL_ELITE_ANNUAL_PLAN_ID || null,
 };
 
-// Plan pricing
+const ALL_PLAN_IDS = new Set([
+  PAYPAL_PLAN_ID,
+  PAYPAL_ELITE_PLAN_ID,
+  PAYPAL_PRO_ANNUAL_PLAN_ID,
+  PAYPAL_ELITE_ANNUAL_PLAN_ID,
+].filter(Boolean));
+
+function getPlanKeyFromId(planId: string): { tier: PlanTier; period: BillingPeriod } | null {
+  if (planId === cachedPlanIds.ELITE_annual || planId === PAYPAL_ELITE_ANNUAL_PLAN_ID) return { tier: 'ELITE', period: 'annual' };
+  if (planId === cachedPlanIds.PRO_annual || planId === PAYPAL_PRO_ANNUAL_PLAN_ID) return { tier: 'PRO', period: 'annual' };
+  if (planId === cachedPlanIds.ELITE_monthly || planId === PAYPAL_ELITE_PLAN_ID) return { tier: 'ELITE', period: 'monthly' };
+  if (planId === cachedPlanIds.PRO_monthly || planId === PAYPAL_PLAN_ID) return { tier: 'PRO', period: 'monthly' };
+  return null;
+}
+
 const PLAN_PRICES: Record<PlanTier, string> = {
   PRO: '29.00',
   ELITE: '59.00',
@@ -132,37 +145,25 @@ export class PayPalService {
     return data.id;
   }
 
-  async getOrCreatePlanId(tier: PlanTier = 'PRO'): Promise<string> {
-    // Return cached plan ID if available
-    if (cachedPlanIds[tier]) {
-      return cachedPlanIds[tier]!;
+  async getOrCreatePlanId(tier: PlanTier = 'PRO', period: BillingPeriod = 'monthly'): Promise<string> {
+    const key = `${tier}_${period}`;
+    if (cachedPlanIds[key]) {
+      return cachedPlanIds[key]!;
     }
     
-    // Check if we have a stored plan ID in env
-    if (tier === 'PRO' && process.env.PAYPAL_PLAN_ID) {
-      cachedPlanIds.PRO = process.env.PAYPAL_PLAN_ID;
-      return cachedPlanIds.PRO;
-    }
-    if (tier === 'ELITE' && process.env.PAYPAL_ELITE_PLAN_ID) {
-      cachedPlanIds.ELITE = process.env.PAYPAL_ELITE_PLAN_ID;
-      return cachedPlanIds.ELITE;
-    }
-    
-    // Create new product and plan
-    console.log(`Creating new PayPal product and billing plan for ${tier}...`);
+    console.log(`Creating new PayPal product and billing plan for ${tier} ${period}...`);
     const productId = await this.createProduct();
     console.log('Created PayPal product:', productId);
     
     const planId = await this.createBillingPlan(productId, tier);
-    console.log(`Created PayPal ${tier} billing plan:`, planId);
-    console.log(`Save this PAYPAL_${tier === 'ELITE' ? 'ELITE_' : ''}PLAN_ID for future use:`, planId);
+    console.log(`Created PayPal ${tier} ${period} billing plan:`, planId);
     
-    cachedPlanIds[tier] = planId;
+    cachedPlanIds[key] = planId;
     return planId;
   }
 
-  async createSubscription(userId: string, returnUrl: string, cancelUrl: string, tier: PlanTier = 'PRO'): Promise<{ subscriptionId: string; approvalUrl: string; tier: PlanTier }> {
-    const planId = await this.getOrCreatePlanId(tier);
+  async createSubscription(userId: string, returnUrl: string, cancelUrl: string, tier: PlanTier = 'PRO', period: BillingPeriod = 'monthly'): Promise<{ subscriptionId: string; approvalUrl: string; tier: PlanTier; period: BillingPeriod }> {
+    const planId = await this.getOrCreatePlanId(tier, period);
     const accessToken = await this.getAccessToken();
     
     const response = await fetch(`${PAYPAL_BASE_URL}/v1/billing/subscriptions`, {
@@ -199,6 +200,7 @@ export class PayPalService {
       subscriptionId: data.id,
       approvalUrl,
       tier,
+      period,
     };
   }
 
@@ -324,13 +326,13 @@ export class PayPalService {
         return false;
       }
 
-      // Determine tier from plan - check which cached plan ID matches
       let determinedTier: PlanTier = tier;
+      let determinedPeriod: BillingPeriod = 'monthly';
       if (details.plan_id) {
-        if (details.plan_id === cachedPlanIds.ELITE || details.plan_id === process.env.PAYPAL_ELITE_PLAN_ID) {
-          determinedTier = 'ELITE';
-        } else {
-          determinedTier = 'PRO';
+        const planInfo = getPlanKeyFromId(details.plan_id);
+        if (planInfo) {
+          determinedTier = planInfo.tier;
+          determinedPeriod = planInfo.period;
         }
       }
 
@@ -340,16 +342,16 @@ export class PayPalService {
           subscriptionProvider: 'paypal',
           subscriptionStatus: details.status.toLowerCase(),
           subscriptionTier: determinedTier,
+          billingPeriod: determinedPeriod,
           paypalSubscriptionId: subscriptionId,
           renewalDate: details.billing_info?.next_billing_time 
             ? new Date(details.billing_info.next_billing_time) 
             : undefined,
         });
         
-        // Send subscription activated email
         const userName = userId.split('@')[0];
         await emailService.sendSubscriptionActivatedEmail(userId, userName, determinedTier);
-        console.log(`Subscription activated for ${userId}, tier: ${determinedTier}, email sent`);
+        console.log(`Subscription activated for ${userId}, tier: ${determinedTier}, period: ${determinedPeriod}, email sent`);
         
         return true;
       }
@@ -368,10 +370,14 @@ export class PayPalService {
     const nextBillingTime = resource.billing_info?.next_billing_time;
     const planId = resource.plan_id;
 
-    // Determine tier from plan ID
     let tier: PlanTier = 'PRO';
-    if (planId === cachedPlanIds.ELITE || planId === process.env.PAYPAL_ELITE_PLAN_ID) {
-      tier = 'ELITE';
+    let period: BillingPeriod = 'monthly';
+    if (planId) {
+      const planInfo = getPlanKeyFromId(planId);
+      if (planInfo) {
+        tier = planInfo.tier;
+        period = planInfo.period;
+      }
     }
 
     console.log(`Subscription activated for user: ${customId}, tier: ${tier}`);
@@ -380,12 +386,12 @@ export class PayPalService {
       await storage.updateUserSubscriptionInfo(customId, {
         subscriptionProvider: 'paypal',
         subscriptionStatus: status?.toLowerCase() || 'active',
-        subscriptionTier: tier, 
+        subscriptionTier: tier,
+        billingPeriod: period,
         paypalSubscriptionId,
         renewalDate: nextBillingTime ? new Date(nextBillingTime) : undefined,
       });
       
-      // Send subscription activated email
       const userName = customId.split('@')[0];
       await emailService.sendSubscriptionActivatedEmail(customId, userName, tier);
     }

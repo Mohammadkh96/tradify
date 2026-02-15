@@ -20,10 +20,20 @@ export interface PlanFeatures {
   propFirmAiWarnings: boolean;
 }
 
+export type BillingPeriod = "monthly" | "annual";
+
+export interface PlanPricing {
+  monthly: number;
+  annual: number;
+  annualMonthly: number; // effective monthly price when billed annually
+  annualSavings: number; // total savings per year
+}
+
 export interface PlanConfig {
   id: PlanTier;
   name: string;
   price: number;
+  pricing: PlanPricing;
   billingPeriod: string;
   description: string;
   features: PlanFeatures;
@@ -96,6 +106,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     id: "FREE",
     name: "Free",
     price: 0,
+    pricing: { monthly: 0, annual: 0, annualMonthly: 0, annualSavings: 0 },
     billingPeriod: "forever",
     description: "Get started with essential trading tools",
     features: PLAN_FEATURES.FREE,
@@ -133,6 +144,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     id: "PRO",
     name: "Pro",
     price: 29,
+    pricing: { monthly: 29, annual: 290, annualMonthly: 24, annualSavings: 58 },
     billingPeriod: "month",
     description: "Advanced analytics for serious traders",
     features: PLAN_FEATURES.PRO,
@@ -165,6 +177,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     id: "ELITE",
     name: "Elite",
     price: 59,
+    pricing: { monthly: 59, annual: 590, annualMonthly: 49, annualSavings: 118 },
     billingPeriod: "month",
     description: "Complete toolkit for professional traders",
     features: PLAN_FEATURES.ELITE,
@@ -183,6 +196,16 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     excludedFeatures: [],
   },
 };
+
+export function getPlanPrice(tier: string | null | undefined, period: BillingPeriod = "monthly"): number {
+  const config = getPlanConfig(tier);
+  if (period === "annual") return config.pricing.annual;
+  return config.pricing.monthly;
+}
+
+export function getFounderPrice(price: number, discountRate: number = 0.30): number {
+  return Math.round(price * (1 - discountRate));
+}
 
 export function getPlanFeatures(tier: string | null | undefined): PlanFeatures {
   const normalizedTier = (tier?.toUpperCase() || "FREE") as PlanTier;

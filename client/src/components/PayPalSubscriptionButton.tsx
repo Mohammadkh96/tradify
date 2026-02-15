@@ -4,26 +4,29 @@ import { Loader2, Crown, Star } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { BillingPeriod } from "@shared/plans";
 
 type PlanTier = 'PRO' | 'ELITE';
 
 interface PayPalSubscriptionButtonProps {
   tier?: PlanTier;
+  period?: BillingPeriod;
 }
 
-export default function PayPalSubscriptionButton({ tier = 'PRO' }: PayPalSubscriptionButtonProps) {
+export default function PayPalSubscriptionButton({ tier = 'PRO', period = 'monthly' }: PayPalSubscriptionButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSubscribe = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/paypal/subscribe", { tier });
+      const response = await apiRequest("POST", "/api/paypal/subscribe", { tier, period });
       const data = await response.json();
       
       if (data.approvalUrl && data.subscriptionId) {
         sessionStorage.setItem('pending_paypal_subscription_id', data.subscriptionId);
         sessionStorage.setItem('pending_paypal_tier', tier);
+        sessionStorage.setItem('pending_paypal_period', period);
         window.location.href = data.approvalUrl;
       } else {
         throw new Error("No approval URL received");
@@ -42,7 +45,16 @@ export default function PayPalSubscriptionButton({ tier = 'PRO' }: PayPalSubscri
   const isElite = tier === 'ELITE';
   const PlanIcon = isElite ? Crown : Star;
   const tierName = isElite ? 'Elite' : 'Pro';
-  const price = isElite ? '$59' : '$29';
+  const isAnnual = period === 'annual';
+  
+  const prices = {
+    PRO: { monthly: 29, annual: 290, annualMonthly: 24 },
+    ELITE: { monthly: 59, annual: 590, annualMonthly: 49 },
+  };
+  
+  const priceDisplay = isAnnual 
+    ? `$${prices[tier].annualMonthly}/mo — $${prices[tier].annual}/yr`
+    : `$${prices[tier].monthly}/mo`;
 
   return (
     <Button
@@ -60,7 +72,7 @@ export default function PayPalSubscriptionButton({ tier = 'PRO' }: PayPalSubscri
       ) : (
         <>
           <SiPaypal className="mr-2 h-4 w-4" />
-          Subscribe to {tierName} ({price}/mo)
+          Subscribe to {tierName} ({priceDisplay})
         </>
       )}
     </Button>

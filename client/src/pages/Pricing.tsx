@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { usePlan } from "@/hooks/usePlan";
 import { useQuery } from "@tanstack/react-query";
-import { PLAN_CONFIGS } from "@shared/plans";
+import { PLAN_CONFIGS, type BillingPeriod } from "@shared/plans";
 import type { UserRole } from "@shared/schema";
 import { SEO } from "@/components/SEO";
+import { useState } from "react";
 
 const features = [
   { name: "MT5 Multi-Account Sync", free: true, pro: true, elite: true },
@@ -41,6 +42,7 @@ export default function Pricing() {
   const { isPro, isElite, isPaid, tier } = usePlan();
   const proConfig = PLAN_CONFIGS.PRO;
   const eliteConfig = PLAN_CONFIGS.ELITE;
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
 
   const { data: user } = useQuery<UserRole>({
     queryKey: ["/api/user"],
@@ -49,8 +51,18 @@ export default function Pricing() {
   const isFoundingMember = user?.foundingMember === true;
   const discountRate = 0.30;
 
-  const proPrice = isFoundingMember ? Math.round(29 * (1 - discountRate)) : 29;
-  const elitePrice = isFoundingMember ? Math.round(59 * (1 - discountRate)) : 59;
+  const isAnnual = billingPeriod === "annual";
+  const proMonthlyPrice = isFoundingMember ? Math.round(proConfig.pricing.monthly * (1 - discountRate)) : proConfig.pricing.monthly;
+  const proAnnualPrice = isFoundingMember ? Math.round(proConfig.pricing.annual * (1 - discountRate)) : proConfig.pricing.annual;
+  const proAnnualMonthly = isFoundingMember ? Math.round(proConfig.pricing.annualMonthly * (1 - discountRate)) : proConfig.pricing.annualMonthly;
+  const eliteMonthlyPrice = isFoundingMember ? Math.round(eliteConfig.pricing.monthly * (1 - discountRate)) : eliteConfig.pricing.monthly;
+  const eliteAnnualPrice = isFoundingMember ? Math.round(eliteConfig.pricing.annual * (1 - discountRate)) : eliteConfig.pricing.annual;
+  const eliteAnnualMonthly = isFoundingMember ? Math.round(eliteConfig.pricing.annualMonthly * (1 - discountRate)) : eliteConfig.pricing.annualMonthly;
+
+  const proDisplayPrice = isAnnual ? proAnnualMonthly : proMonthlyPrice;
+  const eliteDisplayPrice = isAnnual ? eliteAnnualMonthly : eliteMonthlyPrice;
+  const proOriginalMonthly = proConfig.pricing.monthly;
+  const eliteOriginalMonthly = eliteConfig.pricing.monthly;
 
   const handleManageSubscription = () => {
     window.open('https://www.paypal.com/myaccount/autopay', '_blank');
@@ -64,7 +76,7 @@ export default function Pricing() {
         canonical="https://tradifyapp.com/pricing"
       />
       <main className="p-6 lg:p-10 max-w-6xl mx-auto">
-        <header className="text-center mb-16">
+        <header className="text-center mb-10">
           <p className="text-muted-foreground max-w-2xl mx-auto uppercase text-[10px] font-bold tracking-[0.2em] mb-4">
             Not financial advice. Trading involves risk.
           </p>
@@ -84,6 +96,39 @@ export default function Pricing() {
             </div>
           )}
         </header>
+
+        {/* Billing Period Toggle */}
+        <div className="flex justify-center mb-10">
+          <div className="inline-flex items-center bg-card border border-border rounded-xl p-1 shadow-lg" data-testid="billing-toggle">
+            <button
+              onClick={() => setBillingPeriod("monthly")}
+              className={`px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
+                !isAnnual
+                  ? "bg-emerald-500 text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-billing-monthly"
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingPeriod("annual")}
+              className={`px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative ${
+                isAnnual
+                  ? "bg-emerald-500 text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-billing-annual"
+            >
+              Annual
+              <span className={`absolute -top-2.5 -right-2 text-[8px] font-black px-1.5 py-0.5 rounded-full ${
+                isAnnual ? "bg-amber-500 text-white" : "bg-emerald-500/20 text-emerald-500"
+              }`}>
+                SAVE
+              </span>
+            </button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
           {/* Free Plan */}
@@ -134,14 +179,19 @@ export default function Pricing() {
                 <div className="flex items-baseline gap-1">
                   {isFoundingMember ? (
                     <>
-                      <span className="text-4xl font-black text-emerald-500">${proPrice}</span>
-                      <span className="text-lg text-muted-foreground line-through ml-1">$29</span>
+                      <span className="text-4xl font-black text-emerald-500">${proDisplayPrice}</span>
+                      <span className="text-lg text-muted-foreground line-through ml-1">${isAnnual ? proConfig.pricing.annualMonthly : proOriginalMonthly}</span>
                     </>
                   ) : (
-                    <span className="text-4xl font-black text-foreground">$29</span>
+                    <span className="text-4xl font-black text-foreground">${proDisplayPrice}</span>
                   )}
                   <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
                 </div>
+                {isAnnual && (
+                  <p className="text-emerald-500 text-xs font-bold mt-1">
+                    ${isFoundingMember ? proAnnualPrice : proConfig.pricing.annual}/yr — Save ${isFoundingMember ? Math.round(proConfig.pricing.annualSavings * (1 - discountRate)) : proConfig.pricing.annualSavings}/yr
+                  </p>
+                )}
                 {isFoundingMember && (
                   <Badge className="mt-2 bg-amber-500/20 text-amber-500 border-amber-500/30 text-[9px] uppercase tracking-widest">
                     <Crown size={10} className="mr-1" /> Founder Discount
@@ -181,7 +231,7 @@ export default function Pricing() {
                 <Button 
                   className="w-full h-12 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs"
                   data-testid="button-upgrade-pro"
-                  onClick={() => window.location.href = '/checkout?plan=PRO'}
+                  onClick={() => window.location.href = `/checkout?plan=PRO&period=${billingPeriod}`}
                 >
                   Upgrade to Pro
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -204,14 +254,19 @@ export default function Pricing() {
                 <div className="flex items-baseline gap-1">
                   {isFoundingMember ? (
                     <>
-                      <span className="text-4xl font-black text-amber-500">${elitePrice}</span>
-                      <span className="text-lg text-muted-foreground line-through ml-1">$59</span>
+                      <span className="text-4xl font-black text-amber-500">${eliteDisplayPrice}</span>
+                      <span className="text-lg text-muted-foreground line-through ml-1">${isAnnual ? eliteConfig.pricing.annualMonthly : eliteOriginalMonthly}</span>
                     </>
                   ) : (
-                    <span className="text-4xl font-black text-foreground">$59</span>
+                    <span className="text-4xl font-black text-foreground">${eliteDisplayPrice}</span>
                   )}
                   <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
                 </div>
+                {isAnnual && (
+                  <p className="text-amber-500 text-xs font-bold mt-1">
+                    ${isFoundingMember ? eliteAnnualPrice : eliteConfig.pricing.annual}/yr — Save ${isFoundingMember ? Math.round(eliteConfig.pricing.annualSavings * (1 - discountRate)) : eliteConfig.pricing.annualSavings}/yr
+                  </p>
+                )}
                 {isFoundingMember && (
                   <Badge className="mt-2 bg-amber-500/20 text-amber-500 border-amber-500/30 text-[9px] uppercase tracking-widest">
                     <Crown size={10} className="mr-1" /> Founder Discount
@@ -242,7 +297,7 @@ export default function Pricing() {
                 <Button 
                   className="w-full h-12 bg-amber-500 text-white font-black uppercase tracking-[0.15em] text-xs"
                   data-testid="button-upgrade-elite"
-                  onClick={() => window.location.href = '/checkout?plan=ELITE'}
+                  onClick={() => window.location.href = `/checkout?plan=ELITE&period=${billingPeriod}`}
                 >
                   Upgrade to Elite
                   <Crown className="ml-2 h-4 w-4" />
@@ -319,7 +374,7 @@ export default function Pricing() {
             <Button 
               className="h-14 px-10 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
               data-testid="button-start-pro-trial"
-              onClick={() => window.location.href = '/checkout?plan=PRO'}
+              onClick={() => window.location.href = `/checkout?plan=PRO&period=${billingPeriod}`}
             >
               Start Your Pro Journey
             </Button>

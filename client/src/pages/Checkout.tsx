@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { usePlan } from "@/hooks/usePlan";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { PLAN_CONFIGS, type PlanTier } from "@shared/plans";
+import { PLAN_CONFIGS, type PlanTier, type BillingPeriod } from "@shared/plans";
 
 const PLAN_ICONS: Record<'PRO' | 'ELITE', any> = {
   PRO: Star,
@@ -21,18 +21,17 @@ export default function Checkout() {
   const { data: user, isLoading: isUserLoading } = useQuery<any>({ queryKey: ["/api/user"] });
   const [isActivating, setIsActivating] = useState(false);
   
-  // Get plan from URL params
   const params = new URLSearchParams(window.location.search);
   const urlPlan = params.get('plan')?.toUpperCase();
+  const urlPeriod = params.get('period') as BillingPeriod | null;
   const selectedTier: 'PRO' | 'ELITE' = urlPlan === 'ELITE' ? 'ELITE' : 'PRO';
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(urlPeriod === 'annual' ? 'annual' : 'monthly');
   const planConfig = PLAN_CONFIGS[selectedTier];
   const PlanIcon = PLAN_ICONS[selectedTier];
 
-  // Handle subscription return URLs
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const subscriptionStatus = params.get('subscription');
-    // Get tier from URL first, then from sessionStorage
     let tier = params.get('tier') as PlanTier;
     if (!tier) {
       tier = (sessionStorage.getItem('pending_paypal_tier') as PlanTier) || 'PRO';
@@ -47,9 +46,9 @@ export default function Checkout() {
         setIsActivating(true);
         sessionStorage.removeItem('pending_paypal_subscription_id');
         sessionStorage.removeItem('pending_paypal_tier');
+        sessionStorage.removeItem('pending_paypal_period');
         
         try {
-          // Server determines actual tier from PayPal plan_id, tier is just a hint
           const res = await apiRequest("POST", "/api/paypal/subscription/activate", { subscriptionId, tier });
           const result = await res.json();
           
@@ -87,6 +86,7 @@ export default function Checkout() {
       } else if (subscriptionStatus === 'cancelled') {
         sessionStorage.removeItem('pending_paypal_subscription_id');
         sessionStorage.removeItem('pending_paypal_tier');
+        sessionStorage.removeItem('pending_paypal_period');
         toast({
           title: "Subscription Cancelled",
           description: "You cancelled the subscription process.",
@@ -112,18 +112,24 @@ export default function Checkout() {
   const isElite = subscription === "ELITE";
   const isPaid = isPro || isElite;
   const isElitePlan = selectedTier === 'ELITE';
+  const isAnnual = billingPeriod === 'annual';
   
-  // Founding member discount
   const isFoundingMember = user?.foundingMember === true;
   const discountRate = 0.30;
-  const proPrice = isFoundingMember ? Math.round(29 * (1 - discountRate)) : 29;
-  const elitePrice = isFoundingMember ? Math.round(59 * (1 - discountRate)) : 59;
-  const displayPrice = isElitePlan ? elitePrice : proPrice;
-  const originalPrice = isElitePlan ? 59 : 29;
   
-  // Pro user trying to upgrade to Elite - show PayPal button instead of subscription details
+  const monthlyPrice = isElitePlan ? planConfig.pricing.monthly : planConfig.pricing.monthly;
+  const annualPrice = planConfig.pricing.annual;
+  const annualMonthly = planConfig.pricing.annualMonthly;
+  
+  const displayPrice = isAnnual
+    ? (isFoundingMember ? Math.round(annualMonthly * (1 - discountRate)) : annualMonthly)
+    : (isFoundingMember ? Math.round(monthlyPrice * (1 - discountRate)) : monthlyPrice);
+  const originalPrice = isAnnual ? annualMonthly : monthlyPrice;
+  const totalPrice = isAnnual
+    ? (isFoundingMember ? Math.round(annualPrice * (1 - discountRate)) : annualPrice)
+    : displayPrice;
+  
   const isUpgradingToElite = isPro && !isElite && isElitePlan;
-  // Show PayPal button for: free users OR Pro users upgrading to Elite
   const showPayPalButton = !isPaid || isUpgradingToElite;
 
   return (
@@ -223,17 +229,60 @@ export default function Checkout() {
                 {showPayPalButton ? (
                   isFoundingMember ? (
                     <span className="flex items-center gap-2">
-                      <span className="text-amber-500">${displayPrice}/month</span>
+                      <span className="text-amber-500">${displayPrice}/{isAnnual ? 'mo (billed annually)' : 'month'}</span>
                       <span className="line-through text-muted-foreground/50">${originalPrice}</span>
-                      <span className="text-amber-500">• Founder Discount</span>
+                      <span className="text-amber-500">Founder Discount</span>
                     </span>
-                  ) : `$${planConfig.price}/month - Cancel anytime.`
+                  ) : (
+                    isAnnual 
+                      ? `$${displayPrice}/mo billed as $${totalPrice}/year — Cancel anytime.`
+                      : `$${planConfig.price}/month — Cancel anytime.`
+                  )
                 ) : "Current provider info."}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               {showPayPalButton ? (
                 <div className="space-y-4">
+                  {/* Billing Period Toggle */}
+                  <div className="flex items-center justify-center gap-1 bg-background rounded-xl border border-border p-1" data-testid="checkout-billing-toggle">
+                    <button
+                      onClick={() => setBillingPeriod("monthly")}
+                      className={`flex-1 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                        !isAnnual
+                          ? (isElitePlan ? "bg-amber-500 text-white" : "bg-emerald-500 text-white")
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      data-testid="button-checkout-monthly"
+                    >
+                      Monthly
+                    </button>
+                    <button
+                      onClick={() => setBillingPeriod("annual")}
+                      className={`flex-1 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all relative ${
+                        isAnnual
+                          ? (isElitePlan ? "bg-amber-500 text-white" : "bg-emerald-500 text-white")
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      data-testid="button-checkout-annual"
+                    >
+                      Annual
+                      <span className="ml-1 text-[8px] opacity-80">Save {Math.round((1 - planConfig.pricing.annual / (planConfig.pricing.monthly * 12)) * 100)}%</span>
+                    </button>
+                  </div>
+
+                  {isAnnual && (
+                    <div className={`text-center p-3 rounded-lg border ${isElitePlan ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
+                      <p className={`text-xs font-bold ${isElitePlan ? 'text-amber-500' : 'text-emerald-500'}`}>
+                        {isFoundingMember ? (
+                          <>Billed as ${Math.round(planConfig.pricing.annual * (1 - discountRate))}/year (${Math.round(planConfig.pricing.annualMonthly * (1 - discountRate))}/mo) — You save ${Math.round((planConfig.pricing.monthly * 12 - planConfig.pricing.annual) * (1 - discountRate))}/yr</>
+                        ) : (
+                          <>Billed as ${planConfig.pricing.annual}/year (${planConfig.pricing.annualMonthly}/mo) — You save ${planConfig.pricing.annualSavings}/yr</>
+                        )}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
                     <SiPaypal className="text-[#0070ba] w-6 h-6" />
                     <div>
@@ -242,37 +291,34 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <PayPalSubscriptionButton tier={selectedTier} />
+                  <PayPalSubscriptionButton tier={selectedTier} period={billingPeriod} />
 
-                  {/* Plan Toggle - only show for free users, not for Pro users upgrading */}
                   {!isUpgradingToElite && (
                     <div className="flex gap-2 justify-center">
                       <Button
                         variant={selectedTier === 'PRO' ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => window.location.href = '/checkout?plan=PRO'}
+                        onClick={() => window.location.href = `/checkout?plan=PRO&period=${billingPeriod}`}
                         className={selectedTier === 'PRO' ? 'bg-emerald-500' : ''}
                         data-testid="button-select-pro"
                       >
-                        <Star className="w-3 h-3 mr-1" /> Pro ${proPrice}
-                        {isFoundingMember && <span className="ml-1 line-through text-xs opacity-50">$29</span>}
+                        <Star className="w-3 h-3 mr-1" /> Pro
                       </Button>
                       <Button
                         variant={selectedTier === 'ELITE' ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => window.location.href = '/checkout?plan=ELITE'}
+                        onClick={() => window.location.href = `/checkout?plan=ELITE&period=${billingPeriod}`}
                         className={selectedTier === 'ELITE' ? 'bg-amber-500' : ''}
                         data-testid="button-select-elite"
                       >
-                        <Crown className="w-3 h-3 mr-1" /> Elite ${elitePrice}
-                        {isFoundingMember && <span className="ml-1 line-through text-xs opacity-50">$59</span>}
+                        <Crown className="w-3 h-3 mr-1" /> Elite
                       </Button>
                     </div>
                   )}
 
                   <div className="flex items-start gap-2 text-[9px] text-muted-foreground font-black uppercase tracking-widest bg-muted/30 p-3 rounded-lg border border-border/50 italic">
                     <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
-                    <span>Recurring monthly billing. Cancel anytime via Profile.</span>
+                    <span>{isAnnual ? 'Billed annually. Cancel anytime via Profile.' : 'Recurring monthly billing. Cancel anytime via Profile.'}</span>
                   </div>
                 </div>
               ) : (

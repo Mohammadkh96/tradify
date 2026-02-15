@@ -177,6 +177,7 @@ export class DatabaseStorage implements IStorage {
     renewalDate?: Date;
     paypalSubscriptionId?: string;
     syncToken?: string;
+    billingPeriod?: string;
   }) {
     const [user] = await db.update(userRole)
       .set({ ...info, updatedAt: new Date() })

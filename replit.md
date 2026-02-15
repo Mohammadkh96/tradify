@@ -55,5 +55,5 @@ Preferred communication style: Simple, everyday language.
 - **Database:** PostgreSQL (configured via `DATABASE_URL`), Drizzle ORM, `connect-pg-simple` for session storage.
 - **UI Libraries:** shadcn/ui (Radix UI primitives), Tailwind CSS, Lucide React.
 - **MT5 Integration:** Custom Expert Advisor (EA) communicates with the backend via HTTP POST to `/api/mt5/update`.
-- **Payment Gateway:** PayPal for recurring subscriptions exclusively, handling 3-tier pricing (Free, Pro, Elite). Integrates with PayPal's webhook system for subscription status management.
+- **Payment Gateway:** PayPal for recurring subscriptions with monthly and annual billing options, handling 3-tier pricing (Free, Pro at $29/mo or $290/yr, Elite at $59/mo or $590/yr). Annual plans offer ~2 months free. PayPal Plan IDs stored in env vars (PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_PRO_ANNUAL_PLAN_ID, PAYPAL_ELITE_ANNUAL_PLAN_ID). Billing period tracked via `billingPeriod` column on `user_role` table. Pricing page has monthly/annual toggle. Founding member 30% discount applies to both billing periods. Integrates with PayPal's webhook system for subscription status management.
 - **AI Integrations (Optional):** OpenAI integration via Replit AI Integrations for features like AI Instrument Analysis and Monthly Self-Review Reports.

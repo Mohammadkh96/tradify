@@ -663,10 +663,13 @@ export default function Profile() {
                       <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
                         <div className="flex items-center gap-2">
                           <DollarSign size={14} className="text-muted-foreground" />
-                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Amount</span>
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Billing</span>
                         </div>
                         <span className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                          {isElite ? "$59.00/month" : "$29.00/month"}
+                          {subscription.billingPeriod === 'annual'
+                            ? (isElite ? "$590.00/year" : "$290.00/year")
+                            : (isElite ? "$59.00/month" : "$29.00/month")
+                          }
                         </span>
                       </div>
                     </div>
