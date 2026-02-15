@@ -9,6 +9,7 @@ import { StrategyDeviationAnalysis } from "@/components/StrategyDeviationAnalysi
 import { MonthlyReviewReport } from "@/components/MonthlyReviewReport";
 import { PdfExportButton } from "@/components/PdfExportButton";
 import DashboardCustomizer, { useDashboardConfig } from "@/components/DashboardCustomizer";
+import { PsychologyTradeReview } from "@/components/PsychologyTradeReview";
 import { 
   Activity, 
   Wallet,
@@ -1073,6 +1074,12 @@ export default function Dashboard() {
         {dashConfig.widgets.strategyDeviation !== false && userId && (
           <div className="mb-8">
             <StrategyDeviationAnalysis userId={userId} />
+          </div>
+        )}
+
+        {dashConfig.widgets.psychologyReview !== false && userId && (
+          <div className="mb-8">
+            <PsychologyTradeReview userId={userId} />
           </div>
         )}
 

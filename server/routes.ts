@@ -2562,6 +2562,212 @@ Output exactly 1-3 bullet points.`;
     }
   });
 
+  // ENHANCED AI PSYCHOLOGY REVIEW - Pro+ feature
+  // Analyzes trading psychology patterns: mood-outcome correlations, mistake impact
+  app.get("/api/ai/psychology-review/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { period = "30", force } = req.query;
+
+      if (req.session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const user = await storage.getUserRole(userId);
+      if (!user || !canAccessFeature(user.subscriptionTier || "FREE", "aiAnalysis")) {
+        return res.status(403).json({
+          message: "Pro subscription required for Psychology Review",
+          requiredTier: "PRO"
+        });
+      }
+
+      const cacheKey = `psychology-review-${period}d`;
+      const forceRefresh = force === "1" || force === "true";
+      if (!forceRefresh) {
+        const existing = await storage.getAIInsights(userId, cacheKey);
+        const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        if (existing.length > 0 && new Date(existing[0].createdAt!) > sixHoursAgo) {
+          return res.json({ ...existing[0], cached: true });
+        }
+      }
+
+      const periodDays = parseInt(period as string) || 30;
+      const cutoffDate = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+      const mt5Trades = await db.select()
+        .from(schema.mt5History)
+        .where(and(
+          eq(schema.mt5History.userId, userId),
+          sql`${schema.mt5History.closeTime} >= ${cutoffDate}`
+        ));
+
+      const manualTrades = (await storage.getTrades(userId))
+        .filter(t => t.createdAt && new Date(t.createdAt) >= cutoffDate);
+
+      const allTrades = [
+        ...mt5Trades.map(t => ({
+          pnl: parseFloat(t.netPl),
+          outcome: parseFloat(t.netPl) > 0 ? "Win" : parseFloat(t.netPl) < 0 ? "Loss" : "Break-even",
+          symbol: t.symbol,
+          direction: t.direction,
+          mood: t.mood || null,
+          mistakeCategory: t.mistakeCategory || null,
+          source: "MT5",
+        })),
+        ...manualTrades.filter(t => !t.notes?.startsWith("MT5_TICKET_")).map(t => ({
+          pnl: parseFloat(t.netPl || "0"),
+          outcome: t.outcome,
+          symbol: t.pair,
+          direction: t.direction,
+          mood: t.mood || null,
+          mistakeCategory: t.mistakeCategory || null,
+          source: "Manual",
+        })),
+      ];
+
+      if (allTrades.length < 5) {
+        return res.json({
+          insightText: "Insufficient data for psychology review. Tag at least 5 trades with mood or mistake categories to unlock this analysis.",
+          hasData: false,
+        });
+      }
+
+      const tradesWithMood = allTrades.filter(t => t.mood);
+      const tradesWithMistake = allTrades.filter(t => t.mistakeCategory && t.mistakeCategory !== "none");
+
+      const moodStats: Record<string, { count: number; wins: number; losses: number; totalPnl: number }> = {};
+      for (const t of tradesWithMood) {
+        const m = t.mood!;
+        if (!moodStats[m]) moodStats[m] = { count: 0, wins: 0, losses: 0, totalPnl: 0 };
+        moodStats[m].count++;
+        if (t.outcome === "Win") moodStats[m].wins++;
+        if (t.outcome === "Loss") moodStats[m].losses++;
+        moodStats[m].totalPnl += t.pnl;
+      }
+
+      const mistakeStats: Record<string, { count: number; totalPnl: number; avgPnl: number }> = {};
+      for (const t of tradesWithMistake) {
+        const m = t.mistakeCategory!;
+        if (!mistakeStats[m]) mistakeStats[m] = { count: 0, totalPnl: 0, avgPnl: 0 };
+        mistakeStats[m].count++;
+        mistakeStats[m].totalPnl += t.pnl;
+      }
+      for (const key of Object.keys(mistakeStats)) {
+        mistakeStats[key].avgPnl = mistakeStats[key].totalPnl / mistakeStats[key].count;
+      }
+
+      const moodMistakeCorrelations: Record<string, string[]> = {};
+      for (const t of allTrades.filter(t => t.mood && t.mistakeCategory && t.mistakeCategory !== "none")) {
+        if (!moodMistakeCorrelations[t.mood!]) moodMistakeCorrelations[t.mood!] = [];
+        moodMistakeCorrelations[t.mood!].push(t.mistakeCategory!);
+      }
+
+      const totalPnl = allTrades.reduce((s, t) => s + t.pnl, 0);
+      const winRate = allTrades.length > 0
+        ? ((allTrades.filter(t => t.outcome === "Win").length / allTrades.length) * 100).toFixed(1)
+        : "0";
+
+      const moodSummary = Object.entries(moodStats)
+        .map(([mood, s]) => `${mood}: ${s.count} trades, ${s.wins}W/${s.losses}L, P&L $${s.totalPnl.toFixed(2)}, WR ${s.count > 0 ? ((s.wins / s.count) * 100).toFixed(0) : 0}%`)
+        .join("\n");
+
+      const mistakeSummary = Object.entries(mistakeStats)
+        .sort((a, b) => a[1].totalPnl - b[1].totalPnl)
+        .map(([mistake, s]) => `${mistake.replace(/_/g, " ")}: ${s.count} occurrences, total P&L $${s.totalPnl.toFixed(2)}, avg $${s.avgPnl.toFixed(2)}`)
+        .join("\n");
+
+      const correlationSummary = Object.entries(moodMistakeCorrelations)
+        .map(([mood, mistakes]) => {
+          const freq: Record<string, number> = {};
+          mistakes.forEach(m => { freq[m] = (freq[m] || 0) + 1; });
+          const top = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 2);
+          return `When ${mood}: most common mistakes are ${top.map(([m, c]) => `${m.replace(/_/g, " ")} (${c}x)`).join(", ")}`;
+        })
+        .join("\n");
+
+      const prompt = `You are a Trading Psychology Analyst for TRADIFY, a rule-based trading journal.
+
+${TRADING_KNOWLEDGE_CONTEXT}
+
+Analyze this trader's psychology-performance data from the last ${periodDays} days and provide a structured review.
+
+STRICT RULES:
+- Descriptive and factual observations ONLY
+- NO trading advice, entry/exit suggestions, or market predictions
+- Focus on PSYCHOLOGY patterns, emotional correlations, and behavioral tendencies
+- Use data-driven language: "The data shows...", "Trades taken while..."
+- Be specific with numbers and percentages
+- Include the disclaimer: "This is not financial advice."
+
+OVERVIEW:
+- Total Trades: ${allTrades.length}
+- Overall Win Rate: ${winRate}%
+- Total P&L: $${totalPnl.toFixed(2)}
+- Trades with mood tagged: ${tradesWithMood.length}/${allTrades.length}
+- Trades with mistakes tagged: ${tradesWithMistake.length}/${allTrades.length}
+
+${tradesWithMood.length > 0 ? `MOOD-PERFORMANCE BREAKDOWN:
+${moodSummary}` : "No mood data tagged yet."}
+
+${tradesWithMistake.length > 0 ? `MISTAKE IMPACT ANALYSIS:
+${mistakeSummary}` : "No mistake data tagged yet."}
+
+${Object.keys(moodMistakeCorrelations).length > 0 ? `MOOD-MISTAKE CORRELATIONS:
+${correlationSummary}` : ""}
+
+FORMAT YOUR RESPONSE EXACTLY:
+
+## Psychology & Performance Review
+
+### Emotional Edge
+[2-3 observations about which moods correlate with best/worst results]
+
+### Costliest Mistakes
+[2-3 observations about which mistakes have the biggest P&L impact]
+
+### Behavioral Patterns
+[2-3 observations about mood-mistake correlations and tendencies]
+
+### Psychology Score
+[Give a score out of 10 based on: % of trades tagged, emotional consistency, mistake awareness. Briefly justify.]
+
+---
+*This review is auto-generated based on your tagged trading data. It is not financial advice.*`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 600,
+      });
+
+      const reviewText = response.choices[0].message.content || "Unable to generate psychology review.";
+
+      const metadata = {
+        period: periodDays,
+        totalTrades: allTrades.length,
+        taggedMood: tradesWithMood.length,
+        taggedMistake: tradesWithMistake.length,
+        moodStats,
+        mistakeStats,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const saved = await storage.saveAIInsight({
+        userId,
+        timeframe: cacheKey,
+        insightText: reviewText,
+        metadata,
+      });
+
+      await storage.logAIRequest({ userId, prompt, response: reviewText });
+
+      res.json({ ...saved, cached: false, metadata });
+    } catch (error) {
+      console.error("Psychology Review Error:", error);
+      res.status(500).json({ message: "Psychology review generation failed" });
+    }
+  });
+
   // MONTHLY SELF-REVIEW REPORT - Elite only
   // AI-generated monthly performance review
   app.get("/api/monthly-review/:userId", requireAuth, async (req, res) => {
