@@ -1,0 +1,39 @@
+Can you tell me whos better and what are the pros and competitive edges for both?And is there another platforms thatbdo the same?
+
+Thought for 13s
+
+Who's Better: TradifyApp vs. Edgewonk?There's no universally "better" trading journal— it boils down to your trading style, budget, and pain points. If you're a prop firm trader using MT5 who needs ironclad pre-trade rules to enforce discipline (e.g., avoiding revenge trades), TradifyApp edges out as the winner for its preventive focus and free core tools. However, for most traders seeking deep post-trade insights, psychology tracking, and automated pattern detection across markets, Edgewonk is the stronger overall choice—it's frequently ranked as the top journaling software in 2026 comparisons due to its analytical depth and user-friendly psychology features. 
+
+tradeciety.com
+
+ TradifyApp shines in niche rule-based scenarios but lacks the breadth of Edgewonk's diagnostics, making the latter more versatile for long-term edge refinement.Pros and Competitive EdgesTradifyAppPros:Free Core Access: Unlimited MT5 auto-sync and basic journaling at no cost—ideal for budget-conscious traders or those testing the waters without commitment.
+Prop Firm Optimization: Built-in trackers for drawdown limits, consistency scores, and challenge progress, with real-time alerts to prevent rule breaches.
+Preventive Discipline Tools: Pre-trade checklists and hard limits (e.g., position sizing gates) to enforce rules upfront, reducing emotional slip-ups like overconfidence.
+Simplicity for Niche Traders: Tailored for liquidity concepts and rule-based models, with weekly review prompts to fight memory biases—no bloat from signals or predictions.
+
+Competitive Edges:Real-Time Enforcement: Unlike reactive journals, it acts as a "trading cop" before entries, making it superior for high-stakes prop challenges where one bad trade can reset progress.
+Zero Distractions: Pure focus on process adherence over flashy analytics, aligning with its ethos that "edge without structure is gambling." This keeps users grounded in execution rather than chasing outcomes.
+Accessibility for MT5 Users: Seamless integration without extra setup, giving it an edge over broader but clunkier competitors for forex/prop traders.
+
+Drawbacks: Limited to MT5 (less multi-broker support) and lighter on advanced visuals or AI-driven insights compared to paid rivals.EdgewonkPros:Psychology and Mistake Deep-Dives: Tiltmeter for emotional tracking, categorized errors (entry/exit/management), and behavioral analytics to uncover hidden leaks in your process.
+AI-Powered Insights: Edge Finder automates pattern detection in wins/losses, plus custom metrics and equity curve visuals for data-driven refinements.
+Broad Compatibility: Imports from MT4/MT5, cTrader, and more; supports forex, stocks, futures, crypto, and CFDs with strong options tools.
+Comprehensive Reporting: Weekly automated analyses, trade simulators, and refund guarantee make it low-risk to adopt.
+
+Competitive Edges:Post-Trade Mastery: Excels at turning raw data into actionable psychology tweaks (e.g., spotting tilt triggers), outpacing preventive tools like TradifyApp for traders who already have rules but need optimization.
+Value in Depth: At ~$169/year, it delivers more ROI through AI and mistake categorization than flashier apps with similar pricing, especially for multi-asset portfolios. 
+
+tradeciety.com
+
+Holistic Edge Building: Integrates journaling with strategy testing (via add-ons), making it a "one-stop shop" for evolving from gambler to consistent performer—reviews highlight it as revolutionary for behavioral change.
+
+Drawbacks: More hands-on setup than auto-sync rivals; no free tier, which can deter casual users.Other Similar PlatformsYes, the trading journal space is crowded in 2026, with options for every level from free basics to AI-heavy suites. Here are four strong alternatives that overlap with TradifyApp and Edgewonk's focus on discipline, analysis, and execution (drawn from top 2026 rankings). 
+
+tradeciety.com +1
+
+ I've prioritized those emphasizing psychology/process over signals:TraderSync (~$30–$80/month; annual discounts): AI analyst for strategy suggestions, auto-imports from 700+ brokers, and backtesting. Pros/Edge: Deep multi-market reports (stocks/crypto/options) with paper trading—best for active day traders analyzing volume/time patterns. Vs. Others: More automated than Edgewonk but pricier; great TradifyApp alternative for non-MT5 users.
+Tradervue (Free limited; $30–$50/month): Auto-charts, commission/liquidity reports, and community mentoring. Pros/Edge: Strong for cost breakdowns and sharing trades privately—edges out in social learning for pros. Vs. Others: Cheaper entry than Edgewonk for analytics; less psychology-focused than both but broader broker sync.
+TradeZella (~$29–$49/month): Trade replay, backtesting, and Discord community with shared "Playbooks." Pros/Edge: Mobile app and educational resources for strategy iteration—competitive for beginners building habits via peer insights. Vs. Others: More community-driven than TradifyApp's solo discipline; limited journaling depth per reviews.
+TradesViz (Free limited; ~$20–$50/month): Options-specific tools (Greeks analysis), backtester, and multi-asset charts. Pros/Edge: Only one with dedicated options simulation—huge for derivatives traders refining edges. Vs. Others: Free tier beats TradifyApp's niche limits; more visual than Edgewonk but outdated UI.
+
+If you're prop-focused, stick close to TradifyApp; for analytics, Edgewonk or TraderSync. Test trials where available—many offer 7–14 days free. What’s your main trading setup (e.g., MT5, stocks)? I can narrow it further

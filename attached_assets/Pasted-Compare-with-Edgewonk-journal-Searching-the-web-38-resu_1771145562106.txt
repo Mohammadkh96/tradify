@@ -1,0 +1,48 @@
+Compare with Edgewonk journal
+
+Searching the web
+
+38 results
+
+Searching on X
+
+10 results
+
+Searching users on X
+
+TradifyApp (from @TradifyApp
+ and tradifyapp.com) and Edgewonk (edgewonk.com) are both specialized trading journals focused on building discipline and improving execution rather than providing signals or predictions. However, they differ significantly in approach, features, target users, and depth.Core Focus and PhilosophyTradifyApp: Emphasizes strict rule enforcement, pre-trade validation, and psychological discipline through structure. It promotes predefined rules (e.g., position sizing, entry checklists), counters biases like overconfidence or revenge trading, and stresses weekly reviews/journaling to combat memory distortions. It avoids outcome-chasing and prioritizes process over profits. It's built for serious, rule-based traders in niche areas like liquidity concepts.
+Edgewonk: Centers on in-depth performance analysis, trading psychology tracking (e.g., Tiltmeter for emotional states, mistake categorization), and uncovering hidden edges via automated insights. It helps traders identify behavioral patterns, refine strategies through data, and includes tools like custom metrics and AI-driven analysis (e.g., Edge Finder for pattern detection in wins/losses).
+
+Both align with "edge without structure is gambling," but TradifyApp leans toward preventive discipline (rule enforcement before trades), while Edgewonk focuses on post-trade diagnostics and psychology refinement.Key Features ComparisonAspect
+TradifyApp (tradifyapp.com)
+Edgewonk (edgewonk.com)
+Trade Import/Sync
+Auto-sync from MT5 (100% free), real-time tracking
+Automated imports from many brokers (MT4/MT5, cTrader, others); supports forex, stocks, futures, crypto, CFDs
+Rule Enforcement
+Strong: Pre-trade rule validation, strategy checks, prop firm rule tracking (drawdown, consistency, profit targets)
+Indirect: Supports custom metrics/rules via tagging, but no explicit pre-trade enforcement/gates
+Psychology Tools
+Focus on traps (e.g., revenge trading, overconfidence); promotes hard limits and weekly metric reviews
+Advanced: Tiltmeter, emotional tracking, mistake categorization (entry/exit/management), behavioral analytics
+Analytics/Reports
+Real-time performance, P&L tracking, prop challenge monitoring
+Comprehensive visuals, equity curves, custom reports, AI Edge Finder (automated Sunday analysis of patterns)
+Prop Firm Support
+Excellent: Built-in trackers for challenges, drawdown alerts, consistency scores
+Good general tracking, but less specialized for prop-specific rules
+Other Standouts
+Prop firm integration, no distractions (no signals)
+AI-augmented insights, multi-market support, mistake deep-dives
+Platform Type
+Web-based, focused on discipline and MT5 users
+Online (desktop-friendly), broad market compatibility
+
+Pricing (as of current data)TradifyApp: Appears free for core MT5 sync and journaling features (tied to prop/trading focus); some advanced prop tools may link to related services.
+Edgewonk: Annual subscription around $169 (with occasional increases; 14-day money-back guarantee). Often praised as high-value for depth, especially vs. monthly competitors.
+
+Which One Fits Better?Choose TradifyApp if you're a disciplined, rule-heavy trader (especially MT5 or prop firm challenges) who needs preventive guardrails to avoid breaking rules in real-time. It's ideal for enforcing structure upfront and tracking prop-specific metrics without fluff.
+Choose Edgewonk if you want deeper post-trade analysis, psychology insights, and automated discovery of what truly drives your edge (e.g., via AI pattern detection). It's more comprehensive for long-term behavioral improvement across markets and often ranks highly in 2026 journal comparisons.
+
+Both excel at turning trading into a measurable process, but TradifyApp is more "front-end" discipline-oriented, while Edgewonk is "back-end" insight-heavy. Many serious traders even combine elements (e.g., strict rules + detailed reviews), but starting with one depends on whether prevention or reflection is your bigger gap. If you're MT5/prop-focused, TradifyApp aligns closely with the discipline ethos in its posts. For broader analytics, Edgewonk stands out in reviews.
