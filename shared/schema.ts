@@ -27,6 +27,8 @@ export const tradeJournal = pgTable("trade_journal", {
   isRuleCompliant: boolean("is_rule_compliant").default(true),
   violationReason: text("violation_reason"),
   matchedSetup: text("matched_setup"),
+  mood: text("mood"),
+  mistakeCategory: text("mistake_category"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -82,6 +84,8 @@ export const mt5History = pgTable("mt5_history", {
   netPl: text("net_pl").notNull(),
   notes: text("notes"),
   tags: text("tags").array().default([]),
+  mood: text("mood"),
+  mistakeCategory: text("mistake_category"),
 }, (table) => ({
   uniqueTicket: uniqueIndex("mt5_history_unique_ticket").on(table.userId, table.mt5AccountId, table.ticket),
 }));
@@ -122,6 +126,7 @@ export const userRole = pgTable("user_role", {
   hasSeenTour: boolean("has_seen_tour").default(false), // Onboarding tour completed
   foundingMember: boolean("founding_member").default(false), // Early adopter badge
   foundingMemberProExpiry: timestamp("founding_member_pro_expiry"), // When founding member free Pro access expires
+  dashboardConfig: jsonb("dashboard_config"), // User's dashboard widget visibility/order preferences
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

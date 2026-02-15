@@ -718,6 +718,79 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  app.patch("/api/trades/:id/annotations", requireAuth, async (req, res) => {
+    try {
+      const tradeId = Number(req.params.id);
+      const userId = req.session.userId!;
+      const { mood, mistakeCategory, source } = req.body;
+      const updateData: any = {};
+      if (mood !== undefined) updateData.mood = mood;
+      if (mistakeCategory !== undefined) updateData.mistakeCategory = mistakeCategory;
+
+      if (source === "mt5") {
+        await db.update(schema.mt5History)
+          .set(updateData)
+          .where(and(eq(schema.mt5History.id, tradeId), eq(schema.mt5History.userId, userId)));
+      } else {
+        await db.update(schema.tradeJournal)
+          .set(updateData)
+          .where(and(eq(schema.tradeJournal.id, tradeId), eq(schema.tradeJournal.userId, userId)));
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating trade annotations:", error);
+      res.status(500).json({ message: "Failed to update trade annotations" });
+    }
+  });
+
+  app.patch("/api/user/dashboard-config", requireAuth, async (req, res) => {
+    try {
+      const { dashboardConfig } = req.body;
+      await db.update(schema.userRole)
+        .set({ dashboardConfig })
+        .where(eq(schema.userRole.userId, req.session.userId!));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving dashboard config:", error);
+      res.status(500).json({ message: "Failed to save dashboard config" });
+    }
+  });
+
+  app.post("/api/trades/import", requireAuth, async (req, res) => {
+    try {
+      const { trades } = req.body;
+      if (!Array.isArray(trades) || trades.length === 0) {
+        return res.status(400).json({ message: "No trades provided" });
+      }
+      if (trades.length > 500) {
+        return res.status(400).json({ message: "Maximum 500 trades per import" });
+      }
+
+      const userId = req.session.userId!;
+      const imported = [];
+      for (const t of trades) {
+        const trade = await storage.createTrade({
+          userId,
+          pair: t.pair || "UNKNOWN",
+          direction: t.direction || "Long",
+          timeframe: t.timeframe || "Imported",
+          entryPrice: t.entryPrice || "",
+          exitPrice: t.exitPrice || "",
+          riskReward: t.riskReward || "",
+          netPl: t.netPl || "0",
+          outcome: t.outcome || "Break-even",
+          notes: t.notes || "CSV Import",
+        });
+        imported.push(trade);
+      }
+
+      res.status(201).json({ imported: imported.length });
+    } catch (error) {
+      console.error("Error importing trades:", error);
+      res.status(500).json({ message: "Failed to import trades" });
+    }
+  });
+
   app.delete("/api/admin/users/:targetUserId", requireAdmin, async (req, res) => {
     try {
       const { targetUserId } = req.params;

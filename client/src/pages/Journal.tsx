@@ -1,7 +1,7 @@
 import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
 import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Trash2, History as HistoryIcon, Plus, Calendar, Monitor } from "lucide-react";
+import { Trash2, History as HistoryIcon, Plus, Calendar, Monitor, Brain, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +11,33 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import CsvImportDialog from "@/components/CsvImportDialog";
+
+const MOOD_OPTIONS = [
+  { value: "confident", label: "Confident", color: "text-emerald-500" },
+  { value: "calm", label: "Calm", color: "text-blue-400" },
+  { value: "neutral", label: "Neutral", color: "text-muted-foreground" },
+  { value: "anxious", label: "Anxious", color: "text-amber-500" },
+  { value: "fearful", label: "Fearful", color: "text-orange-500" },
+  { value: "greedy", label: "Greedy", color: "text-rose-500" },
+  { value: "frustrated", label: "Frustrated", color: "text-red-400" },
+  { value: "revenge", label: "Revenge", color: "text-red-600" },
+];
+
+const MISTAKE_OPTIONS = [
+  { value: "none", label: "No Mistake" },
+  { value: "early_entry", label: "Early Entry" },
+  { value: "late_entry", label: "Late Entry" },
+  { value: "no_stop_loss", label: "No Stop Loss" },
+  { value: "moved_stop_loss", label: "Moved Stop Loss" },
+  { value: "oversized", label: "Oversized Position" },
+  { value: "fomo", label: "FOMO Trade" },
+  { value: "revenge_trade", label: "Revenge Trade" },
+  { value: "ignored_rules", label: "Ignored Rules" },
+  { value: "poor_risk_reward", label: "Poor R:R" },
+  { value: "early_exit", label: "Early Exit" },
+  { value: "overtrading", label: "Overtrading" },
+];
 
 type MT5Account = {
   id: number;
@@ -70,6 +97,17 @@ export default function Journal() {
   const isPaidUser = subscription === "PRO" || subscription === "ELITE";
 
   const deleteTrade = useDeleteTrade();
+
+  const annotationMutation = useMutation({
+    mutationFn: async ({ tradeId, mood, mistakeCategory, source }: { tradeId: number; mood?: string; mistakeCategory?: string; source: string }) => {
+      return apiRequest('PATCH', `/api/trades/${tradeId}/annotations`, { mood, mistakeCategory, source: source === "MT5" ? "mt5" : "manual" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/trades'] });
+      if (userId) queryClient.invalidateQueries({ queryKey: [`/api/mt5/history/${userId}`] });
+    },
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOutcome, setFilterOutcome] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
@@ -84,7 +122,9 @@ export default function Journal() {
         ...t,
         source: "Manual",
         netPl: typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0),
-        closeTime: t.createdAt
+        closeTime: t.createdAt,
+        mood: t.mood || null,
+        mistakeCategory: t.mistakeCategory || t.mistake_category || null,
       }));
     
     const mt5 = (mt5History || []).map(t => {
@@ -123,6 +163,8 @@ export default function Journal() {
         swap: t.swap ? parseFloat(t.swap) : 0,
         sl: t.sl,
         tp: t.tp,
+        mood: t.mood || null,
+        mistakeCategory: t.mistakeCategory || t.mistake_category || null,
       };
     });
 
@@ -336,6 +378,7 @@ export default function Journal() {
                 </PopoverContent>
               </Popover>
             </div>
+            <CsvImportDialog />
             <Link to="/strategies/validate">
               <Button 
                 data-testid="button-log-trade"
@@ -423,6 +466,38 @@ export default function Journal() {
                         ))}
                       </div>
                     )}
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <Select
+                        value={trade.mood || ""}
+                        onValueChange={(val) => annotationMutation.mutate({ tradeId: trade.id, mood: val, source: trade.source })}
+                      >
+                        <SelectTrigger className="h-6 w-auto min-w-[100px] text-[10px] border-border/50 bg-background/50 px-2 gap-1" data-testid={`select-mood-${trade.id}`}>
+                          <Brain size={10} className="text-purple-400 shrink-0" />
+                          <SelectValue placeholder="Mood" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MOOD_OPTIONS.map(m => (
+                            <SelectItem key={m.value} value={m.value}>
+                              <span className={m.color}>{m.label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={trade.mistakeCategory || ""}
+                        onValueChange={(val) => annotationMutation.mutate({ tradeId: trade.id, mistakeCategory: val, source: trade.source })}
+                      >
+                        <SelectTrigger className="h-6 w-auto min-w-[110px] text-[10px] border-border/50 bg-background/50 px-2 gap-1" data-testid={`select-mistake-${trade.id}`}>
+                          <AlertTriangle size={10} className="text-amber-400 shrink-0" />
+                          <SelectValue placeholder="Mistake" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MISTAKE_OPTIONS.map(m => (
+                            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
                 

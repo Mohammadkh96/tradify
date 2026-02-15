@@ -8,6 +8,7 @@ import { BehavioralRiskFlags } from "@/components/BehavioralRiskFlags";
 import { StrategyDeviationAnalysis } from "@/components/StrategyDeviationAnalysis";
 import { MonthlyReviewReport } from "@/components/MonthlyReviewReport";
 import { PdfExportButton } from "@/components/PdfExportButton";
+import DashboardCustomizer, { useDashboardConfig } from "@/components/DashboardCustomizer";
 import { 
   Activity, 
   Wallet,
@@ -67,6 +68,7 @@ export default function Dashboard() {
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [selectedInstrument, setSelectedInstrument] = useState<string>("");
   const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
+  const dashConfig = useDashboardConfig();
   
   const { toast } = useToast();
   const { data: trades, isLoading } = useTrades();
@@ -624,10 +626,12 @@ export default function Dashboard() {
               >
                 <RefreshCw size={16} className={cn(isRefreshing && "animate-spin")} />
               </Button>
+              <DashboardCustomizer />
             </div>
           </div>
         </header>
 
+        {dashConfig.widgets.stats !== false && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, i) => (
             <StatCard 
@@ -640,6 +644,7 @@ export default function Dashboard() {
             />
           ))}
         </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-6 shadow-2xl">
@@ -1037,8 +1042,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Session Analytics - Elite Only */}
-        {userId && (
+        {dashConfig.widgets.sessionAnalytics !== false && userId && (
           <div className="mb-8">
             <SessionAnalytics 
               userId={userId} 
@@ -1049,8 +1053,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Time Patterns - Elite Only */}
-        {userId && (
+        {dashConfig.widgets.timePatterns !== false && userId && (
           <div className="mb-8">
             <TimePatterns 
               userId={userId}
@@ -1061,22 +1064,19 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Behavioral Risk Flags - Elite Only */}
-        {userId && (
+        {dashConfig.widgets.behavioralRisks !== false && userId && (
           <div className="mb-8">
             <BehavioralRiskFlags userId={userId} />
           </div>
         )}
 
-        {/* Strategy Deviation Analysis - Elite Only */}
-        {userId && (
+        {dashConfig.widgets.strategyDeviation !== false && userId && (
           <div className="mb-8">
             <StrategyDeviationAnalysis userId={userId} />
           </div>
         )}
 
-        {/* Monthly Self-Review Report - Elite Only */}
-        {userId && (
+        {dashConfig.widgets.monthlyReview !== false && userId && (
           <div className="mb-8">
             <MonthlyReviewReport userId={userId} />
           </div>

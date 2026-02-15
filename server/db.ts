@@ -48,6 +48,11 @@ export async function ensureSchemaColumns() {
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS has_seen_tour BOOLEAN DEFAULT false;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS founding_member BOOLEAN DEFAULT false;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS founding_member_pro_expiry TIMESTAMP;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS dashboard_config JSONB;
+      ALTER TABLE trade_journal ADD COLUMN IF NOT EXISTS mood TEXT;
+      ALTER TABLE trade_journal ADD COLUMN IF NOT EXISTS mistake_category TEXT;
+      ALTER TABLE mt5_history ADD COLUMN IF NOT EXISTS mood TEXT;
+      ALTER TABLE mt5_history ADD COLUMN IF NOT EXISTS mistake_category TEXT;
     `);
     
     // Create early access signups table if not exists

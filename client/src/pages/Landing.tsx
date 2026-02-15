@@ -26,7 +26,10 @@ import {
   X,
   ChevronRight,
   Flame,
-  Star
+  Star,
+  Upload,
+  Settings2,
+  HeartPulse
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -396,6 +399,24 @@ export default function Landing() {
                 desc: "AI detects revenge trading, overtrading, and other behavioral patterns before they damage your account.",
                 icon: <Activity className="text-rose-500" />,
                 tier: "Elite"
+              },
+              {
+                title: "Psychology & Mood Tracking",
+                desc: "Tag every trade with your emotional state and mistake category. Discover how your psychology impacts results.",
+                icon: <HeartPulse className="text-pink-500" />,
+                tier: null
+              },
+              {
+                title: "CSV Trade Import",
+                desc: "Import trades from MT4, TradingView, or any platform via CSV. Supports automatic column detection.",
+                icon: <Upload className="text-teal-500" />,
+                tier: null
+              },
+              {
+                title: "Customizable Dashboard",
+                desc: "Toggle widgets on and off. Show only what matters to your trading workflow.",
+                icon: <Settings2 className="text-indigo-500" />,
+                tier: null
               }
             ].map((feature, i) => (
               <Card key={i} className="bg-background border-border hover:border-emerald-500/20 transition-all duration-300 group" data-testid={`card-feature-${i}`}>
