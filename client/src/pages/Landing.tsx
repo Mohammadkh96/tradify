@@ -680,7 +680,7 @@ export default function Landing() {
                 </div>
                 <div className="p-4 sm:p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
                   <div className="text-2xl sm:text-3xl font-black text-emerald-500 mb-1">PRO</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-4">From $24/mo</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-4">From $29/mo</div>
                   <ul className="space-y-2">
                     <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> AI Psychology Review</li>
                     <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> AI Instrument Analysis</li>
@@ -691,7 +691,7 @@ export default function Landing() {
                 </div>
                 <div className="p-4 sm:p-6 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-2xl shadow-amber-500/10">
                   <div className="text-2xl sm:text-3xl font-black text-amber-500 mb-1">ELITE</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-4">From $49/mo</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-4">From $59/mo</div>
                   <ul className="space-y-2">
                     <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> AI Challenge Risk Warnings</li>
                     <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-amber-500 shrink-0" /> Session Analytics</li>
