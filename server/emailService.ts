@@ -117,149 +117,271 @@ async function sendEmail(
   }
 }
 
-async function sendWelcomeEmail(email: string, userName: string): Promise<boolean> {
-  const template = loadTemplate('welcome');
-  if (!template) {
-    console.warn('[EMAIL] Welcome template not found, using fallback');
-    const fallback = `<h1>Welcome to ${APP_NAME}!</h1><p>Hi ${userName}, your account is ready.</p>`;
-    return sendEmail(email, `Welcome to ${APP_NAME}!`, fallback);
-  }
-  const html = replaceTemplatePlaceholders(template, { user_name: userName });
-  return sendEmail(email, `Welcome to ${APP_NAME}!`, html);
-}
-
-async function sendPasswordResetEmail(email: string, userName: string, resetUrl: string): Promise<boolean> {
-  const template = loadTemplate('reset-password');
-  if (!template) {
-    const fallback = `<h1>Password Reset</h1><p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`;
-    return sendEmail(email, `Reset Your ${APP_NAME} Password`, fallback);
-  }
-  const html = replaceTemplatePlaceholders(template, { user_name: userName, action_url: resetUrl });
-  return sendEmail(email, `Reset Your ${APP_NAME} Password`, html);
-}
-
-async function sendAdminCreatedUserEmail(email: string, userName: string, tempPassword: string): Promise<boolean> {
-  const template = loadTemplate('admin-created-user');
-  if (!template) {
-    const fallback = `<h1>Your Account is Ready</h1><p>Login with temporary password: <strong>${tempPassword}</strong></p><p>You'll be prompted to change it on first login.</p>`;
-    return sendEmail(email, `Your ${APP_NAME} Account Has Been Created`, fallback);
-  }
-  const html = replaceTemplatePlaceholders(template, {
-    user_name: userName,
-    temp_password: tempPassword,
-    action_url: `${APP_URL}/login`,
-  });
-  return sendEmail(email, `Your ${APP_NAME} Account Has Been Created`, html);
-}
-
-async function sendSubscriptionActivatedEmail(email: string, userName: string, planName: string): Promise<boolean> {
-  const template = loadTemplate('subscription-activated');
-  if (!template) {
-    const fallback = `<h1>Welcome to ${planName}!</h1><p>Your subscription is now active.</p>`;
-    return sendEmail(email, `Welcome to ${APP_NAME} ${planName}!`, fallback);
-  }
-  const html = replaceTemplatePlaceholders(template, { user_name: userName, plan_name: planName });
-  return sendEmail(email, `Welcome to ${APP_NAME} ${planName}!`, html);
-}
-
-async function sendSubscriptionCanceledEmail(email: string, userName: string, planName: string): Promise<boolean> {
-  const template = loadTemplate('subscription-canceled');
-  if (!template) {
-    const fallback = `<h1>Subscription Canceled</h1><p>Your ${planName} subscription has been canceled.</p>`;
-    return sendEmail(email, `Your ${APP_NAME} ${planName} Subscription Has Been Canceled`, fallback);
-  }
-  const html = replaceTemplatePlaceholders(template, { user_name: userName, plan_name: planName });
-  return sendEmail(email, `Your ${APP_NAME} ${planName} Subscription Has Been Canceled`, html);
-}
-
-async function sendContactFormNotification(fromEmail: string, fromName: string, subject: string, message: string): Promise<boolean> {
-  const template = loadTemplate('contact-form-admin');
-  if (!template) {
-    const fallback = `<h1>Contact Form Submission</h1><p>From: ${fromName} (${fromEmail})</p><p>Subject: ${subject}</p><p>Message: ${message}</p>`;
-    return sendEmail(SUPPORT_EMAIL, `[Contact Form] ${subject}`, fallback);
-  }
-  const html = replaceTemplatePlaceholders(template, {
-    from_name: fromName,
-    from_email: fromEmail,
-    subject: subject,
-    message: message,
-  });
-  return sendEmail(SUPPORT_EMAIL, `[Contact Form] ${subject}`, html);
-}
-
-async function sendContactFormAutoReply(email: string, name: string): Promise<boolean> {
-  const template = loadTemplate('contact-form-reply');
-  if (!template) {
-    const fallback = `<h1>We Got Your Message!</h1><p>Hi ${name}, thank you for reaching out. We'll get back to you within 24-48 hours.</p>`;
-    return sendEmail(email, `We received your message - ${APP_NAME}`, fallback);
-  }
-  const html = replaceTemplatePlaceholders(template, { user_name: name });
-  return sendEmail(email, `We received your message - ${APP_NAME}`, html);
-}
-
-// Send email verification email
-async function sendEmailVerificationEmail(email: string, fullName: string, verificationToken: string): Promise<boolean> {
-  const verificationUrl = `${APP_URL}/api/auth/verify-email?token=${verificationToken}`;
-  
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Email - ${APP_NAME}</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0f1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0f1a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #111827; border-radius: 12px; border: 1px solid #1f2937; overflow: hidden;">
+function getEmailHeader(): string {
+  return `
           <tr>
-            <td style="padding: 40px; text-align: center; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-              <h1 style="color: #0a0f1a; margin: 0; font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: -1px;">
-                Welcome to ${APP_NAME}
-              </h1>
+            <td style="background-color: #131A2B; padding: 32px 40px; border-bottom: 2px solid #00D9A3;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding-right: 12px;">
+                    <div style="background-color: #00D9A3; border-radius: 8px; padding: 8px; display: inline-block; line-height: 0;">
+                      <img src="${APP_URL}/logo-icon.png" alt="Tradify" width="24" height="24" style="display: block;" />
+                    </div>
+                  </td>
+                  <td>
+                    <div style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; line-height: 1;">TRADIFY</div>
+                    <div style="font-size: 10px; color: #9CA3AF; letter-spacing: 2px; line-height: 1;">TERMINAL</div>
+                  </td>
+                </tr>
+              </table>
             </td>
-          </tr>
+          </tr>`;
+}
+
+function getEmailFooter(): string {
+  return `
+          <tr>
+            <td style="background-color: #131A2B; padding: 32px 40px; border-top: 1px solid #1F2937;">
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #9CA3AF; line-height: 1.6;">This email was sent by Tradifyapp.com</p>
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">&copy; ${new Date().getFullYear()} Tradify Terminal. All rights reserved.</p>
+              <p style="margin: 0; font-size: 12px; color: #6B7280;">Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}" style="color: #00D9A3; text-decoration: none;">${SUPPORT_EMAIL}</a></p>
+            </td>
+          </tr>`;
+}
+
+function wrapEmailBody(content: string, title: string, preheader: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${title}</title>
+  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${preheader}</div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f3f4f6;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="margin: 0 auto; background-color: #0A0F1E; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          ${getEmailHeader()}
           <tr>
             <td style="padding: 40px;">
-              <p style="color: #f3f4f6; font-size: 16px; margin: 0 0 20px 0;">
-                Hi ${fullName},
-              </p>
-              <p style="color: #9ca3af; font-size: 14px; margin: 0 0 30px 0; line-height: 1.6;">
-                Thank you for creating your ${APP_NAME} account. To complete your registration and access your trading terminal, please verify your email address by clicking the button below.
-              </p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #0a0f1a; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                  Verify Email Address
-                </a>
-              </div>
-              <p style="color: #6b7280; font-size: 12px; margin: 30px 0 0 0; line-height: 1.6;">
-                This verification link will expire in 24 hours. If you didn't create an account with ${APP_NAME}, you can safely ignore this email.
-              </p>
-              <hr style="border: none; border-top: 1px solid #1f2937; margin: 30px 0;">
-              <p style="color: #6b7280; font-size: 11px; margin: 0; text-align: center;">
-                If the button doesn't work, copy and paste this link into your browser:<br>
-                <span style="color: #10b981; word-break: break-all;">${verificationUrl}</span>
-              </p>
+              ${content}
             </td>
           </tr>
-          <tr>
-            <td style="padding: 20px 40px; background-color: #0d1117; text-align: center;">
-              <p style="color: #6b7280; font-size: 11px; margin: 0;">
-                © ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.
-              </p>
-            </td>
-          </tr>
+          ${getEmailFooter()}
         </table>
       </td>
     </tr>
   </table>
 </body>
-</html>
-  `;
-  
+</html>`;
+}
+
+async function sendEmailVerificationEmail(email: string, fullName: string, verificationToken: string): Promise<boolean> {
+  const verificationUrl = `${APP_URL}/api/auth/verify-email?token=${verificationToken}`;
+
+  const content = `
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Verify Your Email Address</h1>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">Thanks for signing up for Tradify Terminal! We're excited to have you on board.</p>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">To complete your registration and start tracking your trades, please verify your email address by clicking the button below:</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+          <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${verificationUrl}" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Verify Email Address</a></td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px;">
+          <tr><td style="background-color: #131A2B; padding: 20px; border-radius: 8px; border-left: 4px solid #00D9A3;">
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0 0 8px 0;"><strong style="color: #ffffff;">&#9200; This link expires in 24 hours</strong></p>
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0;">If you didn't create an account with Tradify, you can safely ignore this email.</p>
+          </td></tr>
+        </table>
+        <p style="color: #6B7280; font-size: 14px; line-height: 1.6; margin-top: 32px; margin-bottom: 0;">If the button doesn't work, copy and paste this link into your browser:<br /><a href="${verificationUrl}" style="color: #00D9A3; word-break: break-all;">${verificationUrl}</a></p>`;
+
+  const html = wrapEmailBody(content, 'Verify Your Email Address', 'Verify your email address to get started with Tradify');
   return sendEmail(email, `Verify your email - ${APP_NAME}`, html);
+}
+
+async function sendWelcomeEmail(email: string, userName: string): Promise<boolean> {
+  const content = `
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Welcome to Tradify! &#127881;</h1>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">Your account is now active and ready to use. You're about to discover a better way to track, analyze, and improve your trading.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+          <tr><td style="background-color: #131A2B; padding: 24px; border-radius: 8px;">
+            <h2 style="color: #00D9A3; font-size: 18px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">&#128640; Get Started in 3 Easy Steps:</h2>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr><td style="padding-bottom: 16px;"><p style="color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 8px 0;">1. Connect Your MT5 Account</p><p style="color: #9CA3AF; font-size: 14px; margin: 0;">Auto-sync your trades from MetaTrader 5</p></td></tr>
+              <tr><td style="padding-bottom: 16px;"><p style="color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 8px 0;">2. Set Up Your Trading Rules</p><p style="color: #9CA3AF; font-size: 14px; margin: 0;">Define your strategy and track rule compliance</p></td></tr>
+              <tr><td><p style="color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 8px 0;">3. Start Journaling</p><p style="color: #9CA3AF; font-size: 14px; margin: 0;">Log your trades and track your progress</p></td></tr>
+            </table>
+          </td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+          <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${APP_URL}/dashboard" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Go to Dashboard</a></td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 32px;">
+          <tr><td style="background-color: #1F2937; padding: 20px; border-radius: 8px;">
+            <p style="color: #D1D5DB; font-size: 14px; margin: 0 0 12px 0;"><strong style="color: #ffffff;">&#128161; Pro Tip:</strong></p>
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0; line-height: 1.6;">The most successful traders journal every single trade. Make it a habit from day one and watch your consistency improve.</p>
+          </td></tr>
+        </table>`;
+
+  const html = wrapEmailBody(content, 'Welcome to Tradify Terminal', 'Welcome to Tradify Terminal - Your trading journey starts now');
+  return sendEmail(email, `Welcome to ${APP_NAME}!`, html);
+}
+
+async function sendPasswordResetEmail(email: string, userName: string, resetUrl: string): Promise<boolean> {
+  const content = `
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Reset Your Password</h1>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">We received a request to reset the password for your Tradify account.</p>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">Click the button below to create a new password:</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+          <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${resetUrl}" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Reset Password</a></td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px;">
+          <tr><td style="background-color: #131A2B; padding: 20px; border-radius: 8px; border-left: 4px solid #00D9A3;">
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0 0 8px 0;"><strong style="color: #ffffff;">&#9200; This link expires in 1 hour</strong></p>
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0;">For security reasons, password reset links are only valid for 60 minutes.</p>
+          </td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px;">
+          <tr><td style="background-color: #1F2937; padding: 20px; border-radius: 8px; border-left: 4px solid #EF4444;">
+            <p style="color: #ffffff; font-size: 14px; font-weight: bold; margin: 0 0 8px 0;">&#128274; Didn't Request This?</p>
+            <p style="color: #D1D5DB; font-size: 14px; margin: 0; line-height: 1.6;">If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
+          </td></tr>
+        </table>`;
+
+  const html = wrapEmailBody(content, 'Reset Your Password', 'Reset your Tradify password');
+  return sendEmail(email, `Reset Your ${APP_NAME} Password`, html);
+}
+
+async function sendAdminCreatedUserEmail(email: string, userName: string, tempPassword: string): Promise<boolean> {
+  const content = `
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Your Account Has Been Created</h1>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">An administrator has created a Tradify Terminal account for you. Here are your login credentials:</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+          <tr><td style="background-color: #131A2B; padding: 24px; border-radius: 8px; border: 1px solid #1F2937;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr><td style="padding-bottom: 16px;">
+                <p style="color: #9CA3AF; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">Email Address</p>
+                <p style="color: #ffffff; font-size: 16px; font-weight: bold; margin: 0; font-family: monospace;">${email}</p>
+              </td></tr>
+              <tr><td>
+                <p style="color: #9CA3AF; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">Temporary Password</p>
+                <p style="color: #00D9A3; font-size: 18px; font-weight: bold; margin: 0; font-family: monospace;">${tempPassword}</p>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
+          <tr><td style="background-color: #1F2937; padding: 20px; border-radius: 8px; border-left: 4px solid #F59E0B;">
+            <p style="color: #ffffff; font-size: 14px; font-weight: bold; margin: 0 0 8px 0;">&#9888;&#65039; Important Security Notice</p>
+            <p style="color: #D1D5DB; font-size: 14px; margin: 0; line-height: 1.6;">This is a temporary password. For your security, you'll be required to change it when you first log in.</p>
+          </td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+          <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${APP_URL}/login" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Log In Now</a></td></tr>
+        </table>`;
+
+  const html = wrapEmailBody(content, 'Your Tradify Account Has Been Created', 'Your Tradify account has been created');
+  return sendEmail(email, `Your ${APP_NAME} Account Has Been Created`, html);
+}
+
+async function sendSubscriptionActivatedEmail(email: string, userName: string, planName: string): Promise<boolean> {
+  const content = `
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Welcome to ${planName}! &#128640;</h1>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">Your subscription has been activated successfully. You now have access to all ${planName} features.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+          <tr><td style="background-color: #131A2B; padding: 24px; border-radius: 8px; border: 2px solid #00D9A3;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr><td style="text-align: center; padding-bottom: 20px;">
+                <div style="background-color: #00D9A3; color: #0A0F1E; display: inline-block; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold;">${planName.toUpperCase()} PLAN</div>
+              </td></tr>
+              <tr><td>
+                <h2 style="color: #00D9A3; font-size: 18px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">&#10024; Your New Features:</h2>
+                <ul style="color: #D1D5DB; font-size: 14px; line-height: 2; margin: 0; padding-left: 20px;">
+                  <li>MT5 auto-sync integration</li>
+                  <li>Advanced analytics &amp; reports</li>
+                  <li>Custom trading rules (unlimited)</li>
+                  <li>Performance insights dashboard</li>
+                  <li>Trade correlation analysis</li>
+                  <li>Priority support</li>
+                </ul>
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+          <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${APP_URL}/dashboard" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Explore ${planName} Features</a></td></tr>
+        </table>`;
+
+  const html = wrapEmailBody(content, `Welcome to Tradify ${planName}`, `Your ${planName} subscription is now active`);
+  return sendEmail(email, `Welcome to ${APP_NAME} ${planName}!`, html);
+}
+
+async function sendSubscriptionCanceledEmail(email: string, userName: string, planName: string): Promise<boolean> {
+  const content = `
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Subscription Canceled</h1>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">We're sorry to see you go. Your subscription has been canceled as requested.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+          <tr><td style="background-color: #131A2B; padding: 24px; border-radius: 8px;">
+            <h3 style="color: #ffffff; font-size: 16px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">&#128197; What Happens Next?</h3>
+            <p style="color: #D1D5DB; font-size: 14px; margin: 0 0 12px 0;"><strong style="color: #00D9A3;">&#10003; You still have access</strong></p>
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0 0 20px 0;">Your ${planName} features remain active until the end of your current billing period.</p>
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0;">After that date, your account will switch to the Free plan. All your data will be preserved.</p>
+          </td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+          <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${APP_URL}/pricing" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Reactivate Subscription</a></td></tr>
+        </table>`;
+
+  const html = wrapEmailBody(content, 'Subscription Canceled', 'Your subscription has been canceled');
+  return sendEmail(email, `Your ${APP_NAME} ${planName} Subscription Has Been Canceled`, html);
+}
+
+async function sendContactFormNotification(fromEmail: string, fromName: string, subject: string, message: string): Promise<boolean> {
+  const html = `
+    <!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      body { font-family: Arial, sans-serif; background-color: #0a0a0a; color: #e5e5e5; padding: 20px; }
+      .container { max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 8px; padding: 24px; border: 1px solid #262626; }
+      h1 { color: #00D9A3; margin-top: 0; }
+      .info-row { padding: 12px 0; border-bottom: 1px solid #262626; }
+      .label { color: #a3a3a3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .value { color: #ffffff; font-size: 16px; margin-top: 4px; }
+    </style></head><body>
+      <div class="container">
+        <h1>Contact Form Submission</h1>
+        <div class="info-row"><div class="label">From</div><div class="value">${fromName} (${fromEmail})</div></div>
+        <div class="info-row"><div class="label">Subject</div><div class="value">${subject}</div></div>
+        <div class="info-row"><div class="label">Message</div><div class="value">${message}</div></div>
+      </div>
+    </body></html>`;
+  return sendEmail(SUPPORT_EMAIL, `[Contact Form] ${subject}`, html);
+}
+
+async function sendContactFormAutoReply(email: string, name: string): Promise<boolean> {
+  const content = `
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Thanks for Reaching Out! &#128236;</h1>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">We've received your message and our team will get back to you as soon as possible.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+          <tr><td style="background-color: #1F2937; padding: 20px; border-radius: 8px;">
+            <h3 style="color: #ffffff; font-size: 16px; font-weight: bold; margin-top: 0; margin-bottom: 12px;">&#9201;&#65039; What to Expect:</h3>
+            <ul style="color: #D1D5DB; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+              <li><strong style="color: #ffffff;">Response time:</strong> Usually within 24 hours</li>
+              <li><strong style="color: #ffffff;">Business hours:</strong> Monday-Friday, 9am-6pm EST</li>
+              <li><strong style="color: #ffffff;">Email from:</strong> ${SUPPORT_EMAIL}</li>
+            </ul>
+          </td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px;">
+          <tr><td style="background-color: #131A2B; padding: 20px; border-radius: 8px; border-left: 4px solid #00D9A3;">
+            <p style="color: #ffffff; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">&#128161; While You Wait:</p>
+            <p style="color: #D1D5DB; font-size: 14px; line-height: 1.6; margin: 0;">Check out our <a href="${APP_URL}/blog" style="color: #00D9A3; text-decoration: none; font-weight: bold;">Blog</a> for trading tips and platform updates.</p>
+          </td></tr>
+        </table>`;
+
+  const html = wrapEmailBody(content, "We've Received Your Message", "We've received your message");
+  return sendEmail(email, `We received your message - ${APP_NAME}`, html);
 }
 
 // Legacy function for backward compatibility with existing code

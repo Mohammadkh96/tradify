@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Verify Your Email Address</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+  
+  <!-- Preheader text -->
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
+    Verify your email address to get started with Tradify
+  </div>
+  
+  
+  <!-- Email wrapper -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f3f4f6;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <!-- Email container -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="margin: 0 auto; background-color: #0A0F1E; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #131A2B; padding: 32px 40px; border-bottom: 2px solid #00D9A3;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding-right: 12px;">
+                    <div style="background-color: #00D9A3; border-radius: 8px; padding: 8px; display: inline-block; line-height: 0;">
+                      <!-- Tradify Logo SVG -->
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0A0F1E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                        <polyline points="16 7 22 7 22 13"></polyline>
+                      </svg>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; line-height: 1;">
+                      TRADIFY
+                    </div>
+                    <div style="font-size: 10px; color: #9CA3AF; letter-spacing: 2px; line-height: 1;">
+                      TERMINAL
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">
+          Verify Your Email Address
+        </h1>
+        
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
+          Thanks for signing up for Tradify Terminal! We're excited to have you on board.
+        </p>
+
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+          To complete your registration and start tracking your trades, please verify your email address by clicking the button below:
+        </p>
+
+        
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+      <tr>
+        <td style="background-color: #00D9A3; border-radius: 8px;">
+          <a href="https://tradifyapp.com/verify?token=abc123xyz" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            Verify Email Address
+          </a>
+        </td>
+      </tr>
+    </table>
+  
+
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px;">
+          <tr>
+            <td style="background-color: #131A2B; padding: 20px; border-radius: 8px; border-left: 4px solid #00D9A3;">
+              <p style="color: #9CA3AF; font-size: 14px; margin: 0 0 8px 0;">
+                <strong style="color: #ffffff;">⏰ This link expires in 24 hours</strong>
+              </p>
+              <p style="color: #9CA3AF; font-size: 14px; margin: 0;">
+                If you didn't create an account with Tradify, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <p style="color: #6B7280; font-size: 14px; line-height: 1.6; margin-top: 32px; margin-bottom: 0;">
+          If the button doesn't work, copy and paste this link into your browser:
+          <br />
+          <a href="https://tradifyapp.com/verify?token=abc123xyz" style="color: #00D9A3; word-break: break-all;">
+            https://tradifyapp.com/verify?token=abc123xyz
+          </a>
+        </p>
+      
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #131A2B; padding: 32px 40px; border-top: 1px solid #1F2937;">
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #9CA3AF; line-height: 1.6;">
+                This email was sent by Tradifyapp.com
+              </p>
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">
+                © 2026 Tradify Terminal. All rights reserved.
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                Questions? Contact us at 
+                <a href="mailto:support@tradifyapp.com" style="color: #00D9A3; text-decoration: none;">
+                  support@tradifyapp.com
+                </a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
