@@ -42,7 +42,8 @@ function Router() {
   const isPublicLegalPage = location === "/terms" || location === "/privacy" || location === "/risk-disclaimer" || location === "/cookie-policy";
 
   const isPublicPage = isLandingPage || isPricingPage || isEarlyAccessPage || isAuthPage || isPublicLegalPage || 
-                       location === "/features" || location === "/how-it-works" || location === "/resources";
+                       location === "/features" || location === "/how-it-works" || location === "/resources" ||
+                       location === "/blog" || location.startsWith("/blog/");
 
   const { data: userRole, isLoading: isRoleLoading, isError: isRoleError } = useQuery<any>({
     queryKey: ["/api/user"],
@@ -392,6 +393,9 @@ function Router() {
         {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
       </Route>
       <Route path="/admin/audit-logs">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/blog">
         {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
       </Route>
       

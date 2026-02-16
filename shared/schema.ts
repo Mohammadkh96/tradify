@@ -521,6 +521,31 @@ export const propFirmDailyStats = pgTable("prop_firm_daily_stats", {
   highWaterMark: text("high_water_mark"),
 });
 
+export const blogPosts = pgTable("blog_posts", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull(),
+  excerpt: text("excerpt"),
+  content: text("content").notNull(),
+  coverImage: text("cover_image"),
+  category: text("category"),
+  tags: text("tags").array().default([]),
+  status: text("status").default("draft"),
+  authorId: text("author_id"),
+  authorName: text("author_name"),
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueSlug: uniqueIndex("blog_posts_unique_slug").on(table.slug),
+}));
+
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({ id: true, createdAt: true, updatedAt: true });
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+
 export const insertPropFirmChallengeSchema = createInsertSchema(propFirmChallenges).omit({ id: true, createdAt: true, updatedAt: true });
 export const updatePropFirmChallengeSchema = insertPropFirmChallengeSchema.partial();
 export type PropFirmChallenge = typeof propFirmChallenges.$inferSelect;

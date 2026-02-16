@@ -137,6 +137,35 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Create blog_posts table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS blog_posts (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        excerpt TEXT,
+        content TEXT NOT NULL,
+        cover_image TEXT,
+        category TEXT,
+        tags TEXT[] DEFAULT '{}',
+        status TEXT DEFAULT 'draft',
+        author_id TEXT,
+        author_name TEXT,
+        meta_title TEXT,
+        meta_description TEXT,
+        published_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Create unique index on blog_posts slug if not exists
+    try {
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS blog_posts_unique_slug ON blog_posts (slug)`);
+    } catch (e) {
+      // Index may already exist
+    }
+
     // Backfill NULL mt5_account_id values to 'default' so unique index works
     try {
       const backfillResult = await pool.query(`

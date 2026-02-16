@@ -33,6 +33,8 @@ import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import RiskDisclaimer from "@/pages/RiskDisclaimer";
 import CookiePolicy from "@/pages/CookiePolicy";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
 import { useQuery } from "@tanstack/react-query";
 
 function HybridRoute({ children }: { children: React.ReactNode }) {
@@ -417,6 +419,8 @@ function AppRoutes() {
       <Route path="/features" element={<FeaturesPage />} />
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/resources" element={<ResourcesPage />} />
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/blog/:slug" element={<BlogPost />} />
       
       {/* Auth Routes */}
       <Route path="/login" element={<AuthRoute><Auth /></AuthRoute>} />
@@ -449,6 +453,7 @@ function AppRoutes() {
       <Route path="/admin/subscriptions" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/mt5" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/audit-logs" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/blog" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       
       {/* 404 */}
       <Route path="*" element={<NotFound />} />

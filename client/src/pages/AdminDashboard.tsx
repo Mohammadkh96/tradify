@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -1097,6 +1097,11 @@ export default function AdminDashboard() {
     return <SuggestionsTab />;
   }
 
+  // --- 9. BLOG MANAGEMENT PAGE ---
+  if (location.pathname === "/admin/blog") {
+    return <AdminBlogTab />;
+  }
+
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)
   return (
     <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
@@ -1109,6 +1114,405 @@ export default function AdminDashboard() {
       <Card className="bg-card border-border p-12 text-center">
         <Activity size={48} className="mx-auto text-muted-foreground mb-4 animate-pulse" />
         <p className="text-muted-foreground">Full specifications for this tab are being finalized.</p>
+      </Card>
+    </div>
+  );
+}
+
+function AdminBlogTab() {
+  const { toast } = useToast();
+  const [editingPost, setEditingPost] = useState<any | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    slug: "",
+    category: "Trading Psychology",
+    excerpt: "",
+    content: "",
+    coverImage: "",
+    metaTitle: "",
+    metaDescription: "",
+    tags: "",
+    status: "draft",
+  });
+
+  const { data: posts, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/blog"],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/admin/blog", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/blog"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+      resetForm();
+      toast({ title: "Success", description: "Blog post created." });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Error", description: "Failed to create post." });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await apiRequest("PUT", `/api/admin/blog/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/blog"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+      resetForm();
+      toast({ title: "Updated", description: "Blog post updated." });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Error", description: "Failed to update post." });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/blog/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/blog"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+      toast({ title: "Deleted", description: "Blog post deleted." });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Error", description: "Failed to delete post." });
+    },
+  });
+
+  const resetForm = () => {
+    setEditingPost(null);
+    setIsCreating(false);
+    setFormData({
+      title: "",
+      slug: "",
+      category: "Trading Psychology",
+      excerpt: "",
+      content: "",
+      coverImage: "",
+      metaTitle: "",
+      metaDescription: "",
+      tags: "",
+      status: "draft",
+    });
+  };
+
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  };
+
+  const handleTitleChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      title: value,
+      slug: editingPost ? prev.slug : generateSlug(value),
+    }));
+  };
+
+  const startEdit = (post: any) => {
+    setEditingPost(post);
+    setIsCreating(false);
+    setFormData({
+      title: post.title || "",
+      slug: post.slug || "",
+      category: post.category || "Trading Psychology",
+      excerpt: post.excerpt || "",
+      content: post.content || "",
+      coverImage: post.coverImage || "",
+      metaTitle: post.metaTitle || "",
+      metaDescription: post.metaDescription || "",
+      tags: Array.isArray(post.tags) ? post.tags.join(", ") : post.tags || "",
+      status: post.status || "draft",
+    });
+  };
+
+  const handleSubmit = () => {
+    const payload = {
+      ...formData,
+      tags: formData.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+    };
+    if (editingPost) {
+      updateMutation.mutate({ id: editingPost.id, data: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    if (window.confirm("Are you sure you want to delete this blog post?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const showForm = isCreating || editingPost;
+
+  if (isLoading) return <div className="p-8 text-emerald-500 font-mono">LOADING BLOG POSTS...</div>;
+
+  if (showForm) {
+    return (
+      <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
+              <FileText /> {editingPost ? "Edit Post" : "New Post"}
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">
+              {editingPost ? "Update blog post details" : "Create a new blog post"}
+            </p>
+          </div>
+          <Button variant="outline" onClick={resetForm} data-testid="button-cancel-blog">
+            Back to List
+          </Button>
+        </div>
+
+        <Card className="bg-card border-border">
+          <CardContent className="p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Title</label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  placeholder="Post title"
+                  className="bg-muted border-border"
+                  data-testid="input-blog-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Slug</label>
+                <Input
+                  value={formData.slug}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
+                  placeholder="post-url-slug"
+                  className="bg-muted border-border"
+                  data-testid="input-blog-slug"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Category</label>
+                <Select value={formData.category} onValueChange={(val) => setFormData((prev) => ({ ...prev, category: val }))}>
+                  <SelectTrigger className="bg-muted border-border" data-testid="select-blog-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Trading Psychology">Trading Psychology</SelectItem>
+                    <SelectItem value="Prop Firm Tips">Prop Firm Tips</SelectItem>
+                    <SelectItem value="Strategy Building">Strategy Building</SelectItem>
+                    <SelectItem value="Platform Updates">Platform Updates</SelectItem>
+                    <SelectItem value="Risk Management">Risk Management</SelectItem>
+                    <SelectItem value="Market Analysis">Market Analysis</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Status</label>
+                <Select value={formData.status} onValueChange={(val) => setFormData((prev) => ({ ...prev, status: val }))}>
+                  <SelectTrigger className="bg-muted border-border" data-testid="select-blog-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Excerpt</label>
+              <Textarea
+                value={formData.excerpt}
+                onChange={(e) => setFormData((prev) => ({ ...prev, excerpt: e.target.value }))}
+                placeholder="Brief summary of the post"
+                className="bg-muted border-border"
+                rows={3}
+                data-testid="textarea-blog-excerpt"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Content (Markdown)</label>
+              <Textarea
+                value={formData.content}
+                onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
+                placeholder="Write your blog post content in markdown..."
+                className="bg-muted border-border font-mono text-sm"
+                rows={16}
+                data-testid="textarea-blog-content"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Cover Image URL (optional)</label>
+                <Input
+                  value={formData.coverImage}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, coverImage: e.target.value }))}
+                  placeholder="https://example.com/image.jpg"
+                  className="bg-muted border-border"
+                  data-testid="input-blog-cover-image"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Tags (comma-separated)</label>
+                <Input
+                  value={formData.tags}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, tags: e.target.value }))}
+                  placeholder="trading, psychology, discipline"
+                  className="bg-muted border-border"
+                  data-testid="input-blog-tags"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Meta Title (optional, SEO)</label>
+                <Input
+                  value={formData.metaTitle}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, metaTitle: e.target.value }))}
+                  placeholder="SEO title"
+                  className="bg-muted border-border"
+                  data-testid="input-blog-meta-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Meta Description (optional, SEO)</label>
+                <Textarea
+                  value={formData.metaDescription}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, metaDescription: e.target.value }))}
+                  placeholder="SEO description"
+                  className="bg-muted border-border"
+                  rows={2}
+                  data-testid="textarea-blog-meta-description"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-4 pt-4">
+              <Button variant="outline" onClick={resetForm} data-testid="button-blog-cancel">
+                Cancel
+              </Button>
+              <Button
+                className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs"
+                onClick={handleSubmit}
+                disabled={createMutation.isPending || updateMutation.isPending || !formData.title || !formData.slug}
+                data-testid="button-blog-save"
+              >
+                {createMutation.isPending || updateMutation.isPending ? "Saving..." : editingPost ? "Update Post" : "Create Post"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
+            <FileText /> Blog Management
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Create and manage blog posts</p>
+        </div>
+        <Button
+          className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs"
+          onClick={() => {
+            resetForm();
+            setIsCreating(true);
+          }}
+          data-testid="button-new-blog-post"
+        >
+          <Plus size={16} className="mr-2" /> New Post
+        </Button>
+      </div>
+
+      <Card className="bg-card border-border overflow-hidden">
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="border-border">
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Title</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Category</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Status</TableHead>
+              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Published</TableHead>
+              <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {posts?.map((post) => (
+              <TableRow key={post.id} className="border-border hover:bg-muted/40">
+                <TableCell>
+                  <div className="font-bold text-foreground text-sm">{post.title}</div>
+                  <div className="text-[10px] text-muted-foreground font-mono">/{post.slug}</div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-muted-foreground/30 text-muted-foreground">
+                    {post.category}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[9px] font-black uppercase tracking-widest",
+                      post.status === "published" ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"
+                    )}
+                  >
+                    {post.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground text-[10px] font-mono">
+                  {post.publishedAt ? format(new Date(post.publishedAt), "MMM d, yyyy") : post.createdAt ? format(new Date(post.createdAt), "MMM d, yyyy") : "N/A"}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => startEdit(post)}
+                      data-testid={`button-edit-blog-${post.id}`}
+                    >
+                      <Pencil size={14} />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-muted-foreground hover:text-rose-500"
+                      onClick={() => handleDelete(post.id)}
+                      data-testid={`button-delete-blog-${post.id}`}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {(!posts || posts.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic text-sm border-0">
+                  No blog posts yet. Click "New Post" to create one.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </div>
   );

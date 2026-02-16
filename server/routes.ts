@@ -140,6 +140,69 @@ export async function registerRoutes(
     res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
   });
 
+  // SEO: robots.txt
+  app.get("/robots.txt", (_req, res) => {
+    res.type("text/plain").send(`User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /journal
+Disallow: /strategies
+Disallow: /profile
+Disallow: /checkout
+Disallow: /mt5-bridge
+
+Sitemap: https://tradifyapp.com/sitemap.xml`);
+  });
+
+  // SEO: sitemap.xml (dynamic, includes blog posts)
+  app.get("/sitemap.xml", async (_req, res) => {
+    try {
+      const blogPosts = await db.select({ slug: schema.blogPosts.slug, updatedAt: schema.blogPosts.updatedAt })
+        .from(schema.blogPosts)
+        .where(eq(schema.blogPosts.status, "published"));
+
+      const staticPages = [
+        { url: "/", priority: "1.0", changefreq: "weekly" },
+        { url: "/features", priority: "0.8", changefreq: "monthly" },
+        { url: "/pricing", priority: "0.9", changefreq: "weekly" },
+        { url: "/how-it-works", priority: "0.7", changefreq: "monthly" },
+        { url: "/resources", priority: "0.7", changefreq: "monthly" },
+        { url: "/blog", priority: "0.8", changefreq: "daily" },
+        { url: "/early-access", priority: "0.9", changefreq: "weekly" },
+        { url: "/signup", priority: "0.8", changefreq: "monthly" },
+        { url: "/login", priority: "0.6", changefreq: "monthly" },
+        { url: "/terms", priority: "0.3", changefreq: "yearly" },
+        { url: "/privacy", priority: "0.3", changefreq: "yearly" },
+        { url: "/risk-disclaimer", priority: "0.3", changefreq: "yearly" },
+        { url: "/cookie-policy", priority: "0.3", changefreq: "yearly" },
+      ];
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${staticPages.map(p => `  <url>
+    <loc>https://tradifyapp.com${p.url}</loc>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+  </url>`).join("\n")}
+${blogPosts.map(p => `  <url>
+    <loc>https://tradifyapp.com/blog/${p.slug}</loc>
+    <lastmod>${p.updatedAt ? new Date(p.updatedAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`).join("\n")}
+</urlset>`;
+
+      res.type("application/xml").send(xml);
+    } catch (error) {
+      res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://tradifyapp.com/</loc><priority>1.0</priority></url>
+</urlset>`);
+    }
+  });
+
   // Trust proxy for Vercel (required for secure cookies behind proxy)
   if (process.env.NODE_ENV === "production") {
     app.set("trust proxy", 1);
@@ -3310,6 +3373,144 @@ End with: "Review your charts for current market structure."`;
       res.status(500).json({ message: "AI Analysis failed", error: error?.message });
     }
   });
+
+  // ==================== BLOG ROUTES (PUBLIC) ====================
+
+  app.get("/api/blog/categories", async (_req, res) => {
+    try {
+      const results = await db.selectDistinct({ category: schema.blogPosts.category })
+        .from(schema.blogPosts)
+        .where(eq(schema.blogPosts.status, "published"));
+      const categories = results.map(r => r.category).filter(Boolean);
+      res.json(categories);
+    } catch (error) {
+      console.error("Blog categories error:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.get("/api/blog", async (req, res) => {
+    try {
+      const { category, limit } = req.query;
+      const conditions = [eq(schema.blogPosts.status, "published")];
+      if (category && typeof category === "string") {
+        conditions.push(eq(schema.blogPosts.category, category));
+      }
+      let query = db.select().from(schema.blogPosts)
+        .where(and(...conditions))
+        .orderBy(desc(schema.blogPosts.publishedAt));
+      if (limit && !isNaN(Number(limit))) {
+        query = query.limit(Number(limit)) as any;
+      }
+      const posts = await query;
+      res.json(posts);
+    } catch (error) {
+      console.error("Blog list error:", error);
+      res.status(500).json({ message: "Failed to fetch blog posts" });
+    }
+  });
+
+  app.get("/api/blog/:slug", async (req, res) => {
+    try {
+      const [post] = await db.select().from(schema.blogPosts)
+        .where(and(
+          eq(schema.blogPosts.slug, req.params.slug),
+          eq(schema.blogPosts.status, "published")
+        ))
+        .limit(1);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      res.json(post);
+    } catch (error) {
+      console.error("Blog post error:", error);
+      res.status(500).json({ message: "Failed to fetch blog post" });
+    }
+  });
+
+  // ==================== BLOG ROUTES (ADMIN) ====================
+
+  app.get("/api/admin/blog", requireAdmin, async (_req, res) => {
+    try {
+      const posts = await db.select().from(schema.blogPosts)
+        .orderBy(desc(schema.blogPosts.createdAt));
+      res.json(posts);
+    } catch (error) {
+      console.error("Admin blog list error:", error);
+      res.status(500).json({ message: "Failed to fetch blog posts" });
+    }
+  });
+
+  app.post("/api/admin/blog", requireAdmin, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUserRole(userId);
+      const slug = req.body.title
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9\-]/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+      const values = {
+        ...req.body,
+        slug,
+        authorId: userId,
+        authorName: user?.fullName || userId,
+      };
+      if (values.status === "published" && !values.publishedAt) {
+        values.publishedAt = new Date();
+      }
+      const [post] = await db.insert(schema.blogPosts).values(values).returning();
+      res.status(201).json(post);
+    } catch (error: any) {
+      console.error("Create blog post error:", error);
+      if (error?.code === "23505") {
+        return res.status(400).json({ message: "A post with this slug already exists" });
+      }
+      res.status(500).json({ message: "Failed to create blog post" });
+    }
+  });
+
+  app.put("/api/admin/blog/:id", requireAdmin, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const [existing] = await db.select().from(schema.blogPosts)
+        .where(eq(schema.blogPosts.id, postId)).limit(1);
+      if (!existing) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      const updates: any = { ...req.body, updatedAt: new Date() };
+      if (updates.status === "published" && !existing.publishedAt && !updates.publishedAt) {
+        updates.publishedAt = new Date();
+      }
+      const [updated] = await db.update(schema.blogPosts)
+        .set(updates)
+        .where(eq(schema.blogPosts.id, postId))
+        .returning();
+      res.json(updated);
+    } catch (error) {
+      console.error("Update blog post error:", error);
+      res.status(500).json({ message: "Failed to update blog post" });
+    }
+  });
+
+  app.delete("/api/admin/blog/:id", requireAdmin, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const [deleted] = await db.delete(schema.blogPosts)
+        .where(eq(schema.blogPosts.id, postId))
+        .returning();
+      if (!deleted) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete blog post error:", error);
+      res.status(500).json({ message: "Failed to delete blog post" });
+    }
+  });
+
+  // ==================== ADMIN USER ROUTES ====================
 
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     const users = await db.select().from(schema.userRole);

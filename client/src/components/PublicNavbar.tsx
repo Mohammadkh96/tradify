@@ -13,6 +13,7 @@ export function PublicNavbar() {
     { title: "Pricing", href: "/pricing" },
     { title: "How It Works", href: "/how-it-works" },
     { title: "Resources", href: "/resources" },
+    { title: "Blog", href: "/blog" },
   ];
 
   return (

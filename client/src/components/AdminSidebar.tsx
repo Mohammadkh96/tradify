@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
@@ -10,6 +10,7 @@ const adminNavItems = [
   { href: "/admin/early-access", label: "Early Access", icon: Sparkles },
   { href: "/admin/founding-members", label: "Founding Members", icon: Crown },
   { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
+  { href: "/admin/blog", label: "Blog", icon: FileText },
   { href: "/admin/access", label: "Team Access", icon: Shield },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/admin/mt5", label: "MT5 Monitor", icon: Zap },

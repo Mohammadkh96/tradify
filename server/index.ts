@@ -3,8 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { ensureSchemaColumns } from "./db";
-import path from "path";
-import fs from "fs";
+
 
 const app = express();
 const httpServer = createServer(app);
@@ -64,27 +63,6 @@ app.use((req, res, next) => {
 });
 
 const isProd = process.env.NODE_ENV === "production" || process.env.APP_ENV === "production";
-
-// Serve SEO files (sitemap.xml and robots.txt) before other routes
-app.get("/sitemap.xml", (_req, res) => {
-  const sitemapPath = path.resolve(process.cwd(), "client/public/sitemap.xml");
-  if (fs.existsSync(sitemapPath)) {
-    res.setHeader("Content-Type", "application/xml");
-    res.sendFile(sitemapPath);
-  } else {
-    res.status(404).send("Sitemap not found");
-  }
-});
-
-app.get("/robots.txt", (_req, res) => {
-  const robotsPath = path.resolve(process.cwd(), "client/public/robots.txt");
-  if (fs.existsSync(robotsPath)) {
-    res.setHeader("Content-Type", "text/plain");
-    res.sendFile(robotsPath);
-  } else {
-    res.status(404).send("Robots.txt not found");
-  }
-});
 
 async function initializeApp() {
   // Ensure database schema is up to date before starting
