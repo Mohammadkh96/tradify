@@ -124,9 +124,7 @@ function getEmailHeader(): string {
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="padding-right: 12px; vertical-align: middle;">
-                    <div style="background-color: #00D9A3; border-radius: 10px; width: 40px; height: 40px; text-align: center; line-height: 40px;">
-                      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwQTBGMUUiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwb2x5bGluZSBwb2ludHM9IjMgMTcgOSAxMSAxMyAxNSAyMSA3Ii8+PHBvbHlsaW5lIHBvaW50cz0iMTUgNyAyMSA3IDIxIDEzIi8+PC9zdmc+" alt="Tradify" width="22" height="22" style="vertical-align: middle; display: inline-block;" />
-                    </div>
+                    <img src="${APP_URL}/logo-email.png" alt="Tradify" width="40" height="40" style="display: block; border-radius: 10px;" />
                   </td>
                   <td>
                     <div style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; line-height: 1;">TRADIFY</div>
