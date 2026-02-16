@@ -72,10 +72,11 @@ export default function Terms() {
           <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">5. Subscription and Payments</h2>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong className="text-white">Free Tier:</strong> Basic features available at no cost with limited functionality.</li>
-            <li><strong className="text-white">Pro Tier ($29/month):</strong> Enhanced features including extended trade history and advanced analytics.</li>
-            <li><strong className="text-white">Elite Tier ($59/month):</strong> Full access to all features including AI analysis and premium reports.</li>
+            <li><strong className="text-white">Pro Tier ($29/month or $290/year):</strong> Enhanced features including extended trade history and advanced analytics.</li>
+            <li><strong className="text-white">Elite Tier ($59/month or $590/year):</strong> Full access to all features including AI analysis and premium reports.</li>
+            <li><strong className="text-white">Founding Member Discount:</strong> Qualifying founding members receive a permanent 30% discount on all subscription tiers.</li>
             <li>All payments are processed through PayPal and are subject to PayPal's terms of service.</li>
-            <li>Subscriptions are billed monthly on a recurring basis until cancelled.</li>
+            <li>Subscriptions are billed monthly or annually on a recurring basis until cancelled.</li>
             <li>You may cancel your subscription at any time; access continues until the end of the billing period.</li>
             <li>No refunds are provided for partial months or unused features.</li>
             <li>We reserve the right to modify pricing with 30 days' notice to existing subscribers.</li>

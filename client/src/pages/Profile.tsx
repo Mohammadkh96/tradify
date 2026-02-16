@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlan } from "@/hooks/usePlan";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { UserRole } from "@shared/schema";
+import { PLAN_CONFIGS, getFounderPrice } from "@shared/plans";
 import { SiPaypal } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { TierBadge } from "@/components/EliteBadge";
@@ -666,10 +667,18 @@ export default function Profile() {
                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Billing</span>
                         </div>
                         <span className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                          {subscription.billingPeriod === 'annual'
-                            ? (isElite ? "$590.00/year" : "$290.00/year")
-                            : (isElite ? "$59.00/month" : "$29.00/month")
-                          }
+                          {(() => {
+                            const planKey = isElite ? "ELITE" : "PRO";
+                            const config = PLAN_CONFIGS[planKey];
+                            const isFM = user?.foundingMember === true;
+                            if (subscription.billingPeriod === 'annual') {
+                              const price = isFM ? getFounderPrice(config.pricing.annual) : config.pricing.annual;
+                              return `$${price}.00/year`;
+                            } else {
+                              const price = isFM ? getFounderPrice(config.pricing.monthly) : config.pricing.monthly;
+                              return `$${price}.00/month`;
+                            }
+                          })()}
                         </span>
                       </div>
                     </div>
