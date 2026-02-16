@@ -123,9 +123,9 @@ function getEmailHeader(): string {
             <td style="background-color: #131A2B; padding: 32px 40px; border-bottom: 2px solid #00D9A3;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding-right: 12px;">
-                    <div style="background-color: #00D9A3; border-radius: 8px; padding: 8px; display: inline-block; line-height: 0;">
-                      <img src="${APP_URL}/logo-icon.png" alt="Tradify" width="24" height="24" style="display: block;" />
+                  <td style="padding-right: 12px; vertical-align: middle;">
+                    <div style="background-color: #00D9A3; border-radius: 10px; width: 40px; height: 40px; text-align: center; line-height: 40px;">
+                      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwQTBGMUUiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwb2x5bGluZSBwb2ludHM9IjMgMTcgOSAxMSAxMyAxNSAyMSA3Ii8+PHBvbHlsaW5lIHBvaW50cz0iMTUgNyAyMSA3IDIxIDEzIi8+PC9zdmc+" alt="Tradify" width="22" height="22" style="vertical-align: middle; display: inline-block;" />
                     </div>
                   </td>
                   <td>
