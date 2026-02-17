@@ -103,7 +103,7 @@ def install_packages():
 
 def main():
     print("=" * 55)
-    print("       TRADIFY APP CONNECTOR v3.1")
+    print("       TRADIFY HQ CONNECTOR v3.1")
     print("=" * 55)
     print()
     

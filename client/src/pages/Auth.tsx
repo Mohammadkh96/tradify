@@ -261,7 +261,7 @@ export default function Auth() {
       
       toast({
         title: "Session Initialized",
-        description: "Welcome back to TradifyApp.",
+        description: "Welcome back to Tradify HQ.",
       });
     } catch (err: any) {
       console.error("Auth error:", err);
@@ -541,7 +541,7 @@ export default function Auth() {
               </div>
               <div>
                 <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase italic leading-none">Tradify</h1>
-                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em] mt-1">Institutional App</p>
+                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em] mt-1">Institutional HQ</p>
               </div>
             </div>
 

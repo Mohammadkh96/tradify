@@ -128,7 +128,7 @@ function getEmailHeader(): string {
                   </td>
                   <td>
                     <div style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; line-height: 1;">TRADIFY</div>
-                    <div style="font-size: 10px; color: #9CA3AF; letter-spacing: 2px; line-height: 1;">APP</div>
+                    <div style="font-size: 10px; color: #9CA3AF; letter-spacing: 2px; line-height: 1;">HQ</div>
                   </td>
                 </tr>
               </table>
@@ -141,7 +141,7 @@ function getEmailFooter(): string {
           <tr>
             <td style="background-color: #131A2B; padding: 32px 40px; border-top: 1px solid #1F2937;">
               <p style="margin: 0 0 16px 0; font-size: 14px; color: #9CA3AF; line-height: 1.6;">This email was sent by Tradifyapp.com</p>
-              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">&copy; ${new Date().getFullYear()} TradifyApp. All rights reserved.</p>
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">&copy; ${new Date().getFullYear()} Tradify HQ. All rights reserved.</p>
               <p style="margin: 0; font-size: 12px; color: #6B7280;">Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}" style="color: #00D9A3; text-decoration: none;">${SUPPORT_EMAIL}</a></p>
             </td>
           </tr>`;
@@ -183,7 +183,7 @@ async function sendEmailVerificationEmail(email: string, fullName: string, verif
 
   const content = `
         <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Verify Your Email Address</h1>
-        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">Thanks for signing up for TradifyApp! We're excited to have you on board.</p>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">Thanks for signing up for Tradify HQ! We're excited to have you on board.</p>
         <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">To complete your registration and start tracking your trades, please verify your email address by clicking the button below:</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${verificationUrl}" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Verify Email Address</a></td></tr>
@@ -224,7 +224,7 @@ async function sendWelcomeEmail(email: string, userName: string): Promise<boolea
           </td></tr>
         </table>`;
 
-  const html = wrapEmailBody(content, 'Welcome to TradifyApp', 'Welcome to TradifyApp - Your trading journey starts now');
+  const html = wrapEmailBody(content, 'Welcome to Tradify HQ', 'Welcome to Tradify HQ - Your trading journey starts now');
   return sendEmail(email, `Welcome to ${APP_NAME}!`, html);
 }
 
@@ -256,7 +256,7 @@ async function sendPasswordResetEmail(email: string, userName: string, resetUrl:
 async function sendAdminCreatedUserEmail(email: string, userName: string, tempPassword: string): Promise<boolean> {
   const content = `
         <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Your Account Has Been Created</h1>
-        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">An administrator has created a TradifyApp account for you. Here are your login credentials:</p>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">An administrator has created a Tradify HQ account for you. Here are your login credentials:</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
           <tr><td style="background-color: #131A2B; padding: 24px; border-radius: 8px; border: 1px solid #1F2937;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">

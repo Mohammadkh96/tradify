@@ -55,7 +55,7 @@ function Router() {
   const isUserLoggedIn = !!userRole;
 
   if (isRoleLoading && !isPublicPage) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing TradifyApp...</div>;
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Tradify HQ...</div>;
   }
 
   if (isRoleError && !isPublicPage) {
