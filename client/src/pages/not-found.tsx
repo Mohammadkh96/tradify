@@ -5,7 +5,7 @@ import { NoIndexSEO } from "@/components/SEO";
 export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <NoIndexSEO title="Page Not Found | Tradify" />
+      <NoIndexSEO title="Page Not Found | TradifyApp" />
       <Card className="w-full max-w-md mx-4">
         <CardContent className="pt-6">
           <div className="flex mb-4 gap-2">

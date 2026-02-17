@@ -56,7 +56,7 @@ export default function Checkout() {
           if (result.success) {
             toast({
               title: "Subscription Activated!",
-              description: `Welcome to Tradify ${tierName}! Your subscription is now active.`,
+              description: `Welcome to TradifyApp ${tierName}! Your subscription is now active.`,
             });
           } else {
             toast({

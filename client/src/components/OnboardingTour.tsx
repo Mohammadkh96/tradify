@@ -31,7 +31,7 @@ interface TourStep {
 const tourSteps: TourStep[] = [
   {
     id: "welcome",
-    title: "Welcome to Tradify",
+    title: "Welcome to TradifyApp",
     description: "Your trading journal and discipline platform. Let me show you around the portal in about 60 seconds.",
     icon: Sparkles,
     highlight: "",

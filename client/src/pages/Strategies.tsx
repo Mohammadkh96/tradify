@@ -151,7 +151,7 @@ export default function Strategies() {
               My Strategies
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Define your trading rules. Tradify checks whether you respect them.
+              Define your trading rules. TradifyApp checks whether you respect them.
             </p>
             {isUserLoaded && !isPro && maxStrategies !== -1 && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -419,9 +419,9 @@ export default function Strategies() {
               <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
                 <AlertCircle size={18} className="text-amber-500 mt-0.5 flex-shrink-0" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Tradify does not give trade signals</p>
+                  <p className="text-sm font-medium text-foreground">TradifyApp does not give trade signals</p>
                   <p className="text-xs text-muted-foreground">
-                    You define how you trade. Tradify checks whether you respect that. The platform evaluates alignment, not entries.
+                    You define how you trade. TradifyApp checks whether you respect that. The platform evaluates alignment, not entries.
                   </p>
                 </div>
               </div>

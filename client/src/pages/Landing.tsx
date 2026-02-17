@@ -66,15 +66,15 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO 
-        title="Tradify - Rule-Based Trading Journal | MT5 Auto-Sync & Prop Firm Tracker"
-        description="Stop losing prop firm challenges to untracked drawdowns. Tradify auto-syncs your MT5 trades, validates every entry against your rules, and tracks prop firm limits in real time. Free plan available."
+        title="TradifyApp - Rule-Based Trading Journal | MT5 Auto-Sync & Prop Firm Tracker"
+        description="Stop losing prop firm challenges to untracked drawdowns. TradifyApp auto-syncs your MT5 trades, validates every entry against your rules, and tracks prop firm limits in real time. Free plan available."
         canonical="https://tradifyapp.com/"
         ogImage="https://tradifyapp.com/images/tradify-promo-1.png"
         structuredData={[
           {
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            "name": "Tradify",
+            "name": "TradifyApp",
             "applicationCategory": "FinanceApplication",
             "operatingSystem": "Web",
             "description": "Rule-based trading journal with MT5 auto-sync, strategy validation, prop firm challenge tracking, and AI-powered analytics.",
@@ -90,10 +90,10 @@ export default function Landing() {
             "@context": "https://schema.org",
             "@type": "FAQPage",
             "mainEntity": [
-              { "@type": "Question", "name": "Is Tradify free to use?", "acceptedAnswer": { "@type": "Answer", "text": "Yes! Tradify has a free forever plan that includes MT5 multi-account sync, trade journal with 30-day history, psychology tracking, CSV import, risk calculators, and 3 education lessons. No credit card required." } },
-              { "@type": "Question", "name": "Does Tradify place trades or access my broker?", "acceptedAnswer": { "@type": "Answer", "text": "No. Tradify is strictly read-only. We never access your broker credentials, place trades, or modify orders. Our MT5 Expert Advisor only reads your trade data." } },
-              { "@type": "Question", "name": "How does the MT5 auto-sync work?", "acceptedAnswer": { "@type": "Answer", "text": "You install a free Expert Advisor (EA) on your MetaTrader 5 platform. It runs in the background and automatically sends your trade data to Tradify in real time." } },
-              { "@type": "Question", "name": "Can I track multiple MT5 accounts?", "acceptedAnswer": { "@type": "Answer", "text": "Yes! Tradify supports multi-account connectivity. You can connect and independently track trades, equity, and analytics for each of your MT5 accounts from one dashboard." } },
+              { "@type": "Question", "name": "Is TradifyApp free to use?", "acceptedAnswer": { "@type": "Answer", "text": "Yes! TradifyApp has a free forever plan that includes MT5 multi-account sync, trade journal with 30-day history, psychology tracking, CSV import, risk calculators, and 3 education lessons. No credit card required." } },
+              { "@type": "Question", "name": "Does TradifyApp place trades or access my broker?", "acceptedAnswer": { "@type": "Answer", "text": "No. TradifyApp is strictly read-only. We never access your broker credentials, place trades, or modify orders. Our MT5 Expert Advisor only reads your trade data." } },
+              { "@type": "Question", "name": "How does the MT5 auto-sync work?", "acceptedAnswer": { "@type": "Answer", "text": "You install a free Expert Advisor (EA) on your MetaTrader 5 platform. It runs in the background and automatically sends your trade data to TradifyApp in real time." } },
+              { "@type": "Question", "name": "Can I track multiple MT5 accounts?", "acceptedAnswer": { "@type": "Answer", "text": "Yes! TradifyApp supports multi-account connectivity. You can connect and independently track trades, equity, and analytics for each of your MT5 accounts from one dashboard." } },
               { "@type": "Question", "name": "What is the Prop Firm Challenge Tracker?", "acceptedAnswer": { "@type": "Answer", "text": "It's a tool that monitors your prop firm challenge rules in real time — profit targets, drawdown limits, consistency scores, and days remaining." } },
               { "@type": "Question", "name": "What's the difference between Pro and Elite?", "acceptedAnswer": { "@type": "Answer", "text": "Pro includes AI instrument analysis, prop firm tracker, full education hub, and psychology review. Elite adds session analytics, behavioral risk flags, AI challenge risk warnings, strategy deviation analysis, and monthly AI review reports." } },
               { "@type": "Question", "name": "What is the Founding Member program?", "acceptedAnswer": { "@type": "Answer", "text": "Founding Members are early adopters who get 1 month of free Pro access, a permanent 30% lifetime discount on all plans, feature voting rights, and an exclusive crown badge." } },
@@ -204,14 +204,14 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Who Is Tradify For? */}
+      {/* Who Is TradifyApp For? */}
       <section className="py-24 overflow-hidden" data-testid="section-who-is-it-for">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
               Built for <span className="text-emerald-500">Your Trading Style</span>
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">Whether you trade prop firm challenges, personal accounts, or both - Tradify adapts to your workflow.</p>
+            <p className="text-muted-foreground max-w-xl mx-auto">Whether you trade prop firm challenges, personal accounts, or both - TradifyApp adapts to your workflow.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -257,12 +257,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Tradify vs Spreadsheets Comparison */}
+      {/* TradifyApp vs Spreadsheets Comparison */}
       <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-comparison">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Why traders <span className="text-emerald-500">switch</span> to Tradify
+              Why traders <span className="text-emerald-500">switch</span> to TradifyApp
             </h2>
             <p className="text-muted-foreground">Stop wasting hours on spreadsheets that don't hold you accountable.</p>
           </div>
@@ -297,7 +297,7 @@ export default function Landing() {
                 <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
                   <CheckCircle2 size={20} className="text-emerald-500" />
                 </div>
-                <h3 className="font-black uppercase tracking-widest text-sm text-emerald-400">Tradify</h3>
+                <h3 className="font-black uppercase tracking-widest text-sm text-emerald-400">TradifyApp</h3>
               </div>
               <div className="space-y-4">
                 {[
@@ -493,7 +493,7 @@ export default function Landing() {
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
                 Most traders fail prop firm challenges because they lose track of their drawdown limits. 
-                Tradify monitors every rule in real time so you always know exactly where you stand.
+                TradifyApp monitors every rule in real time so you always know exactly where you stand.
               </p>
               <div className="space-y-4">
                 {[
@@ -575,7 +575,7 @@ export default function Landing() {
             Become a <span className="text-amber-500">Founding Member</span>
           </h2>
           <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Join the first wave of Tradify traders and lock in benefits that will never be offered again. 
+            Join the first wave of TradifyApp traders and lock in benefits that will never be offered again. 
             Founding members get permanent privileges and shape the future of the platform.
           </p>
           
@@ -630,7 +630,7 @@ export default function Landing() {
             ))}
           </div>
           <p className="mt-12 text-sm text-muted-foreground leading-relaxed">
-            Tradify operates on a zero-trust architecture. We never access your funds, 
+            TradifyApp operates on a zero-trust architecture. We never access your funds, 
             never provide investment advice, and never execute trades on your behalf. 
             Our mission is to give you the analytics and discipline tools to master your own execution.
           </p>
@@ -649,7 +649,7 @@ export default function Landing() {
                   Your next trade<br />deserves a system.
                 </h2>
                 <p className="text-muted-foreground mb-8 max-w-md">
-                  Every winning trader has a process. Tradify is yours. Start free, upgrade when you're ready, 
+                  Every winning trader has a process. TradifyApp is yours. Start free, upgrade when you're ready, 
                   and never look at a spreadsheet again.
                 </p>
                 <div className="flex flex-wrap gap-4">
@@ -718,20 +718,20 @@ export default function Landing() {
           <div className="space-y-4">
             {[
               {
-                q: "Is Tradify free to use?",
-                a: "Yes! Tradify has a free forever plan that includes MT5 multi-account sync, trade journal with 30-day history, psychology tracking, CSV import, risk calculators, and 3 education lessons. No credit card required."
+                q: "Is TradifyApp free to use?",
+                a: "Yes! TradifyApp has a free forever plan that includes MT5 multi-account sync, trade journal with 30-day history, psychology tracking, CSV import, risk calculators, and 3 education lessons. No credit card required."
               },
               {
-                q: "Does Tradify place trades or access my broker?",
-                a: "No. Tradify is strictly read-only. We never access your broker credentials, place trades, or modify orders. Our MT5 Expert Advisor only reads your trade data — nothing else."
+                q: "Does TradifyApp place trades or access my broker?",
+                a: "No. TradifyApp is strictly read-only. We never access your broker credentials, place trades, or modify orders. Our MT5 Expert Advisor only reads your trade data — nothing else."
               },
               {
                 q: "How does the MT5 auto-sync work?",
-                a: "You install a free Expert Advisor (EA) on your MetaTrader 5 platform. It runs in the background and automatically sends your trade data to Tradify in real time. It takes about 2 minutes to set up."
+                a: "You install a free Expert Advisor (EA) on your MetaTrader 5 platform. It runs in the background and automatically sends your trade data to TradifyApp in real time. It takes about 2 minutes to set up."
               },
               {
                 q: "Can I track multiple MT5 accounts?",
-                a: "Yes! Tradify supports multi-account connectivity. You can connect and independently track trades, equity, and analytics for each of your MT5 accounts from one dashboard."
+                a: "Yes! TradifyApp supports multi-account connectivity. You can connect and independently track trades, equity, and analytics for each of your MT5 accounts from one dashboard."
               },
               {
                 q: "What is the Prop Firm Challenge Tracker?",
@@ -774,7 +774,7 @@ export default function Landing() {
           <Link to="/blog" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-blog">Blog</Link>
           <CookieSettingsButton />
           <a 
-            href="mailto:support@tradify.app?subject=Tradify Support Request" 
+            href="mailto:support@tradify.app?subject=TradifyApp Support Request" 
             className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
             data-testid="link-contact-us-footer"
           >
@@ -782,7 +782,7 @@ export default function Landing() {
           </a>
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 Tradify Intelligence Systems. All Rights Reserved.
+          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
         </p>
       </footer>
     </div>

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 export function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([
-    { role: 'assistant', content: "Hello! I'm your Tradify Assistant. How can I help you navigate the platform today?" }
+    { role: 'assistant', content: "Hello! I'm your TradifyApp Assistant. How can I help you navigate the platform today?" }
   ]);
   const [input, setInput] = useState("");
 
@@ -55,7 +55,7 @@ export function ChatAssistant() {
                   <div className="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center">
                     <TrendingUp size={14} strokeWidth={3} className="text-slate-950" />
                   </div>
-                  Tradify Assistant
+                  TradifyApp Assistant
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">

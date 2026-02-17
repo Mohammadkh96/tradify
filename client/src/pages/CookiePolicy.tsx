@@ -16,8 +16,8 @@ export default function CookiePolicy() {
   return (
     <div className="flex-1 text-slate-50 p-6 lg:p-10 max-w-4xl mx-auto">
       <SEO 
-        title="Cookie Policy | Tradify"
-        description="Learn how Tradify uses cookies. Manage your preferences for analytics and marketing cookies. GDPR compliant cookie consent."
+        title="Cookie Policy | TradifyApp"
+        description="Learn how TradifyApp uses cookies. Manage your preferences for analytics and marketing cookies. GDPR compliant cookie consent."
         canonical="https://tradifyapp.com/cookie-policy"
       />
       <div className="flex items-center gap-3 mb-6">
@@ -30,7 +30,7 @@ export default function CookiePolicy() {
         
         <div className="bg-amber-500/10 border border-amber-500/20 p-6 rounded-2xl mb-8">
           <p className="text-amber-500 font-bold uppercase tracking-widest text-sm mb-2">Your Privacy Matters</p>
-          <p className="text-white font-medium">This Cookie Policy explains how Tradify ("we", "us", or "our") uses cookies and similar technologies to recognize you when you visit our website. It explains what these technologies are, why we use them, and your rights to control our use of them.</p>
+          <p className="text-white font-medium">This Cookie Policy explains how TradifyApp ("we", "us", or "our") uses cookies and similar technologies to recognize you when you visit our website. It explains what these technologies are, why we use them, and your rights to control our use of them.</p>
         </div>
 
         <Button 
@@ -45,7 +45,7 @@ export default function CookiePolicy() {
         <section>
           <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">1. What Are Cookies?</h2>
           <p>Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners to make their websites work, or to work more efficiently, as well as to provide reporting information.</p>
-          <p className="mt-3">Cookies set by the website owner (in this case, Tradify) are called "first-party cookies". Cookies set by parties other than the website owner are called "third-party cookies". Third-party cookies enable third-party features or functionality to be provided on or through the website (e.g., advertising, interactive content, and analytics).</p>
+          <p className="mt-3">Cookies set by the website owner (in this case, TradifyApp) are called "first-party cookies". Cookies set by parties other than the website owner are called "third-party cookies". Third-party cookies enable third-party features or functionality to be provided on or through the website (e.g., advertising, interactive content, and analytics).</p>
         </section>
 
         <section>

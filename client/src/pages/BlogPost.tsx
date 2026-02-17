@@ -90,8 +90,8 @@ export default function BlogPost() {
     "@type": "Article",
     "headline": post.title,
     "description": post.excerpt,
-    "author": { "@type": "Organization", "name": "Tradify" },
-    "publisher": { "@type": "Organization", "name": "Tradify", "url": "https://tradifyapp.com" },
+    "author": { "@type": "Organization", "name": "TradifyApp" },
+    "publisher": { "@type": "Organization", "name": "TradifyApp", "url": "https://tradifyapp.com" },
     "datePublished": post.publishedAt || post.createdAt,
     "dateModified": post.publishedAt || post.createdAt,
     "mainEntityOfPage": `https://tradifyapp.com/blog/${slug}`,
@@ -108,7 +108,7 @@ export default function BlogPost() {
         ogImage={post.coverImage || "https://tradifyapp.com/images/tradify-promo-1.png"}
         article={{
           publishedTime: post.publishedAt || post.createdAt,
-          author: post.author || "Tradify",
+          author: post.author || "TradifyApp",
           section: post.category,
           tags: post.tags
         }}
@@ -210,7 +210,7 @@ export default function BlogPost() {
           <CookieSettingsButton />
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 Tradify Intelligence Systems. All Rights Reserved.
+          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
         </p>
       </footer>
     </div>

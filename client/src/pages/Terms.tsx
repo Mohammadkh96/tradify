@@ -5,8 +5,8 @@ export default function Terms() {
   return (
     <div className="flex-1 text-slate-50 p-6 lg:p-10 max-w-4xl mx-auto">
       <SEO 
-        title="Terms of Service | Tradify"
-        description="Read Tradify's Terms of Service. Understand your rights and responsibilities when using our trading journal and MT5 sync platform."
+        title="Terms of Service | TradifyApp"
+        description="Read TradifyApp's Terms of Service. Understand your rights and responsibilities when using our trading journal and MT5 sync platform."
         canonical="https://tradifyapp.com/terms"
       />
       <div className="flex items-center gap-3 mb-6">
@@ -18,7 +18,7 @@ export default function Terms() {
         <p className="text-sm text-slate-500">Last updated: February 3, 2026</p>
         
         <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl mb-8">
-          <p className="text-white font-medium">Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the Tradify application (the "Service") operated by Tradify ("us", "we", or "our"). Your access to and use of the Service is conditioned on your acceptance of and compliance with these Terms.</p>
+          <p className="text-white font-medium">Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the TradifyApp application (the "Service") operated by TradifyApp ("us", "we", or "our"). Your access to and use of the Service is conditioned on your acceptance of and compliance with these Terms.</p>
         </div>
 
         <section>
@@ -34,7 +34,7 @@ export default function Terms() {
 
         <section>
           <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">2. Description of Service</h2>
-          <p>Tradify is a trading journal and analytics platform that provides:</p>
+          <p>TradifyApp is a trading journal and analytics platform that provides:</p>
           <ul className="list-disc pl-6 mt-3 space-y-2">
             <li><strong className="text-white">Trade Journaling:</strong> Record, track, and analyze your trading activities.</li>
             <li><strong className="text-white">MT5 Integration:</strong> Automatic synchronization with MetaTrader 5 accounts.</li>
@@ -88,7 +88,7 @@ export default function Terms() {
           <ul className="list-disc pl-6 space-y-2">
             <li>While we strive for accuracy, we do not guarantee the accuracy of data synced from MT5 or other sources.</li>
             <li>Users are solely responsible for verifying the accuracy of their trade records.</li>
-            <li>Any discrepancies between Tradify data and your broker's records should be reported immediately.</li>
+            <li>Any discrepancies between TradifyApp data and your broker's records should be reported immediately.</li>
             <li>We are not liable for any decisions made based on data displayed in the platform.</li>
             <li>Historical data and analytics are provided for informational purposes only.</li>
           </ul>
@@ -97,7 +97,7 @@ export default function Terms() {
         <section>
           <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">7. Intellectual Property</h2>
           <ul className="list-disc pl-6 space-y-2">
-            <li>The Service and its original content, features, and functionality are owned by Tradify.</li>
+            <li>The Service and its original content, features, and functionality are owned by TradifyApp.</li>
             <li>Our trademarks, logos, and service marks may not be used without prior written consent.</li>
             <li>You retain ownership of any trading data you input into the platform.</li>
             <li>Educational content is for personal use only and may not be redistributed.</li>
@@ -124,7 +124,7 @@ export default function Terms() {
           <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-lg">
             <p className="font-semibold text-white mb-3">TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>Tradify shall not be liable for any indirect, incidental, special, consequential, or punitive damages.</li>
+              <li>TradifyApp shall not be liable for any indirect, incidental, special, consequential, or punitive damages.</li>
               <li>We are not liable for any trading losses, lost profits, or financial damages.</li>
               <li>Our total liability shall not exceed the amount paid by you for the Service in the past 12 months.</li>
               <li>We do not warrant that the Service will be uninterrupted, error-free, or secure.</li>
@@ -135,7 +135,7 @@ export default function Terms() {
 
         <section>
           <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">10. Indemnification</h2>
-          <p>You agree to defend, indemnify, and hold harmless Tradify and its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorney's fees) arising from:</p>
+          <p>You agree to defend, indemnify, and hold harmless TradifyApp and its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorney's fees) arising from:</p>
           <ul className="list-disc pl-6 mt-3 space-y-2">
             <li>Your use of the Service.</li>
             <li>Your violation of these Terms.</li>
@@ -188,7 +188,7 @@ export default function Terms() {
 
         <section>
           <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">15. Force Majeure</h2>
-          <p>Tradify shall not be liable for any failure or delay in performing obligations under these Terms due to circumstances beyond our reasonable control, including but not limited to natural disasters, war, terrorism, riots, embargoes, acts of civil or military authorities, fire, floods, pandemics, strikes, power outages, internet disruptions, or failures of third-party services (including MT5, PayPal, or hosting providers).</p>
+          <p>TradifyApp shall not be liable for any failure or delay in performing obligations under these Terms due to circumstances beyond our reasonable control, including but not limited to natural disasters, war, terrorism, riots, embargoes, acts of civil or military authorities, fire, floods, pandemics, strikes, power outages, internet disruptions, or failures of third-party services (including MT5, PayPal, or hosting providers).</p>
         </section>
 
         <section>
@@ -213,7 +213,7 @@ export default function Terms() {
 
         <section>
           <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">19. Entire Agreement</h2>
-          <p>These Terms, together with our Privacy Policy, Cookie Policy, and Risk Disclaimer, constitute the entire agreement between you and Tradify regarding your use of the Service. Any failure by Tradify to enforce any right or provision of these Terms shall not be considered a waiver of those rights.</p>
+          <p>These Terms, together with our Privacy Policy, Cookie Policy, and Risk Disclaimer, constitute the entire agreement between you and TradifyApp regarding your use of the Service. Any failure by TradifyApp to enforce any right or provision of these Terms shall not be considered a waiver of those rights.</p>
         </section>
 
         <section>
@@ -224,7 +224,7 @@ export default function Terms() {
         </section>
 
         <div className="border-t border-slate-700 pt-6 mt-8">
-          <p className="text-sm text-slate-500">By creating an account or using Tradify, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service, our Privacy Policy, Cookie Policy, and Risk Disclaimer.</p>
+          <p className="text-sm text-slate-500">By creating an account or using TradifyApp, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service, our Privacy Policy, Cookie Policy, and Risk Disclaimer.</p>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ const SMTP_APP_PASSWORD = process.env.SMTP_APP_PASSWORD || '';
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@tradifyapp.com';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@tradifyapp.com';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@tradifyapp.com';
-const APP_NAME = 'Tradify';
+const APP_NAME = 'TradifyApp';
 const APP_URL = process.env.APP_URL || 'https://tradifyapp.com';
 
 const transporter = nodemailer.createTransport({
@@ -124,7 +124,7 @@ function getEmailHeader(): string {
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="padding-right: 12px; vertical-align: middle;">
-                    <img src="${APP_URL}/logo-email.png" alt="Tradify" width="40" height="40" style="display: block; border-radius: 10px;" />
+                    <img src="${APP_URL}/logo-email.png" alt="TradifyApp" width="40" height="40" style="display: block; border-radius: 10px;" />
                   </td>
                   <td>
                     <div style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; line-height: 1;">TRADIFYAPP</div>
@@ -190,18 +190,18 @@ async function sendEmailVerificationEmail(email: string, fullName: string, verif
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px;">
           <tr><td style="background-color: #131A2B; padding: 20px; border-radius: 8px; border-left: 4px solid #00D9A3;">
             <p style="color: #9CA3AF; font-size: 14px; margin: 0 0 8px 0;"><strong style="color: #ffffff;">&#9200; This link expires in 24 hours</strong></p>
-            <p style="color: #9CA3AF; font-size: 14px; margin: 0;">If you didn't create an account with Tradify, you can safely ignore this email.</p>
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0;">If you didn't create an account with TradifyApp, you can safely ignore this email.</p>
           </td></tr>
         </table>
         <p style="color: #6B7280; font-size: 14px; line-height: 1.6; margin-top: 32px; margin-bottom: 0;">If the button doesn't work, copy and paste this link into your browser:<br /><a href="${verificationUrl}" style="color: #00D9A3; word-break: break-all;">${verificationUrl}</a></p>`;
 
-  const html = wrapEmailBody(content, 'Verify Your Email Address', 'Verify your email address to get started with Tradify');
+  const html = wrapEmailBody(content, 'Verify Your Email Address', 'Verify your email address to get started with TradifyApp');
   return sendEmail(email, `Verify your email - ${APP_NAME}`, html);
 }
 
 async function sendWelcomeEmail(email: string, userName: string): Promise<boolean> {
   const content = `
-        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Welcome to Tradify! &#127881;</h1>
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Welcome to TradifyApp! &#127881;</h1>
         <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">Your account is now active and ready to use. You're about to discover a better way to track, analyze, and improve your trading.</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
           <tr><td style="background-color: #131A2B; padding: 24px; border-radius: 8px;">
@@ -230,7 +230,7 @@ async function sendWelcomeEmail(email: string, userName: string): Promise<boolea
 async function sendPasswordResetEmail(email: string, userName: string, resetUrl: string): Promise<boolean> {
   const content = `
         <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Reset Your Password</h1>
-        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">We received a request to reset the password for your Tradify account.</p>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">We received a request to reset the password for your TradifyApp account.</p>
         <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">Click the button below to create a new password:</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${resetUrl}" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Reset Password</a></td></tr>
@@ -248,7 +248,7 @@ async function sendPasswordResetEmail(email: string, userName: string, resetUrl:
           </td></tr>
         </table>`;
 
-  const html = wrapEmailBody(content, 'Reset Your Password', 'Reset your Tradify password');
+  const html = wrapEmailBody(content, 'Reset Your Password', 'Reset your TradifyApp password');
   return sendEmail(email, `Reset Your ${APP_NAME} Password`, html);
 }
 
@@ -280,7 +280,7 @@ async function sendAdminCreatedUserEmail(email: string, userName: string, tempPa
           <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${APP_URL}/login" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Log In Now</a></td></tr>
         </table>`;
 
-  const html = wrapEmailBody(content, 'Your Tradify Account Has Been Created', 'Your Tradify account has been created');
+  const html = wrapEmailBody(content, 'Your TradifyApp Account Has Been Created', 'Your TradifyApp account has been created');
   return sendEmail(email, `Your ${APP_NAME} Account Has Been Created`, html);
 }
 
@@ -312,7 +312,7 @@ async function sendSubscriptionActivatedEmail(email: string, userName: string, p
           <tr><td style="background-color: #00D9A3; border-radius: 8px;"><a href="${APP_URL}/dashboard" style="display: inline-block; color: #0A0F1E; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Explore ${planName} Features</a></td></tr>
         </table>`;
 
-  const html = wrapEmailBody(content, `Welcome to Tradify ${planName}`, `Your ${planName} subscription is now active`);
+  const html = wrapEmailBody(content, `Welcome to TradifyApp ${planName}`, `Your ${planName} subscription is now active`);
   return sendEmail(email, `Welcome to ${APP_NAME} ${planName}!`, html);
 }
 

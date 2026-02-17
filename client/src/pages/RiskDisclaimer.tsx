@@ -5,8 +5,8 @@ export default function RiskDisclaimer() {
   return (
     <div className="flex-1 text-slate-50 p-6 lg:p-10 max-w-4xl mx-auto">
       <SEO 
-        title="Risk Disclaimer | Tradify"
-        description="Important risk disclosure for Tradify users. Trading forex and CFDs involves substantial risk. Read our full risk disclaimer before trading."
+        title="Risk Disclaimer | TradifyApp"
+        description="Important risk disclosure for TradifyApp users. Trading forex and CFDs involves substantial risk. Read our full risk disclaimer before trading."
         canonical="https://tradifyapp.com/risk-disclaimer"
       />
       <div className="flex items-center gap-3 mb-6">
@@ -118,7 +118,7 @@ export default function RiskDisclaimer() {
           <ul className="list-disc pl-6 space-y-2">
             <li>Data synchronized from MT5 or entered manually may contain errors.</li>
             <li>We do not guarantee the accuracy, completeness, or reliability of displayed data.</li>
-            <li>Discrepancies between Tradify and your broker's records should be verified with your broker.</li>
+            <li>Discrepancies between TradifyApp and your broker's records should be verified with your broker.</li>
             <li>Analytics and statistics are calculated based on available data and may not reflect actual results.</li>
             <li>Users are responsible for verifying all trade information independently.</li>
           </ul>
@@ -150,7 +150,7 @@ export default function RiskDisclaimer() {
           <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-lg">
             <p className="font-semibold text-white mb-3">TO THE FULLEST EXTENT PERMITTED BY LAW:</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>Tradify shall not be liable for any trading losses, lost profits, or financial damages.</li>
+              <li>TradifyApp shall not be liable for any trading losses, lost profits, or financial damages.</li>
               <li>We are not liable for decisions made based on information from our platform.</li>
               <li>Our liability is limited to the fees paid for the Service in the preceding 12 months.</li>
               <li>We disclaim all warranties, express or implied, regarding trading outcomes.</li>
@@ -160,11 +160,11 @@ export default function RiskDisclaimer() {
 
         <section>
           <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">13. Acknowledgment</h2>
-          <p>By using Tradify, you acknowledge and agree that:</p>
+          <p>By using TradifyApp, you acknowledge and agree that:</p>
           <ul className="list-disc pl-6 mt-3 space-y-2">
             <li>You have read, understood, and accept all risks described in this disclaimer.</li>
             <li>You are solely responsible for your trading decisions and their consequences.</li>
-            <li>You will not hold Tradify liable for any losses incurred.</li>
+            <li>You will not hold TradifyApp liable for any losses incurred.</li>
             <li>You understand that trading involves substantial risk of financial loss.</li>
             <li>You have the financial means and risk tolerance appropriate for trading activities.</li>
           </ul>

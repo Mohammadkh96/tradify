@@ -71,8 +71,8 @@ export default function Pricing() {
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <SEO 
-        title="Pricing - Free, Pro & Elite Plans | Tradify"
-        description="Choose your Tradify plan. Free MT5 sync, Pro analytics at $29/mo, or Elite with AI insights at $59/mo. Founding members get 30% off forever."
+        title="Pricing - Free, Pro & Elite Plans | TradifyApp"
+        description="Choose your TradifyApp plan. Free MT5 sync, Pro analytics at $29/mo, or Elite with AI insights at $59/mo. Founding members get 30% off forever."
         canonical="https://tradifyapp.com/pricing"
       />
       <main className="p-6 lg:p-10 max-w-6xl mx-auto">

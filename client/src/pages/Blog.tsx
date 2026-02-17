@@ -50,7 +50,7 @@ export default function Blog() {
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO
         title="Blog - Trading Insights & Strategy Tips"
-        description="Trading insights, strategy tips, and platform updates from Tradify. Learn disciplined trading with our expert articles."
+        description="Trading insights, strategy tips, and platform updates from TradifyApp. Learn disciplined trading with our expert articles."
         canonical="https://tradifyapp.com/blog"
       />
       <PublicNavbar />
@@ -172,7 +172,7 @@ export default function Blog() {
           <CookieSettingsButton />
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 Tradify Intelligence Systems. All Rights Reserved.
+          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
         </p>
       </footer>
     </div>

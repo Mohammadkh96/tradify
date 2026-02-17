@@ -5,8 +5,8 @@ export default function Privacy() {
   return (
     <div className="flex-1 text-slate-50 p-6 lg:p-10 max-w-4xl mx-auto">
       <SEO 
-        title="Privacy Policy | Tradify"
-        description="Tradify's Privacy Policy explains how we collect, use, and protect your trading data and personal information. GDPR compliant."
+        title="Privacy Policy | TradifyApp"
+        description="TradifyApp's Privacy Policy explains how we collect, use, and protect your trading data and personal information. GDPR compliant."
         canonical="https://tradifyapp.com/privacy"
       />
       <div className="flex items-center gap-3 mb-6">
@@ -18,7 +18,7 @@ export default function Privacy() {
         <p className="text-sm text-slate-500">Last updated: February 3, 2026</p>
         
         <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl mb-8">
-          <p className="text-white font-medium">This Privacy Policy describes how Tradify ("we", "us", or "our") collects, uses, and shares information about you when you use our trading journal application and related services (collectively, the "Service"). By using the Service, you agree to the collection and use of information in accordance with this policy.</p>
+          <p className="text-white font-medium">This Privacy Policy describes how TradifyApp ("we", "us", or "our") collects, uses, and shares information about you when you use our trading journal application and related services (collectively, the "Service"). By using the Service, you agree to the collection and use of information in accordance with this policy.</p>
         </div>
 
         <section>
@@ -63,7 +63,7 @@ export default function Privacy() {
           <ul className="list-disc pl-6 mt-3 space-y-2">
             <li><strong className="text-white">Service Providers:</strong> Third-party vendors who assist in operating our Service (e.g., PayPal for payments, email providers for transactional emails).</li>
             <li><strong className="text-white">Legal Requirements:</strong> When required by law, court order, or governmental authority.</li>
-            <li><strong className="text-white">Protection of Rights:</strong> To protect the rights, property, or safety of Tradify, our users, or others.</li>
+            <li><strong className="text-white">Protection of Rights:</strong> To protect the rights, property, or safety of TradifyApp, our users, or others.</li>
             <li><strong className="text-white">Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets (with notice to users).</li>
             <li><strong className="text-white">With Your Consent:</strong> When you explicitly authorize us to share specific information.</li>
           </ul>
@@ -206,7 +206,7 @@ export default function Privacy() {
         </section>
 
         <div className="border-t border-slate-700 pt-6 mt-8">
-          <p className="text-sm text-slate-500">By using Tradify, you acknowledge that you have read and understood this Privacy Policy and agree to the collection, use, and disclosure of your information as described herein.</p>
+          <p className="text-sm text-slate-500">By using TradifyApp, you acknowledge that you have read and understood this Privacy Policy and agree to the collection, use, and disclosure of your information as described herein.</p>
         </div>
       </div>
     </div>

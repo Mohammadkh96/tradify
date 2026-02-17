@@ -17,8 +17,8 @@ interface SEOProps {
 }
 
 export function SEO({ 
-  title = "Tradify - Rule-Based Trading Journal",
-  description = "Enforce disciplined trading with Tradify. Auto-sync trades from MT5, validate strategies against rules, track performance with real-time analytics.",
+  title = "TradifyApp - Rule-Based Trading Journal",
+  description = "Enforce disciplined trading with TradifyApp. Auto-sync trades from MT5, validate strategies against rules, track performance with real-time analytics.",
   noindex = false,
   canonical,
   ogType = "website",
@@ -26,7 +26,7 @@ export function SEO({
   article,
   structuredData
 }: SEOProps) {
-  const fullTitle = title.includes("Tradify") ? title : `${title} | Tradify`;
+  const fullTitle = title.includes("TradifyApp") ? title : `${title} | TradifyApp`;
   const url = canonical || "https://tradifyapp.com";
   
   return (
@@ -41,7 +41,7 @@ export function SEO({
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />
       <meta property="og:image" content={ogImage} />
-      <meta property="og:site_name" content="Tradify" />
+      <meta property="og:site_name" content="TradifyApp" />
 
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
