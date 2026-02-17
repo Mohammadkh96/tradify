@@ -494,7 +494,7 @@ export default function Auth() {
                 <Input 
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="operator@tradify.io"
+                  placeholder="Enter your email"
                   className="bg-muted border-border text-foreground h-12"
                   type="email"
                   required
@@ -599,7 +599,7 @@ export default function Auth() {
                     <Input 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="operator@tradify.io" 
+                      placeholder="Enter your email" 
                       className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                       type="email"
                       required
@@ -618,7 +618,7 @@ export default function Auth() {
                         <Input 
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
-                          placeholder="John Doe" 
+                          placeholder="Enter your full name" 
                           className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                           type="text"
                           required
