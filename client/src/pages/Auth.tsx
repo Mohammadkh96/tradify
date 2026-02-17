@@ -498,6 +498,7 @@ export default function Auth() {
                   className="bg-muted border-border text-foreground h-12"
                   type="email"
                   required
+                  autoComplete="off"
                 />
               </div>
               <Button type="submit" className="w-full h-12 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest">
@@ -602,6 +603,7 @@ export default function Auth() {
                       className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                       type="email"
                       required
+                      autoComplete="off"
                       data-testid="input-email"
                     />
                   </div>
@@ -620,6 +622,7 @@ export default function Auth() {
                           className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                           type="text"
                           required
+                          autoComplete="off"
                           data-testid="input-fullname"
                         />
                       </div>
