@@ -96,7 +96,7 @@ export function Navigation() {
         </div>
         <div className="flex flex-col">
           <span className="font-black text-xl tracking-tighter text-foreground uppercase italic leading-none">Tradify</span>
-          <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">Terminal</span>
+          <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">App</span>
         </div>
       </div>
 

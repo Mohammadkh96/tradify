@@ -432,7 +432,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">Terminal Offline</span>
+                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">MT5 Offline</span>
                   </div>
                   {mt5?.lastSync && (
                     <>

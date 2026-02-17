@@ -354,7 +354,7 @@ export default function Profile() {
     <div className="p-8 max-w-4xl mx-auto space-y-8 text-foreground bg-background min-h-screen">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-foreground uppercase italic tracking-tighter">Terminal Settings</h1>
+          <h1 className="text-3xl font-black text-foreground uppercase italic tracking-tighter">App Settings</h1>
           <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-black opacity-70">Manage your institutional account</p>
         </div>
         <div className="flex items-center gap-3">
@@ -384,7 +384,7 @@ export default function Profile() {
             <CardContent className="pt-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Terminal (Read-only)</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Address (Read-only)</label>
                   <Input value={user?.userId} disabled className="bg-background border-border text-muted-foreground h-11 font-bold opacity-60" />
                 </div>
                 <div className="space-y-2">
@@ -542,7 +542,7 @@ export default function Profile() {
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="text-sm font-black text-foreground uppercase tracking-tight">Deactivate Account</h4>
-                  <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Disable terminal access. Data is retained.</p>
+                  <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Disable account access. Data is retained.</p>
                 </div>
                 <Button 
                   variant="outline" 

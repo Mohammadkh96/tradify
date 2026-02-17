@@ -261,7 +261,7 @@ export default function Auth() {
       
       toast({
         title: "Session Initialized",
-        description: "Welcome back to the terminal.",
+        description: "Welcome back to TradifyApp.",
       });
     } catch (err: any) {
       console.error("Auth error:", err);
@@ -541,7 +541,7 @@ export default function Auth() {
               </div>
               <div>
                 <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase italic leading-none">Tradify</h1>
-                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em] mt-1">Institutional Terminal</p>
+                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em] mt-1">Institutional App</p>
               </div>
             </div>
 
@@ -593,7 +593,7 @@ export default function Auth() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Terminal</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Address</label>
                   <div className="relative group">
                     <Mail className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
                     <Input 
@@ -741,7 +741,7 @@ export default function Auth() {
                 onClick={() => { setIsLogin(!isLogin); setAgreedToTerms(false); }}
                 className="text-muted-foreground hover:text-emerald-500 text-xs font-bold transition-colors"
               >
-                {isLogin ? "Need a terminal? Create account" : "Already registered? Log in"}
+                {isLogin ? "Need an account? Create one" : "Already registered? Log in"}
               </button>
               {isLogin ? (
                 <p className="text-center text-[10px] text-muted-foreground mt-6 leading-relaxed uppercase tracking-widest font-bold">

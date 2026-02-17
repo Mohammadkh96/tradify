@@ -1,7 +1,7 @@
 # TRADIFY - Trading Journal Application
 
 ## Overview
-TRADIFY is a rule-based trading journal application designed to enforce disciplined trading through real-time validation, following a "Stealth Terminal" dark aesthetic. It helps traders record trades, enforce trading rules, analyze performance, and learn trading concepts without AI decision-making, indicators, or guesswork. The application focuses on using predefined Market Knowledge rules for analysis.
+TRADIFY (TradifyApp) is a rule-based trading journal application designed to enforce disciplined trading through real-time validation, following a dark "Stealth" aesthetic. It helps traders record trades, enforce trading rules, analyze performance, and learn trading concepts without AI decision-making, indicators, or guesswork. The application focuses on using predefined Market Knowledge rules for analysis.
 
 Key capabilities include:
 - A dashboard with customizable performance metrics and an equity curve.
@@ -22,7 +22,7 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### UI/UX Decisions
-- **Aesthetic:** "Stealth Terminal" dark theme.
+- **Aesthetic:** "Stealth" dark theme.
 - **Components:** Uses shadcn/ui components with a New York style.
 - **Icons:** Lucide React for icons.
 - **Visuals:** Elite/Pro badges for subscribers with distinct styling.
