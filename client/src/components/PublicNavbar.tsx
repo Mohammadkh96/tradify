@@ -25,10 +25,7 @@ export function PublicNavbar() {
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
               <TrendingUp size={24} strokeWidth={3} />
             </div>
-            <div className="flex flex-col">
-              <span className="font-black text-xl tracking-tighter text-foreground uppercase italic leading-none">Tradify</span>
-              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">HQ</span>
-            </div>
+            <span className="font-black text-xl tracking-tighter text-foreground uppercase italic leading-none">TradifyApp</span>
           </div>
         </Link>
 

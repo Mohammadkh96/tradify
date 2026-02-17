@@ -65,7 +65,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   });
 
   if (isLoading) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Tradify HQ...</div>;
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing TradifyApp...</div>;
   }
 
   if (!userRole) {
@@ -91,7 +91,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const isAdmin = userRole?.role === "OWNER" || userRole?.role === "ADMIN";
 
   if (isLoading) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing Tradify HQ...</div>;
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500 font-mono tracking-widest uppercase">Initializing TradifyApp...</div>;
   }
 
   if (!userRole || !isAdmin) {
