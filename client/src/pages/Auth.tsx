@@ -65,6 +65,7 @@ export default function Auth() {
   const [resendingVerification, setResendingVerification] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const { toast } = useToast();
 
   // Check for verified=true or verification_error in URL (after email verification)
@@ -146,7 +147,7 @@ export default function Auth() {
   const isPasswordValid = passwordRules.every(rule => rule.test(password));
   const isFormValid = isLogin 
     ? (email && password) 
-    : (email && fullName && isPasswordValid && password === confirmPassword && !!country && !!timezone);
+    : (email && fullName && isPasswordValid && password === confirmPassword && !!country && !!timezone && agreedToTerms);
 
   const handleResendVerification = async () => {
     if (!verificationEmail) return;
@@ -737,17 +738,35 @@ export default function Auth() {
 
             <div className="pt-6 border-t border-border text-center">
               <button 
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => { setIsLogin(!isLogin); setAgreedToTerms(false); }}
                 className="text-muted-foreground hover:text-emerald-500 text-xs font-bold transition-colors"
               >
                 {isLogin ? "Need a terminal? Create account" : "Already registered? Log in"}
               </button>
-              <p className="text-center text-[10px] text-muted-foreground mt-6 leading-relaxed uppercase tracking-widest font-bold">
-                By continuing, you agree to our{" "}
-                <Link to="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
-                <Link to="/privacy" className="text-emerald-500 hover:underline">Privacy</Link>, and acknowledge the{" "}
-                <Link to="/risk-disclaimer" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
-              </p>
+              {isLogin ? (
+                <p className="text-center text-[10px] text-muted-foreground mt-6 leading-relaxed uppercase tracking-widest font-bold">
+                  By logging in, you agree to our{" "}
+                  <Link to="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
+                  <Link to="/privacy" className="text-emerald-500 hover:underline">Privacy</Link>, and acknowledge the{" "}
+                  <Link to="/risk-disclaimer" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
+                </p>
+              ) : (
+                <label className="flex items-start gap-3 mt-6 cursor-pointer group" data-testid="checkbox-terms-consent">
+                  <input
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-border bg-muted text-emerald-500 focus:ring-emerald-500/20 accent-emerald-500 shrink-0"
+                    data-testid="input-terms-checkbox"
+                  />
+                  <span className="text-[10px] text-muted-foreground leading-relaxed uppercase tracking-widest font-bold group-hover:text-foreground transition-colors">
+                    I agree to the{" "}
+                    <Link to="/terms" className="text-emerald-500 hover:underline" onClick={(e) => e.stopPropagation()}>Terms of Service</Link>,{" "}
+                    <Link to="/privacy" className="text-emerald-500 hover:underline" onClick={(e) => e.stopPropagation()}>Privacy Policy</Link>, and acknowledge the{" "}
+                    <Link to="/risk-disclaimer" className="text-emerald-500 hover:underline" onClick={(e) => e.stopPropagation()}>Risk Disclaimer</Link>.
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">

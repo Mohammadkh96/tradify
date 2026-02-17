@@ -164,24 +164,67 @@ export default function Terms() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">13. Governing Law</h2>
-          <p>These Terms shall be governed and construed in accordance with applicable laws, without regard to conflict of law provisions. Any disputes arising from these Terms shall be resolved through binding arbitration or in courts of competent jurisdiction.</p>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">13. Disclaimer of Warranties</h2>
+          <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-lg">
+            <p className="font-semibold text-white mb-3">THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO:</p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>Implied warranties of merchantability, fitness for a particular purpose, and non-infringement.</li>
+              <li>Warranties that the Service will be uninterrupted, timely, secure, or error-free.</li>
+              <li>Warranties regarding the accuracy or reliability of any information obtained through the Service.</li>
+              <li>Warranties that defects in the Service will be corrected.</li>
+            </ul>
+          </div>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">14. Severability</h2>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">14. Data Export and Portability</h2>
+          <ul className="list-disc pl-6 space-y-2">
+            <li>Users may export their trade data via CSV at any time while their account is active.</li>
+            <li>Upon account termination, users will have 30 days to request an export of their data.</li>
+            <li>After the 30-day period, we are not obligated to retain or provide access to your data.</li>
+            <li>Exported data format and scope are at our discretion and may not include all platform-generated analytics.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">15. Force Majeure</h2>
+          <p>Tradify shall not be liable for any failure or delay in performing obligations under these Terms due to circumstances beyond our reasonable control, including but not limited to natural disasters, war, terrorism, riots, embargoes, acts of civil or military authorities, fire, floods, pandemics, strikes, power outages, internet disruptions, or failures of third-party services (including MT5, PayPal, or hosting providers).</p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">16. Dispute Resolution</h2>
+          <ul className="list-disc pl-6 space-y-2">
+            <li><strong className="text-white">Informal Resolution:</strong> Before filing any formal claim, you agree to first contact us at support@tradifyapp.com to attempt to resolve the dispute informally within 30 days.</li>
+            <li><strong className="text-white">Arbitration:</strong> Any disputes not resolved informally shall be settled through binding arbitration in accordance with applicable arbitration rules, rather than in court.</li>
+            <li><strong className="text-white">Class Action Waiver:</strong> You agree that any dispute resolution proceedings will be conducted only on an individual basis and not in a class, consolidated, or representative action.</li>
+            <li><strong className="text-white">Small Claims Exception:</strong> Either party may bring qualifying claims in small claims court.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">17. Governing Law</h2>
+          <p>These Terms shall be governed and construed in accordance with applicable laws, without regard to conflict of law provisions. Any disputes arising from these Terms that are not subject to arbitration shall be resolved in courts of competent jurisdiction.</p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">18. Severability</h2>
           <p>If any provision of these Terms is held to be unenforceable or invalid, such provision will be modified to the minimum extent necessary, and the remaining provisions will continue in full force and effect.</p>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">15. Contact Information</h2>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">19. Entire Agreement</h2>
+          <p>These Terms, together with our Privacy Policy, Cookie Policy, and Risk Disclaimer, constitute the entire agreement between you and Tradify regarding your use of the Service. Any failure by Tradify to enforce any right or provision of these Terms shall not be considered a waiver of those rights.</p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">20. Contact Information</h2>
           <p>For questions about these Terms, please contact us at:</p>
           <p className="mt-2"><strong className="text-white">Email:</strong> support@tradifyapp.com</p>
           <p><strong className="text-white">Website:</strong> https://tradifyapp.com</p>
         </section>
 
         <div className="border-t border-slate-700 pt-6 mt-8">
-          <p className="text-sm text-slate-500">By using Tradify, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</p>
+          <p className="text-sm text-slate-500">By creating an account or using Tradify, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service, our Privacy Policy, Cookie Policy, and Risk Disclaimer.</p>
         </div>
       </div>
     </div>

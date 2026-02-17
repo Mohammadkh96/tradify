@@ -130,30 +130,79 @@ export default function Privacy() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">9. International Data Transfers</h2>
-          <p>Your information may be transferred to and processed in countries other than your country of residence. We ensure appropriate safeguards are in place for such transfers in compliance with applicable data protection laws.</p>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">9. Lawful Basis for Processing (GDPR)</h2>
+          <p>For users in the European Economic Area (EEA), United Kingdom, and similar jurisdictions, we process your personal data based on the following lawful grounds:</p>
+          <ul className="list-disc pl-6 mt-3 space-y-2">
+            <li><strong className="text-white">Contractual Necessity:</strong> Processing required to provide the Service you signed up for (account management, trade journaling, MT5 sync, subscription management).</li>
+            <li><strong className="text-white">Consent:</strong> Where you have given explicit consent for specific processing activities (marketing emails, analytics cookies, optional data sharing). You may withdraw consent at any time.</li>
+            <li><strong className="text-white">Legitimate Interest:</strong> Processing necessary for our legitimate business interests (security, fraud prevention, service improvement), provided these interests are not overridden by your rights.</li>
+            <li><strong className="text-white">Legal Obligation:</strong> Processing required to comply with applicable laws, regulations, or legal proceedings.</li>
+          </ul>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">10. Children's Privacy</h2>
-          <p>The Service is not intended for individuals under 18 years of age. We do not knowingly collect personal information from children. If we become aware that we have collected data from a child, we will take steps to delete such information promptly.</p>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">10. International Data Transfers</h2>
+          <p>Your information may be transferred to and processed in countries other than your country of residence, including the United States. When we transfer data outside the EEA/UK, we ensure appropriate safeguards are in place, including:</p>
+          <ul className="list-disc pl-6 mt-3 space-y-2">
+            <li>Standard Contractual Clauses (SCCs) approved by the European Commission.</li>
+            <li>Transfers to countries with adequacy decisions from the European Commission.</li>
+            <li>Other legally recognized transfer mechanisms under applicable data protection laws.</li>
+          </ul>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">11. Changes to This Policy</h2>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">11. Your Rights Under GDPR / CCPA</h2>
+          <p>In addition to the rights listed in Section 6, users in the EEA/UK and California have specific additional rights:</p>
+          
+          <h3 className="text-lg font-semibold text-white mt-4 mb-2">GDPR Rights (EEA/UK Residents)</h3>
+          <ul className="list-disc pl-6 space-y-2">
+            <li><strong className="text-white">Right to Object:</strong> Object to processing based on legitimate interest or for direct marketing purposes.</li>
+            <li><strong className="text-white">Right Not to Be Subject to Automated Decisions:</strong> You will not be subject to decisions based solely on automated processing, including profiling, that produce legal or similarly significant effects.</li>
+            <li><strong className="text-white">Right to Lodge a Complaint:</strong> You have the right to lodge a complaint with your local data protection supervisory authority if you believe your data rights have been violated.</li>
+          </ul>
+
+          <h3 className="text-lg font-semibold text-white mt-4 mb-2">CCPA Rights (California Residents)</h3>
+          <ul className="list-disc pl-6 space-y-2">
+            <li><strong className="text-white">Right to Know:</strong> Request disclosure of the categories and specific pieces of personal information we have collected.</li>
+            <li><strong className="text-white">Right to Delete:</strong> Request deletion of personal information we have collected.</li>
+            <li><strong className="text-white">Right to Non-Discrimination:</strong> We will not discriminate against you for exercising your CCPA rights.</li>
+            <li><strong className="text-white">No Sale of Data:</strong> We do not sell your personal information as defined by the CCPA.</li>
+          </ul>
+
+          <p className="mt-3">To exercise any of these rights, contact us at support@tradifyapp.com. We will respond within 30 days (GDPR) or 45 days (CCPA).</p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">12. Children's Privacy</h2>
+          <p>The Service is not intended for individuals under 18 years of age. We do not knowingly collect personal information from children. If we become aware that we have collected data from a child under 18, we will take steps to delete such information promptly. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.</p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">13. Data Breach Notification</h2>
+          <p>In the event of a personal data breach that is likely to result in a high risk to your rights and freedoms, we will:</p>
+          <ul className="list-disc pl-6 mt-3 space-y-2">
+            <li>Notify the relevant supervisory authority within 72 hours of becoming aware of the breach (where required by law).</li>
+            <li>Notify affected users without undue delay when the breach is likely to result in a high risk to their rights and freedoms.</li>
+            <li>Document the nature of the breach, its likely effects, and the measures taken to address it.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">14. Changes to This Policy</h2>
           <ul className="list-disc pl-6 space-y-2">
             <li>We may update this Privacy Policy periodically to reflect changes in our practices.</li>
-            <li>Material changes will be communicated via email or prominent notice on the Service.</li>
+            <li>Material changes will be communicated via email or prominent notice on the Service at least 30 days before taking effect.</li>
             <li>Continued use of the Service after changes constitutes acceptance of the updated policy.</li>
             <li>The "Last updated" date at the top indicates when the policy was last revised.</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">12. Contact Us</h2>
+          <h2 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">15. Data Protection Contact</h2>
           <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
           <p className="mt-2"><strong className="text-white">Email:</strong> support@tradifyapp.com</p>
           <p><strong className="text-white">Website:</strong> https://tradifyapp.com</p>
+          <p className="mt-3 text-sm">For GDPR-related inquiries, you may also contact your local data protection supervisory authority.</p>
         </section>
 
         <div className="border-t border-slate-700 pt-6 mt-8">

@@ -189,8 +189,11 @@ export default function EarlyAccess() {
                     </Button>
                   </form>
 
-                  <p className="text-center text-xs text-muted-foreground mt-4">
-                    Your information is kept confidential.
+                  <p className="text-center text-[10px] text-muted-foreground mt-4 leading-relaxed uppercase tracking-widest font-bold">
+                    By submitting, you agree to our{" "}
+                    <Link to="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
+                    <Link to="/privacy" className="text-emerald-500 hover:underline">Privacy Policy</Link>, and acknowledge the{" "}
+                    <Link to="/risk-disclaimer" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
                   </p>
                 </>
               )}
@@ -216,9 +219,15 @@ export default function EarlyAccess() {
             </div>
             <span className="font-black text-xl text-foreground uppercase italic tracking-tighter">TRADIFY</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-4">
             Rule-based trading journal for disciplined traders
           </p>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
+            <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
+            <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
+            <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Cookie Policy</Link>
+          </div>
         </div>
       </footer>
     </div>
