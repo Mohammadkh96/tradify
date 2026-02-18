@@ -2097,11 +2097,11 @@ ${blogPosts.map(p => `  <url>
         mt5OnlyTrades = mt5OnlyTrades.filter(t => t.closeTime >= cutoff);
       }
 
-      if (allTrades.length < 5) {
+      if (allTrades.length < 2) {
         return res.json({
           flags: [],
           summary: { totalFlags: 0, highRisk: 0, mediumRisk: 0, lowRisk: 0 },
-          message: "Insufficient trade data. At least 5 trades required for behavioral analysis."
+          message: "Insufficient trade data. At least 2 trades required for behavioral analysis."
         });
       }
 
@@ -2115,12 +2115,13 @@ ${blogPosts.map(p => `  <url>
       }> = [];
 
       // 1. REVENGE TRADING DETECTION (MT5 only - requires position sizes)
-      // Pattern: Increased position size on the NEXT trade after consecutive losses
-      if (mt5OnlyTrades.length >= 10) {
+      // Pattern: Increased position size after a loss, or rapid re-entry after loss
+      if (mt5OnlyTrades.length >= 3) {
         let consecutiveLosses = 0;
         let revengeTradeCount = 0;
         let totalPostLossVolumeIncrease = 0;
         let previousVolume = mt5OnlyTrades[0]?.volume || 0;
+        let rapidReentryAfterLoss = 0;
 
         for (let i = 1; i < mt5OnlyTrades.length; i++) {
           const prevTrade = mt5OnlyTrades[i - 1];
@@ -2128,13 +2129,17 @@ ${blogPosts.map(p => `  <url>
           
           if (prevTrade.netPl < 0) {
             consecutiveLosses++;
+            
+            const timeBetween = (currentTrade.openTime.getTime() - prevTrade.closeTime.getTime()) / (1000 * 60);
+            if (timeBetween < 15 && timeBetween >= 0) {
+              rapidReentryAfterLoss++;
+            }
           } else {
             consecutiveLosses = 0;
           }
           
-          // Check if NEXT trade after 2+ losses has increased volume
-          if (consecutiveLosses >= 2 && previousVolume > 0) {
-            if (currentTrade.volume > previousVolume * 1.3) {
+          if (consecutiveLosses >= 1 && previousVolume > 0) {
+            if (currentTrade.volume > previousVolume * 1.2) {
               revengeTradeCount++;
               totalPostLossVolumeIncrease += (currentTrade.volume - previousVolume) / previousVolume * 100;
             }
@@ -2150,8 +2155,19 @@ ${blogPosts.map(p => `  <url>
             type: "revenge_trading",
             severity,
             title: "Increased Risk After Losses",
-            description: "Position sizes tend to increase following consecutive losing trades.",
-            evidence: `Detected ${revengeTradeCount} instances where volume increased by avg ${avgIncrease.toFixed(1)}% after 2+ losses (MT5 trades).`,
+            description: "Position sizes tend to increase following losing trades.",
+            evidence: `Detected ${revengeTradeCount} instance(s) where volume increased by avg ${avgIncrease.toFixed(1)}% after a losing trade (MT5 trades).`,
+          });
+        }
+
+        if (rapidReentryAfterLoss > 0) {
+          const severity = rapidReentryAfterLoss >= 3 ? "high" : rapidReentryAfterLoss >= 2 ? "medium" : "low";
+          flags.push({
+            type: "rapid_reentry",
+            severity,
+            title: "Quick Re-Entry After Loss",
+            description: "New trades opened within minutes of a losing trade closing — a common revenge trading pattern.",
+            evidence: `Found ${rapidReentryAfterLoss} instance(s) of opening a new trade within 15 minutes of a loss.`,
           });
         }
       }
@@ -2184,7 +2200,7 @@ ${blogPosts.map(p => `  <url>
       const overallAvg = Object.values(sessionAverages).reduce((a, b) => a + b, 0) / Math.max(1, Object.keys(sessionAverages).length);
       
       for (const [session, avg] of Object.entries(sessionAverages)) {
-        if (avg > overallAvg * 1.8 && sessionTradeCounts[session].trades >= 10) {
+        if (avg > overallAvg * 1.8 && sessionTradeCounts[session].trades >= 3) {
           const sessionName = session.charAt(0).toUpperCase() + session.slice(1).replace('_', ' ');
           flags.push({
             type: "session_overtrading",
@@ -2198,7 +2214,7 @@ ${blogPosts.map(p => `  <url>
 
       // 3. RISK CREEP OVER TIME (MT5 only - requires position sizes)
       // Detect gradual increase in position sizes over time
-      if (mt5OnlyTrades.length >= 20) {
+      if (mt5OnlyTrades.length >= 8) {
         const firstQuarterTrades = mt5OnlyTrades.slice(0, Math.floor(mt5OnlyTrades.length / 4));
         const lastQuarterTrades = mt5OnlyTrades.slice(-Math.floor(mt5OnlyTrades.length / 4));
         
@@ -2231,7 +2247,7 @@ ${blogPosts.map(p => `  <url>
 
       let rapidRetryDays = 0;
       for (const [date, trades] of Object.entries(dailyTrades)) {
-        if (trades.length < 3) continue;
+        if (trades.length < 2) continue;
         
         // Sort trades by time
         trades.sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
@@ -2249,7 +2265,7 @@ ${blogPosts.map(p => `  <url>
         }
       }
 
-      if (rapidRetryDays >= 3) {
+      if (rapidRetryDays >= 1) {
         flags.push({
           type: "rapid_retry",
           severity: rapidRetryDays >= 7 ? "high" : "medium",
@@ -2260,7 +2276,7 @@ ${blogPosts.map(p => `  <url>
       }
 
       // 5. LOSS CHASING (Increasing volume on losing days - MT5 only)
-      if (mt5OnlyTrades.length >= 10) {
+      if (mt5OnlyTrades.length >= 5) {
         const mt5DailyTrades: Record<string, NormalizedTrade[]> = {};
         for (const trade of mt5OnlyTrades) {
           const dateKey = trade.closeTime.toISOString().split('T')[0];
@@ -2270,7 +2286,7 @@ ${blogPosts.map(p => `  <url>
 
         let lossChasingDays = 0;
         for (const [date, trades] of Object.entries(mt5DailyTrades)) {
-          if (trades.length < 3) continue;
+          if (trades.length < 2) continue;
           
           trades.sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
           
@@ -2291,7 +2307,7 @@ ${blogPosts.map(p => `  <url>
           }
         }
 
-        if (lossChasingDays >= 2) {
+        if (lossChasingDays >= 1) {
           flags.push({
             type: "loss_chasing",
             severity: lossChasingDays >= 5 ? "high" : "medium",
