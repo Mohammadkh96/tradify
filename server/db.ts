@@ -166,18 +166,6 @@ export async function ensureSchemaColumns() {
       // Index may already exist
     }
 
-    // Count records before any cleanup
-    try {
-      const beforeCount = await pool.query('SELECT COUNT(*) as cnt FROM mt5_history');
-      console.log(`[Startup] MT5 history records BEFORE cleanup: ${beforeCount.rows[0].cnt}`);
-      const perUser = await pool.query('SELECT user_id, COUNT(*) as cnt FROM mt5_history GROUP BY user_id');
-      for (const row of perUser.rows) {
-        console.log(`[Startup]   User ${row.user_id}: ${row.cnt} trades`);
-      }
-    } catch (e) {
-      console.log('[Startup] Could not count MT5 records');
-    }
-
     // Backfill NULL mt5_account_id values to 'default' so unique index works
     try {
       const backfillResult = await pool.query(`
@@ -187,7 +175,7 @@ export async function ensureSchemaColumns() {
         console.log(`[Startup] Backfilled ${backfillResult.rowCount} NULL mt5_account_id values`);
       }
     } catch (e) {
-      console.log('[Startup] MT5 account_id backfill skipped');
+      // Table may not exist yet on first run
     }
 
     // Clean up duplicate MT5 history records (keep highest ID per user/account/ticket)
@@ -203,27 +191,17 @@ export async function ensureSchemaColumns() {
         console.log(`[Startup] Cleaned ${dupResult.rowCount} duplicate MT5 history records`);
       }
     } catch (e) {
-      console.log('[Startup] MT5 dedup cleanup skipped (table may not exist yet)');
+      // Table may not exist yet on first run
     }
 
-    // Count records after cleanup
+    // Ensure unique index on mt5_history for deduplication
     try {
-      const afterCount = await pool.query('SELECT COUNT(*) as cnt FROM mt5_history');
-      console.log(`[Startup] MT5 history records AFTER cleanup: ${afterCount.rows[0].cnt}`);
-    } catch (e) {
-      console.log('[Startup] Could not count MT5 records after cleanup');
-    }
-
-    // Drop old index if it exists (may have NULL issue), recreate cleanly
-    try {
-      await pool.query(`DROP INDEX IF EXISTS mt5_history_unique_ticket`);
       await pool.query(`
-        CREATE UNIQUE INDEX mt5_history_unique_ticket 
+        CREATE UNIQUE INDEX IF NOT EXISTS mt5_history_unique_ticket 
         ON mt5_history (user_id, mt5_account_id, ticket)
       `);
     } catch (e) {
-      // Index may already exist from a previous run
-      console.log('[Startup] MT5 unique index already exists or creation skipped');
+      // Index may already exist
     }
 
     console.log('Schema columns verified');

@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 - **Rule Engine:** A metadata-driven rule engine (defined in `shared/ruleTypes.ts`) allows for dynamic rule creation and validation. The `RULE_TYPE_CATALOG` centralizes rule types and their metadata for dynamic UI rendering and comparison logic.
 
 ### Feature Specifications
-- **MT5 Bridge:** Supports multi-account connectivity, independently tracking trades, equity, and analytics for each MT5 account.
+- **MT5 Bridge:** Supports multi-account connectivity. **Architecture: Account switching only affects live metrics display (balance, equity, margin). All analytics endpoints (equity curve, journal, session analytics, time patterns, behavioral risks, performance intelligence, psychology review, monthly review, instruments, PDF reports) ALWAYS aggregate trade history across ALL accounts via the central `getAllMT5Trades(userId)` helper in `server/routes.ts`.** This uses direct SQL with `DISTINCT ON (mt5_account_id, ticket)` to deduplicate per-account while preserving cross-account trades with the same ticket number.
 - **Plan System:** Centralized configuration in `shared/plans.ts` with feature gating via frontend hooks and backend utilities. Trade history retention is tier-specific.
 - **Email System:** Uses Nodemailer with Google Workspace SMTP for various email types, including welcome, admin-created user, password reset, email verification, subscription notifications, and contact form handling, with rate limiting.
 - **Email Verification:** New users must verify their email before logging in. Verification tokens expire after 24 hours. Admin/Owner accounts bypass verification. Users can resend verification emails from the verification screen.

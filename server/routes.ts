@@ -108,6 +108,55 @@ function isWithinDateRangeUTC(
   return true;
 }
 
+/**
+ * Central helper: Fetch ALL MT5 trades across ALL accounts for a user.
+ * Uses direct SQL with DISTINCT ON to deduplicate by ticket (keeping latest record).
+ * Returns trades with camelCase field names matching the Drizzle schema shape.
+ * This is the ONLY function analytics endpoints should use for MT5 history.
+ * Account switching only affects live metrics display, NOT historical trade data.
+ */
+async function getAllMT5Trades(userId: string): Promise<any[]> {
+  const result = await pool.query(
+    `SELECT DISTINCT ON (mt5_account_id, ticket) 
+            id, ticket, user_id, symbol, direction, volume, 
+            entry_price, exit_price, sl, tp, open_time, close_time, 
+            gross_pl, commission, swap, net_pl, duration, notes, tags, 
+            mt5_account_id, mood, mistake_category
+     FROM mt5_history 
+     WHERE user_id = $1 
+     ORDER BY mt5_account_id, ticket, id DESC`,
+    [userId]
+  );
+  return result.rows.map(r => ({
+    id: r.id,
+    ticket: r.ticket,
+    userId: r.user_id,
+    symbol: r.symbol,
+    direction: r.direction,
+    volume: r.volume,
+    entryPrice: r.entry_price,
+    exitPrice: r.exit_price,
+    sl: r.sl,
+    tp: r.tp,
+    openTime: r.open_time,
+    closeTime: r.close_time,
+    grossPl: r.gross_pl,
+    commission: r.commission,
+    swap: r.swap,
+    netPl: r.net_pl,
+    duration: r.duration,
+    notes: r.notes,
+    tags: r.tags,
+    mt5AccountId: r.mt5_account_id,
+    mood: r.mood,
+    mistakeCategory: r.mistake_category,
+  })).sort((a, b) => {
+    const dateA = a.closeTime ? new Date(a.closeTime).getTime() : 0;
+    const dateB = b.closeTime ? new Date(b.closeTime).getTime() : 0;
+    return dateB - dateA;
+  });
+}
+
 // Authentication middleware
 const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.session.userId) {
@@ -1321,31 +1370,7 @@ ${blogPosts.map(p => `  <url>
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      // Use direct SQL for MT5 history to avoid any ORM issues
-      const mt5Result = await pool.query(
-        `SELECT DISTINCT ON (ticket) ticket, user_id, symbol, direction, volume, 
-                entry_price, exit_price, sl, tp, open_time, close_time, 
-                gross_pl, commission, swap, net_pl, duration, notes, tags, 
-                mt5_account_id, mood, mistake_category
-         FROM mt5_history 
-         WHERE user_id = $1 
-         ORDER BY ticket, id DESC`,
-        [userId]
-      );
-      console.log(`[Equity Curve] Direct SQL found ${mt5Result.rows.length} unique trades for ${userId}`);
-      
-      const allMt5History = mt5Result.rows.map(r => ({
-        ...r,
-        closeTime: r.close_time,
-        openTime: r.open_time,
-        netPl: r.net_pl,
-        grossPl: r.gross_pl,
-        entryPrice: r.entry_price,
-        exitPrice: r.exit_price,
-        mt5AccountId: r.mt5_account_id,
-        mistakeCategory: r.mistake_category,
-      }));
-      
+      const allMt5History = await getAllMT5Trades(userId);
       const allManualTrades = await storage.getTrades(userId);
       
       // Apply tier-based date filtering
@@ -1434,30 +1459,7 @@ ${blogPosts.map(p => `  <url>
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      // Use direct SQL for MT5 history to avoid any ORM issues
-      const mt5Result = await pool.query(
-        `SELECT DISTINCT ON (ticket) id, ticket, user_id, symbol, direction, volume, 
-                entry_price, exit_price, sl, tp, open_time, close_time, 
-                gross_pl, commission, swap, net_pl, duration, notes, tags, 
-                mt5_account_id, mood, mistake_category
-         FROM mt5_history 
-         WHERE user_id = $1 
-         ORDER BY ticket, id DESC`,
-        [userId]
-      );
-      console.log(`[MT5 History] Direct SQL found ${mt5Result.rows.length} unique trades for ${userId}`);
-      
-      const allHistory = mt5Result.rows.map(r => ({
-        ...r,
-        closeTime: r.close_time,
-        openTime: r.open_time,
-        netPl: r.net_pl,
-        grossPl: r.gross_pl,
-        entryPrice: r.entry_price,
-        exitPrice: r.exit_price,
-        mt5AccountId: r.mt5_account_id,
-        mistakeCategory: r.mistake_category,
-      }));
+      const allHistory = await getAllMT5Trades(userId);
       const filteredHistory = filterByTierDate(allHistory, historyDays);
       res.json(filteredHistory);
     } catch (error) {
@@ -1480,8 +1482,7 @@ ${blogPosts.map(p => `  <url>
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      // Fetch ALL MT5 history across all accounts for comprehensive performance data
-      const allMt5History = await storage.getMT5History(userId);
+      const allMt5History = await getAllMT5Trades(userId);
       const allManualTrades = await storage.getTrades(userId);
       
       // Apply tier-based date filtering
@@ -1683,8 +1684,7 @@ ${blogPosts.map(p => `  <url>
         return isWithinDateRangeUTC(tradeDate, dateFilter as string, startDate as string, endDate as string);
       };
 
-      // Fetch ALL MT5 history across all accounts for comprehensive session analytics
-      const mt5History = await storage.getMT5History(userId);
+      const mt5History = await getAllMT5Trades(userId);
 
       // For session analytics, only use MT5 history trades since they have accurate open times.
       // Manual journal entries use created_at (sync time) which doesn't reflect actual trade time.
@@ -1848,7 +1848,7 @@ ${blogPosts.map(p => `  <url>
       };
 
       // Fetch ALL MT5 history across all accounts for comprehensive time pattern analysis
-      const mt5History = await storage.getMT5History(userId);
+      const mt5History = await getAllMT5Trades(userId);
 
       // For time patterns, only use MT5 history trades since they have accurate open times.
       // Manual journal entries use created_at (sync time) which doesn't reflect actual trade time.
@@ -1992,8 +1992,7 @@ ${blogPosts.map(p => `  <url>
         return res.status(403).json({ message: "Behavioral Risk Flags requires Elite subscription" });
       }
 
-      // Fetch ALL MT5 history across all accounts for comprehensive behavioral analysis
-      const mt5History = await storage.getMT5History(userId);
+      const mt5History = await getAllMT5Trades(userId);
       const manualTrades = await storage.getTrades(userId);
 
       // Normalize trades from both sources
@@ -2689,12 +2688,8 @@ Output exactly 1-3 bullet points.`;
       const periodDays = parseInt(period as string) || 30;
       const cutoffDate = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
-      const mt5Trades = await db.select()
-        .from(schema.mt5History)
-        .where(and(
-          eq(schema.mt5History.userId, userId),
-          sql`${schema.mt5History.closeTime} >= ${cutoffDate}`
-        ));
+      const allMt5Trades = await getAllMT5Trades(userId);
+      const mt5Trades = allMt5Trades.filter(t => t.closeTime && new Date(t.closeTime) >= cutoffDate);
 
       const manualTrades = (await storage.getTrades(userId))
         .filter(t => t.createdAt && new Date(t.createdAt) >= cutoffDate);
@@ -2912,11 +2907,7 @@ FORMAT YOUR RESPONSE EXACTLY:
       const prevMonthStart = new Date(targetYear, targetMonth - 2, 1);
       const prevMonthEnd = new Date(targetYear, targetMonth - 1, 0, 23, 59, 59);
 
-      // Get MT5 trades for current and previous month
-      const allMt5Trades = await db
-        .select()
-        .from(schema.mt5History)
-        .where(eq(schema.mt5History.userId, userId));
+      const allMt5Trades = await getAllMT5Trades(userId);
       
       const manualTrades = await storage.getTrades(userId);
 
@@ -3141,11 +3132,7 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
         return res.status(403).json({ message: "Access denied" });
       }
 
-      // Get all trades to determine available months
-      const mt5Trades = await db
-        .select({ closeTime: schema.mt5History.closeTime })
-        .from(schema.mt5History)
-        .where(eq(schema.mt5History.userId, userId));
+      const mt5Trades = await getAllMT5Trades(userId);
 
       const manualTrades = await storage.getTrades(userId);
 
@@ -3187,15 +3174,8 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      // Get unique symbols from mt5_history
-      const history = await db.select({
-        symbol: schema.mt5History.symbol
-      })
-        .from(schema.mt5History)
-        .where(eq(schema.mt5History.userId, userId))
-        .groupBy(schema.mt5History.symbol);
-      
-      const symbols = history.map(h => h.symbol);
+      const allTrades = await getAllMT5Trades(userId);
+      const symbols = [...new Set(allTrades.map(t => t.symbol))];
       res.json({ symbols });
     } catch (error) {
       console.error("Instruments Error:", error);
@@ -3218,12 +3198,8 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      const allTrades = await db.select()
-        .from(schema.mt5History)
-        .where(and(
-          eq(schema.mt5History.userId, userId),
-          eq(schema.mt5History.symbol, symbol)
-        ));
+      const allMt5Trades = await getAllMT5Trades(userId);
+      const allTrades = allMt5Trades.filter(t => t.symbol === symbol);
       
       // Apply tier-based date filtering
       const trades = filterByTierDate(allTrades, historyDays);
@@ -3303,13 +3279,8 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
         return res.json(existing[0]);
       }
       
-      // Fetch instrument stats directly from database
-      const trades = await db.select()
-        .from(schema.mt5History)
-        .where(and(
-          eq(schema.mt5History.userId, userId),
-          eq(schema.mt5History.symbol, symbol)
-        ));
+      const allMt5Trades = await getAllMT5Trades(userId);
+      const trades = allMt5Trades.filter(t => t.symbol === symbol);
       
       if (trades.length < 1) {
         return res.json({ 
@@ -4639,11 +4610,7 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
         });
       }
 
-      // Fetch all necessary data
-      const mt5Trades = await db
-        .select()
-        .from(schema.mt5History)
-        .where(eq(schema.mt5History.userId, userId));
+      const mt5Trades = await getAllMT5Trades(userId);
       
       const manualTrades = await storage.getTrades(userId);
 
