@@ -127,7 +127,7 @@ async function getAllMT5Trades(userId: string): Promise<any[]> {
      ORDER BY mt5_account_id, ticket, id DESC`,
     [userId]
   );
-  return result.rows.map(r => ({
+  const trades = result.rows.map(r => ({
     id: r.id,
     ticket: r.ticket,
     userId: r.user_id,
@@ -155,6 +155,10 @@ async function getAllMT5Trades(userId: string): Promise<any[]> {
     const dateB = b.closeTime ? new Date(b.closeTime).getTime() : 0;
     return dateB - dateA;
   });
+  if (trades.length === 0) {
+    console.log(`[getAllMT5Trades] No trades found for user ${userId} in mt5_history table`);
+  }
+  return trades;
 }
 
 // Authentication middleware
@@ -1029,10 +1033,15 @@ ${blogPosts.map(p => `  <url>
         });
       }
 
+      // Log ALL body keys to detect field name mismatches from different EA versions
+      const bodyKeys = Object.keys(req.body);
+      
       // 2. MT5 Account Management - Create or update the account record
       const accountId = accountNumber ? String(accountNumber) : "default";
+      const historyCount = Array.isArray(history) ? history.length : 0;
+      const positionsCount = Array.isArray(positions) ? positions.length : 0;
       if (accountNumber) {
-        console.log(`[MT5 Sync] HEARTBEAT: Received data from ${userId} account ${accountId} at ${new Date().toISOString()}`);
+        console.log(`[MT5 Sync] HEARTBEAT: ${userId} account ${accountId} | history: ${historyCount} | positions: ${positionsCount} | balance: ${balance} | bodyKeys: [${bodyKeys.join(',')}]`);
         await storage.createMT5Account({
           userId,
           accountNumber: accountId,
@@ -1041,7 +1050,7 @@ ${blogPosts.map(p => `  <url>
           currency: currency || "USD",
         });
       } else {
-        console.log(`[MT5 Sync] HEARTBEAT: Received data from ${userId} at ${new Date().toISOString()}`);
+        console.log(`[MT5 Sync] HEARTBEAT: ${userId} (no account) | history: ${historyCount} | positions: ${positionsCount} | balance: ${balance}`);
       }
 
       // 3. Atomic Sync Operation: Update metrics, snapshots, and history
@@ -1180,7 +1189,28 @@ ${blogPosts.map(p => `  <url>
         console.error("[MT5 Sync] Prop firm auto-sync error (non-fatal):", propFirmErr);
       }
 
-      res.json({ success: true, status: "CONNECTED", accountNumber: accountId, timestamp: new Date().toISOString() });
+      // Check if we need to request full history from the EA
+      let requestFullHistory = false;
+      try {
+        const historyCheck = await pool.query(
+          `SELECT COUNT(*) as cnt FROM mt5_history WHERE user_id = $1`,
+          [userId]
+        );
+        if (parseInt(historyCheck.rows[0]?.cnt || "0") === 0) {
+          requestFullHistory = true;
+          console.log(`[MT5 Sync] No history in DB for ${userId} — requesting full history resync from EA`);
+        }
+      } catch (e) {
+        // Non-fatal
+      }
+
+      res.json({ 
+        success: true, 
+        status: "CONNECTED", 
+        accountNumber: accountId, 
+        timestamp: new Date().toISOString(),
+        requestFullHistory,
+      });
     } catch (error) {
       console.error("[MT5 Sync Error]:", error);
       res.status(500).json({ message: "Synchronization failed" });
