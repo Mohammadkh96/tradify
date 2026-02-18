@@ -360,18 +360,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMT5History(userId: string, from?: Date, to?: Date): Promise<any[]> {
+    console.log(`[getMT5History] Querying for userId: ${userId}`);
     const rows = await db.select().from(mt5History)
       .where(eq(mt5History.userId, userId))
       .orderBy(desc(mt5History.closeTime), desc(mt5History.id));
+    console.log(`[getMT5History] Raw rows returned: ${rows.length} for ${userId}`);
+    if (rows.length > 0) {
+      console.log(`[getMT5History] Sample row accounts: ${[...new Set(rows.slice(0, 20).map(r => r.mt5AccountId))].join(', ')}`);
+    }
     const seen = new Map<string, any>();
     for (const r of rows) {
       if (!seen.has(r.ticket)) {
         seen.set(r.ticket, r);
       }
     }
-    return Array.from(seen.values()).sort((a, b) => 
+    const result = Array.from(seen.values()).sort((a, b) => 
       new Date(b.closeTime).getTime() - new Date(a.closeTime).getTime()
     );
+    console.log(`[getMT5History] After dedup: ${result.length} unique trades for ${userId}`);
+    return result;
   }
 
   async getDailySnapshots(userId: string): Promise<any[]> {

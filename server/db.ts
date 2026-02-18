@@ -166,6 +166,18 @@ export async function ensureSchemaColumns() {
       // Index may already exist
     }
 
+    // Count records before any cleanup
+    try {
+      const beforeCount = await pool.query('SELECT COUNT(*) as cnt FROM mt5_history');
+      console.log(`[Startup] MT5 history records BEFORE cleanup: ${beforeCount.rows[0].cnt}`);
+      const perUser = await pool.query('SELECT user_id, COUNT(*) as cnt FROM mt5_history GROUP BY user_id');
+      for (const row of perUser.rows) {
+        console.log(`[Startup]   User ${row.user_id}: ${row.cnt} trades`);
+      }
+    } catch (e) {
+      console.log('[Startup] Could not count MT5 records');
+    }
+
     // Backfill NULL mt5_account_id values to 'default' so unique index works
     try {
       const backfillResult = await pool.query(`
@@ -192,6 +204,14 @@ export async function ensureSchemaColumns() {
       }
     } catch (e) {
       console.log('[Startup] MT5 dedup cleanup skipped (table may not exist yet)');
+    }
+
+    // Count records after cleanup
+    try {
+      const afterCount = await pool.query('SELECT COUNT(*) as cnt FROM mt5_history');
+      console.log(`[Startup] MT5 history records AFTER cleanup: ${afterCount.rows[0].cnt}`);
+    } catch (e) {
+      console.log('[Startup] Could not count MT5 records after cleanup');
     }
 
     // Drop old index if it exists (may have NULL issue), recreate cleanly

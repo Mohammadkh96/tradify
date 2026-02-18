@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
-import { db } from "./db";
+import { db, pool } from "./db";
 import * as schema from "@shared/schema";
 import { eq, or, desc, and, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -1321,8 +1321,31 @@ ${blogPosts.map(p => `  <url>
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      // Always fetch ALL MT5 history across all accounts for comprehensive P&L
-      const allMt5History = await storage.getMT5History(userId);
+      // Use direct SQL for MT5 history to avoid any ORM issues
+      const mt5Result = await pool.query(
+        `SELECT DISTINCT ON (ticket) ticket, user_id, symbol, direction, volume, 
+                entry_price, exit_price, sl, tp, open_time, close_time, 
+                gross_pl, commission, swap, net_pl, duration, notes, tags, 
+                mt5_account_id, mood, mistake_category
+         FROM mt5_history 
+         WHERE user_id = $1 
+         ORDER BY ticket, id DESC`,
+        [userId]
+      );
+      console.log(`[Equity Curve] Direct SQL found ${mt5Result.rows.length} unique trades for ${userId}`);
+      
+      const allMt5History = mt5Result.rows.map(r => ({
+        ...r,
+        closeTime: r.close_time,
+        openTime: r.open_time,
+        netPl: r.net_pl,
+        grossPl: r.gross_pl,
+        entryPrice: r.entry_price,
+        exitPrice: r.exit_price,
+        mt5AccountId: r.mt5_account_id,
+        mistakeCategory: r.mistake_category,
+      }));
+      
       const allManualTrades = await storage.getTrades(userId);
       
       // Apply tier-based date filtering
@@ -1411,8 +1434,30 @@ ${blogPosts.map(p => `  <url>
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      // Fetch ALL MT5 history across all accounts for comprehensive journal view
-      const allHistory = await storage.getMT5History(userId);
+      // Use direct SQL for MT5 history to avoid any ORM issues
+      const mt5Result = await pool.query(
+        `SELECT DISTINCT ON (ticket) id, ticket, user_id, symbol, direction, volume, 
+                entry_price, exit_price, sl, tp, open_time, close_time, 
+                gross_pl, commission, swap, net_pl, duration, notes, tags, 
+                mt5_account_id, mood, mistake_category
+         FROM mt5_history 
+         WHERE user_id = $1 
+         ORDER BY ticket, id DESC`,
+        [userId]
+      );
+      console.log(`[MT5 History] Direct SQL found ${mt5Result.rows.length} unique trades for ${userId}`);
+      
+      const allHistory = mt5Result.rows.map(r => ({
+        ...r,
+        closeTime: r.close_time,
+        openTime: r.open_time,
+        netPl: r.net_pl,
+        grossPl: r.gross_pl,
+        entryPrice: r.entry_price,
+        exitPrice: r.exit_price,
+        mt5AccountId: r.mt5_account_id,
+        mistakeCategory: r.mistake_category,
+      }));
       const filteredHistory = filterByTierDate(allHistory, historyDays);
       res.json(filteredHistory);
     } catch (error) {
