@@ -1321,11 +1321,8 @@ ${blogPosts.map(p => `  <url>
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      // Get active MT5 account and filter history accordingly
-      const activeAccount = await storage.getActiveMT5Account(userId);
-      const allMt5History = activeAccount 
-        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
-        : await storage.getMT5History(userId);
+      // Always fetch ALL MT5 history across all accounts for comprehensive P&L
+      const allMt5History = await storage.getMT5History(userId);
       const allManualTrades = await storage.getTrades(userId);
       
       // Apply tier-based date filtering
@@ -1353,7 +1350,7 @@ ${blogPosts.map(p => `  <url>
       const allTrades = [...mt5Trades, ...manualTradesFiltered];
       
       if (allTrades.length === 0) {
-        return res.json([]);
+        return res.json({ trades: [], todayStats: { pl: 0, count: 0 } });
       }
 
       // Sort trades chronologically
@@ -1370,7 +1367,7 @@ ${blogPosts.map(p => `  <url>
       });
       const todayPl = todayTrades.reduce((sum, t) => sum + t.netPl, 0);
       const todayCount = todayTrades.length;
-      console.log(`[Equity Curve] Total: ${sortedTrades.length} trades (MT5: ${mt5Trades.length}, Manual: ${manualTradesFiltered.length}), Active account: ${activeAccount?.accountNumber || 'none'}`);
+      console.log(`[Equity Curve] Total: ${sortedTrades.length} trades (MT5: ${mt5Trades.length}, Manual: ${manualTradesFiltered.length})`);
       console.log(`[Equity Curve] Today (${todayUTC}): ${todayCount} trades, P&L: $${todayPl.toFixed(2)}`);
 
       // Calculate cumulative P&L
@@ -1414,11 +1411,8 @@ ${blogPosts.map(p => `  <url>
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      // Get active MT5 account and filter history accordingly
-      const activeAccount = await storage.getActiveMT5Account(userId);
-      const allHistory = activeAccount 
-        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
-        : await storage.getMT5History(userId);
+      // Fetch ALL MT5 history across all accounts for comprehensive journal view
+      const allHistory = await storage.getMT5History(userId);
       const filteredHistory = filterByTierDate(allHistory, historyDays);
       res.json(filteredHistory);
     } catch (error) {
@@ -1441,13 +1435,8 @@ ${blogPosts.map(p => `  <url>
       const userRole = await storage.getUserRole(sessionUserId);
       const historyDays = getHistoryDays(userRole?.subscriptionTier);
       
-      // Get active MT5 account and filter history accordingly
-      const activeAccount = await storage.getActiveMT5Account(userId);
-      
-      // SINGLE SOURCE OF TRUTH: Combine MT5 history + manual trades (excluding duplicates)
-      const allMt5History = activeAccount 
-        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
-        : await storage.getMT5History(userId);
+      // Fetch ALL MT5 history across all accounts for comprehensive performance data
+      const allMt5History = await storage.getMT5History(userId);
       const allManualTrades = await storage.getTrades(userId);
       
       // Apply tier-based date filtering
@@ -1649,11 +1638,8 @@ ${blogPosts.map(p => `  <url>
         return isWithinDateRangeUTC(tradeDate, dateFilter as string, startDate as string, endDate as string);
       };
 
-      // Get active MT5 account and filter history accordingly
-      const activeAccount = await storage.getActiveMT5Account(userId);
-      const mt5History = activeAccount 
-        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
-        : await storage.getMT5History(userId);
+      // Fetch ALL MT5 history across all accounts for comprehensive session analytics
+      const mt5History = await storage.getMT5History(userId);
 
       // For session analytics, only use MT5 history trades since they have accurate open times.
       // Manual journal entries use created_at (sync time) which doesn't reflect actual trade time.
@@ -1816,11 +1802,8 @@ ${blogPosts.map(p => `  <url>
         return isWithinDateRangeUTC(tradeDate, dateFilter as string, startDate as string, endDate as string);
       };
 
-      // Get active MT5 account and filter history accordingly
-      const activeAccount = await storage.getActiveMT5Account(userId);
-      const mt5History = activeAccount 
-        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
-        : await storage.getMT5History(userId);
+      // Fetch ALL MT5 history across all accounts for comprehensive time pattern analysis
+      const mt5History = await storage.getMT5History(userId);
 
       // For time patterns, only use MT5 history trades since they have accurate open times.
       // Manual journal entries use created_at (sync time) which doesn't reflect actual trade time.
@@ -1964,11 +1947,8 @@ ${blogPosts.map(p => `  <url>
         return res.status(403).json({ message: "Behavioral Risk Flags requires Elite subscription" });
       }
 
-      // Get active MT5 account and filter history accordingly
-      const activeAccount = await storage.getActiveMT5Account(userId);
-      const mt5History = activeAccount 
-        ? await storage.getMT5HistoryByAccount(userId, activeAccount.accountNumber)
-        : await storage.getMT5History(userId);
+      // Fetch ALL MT5 history across all accounts for comprehensive behavioral analysis
+      const mt5History = await storage.getMT5History(userId);
       const manualTrades = await storage.getTrades(userId);
 
       // Normalize trades from both sources
