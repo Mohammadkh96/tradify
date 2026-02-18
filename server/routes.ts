@@ -1070,15 +1070,22 @@ ${blogPosts.map(p => `  <url>
       });
 
       // 4. Update history with account association (Journal Data Integrity)
-      if (history && Array.isArray(history) && history.length > 0) {
-        console.log(`[MT5 Sync] Syncing history for ${userId} account ${accountId}. Count: ${history.length}`);
-        await storage.syncMT5HistoryWithAccount(userId, accountId, history);
+      // Support alternative field names from different EA versions
+      const historyData = history 
+        || req.body.deals 
+        || req.body.closedTrades 
+        || req.body.trades 
+        || req.body.tradeHistory;
+      
+      if (historyData && Array.isArray(historyData) && historyData.length > 0) {
+        console.log(`[MT5 Sync] Syncing history for ${userId} account ${accountId}. Count: ${historyData.length}`);
+        await storage.syncMT5HistoryWithAccount(userId, accountId, historyData);
         
         await db.insert(schema.adminAuditLog).values({
           adminId: "SYSTEM_MT5",
           actionType: "MT5_HISTORY_SYNC",
           targetUserId: userId,
-          details: { accountNumber: accountId, count: history.length, timestamp: new Date() }
+          details: { accountNumber: accountId, count: historyData.length, timestamp: new Date() }
         });
       }
 
@@ -1101,8 +1108,8 @@ ${blogPosts.map(p => `  <url>
           // Count today's closed trades from MT5 history
           let todayTradesCount = 0;
           let todayNetPl = 0;
-          if (history && Array.isArray(history)) {
-            for (const trade of history) {
+          if (historyData && Array.isArray(historyData)) {
+            for (const trade of historyData) {
               const closeTime = trade.closeTime ? new Date(trade.closeTime) : null;
               if (closeTime) {
                 const closeDay = new Date(closeTime);
