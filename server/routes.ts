@@ -1078,7 +1078,17 @@ ${blogPosts.map(p => `  <url>
         || req.body.tradeHistory;
       
       if (historyData && Array.isArray(historyData) && historyData.length > 0) {
-        console.log(`[MT5 Sync] Syncing history for ${userId} account ${accountId}. Count: ${historyData.length}`);
+        // Log ALL trade tickets and P&L for debugging missing trades
+        const tradesSummary = historyData.map((t: any) => `#${t.ticket}:${t.profit}`).join(', ');
+        console.log(`[MT5 Sync] Syncing ${historyData.length} trades for ${userId} account ${accountId}: [${tradesSummary}]`);
+        
+        // Compare EA balance with sum of synced trades to detect missing history
+        const eaClosedPl = historyData.reduce((sum: number, t: any) => sum + parseFloat(t.profit || 0), 0);
+        const balancePl = parseFloat(String(balance || 0)) - 10000; // Rough estimate based on deposit
+        if (Math.abs(eaClosedPl - balancePl) > 1) {
+          console.warn(`[MT5 Sync] P&L MISMATCH for ${userId}: EA sends ${historyData.length} trades totaling $${eaClosedPl.toFixed(2)}, but balance change suggests ~$${balancePl.toFixed(2)}. EA may be missing trades.`);
+        }
+        
         await storage.syncMT5HistoryWithAccount(userId, accountId, historyData);
         
         await db.insert(schema.adminAuditLog).values({
