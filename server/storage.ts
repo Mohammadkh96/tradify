@@ -306,7 +306,7 @@ export class DatabaseStorage implements IStorage {
             ticket: ticketStr,
             symbol: trade.symbol,
             direction: oldDirection,
-            volume: trade.volume.toString(),
+            volume: String(trade.volume || 0),
             entryPrice: trade.price?.toString() || "0",
             exitPrice: trade.price?.toString() || "0",
             sl: trade.sl?.toString(),
@@ -1023,13 +1023,26 @@ export class DatabaseStorage implements IStorage {
 
     for (const trade of trades) {
       try {
-        const ticketStr = trade.ticket.toString();
+        if (!trade || !trade.ticket || !trade.symbol) {
+          console.warn(`[MT5 Sync] Skipping invalid trade (missing ticket/symbol):`, JSON.stringify(trade));
+          continue;
+        }
+        const ticketStr = String(trade.ticket);
         const existing = existingMap.get(ticketStr);
 
         const rawOpenTime = trade.open_time || trade.openTime || trade.time;
         const rawCloseTime = trade.close_time || trade.closeTime || trade.time;
+        if (!rawOpenTime || !rawCloseTime) {
+          console.warn(`[MT5 Sync] Skipping trade #${ticketStr} — missing timestamps`);
+          continue;
+        }
         const openTime = typeof rawOpenTime === 'number' ? new Date(rawOpenTime * 1000) : new Date(rawOpenTime);
         const closeTime = typeof rawCloseTime === 'number' ? new Date(rawCloseTime * 1000) : new Date(rawCloseTime);
+        
+        if (isNaN(openTime.getTime()) || isNaN(closeTime.getTime())) {
+          console.warn(`[MT5 Sync] Skipping trade #${ticketStr} — invalid timestamps`);
+          continue;
+        }
         
         const entryPrice = (trade.open_price || trade.entry_price || trade.price_open || trade.price || 0).toString();
         const exitPrice = (trade.close_price || trade.exit_price || trade.price_close || trade.price || 0).toString();
@@ -1041,6 +1054,10 @@ export class DatabaseStorage implements IStorage {
         const commission = parseFloat(trade.commission || 0);
         const swap = parseFloat(trade.swap || 0);
         const profit = parseFloat(trade.profit || 0);
+        if (isNaN(commission) || isNaN(swap) || isNaN(profit)) {
+          console.warn(`[MT5 Sync] Skipping trade #${ticketStr} — invalid numeric values`);
+          continue;
+        }
         const netPlNum = profit + commission + swap;
         const netPl = netPlNum.toFixed(2);
 
@@ -1064,7 +1081,7 @@ export class DatabaseStorage implements IStorage {
             ticket: ticketStr,
             symbol: trade.symbol,
             direction,
-            volume: trade.volume.toString(),
+            volume: String(trade.volume || 0),
             entryPrice,
             exitPrice,
             sl: trade.sl?.toString(),

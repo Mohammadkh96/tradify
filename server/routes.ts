@@ -2057,23 +2057,22 @@ ${blogPosts.map(p => `  <url>
       const mt5Normalized: NormalizedTrade[] = (mt5History || []).map(t => ({
         openTime: new Date(t.openTime),
         closeTime: new Date(t.closeTime),
-        netPl: parseFloat(t.netPl || "0"),
-        volume: parseFloat(t.volume || "0"),
+        netPl: parseFloat(t.netPl || "0") || 0,
+        volume: parseFloat(t.volume || "0") || 0,
         symbol: t.symbol || "Unknown",
-      }));
+      })).filter(t => !isNaN(t.openTime.getTime()) && !isNaN(t.closeTime.getTime()));
 
-      // For volume-based analysis, only use MT5 trades (manual trades don't have lot size)
       let mt5OnlyTrades = mt5Normalized.sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
       
-      // For general analysis (frequency, timing), include all trades
       const manualNormalized: NormalizedTrade[] = (manualTrades || [])
+        .filter(t => t.createdAt)
         .map(t => ({
           openTime: new Date(t.createdAt!),
           closeTime: new Date(t.createdAt!),
-          netPl: parseFloat(t.netPl || "0"),
+          netPl: parseFloat(t.netPl || "0") || 0,
           volume: 0,
           symbol: t.pair || "Unknown",
-        }));
+        })).filter(t => !isNaN(t.openTime.getTime()));
 
       let allTrades = [...mt5Normalized, ...manualNormalized]
         .sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
@@ -2138,10 +2137,10 @@ ${blogPosts.map(p => `  <url>
             consecutiveLosses = 0;
           }
           
-          if (consecutiveLosses >= 1 && previousVolume > 0) {
+          if (consecutiveLosses >= 1 && previousVolume > 0 && currentTrade.volume > 0) {
             if (currentTrade.volume > previousVolume * 1.2) {
               revengeTradeCount++;
-              totalPostLossVolumeIncrease += (currentTrade.volume - previousVolume) / previousVolume * 100;
+              totalPostLossVolumeIncrease += ((currentTrade.volume - previousVolume) / previousVolume) * 100;
             }
           }
           

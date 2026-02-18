@@ -265,8 +265,11 @@ def main():
             timestamp = time.strftime('%H:%M:%S')
             
             if resp.status_code == 200:
-                server_data = resp.json()
-                server_count = server_data.get("serverTradeCount", "?")
+                try:
+                    server_data = resp.json()
+                    server_count = server_data.get("serverTradeCount", "?")
+                except Exception:
+                    server_count = "?"
                 print(f"[+] {timestamp} | Synced | Equity: {account_info.equity:.2f} | Trades: {len(hist_list)} (server: {server_count}) | Positions: {len(pos_list)}")
             elif resp.status_code == 403:
                 print(f"[!] {timestamp} | Auth Error: Invalid or expired token")
