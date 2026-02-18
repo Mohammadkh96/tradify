@@ -5615,7 +5615,7 @@ Guidelines:
       const dailyDDAmount = todayStartBalance * (dailyDDLimit / 100);
       const todayLoss = Math.max(0, todayStartBalance - currentBalance) + (parseFloat(currentPl || "0") < 0 ? Math.abs(parseFloat(currentPl || "0")) : 0);
       const dailyDDRemaining = dailyDDAmount - todayLoss;
-      const dailyDDUsedPercent = (todayLoss / dailyDDAmount) * 100;
+      const dailyDDUsedPercent = dailyDDAmount > 0 ? (todayLoss / dailyDDAmount) * 100 : 0;
 
       // Max/trailing drawdown check
       const trailingDDFloor = challenge.trailingDrawdown
@@ -5675,6 +5675,8 @@ Guidelines:
 
       // Calculate suggested max SL
       let suggestedMaxSL = null;
+      let suggestedTP = null;
+      let suggestedTPReason = "";
       if (entry && lots > 0) {
         const safeRisk = Math.min(dailyDDRemaining * 0.3, maxDDRemaining * 0.2);
         const multiplier = getContractMultiplier(pair);
@@ -5692,6 +5694,47 @@ Guidelines:
         } else {
           suggestedMaxSL = (entry + safePriceDistance).toFixed(decimals);
         }
+
+        // Calculate Suggested TP based on risk-to-reward and challenge context
+        const actualSLDistance = sl ? Math.abs(entry - sl) : safePriceDistance;
+        const actualRisk = actualSLDistance * lots * multiplier;
+
+        // Determine optimal R:R based on challenge progress
+        let targetRR = 2.0; // Default minimum 1:2 R:R
+        let reason = "Minimum 1:2 R:R for disciplined trading";
+
+        if (remainingToTarget > 0 && actualRisk > 0) {
+          if (remainingToTarget <= actualRisk * 3) {
+            // Close to target: use conservative R:R that could hit target in 1-2 trades
+            targetRR = Math.max(1.5, Math.min(3, remainingToTarget / actualRisk));
+            reason = `Optimized to reach profit target ($${remainingToTarget.toFixed(0)} remaining)`;
+          } else if (dailyDDUsedPercent > 50) {
+            // Already used significant DD today: higher R:R to justify the risk
+            targetRR = 3.0;
+            reason = "Higher R:R recommended — over 50% daily DD already used";
+          } else if (maxDDRemaining < accountSize * 0.03) {
+            // Very little max DD buffer left: need higher reward for each risk
+            targetRR = 3.0;
+            reason = "Higher R:R recommended — limited drawdown buffer remaining";
+          }
+        }
+
+        const tpDistance = actualSLDistance * targetRR;
+
+        if (tradeDirection === "Long" || tradeDirection === "Buy") {
+          suggestedTP = (entry + tpDistance).toFixed(decimals);
+        } else {
+          suggestedTP = (entry - tpDistance).toFixed(decimals);
+        }
+        suggestedTPReason = `${targetRR.toFixed(1)}:1 R:R — ${reason}`;
+      }
+
+      // Calculate potential profit if TP is hit
+      let potentialProfitAtTP = 0;
+      if (suggestedTP && entry && lots > 0) {
+        const tpPrice = parseFloat(suggestedTP);
+        const multiplier = getContractMultiplier(pair);
+        potentialProfitAtTP = Math.abs(tpPrice - entry) * lots * multiplier;
       }
 
       res.json({
@@ -5702,10 +5745,13 @@ Guidelines:
           maxDDRemaining,
           maxDDUsedPercent: Math.min(100, ((highWaterMark - currentBalance) / (highWaterMark * (maxDDLimit / 100))) * 100),
           potentialLoss,
+          potentialProfit: potentialProfitAtTP,
           profitProgress: Math.min(100, (currentProfit / profitTargetAmount) * 100),
           currentProfit,
           remainingToTarget,
           suggestedMaxSL,
+          suggestedTP,
+          suggestedTPReason,
         },
       });
     } catch (error) {

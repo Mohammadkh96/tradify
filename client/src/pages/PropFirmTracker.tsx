@@ -549,10 +549,13 @@ export default function PropFirmTracker() {
       maxDDRemaining: number;
       maxDDUsedPercent: number;
       potentialLoss: number;
+      potentialProfit: number;
       profitProgress: number;
       currentProfit: number;
       remainingToTarget: number;
       suggestedMaxSL: string | null;
+      suggestedTP: string | null;
+      suggestedTPReason: string;
     };
   };
 
@@ -1786,76 +1789,138 @@ export default function PropFirmTracker() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     <div className="text-center p-2 rounded-md bg-muted/20">
                       <p className="text-xs text-muted-foreground">Potential Loss</p>
-                      <p className="font-bold text-rose-400">{fc(riskResult.metrics.potentialLoss)}</p>
+                      <p className="font-bold text-rose-400" data-testid="text-potential-loss">{fc(riskResult.metrics.potentialLoss)}</p>
                     </div>
                     <div className="text-center p-2 rounded-md bg-muted/20">
                       <p className="text-xs text-muted-foreground">Daily DD Left</p>
-                      <p className="font-bold">{fc(riskResult.metrics.dailyDDRemaining)}</p>
+                      <p className="font-bold" data-testid="text-daily-dd-left">{fc(riskResult.metrics.dailyDDRemaining)}</p>
                     </div>
                     <div className="text-center p-2 rounded-md bg-muted/20">
                       <p className="text-xs text-muted-foreground">Max DD Left</p>
-                      <p className="font-bold">{fc(riskResult.metrics.maxDDRemaining)}</p>
+                      <p className="font-bold" data-testid="text-max-dd-left">{fc(riskResult.metrics.maxDDRemaining)}</p>
                     </div>
                     {riskResult.metrics.suggestedMaxSL && (
                       <div className="text-center p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
                         <p className="text-xs text-amber-400">Suggested SL</p>
-                        <p className="font-bold text-amber-300">{riskResult.metrics.suggestedMaxSL}</p>
+                        <p className="font-bold text-amber-300" data-testid="text-suggested-sl">{riskResult.metrics.suggestedMaxSL}</p>
+                      </div>
+                    )}
+                    {riskResult.metrics.suggestedTP && (
+                      <div className="text-center p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                        <p className="text-xs text-emerald-400">Suggested TP</p>
+                        <p className="font-bold text-emerald-300" data-testid="text-suggested-tp">{riskResult.metrics.suggestedTP}</p>
                       </div>
                     )}
                   </div>
 
+                  {riskResult.metrics.suggestedTPReason && (
+                    <p className="text-xs text-muted-foreground px-1" data-testid="text-tp-reason">
+                      {riskResult.metrics.suggestedTPReason}
+                    </p>
+                  )}
+
                   {riskResult.metrics.potentialLoss > 0 && (
-                    <Card className="border-border/50">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium flex items-center gap-2">
-                          <Gauge size={14} className="text-amber-400" />
-                          If You Lose This Trade
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                          <div>
-                            <p className="text-muted-foreground">New Balance</p>
-                            <p className="font-bold text-rose-400">
-                              {fc(progress.currentBalance - riskResult.metrics.potentialLoss)}
-                            </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Card className="border-border/50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-xs font-medium flex items-center gap-2">
+                            <Gauge size={14} className="text-amber-400" />
+                            If You Lose This Trade
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <p className="text-muted-foreground">New Balance</p>
+                              <p className="font-bold text-rose-400">
+                                {fc(progress.currentBalance - riskResult.metrics.potentialLoss)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">New {challenge.trailingDrawdown ? "Trail" : "Max"} DD Buffer</p>
+                              <p className={cn("font-bold",
+                                progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0 ? "text-rose-400" : "text-amber-400"
+                              )}>
+                                {fc(Math.max(0, progress.distanceToMaxLoss - riskResult.metrics.potentialLoss))}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Daily DD Remaining</p>
+                              <p className={cn("font-bold",
+                                progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0 ? "text-rose-400" : "text-amber-400"
+                              )}>
+                                {fc(Math.max(0, progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss))}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Challenge Status</p>
+                              <p className={cn("font-bold",
+                                progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0
+                                  ? "text-rose-400" : progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0
+                                    ? "text-rose-400" : "text-emerald-400"
+                              )}>
+                                {progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0
+                                  ? "FAILED"
+                                  : progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0
+                                    ? "DAILY BREACH"
+                                    : "SAFE"}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-muted-foreground">New {challenge.trailingDrawdown ? "Trail" : "Max"} DD Buffer</p>
-                            <p className={cn("font-bold",
-                              progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0 ? "text-rose-400" : "text-amber-400"
-                            )}>
-                              {fc(Math.max(0, progress.distanceToMaxLoss - riskResult.metrics.potentialLoss))}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Daily DD Remaining</p>
-                            <p className={cn("font-bold",
-                              progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0 ? "text-rose-400" : "text-amber-400"
-                            )}>
-                              {fc(Math.max(0, progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss))}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Challenge Status</p>
-                            <p className={cn("font-bold",
-                              progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0
-                                ? "text-rose-400" : progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0
-                                  ? "text-rose-400" : "text-emerald-400"
-                            )}>
-                              {progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0
-                                ? "FAILED"
-                                : progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0
-                                  ? "DAILY BREACH"
-                                  : "SAFE"}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+
+                      {riskResult.metrics.potentialProfit > 0 && (
+                        <Card className="border-border/50">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-xs font-medium flex items-center gap-2">
+                              <Target size={14} className="text-emerald-400" />
+                              If You Hit Suggested TP
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <p className="text-muted-foreground">New Balance</p>
+                                <p className="font-bold text-emerald-400" data-testid="text-win-balance">
+                                  {fc(progress.currentBalance + riskResult.metrics.potentialProfit)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Profit from Trade</p>
+                                <p className="font-bold text-emerald-400" data-testid="text-win-profit">
+                                  +{fc(riskResult.metrics.potentialProfit)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Target Progress</p>
+                                <p className="font-bold text-emerald-400" data-testid="text-win-progress">
+                                  {(() => {
+                                    const total = riskResult.metrics.currentProfit + riskResult.metrics.remainingToTarget;
+                                    if (total <= 0) return "100%";
+                                    return Math.min(100, ((riskResult.metrics.currentProfit + riskResult.metrics.potentialProfit) / total * 100)).toFixed(0) + "%";
+                                  })()}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Remaining to Target</p>
+                                <p className={cn("font-bold",
+                                  riskResult.metrics.remainingToTarget - riskResult.metrics.potentialProfit <= 0
+                                    ? "text-emerald-400" : "text-amber-400"
+                                )} data-testid="text-win-remaining">
+                                  {riskResult.metrics.remainingToTarget - riskResult.metrics.potentialProfit <= 0
+                                    ? "TARGET HIT"
+                                    : fc(riskResult.metrics.remainingToTarget - riskResult.metrics.potentialProfit)}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
