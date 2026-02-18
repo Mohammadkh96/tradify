@@ -1206,16 +1206,18 @@ ${blogPosts.map(p => `  <url>
         console.error("[MT5 Sync] Prop firm auto-sync error (non-fatal):", propFirmErr);
       }
 
-      // Check if we need to request full history from the EA
+      // Tell the EA how many trades we have — EA can compare and resend if needed
+      let serverTradeCount = 0;
       let requestFullHistory = false;
       try {
         const historyCheck = await pool.query(
-          `SELECT COUNT(*) as cnt FROM mt5_history WHERE user_id = $1`,
-          [userId]
+          `SELECT COUNT(*) as cnt FROM mt5_history WHERE user_id = $1 AND mt5_account_id = $2`,
+          [userId, accountId]
         );
-        if (parseInt(historyCheck.rows[0]?.cnt || "0") === 0) {
+        serverTradeCount = parseInt(historyCheck.rows[0]?.cnt || "0");
+        if (serverTradeCount === 0) {
           requestFullHistory = true;
-          console.log(`[MT5 Sync] No history in DB for ${userId} — requesting full history resync from EA`);
+          console.log(`[MT5 Sync] No history in DB for ${userId} account ${accountId} — requesting full history resync`);
         }
       } catch (e) {
         // Non-fatal
@@ -1227,6 +1229,7 @@ ${blogPosts.map(p => `  <url>
         accountNumber: accountId, 
         timestamp: new Date().toISOString(),
         requestFullHistory,
+        serverTradeCount,
       });
     } catch (error) {
       console.error("[MT5 Sync Error]:", error);

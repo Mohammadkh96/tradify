@@ -82,7 +82,7 @@ export default function MT5Bridge() {
   const pythonCode = `#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TRADIFY CONNECTOR v3.1 - MT5 Bridge
+TRADIFY CONNECTOR v3.2 - MT5 Bridge
 Double-click this file to run, or use: python tradify_connector.py
 """
 
@@ -103,7 +103,7 @@ def install_packages():
 
 def main():
     print("=" * 55)
-    print("       TRADIFYAPP CONNECTOR v3.1")
+    print("       TRADIFYAPP CONNECTOR v3.2")
     print("=" * 55)
     print()
     
@@ -180,6 +180,16 @@ def main():
     print("-" * 55)
     
     from datetime import datetime
+    from datetime import datetime as dt_cls
+    
+    # Force MT5 to load full history at startup
+    epoch_start = int(dt_cls(2000, 1, 1).timestamp())
+    try:
+        mt5.history_orders_get(epoch_start, int(time.time()) + 86400)
+        mt5.history_deals_get(epoch_start, int(time.time()) + 86400)
+        print("[+] History cache pre-loaded")
+    except Exception:
+        pass
     
     while True:
         try:
@@ -206,10 +216,9 @@ def main():
                         "tp": p.tp
                     })
             
-            # Get history - pair opening and closing deals by position_id
-            start_time = datetime(2020, 1, 1).timestamp()
-            now_ts = time.time()
-            history = mt5.history_deals_get(start_time, now_ts)
+            # Get full trade history
+            now_ts = int(time.time()) + 86400
+            history = mt5.history_deals_get(epoch_start, now_ts)
             hist_list = []
             if history:
                 open_deals = {}
@@ -256,7 +265,9 @@ def main():
             timestamp = time.strftime('%H:%M:%S')
             
             if resp.status_code == 200:
-                print(f"[+] {timestamp} | Synced | Equity: {account_info.equity:.2f} | Positions: {len(pos_list)}")
+                server_data = resp.json()
+                server_count = server_data.get("serverTradeCount", "?")
+                print(f"[+] {timestamp} | Synced | Equity: {account_info.equity:.2f} | Trades: {len(hist_list)} (server: {server_count}) | Positions: {len(pos_list)}")
             elif resp.status_code == 403:
                 print(f"[!] {timestamp} | Auth Error: Invalid or expired token")
                 print("[!] Please generate a new token from the MT5 Bridge page")
