@@ -2,7 +2,7 @@ import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
 import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Trash2, History as HistoryIcon, Plus, Calendar, Monitor, Brain, AlertTriangle } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -244,6 +244,14 @@ export default function Journal() {
   }, [filteredTrades]);
 
   const statsDerivedLabel = "Derived from history";
+  
+  const TRADES_PER_PAGE = 30;
+  const [visibleCount, setVisibleCount] = useState(TRADES_PER_PAGE);
+  
+  useEffect(() => { setVisibleCount(TRADES_PER_PAGE); }, [searchTerm, filterOutcome, dateFilter, customStartDate, customEndDate]);
+  
+  const paginatedTrades = useMemo(() => filteredTrades.slice(0, visibleCount), [filteredTrades, visibleCount]);
+  const hasMore = visibleCount < filteredTrades.length;
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
@@ -421,7 +429,7 @@ export default function Journal() {
         </div>
 
         <div className="space-y-3">
-          {filteredTrades.map((trade: any) => (
+          {paginatedTrades.map((trade: any) => (
             <div key={trade.id} className="bg-card border border-border rounded-xl p-5 hover:border-emerald-500/30 transition-colors group relative">
               <button 
                 onClick={() => deleteTrade.mutate(trade.id)}
@@ -576,11 +584,31 @@ export default function Journal() {
               )}
             </div>
           ))}
-          {filteredTrades.length === 0 && (
+          {paginatedTrades.length === 0 && (
             <div className="py-20 flex flex-col items-center justify-center text-muted-foreground bg-card border border-border rounded-2xl border-dashed">
               <HistoryIcon size={48} className="mb-4 opacity-20" />
               <p>No trades found for this filter</p>
             </div>
+          )}
+          {hasMore && (
+            <div className="flex flex-col items-center gap-2 pt-4">
+              <p className="text-xs text-muted-foreground" data-testid="text-trade-count">
+                Showing {paginatedTrades.length} of {filteredTrades.length} trades
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setVisibleCount(prev => prev + TRADES_PER_PAGE)}
+                className="px-8"
+                data-testid="button-load-more"
+              >
+                Load More
+              </Button>
+            </div>
+          )}
+          {!hasMore && filteredTrades.length > TRADES_PER_PAGE && (
+            <p className="text-center text-xs text-muted-foreground pt-4">
+              All {filteredTrades.length} trades loaded
+            </p>
           )}
         </div>
       </main>
