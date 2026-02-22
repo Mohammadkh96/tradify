@@ -124,6 +124,9 @@
   "overrides": {
     "drizzle-kit": {
       "@esbuild-kit/esm-loader": "npm:tsx@^4.20.4"
+    },
+    "@vercel/node": {
+      "path-to-regexp": "1.9.0"
     }
   },
   "optionalDependencies": {
