@@ -91,7 +91,7 @@ export function CookieConsent() {
   return (
     <>
       {isVisible && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom duration-500">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] p-4 animate-in slide-in-from-bottom duration-500">
           <div className="max-w-4xl mx-auto bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
             <div className="p-6">
               <div className="flex items-start gap-4">
