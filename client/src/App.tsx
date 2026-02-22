@@ -419,7 +419,7 @@ function Router() {
 }
 
 function TrackingInitializer() {
-  const { initAnalytics, analyticsEnabled, trackPageView } = useTracking();
+  const { initAnalytics, initMarketing, analyticsEnabled, marketingEnabled, trackPageView } = useTracking();
 
   useEffect(() => {
     const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -427,6 +427,12 @@ function TrackingInitializer() {
       initAnalytics(gaId);
     }
   }, [initAnalytics]);
+
+  useEffect(() => {
+    if (marketingEnabled) {
+      initMarketing("2400693330339331");
+    }
+  }, [marketingEnabled, initMarketing]);
 
   useEffect(() => {
     if (analyticsEnabled) {
