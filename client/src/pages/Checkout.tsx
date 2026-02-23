@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlan } from "@/hooks/usePlan";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { PLAN_CONFIGS, type PlanTier, type BillingPeriod } from "@shared/plans";
+import { trackFBEvent } from "@/lib/fbpixel";
 
 const PLAN_ICONS: Record<'PRO' | 'ELITE', any> = {
   PRO: Star,
@@ -55,9 +56,7 @@ export default function Checkout() {
           const tierName = tier === 'ELITE' ? 'Elite' : 'Pro';
           if (result.success) {
             const purchaseValue = tier === 'ELITE' ? 59.00 : 29.00;
-            if (typeof window.fbq === 'function') {
-              window.fbq('track', 'Purchase', { value: purchaseValue, currency: 'USD' });
-            }
+            trackFBEvent('Purchase', { value: purchaseValue, currency: 'USD' });
             toast({
               title: "Subscription Activated!",
               description: `Welcome to TradifyApp ${tierName}! Your subscription is now active.`,

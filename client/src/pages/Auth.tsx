@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, getQueryFn } from "@/lib/queryClient";
+import { trackFBEvent } from "@/lib/fbpixel";
 import { useQuery } from "@tanstack/react-query";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { SEO } from "@/components/SEO";
@@ -227,9 +228,7 @@ export default function Auth() {
       if (!isLogin && data.requiresVerification) {
         setRequiresVerification(true);
         setVerificationEmail(email);
-        if (typeof window.fbq === 'function') {
-          window.fbq('track', 'CompleteRegistration');
-        }
+        trackFBEvent('CompleteRegistration');
         toast({
           title: "Account Created",
           description: "Please check your email to verify your account.",
