@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Megaphone, FileText, BarChart3, Users, TrendingUp, ArrowUpRight, PenTool, Target, FolderOpen, Clock } from "lucide-react";
+import { Megaphone, FileText, BarChart3, Users, TrendingUp, ArrowUpRight, PenTool, Target, FolderOpen, Clock, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ const platformColors: Record<string, string> = {
 export default function MarketingDashboard() {
   const navigate = useNavigate();
 
-  const { data: stats, isLoading } = useQuery<MarketingStats>({
+  const { data: stats, isLoading, isFetching, refetch } = useQuery<MarketingStats>({
     queryKey: ["/api/admin/marketing/stats"],
   });
 
@@ -112,6 +112,15 @@ export default function MarketingDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            data-testid="button-refresh-stats"
+          >
+            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+          </Button>
           <Button
             variant="outline"
             onClick={() => navigate("/admin/marketing/content-studio")}
