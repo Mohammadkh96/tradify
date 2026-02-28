@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { openai } from "./client";
-import { trackAIUsage, calculateCost } from "../../ai-cost-tracker";
+import { trackAIUsage, calculateCost, getUserTier } from "../../ai-cost-tracker";
 
 export function registerImageRoutes(app: Express): void {
   app.post("/api/generate-image", async (req: Request, res: Response) => {
@@ -20,9 +20,11 @@ export function registerImageRoutes(app: Express): void {
       });
       const imgDuration = Date.now() - imgStartTime;
 
+      const imgUserId = (req as any).session?.userId || "anonymous";
+      const imgUserTier = await getUserTier(imgUserId);
       trackAIUsage({
-        userId: (req as any).session?.userId || "anonymous",
-        userTier: "FREE",
+        userId: imgUserId,
+        userTier: imgUserTier,
         feature: "image_generation",
         model: "gpt-image-1",
         promptTokens: 0,

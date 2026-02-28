@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
 import { chatStorage } from "./storage";
-import { trackAIUsage, calculateCost, estimateTokensFromText } from "../../ai-cost-tracker";
+import { trackAIUsage, calculateCost, estimateTokensFromText, getUserTier } from "../../ai-cost-tracker";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -101,10 +101,12 @@ export function registerChatRoutes(app: Express): void {
       }
       const chatDuration = Date.now() - chatStartTime;
 
+      const chatUserId = (req as any).session?.userId || "anonymous";
+      const chatUserTier = await getUserTier(chatUserId);
       const estimated = estimateTokensFromText(fullResponse);
       trackAIUsage({
-        userId: (req as any).session?.userId || "anonymous",
-        userTier: "FREE",
+        userId: chatUserId,
+        userTier: chatUserTier,
         feature: "chat",
         model: "gpt-5.1",
         promptTokens: estimated.promptTokens,

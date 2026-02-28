@@ -1,5 +1,6 @@
 import { db } from "./db";
-import { aiUsageLogs } from "@shared/schema";
+import { aiUsageLogs, userRole } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   "gpt-4o-mini": { input: 0.15 / 1_000_000, output: 0.60 / 1_000_000 },
@@ -109,6 +110,17 @@ export async function wrapOpenAICall<T>(
   });
 
   return result;
+}
+
+export async function getUserTier(userId: string): Promise<string> {
+  try {
+    if (!userId || userId === "anonymous") return "FREE";
+    const [user] = await db.select({ subscriptionTier: userRole.subscriptionTier })
+      .from(userRole).where(eq(userRole.userId, userId)).limit(1);
+    return user?.subscriptionTier || "FREE";
+  } catch {
+    return "FREE";
+  }
 }
 
 export function estimateTokensFromText(text: string): { promptTokens: number; completionTokens: number; totalTokens: number } {

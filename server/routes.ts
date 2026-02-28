@@ -4675,7 +4675,7 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
       trackAIUsage({
         userId,
         userTier: ceUser?.subscriptionTier || "FREE",
-        feature: "ai_tutor",
+        feature: "compliance_analysis",
         model: "gpt-4o-mini",
         promptTokens: ceUsage?.prompt_tokens ?? 0,
         completionTokens: ceUsage?.completion_tokens ?? 0,

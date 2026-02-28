@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { chatStorage } from "../chat/storage";
 import { openai, speechToText, voiceChatWithTextModel } from "./client";
-import { trackAIUsage, calculateCost, estimateTokensFromText } from "../../ai-cost-tracker";
+import { trackAIUsage, calculateCost, estimateTokensFromText, getUserTier } from "../../ai-cost-tracker";
 
 export function registerAudioRoutes(app: Express): void {
   // Get all conversations
@@ -69,13 +69,15 @@ export function registerAudioRoutes(app: Express): void {
 
       // 1. Transcribe user audio
       const audioBuffer = Buffer.from(audio, "base64");
+      const audioUserId = (req as any).session?.userId || "anonymous";
+      const audioUserTier = await getUserTier(audioUserId);
       const sttStartTime = Date.now();
       const userTranscript = await speechToText(audioBuffer, inputFormat);
       const sttDuration = Date.now() - sttStartTime;
 
       trackAIUsage({
-        userId: (req as any).session?.userId || "anonymous",
-        userTier: "FREE",
+        userId: audioUserId,
+        userTier: audioUserTier,
         feature: "transcription",
         model: "gpt-4o-mini-transcribe",
         promptTokens: 0,
@@ -131,8 +133,8 @@ export function registerAudioRoutes(app: Express): void {
 
       const voiceEstimated = estimateTokensFromText(assistantTranscript);
       trackAIUsage({
-        userId: (req as any).session?.userId || "anonymous",
-        userTier: "FREE",
+        userId: audioUserId,
+        userTier: audioUserTier,
         feature: "voice_chat",
         model: "gpt-audio-mini",
         promptTokens: voiceEstimated.promptTokens,
@@ -183,6 +185,8 @@ export function registerAudioRoutes(app: Express): void {
       res.setHeader("Connection", "keep-alive");
 
       const audioBuffer = Buffer.from(audio, "base64");
+      const vsUserId = (req as any).session?.userId || "anonymous";
+      const vsUserTier = await getUserTier(vsUserId);
       let userTranscript = "";
       let assistantTranscript = "";
       const vsStartTime = Date.now();
@@ -208,8 +212,8 @@ export function registerAudioRoutes(app: Express): void {
 
       const vsEstimated = estimateTokensFromText(assistantTranscript);
       trackAIUsage({
-        userId: (req as any).session?.userId || "anonymous",
-        userTier: "FREE",
+        userId: vsUserId,
+        userTier: vsUserTier,
         feature: "voice_chat",
         model: "gpt-audio-mini",
         promptTokens: vsEstimated.promptTokens,
