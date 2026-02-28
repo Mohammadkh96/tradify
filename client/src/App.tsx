@@ -397,6 +397,9 @@ function Router() {
       <Route path="/admin/audit-logs">
         {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
       </Route>
+      <Route path="/admin/costs">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
       <Route path="/admin/blog">
         {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
       </Route>

@@ -652,3 +652,49 @@ export const marketingEmailSequences = pgTable("marketing_email_sequences", {
 export const insertMarketingEmailSequenceSchema = createInsertSchema(marketingEmailSequences).omit({ id: true, createdAt: true });
 export type MarketingEmailSequence = typeof marketingEmailSequences.$inferSelect;
 export type InsertMarketingEmailSequence = z.infer<typeof insertMarketingEmailSequenceSchema>;
+
+// ==================== AI USAGE & COST TRACKING ====================
+
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  userTier: text("user_tier").notNull(),
+  feature: text("feature").notNull(),
+  model: text("model").notNull(),
+  promptTokens: integer("prompt_tokens").default(0),
+  completionTokens: integer("completion_tokens").default(0),
+  totalTokens: integer("total_tokens").default(0),
+  costUsd: text("cost_usd").notNull(),
+  requestDuration: integer("request_duration"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAiUsageLogSchema = createInsertSchema(aiUsageLogs).omit({ id: true, createdAt: true });
+export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
+export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
+
+export const manualCosts = pgTable("manual_costs", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  amount: text("amount").notNull(),
+  frequency: text("frequency").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertManualCostSchema = createInsertSchema(manualCosts).omit({ id: true, createdAt: true });
+export type ManualCost = typeof manualCosts.$inferSelect;
+export type InsertManualCost = z.infer<typeof insertManualCostSchema>;
+
+export const costBudgetAlerts = pgTable("cost_budget_alerts", {
+  id: serial("id").primaryKey(),
+  monthlyBudget: text("monthly_budget").notNull(),
+  alertThreshold: integer("alert_threshold").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCostBudgetAlertSchema = createInsertSchema(costBudgetAlerts).omit({ id: true, createdAt: true });
+export type CostBudgetAlert = typeof costBudgetAlerts.$inferSelect;
+export type InsertCostBudgetAlert = z.infer<typeof insertCostBudgetAlertSchema>;

@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { storage } from "./storage";
 import type { MarketingBrandSettings, MarketingContent } from "@shared/schema";
+import { trackAIUsage, calculateCost } from "./ai-cost-tracker";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -114,6 +115,7 @@ export async function checkSimilarity(newContent: string, type: string): Promise
 }
 
 async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<string> {
+  const startTime = Date.now();
   const response = await openai.chat.completions.create({
     model: MODEL,
     messages: [
@@ -123,6 +125,20 @@ async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<str
     temperature: 0.85,
     max_tokens: 2000,
   });
+  const duration = Date.now() - startTime;
+
+  const usage = response.usage;
+  trackAIUsage({
+    userId: "admin",
+    userTier: "ADMIN",
+    feature: "marketing_content",
+    model: MODEL,
+    promptTokens: usage?.prompt_tokens ?? 0,
+    completionTokens: usage?.completion_tokens ?? 0,
+    totalTokens: usage?.total_tokens ?? 0,
+    costUsd: calculateCost(MODEL, usage?.prompt_tokens ?? 0, usage?.completion_tokens ?? 0),
+    requestDuration: duration,
+  }).catch(err => console.error("[AI Cost Tracker] marketing_content error:", err));
 
   return response.choices[0]?.message?.content || "";
 }

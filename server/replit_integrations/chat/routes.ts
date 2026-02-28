@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
 import { chatStorage } from "./storage";
+import { trackAIUsage, calculateCost, estimateTokensFromText } from "../../ai-cost-tracker";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -89,6 +90,7 @@ export function registerChatRoutes(app: Express): void {
       });
 
       let fullResponse = "";
+      const chatStartTime = Date.now();
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || "";
@@ -97,6 +99,20 @@ export function registerChatRoutes(app: Express): void {
           res.write(`data: ${JSON.stringify({ content })}\n\n`);
         }
       }
+      const chatDuration = Date.now() - chatStartTime;
+
+      const estimated = estimateTokensFromText(fullResponse);
+      trackAIUsage({
+        userId: (req as any).session?.userId || "anonymous",
+        userTier: "FREE",
+        feature: "chat",
+        model: "gpt-5.1",
+        promptTokens: estimated.promptTokens,
+        completionTokens: estimated.completionTokens,
+        totalTokens: estimated.totalTokens,
+        costUsd: calculateCost("gpt-5.1", estimated.promptTokens, estimated.completionTokens),
+        requestDuration: chatDuration,
+      }).catch(err => console.error("[AI Cost Tracker] chat error:", err));
 
       // Save assistant message
       await chatStorage.createMessage(conversationId, "assistant", fullResponse);

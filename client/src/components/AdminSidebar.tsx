@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, FolderOpen, Library, Palette } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, FolderOpen, Library, Palette, DollarSign } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
@@ -15,6 +15,7 @@ const adminNavItems = [
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/admin/mt5", label: "MT5 Monitor", icon: Zap },
   { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
+  { href: "/admin/costs", label: "Cost Intelligence", icon: DollarSign },
 ];
 
 const marketingNavItems = [
@@ -50,7 +51,7 @@ export function AdminSidebar() {
               {adminNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={location.pathname === item.href}>
-                    <Link to={item.href}>
+                    <Link to={item.href} data-testid={`link-admin-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                       <div className={cn(
                         "flex items-center gap-3 w-full px-4 py-2 rounded-md transition-colors",
                         location.pathname === item.href ? "bg-emerald-500/10 text-emerald-500" : "text-slate-400 hover:text-white hover:bg-slate-900"

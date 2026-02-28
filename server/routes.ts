@@ -14,6 +14,7 @@ import { emailService } from "./emailService";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
+import { trackAIUsage, calculateCost, estimateTokensFromText } from "./ai-cost-tracker";
 // Removed pdfkit - using client-side PDF generation with jspdf
 
 const PostgresStore = connectPg(session);
@@ -2690,11 +2691,30 @@ Metrics:
 
 Output exactly 1-3 bullet points.`;
 
+      const startTime = Date.now();
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 200,
       });
+      const duration = Date.now() - startTime;
+
+      const usage = response.usage;
+      const promptTokens = usage?.prompt_tokens ?? 0;
+      const completionTokens = usage?.completion_tokens ?? 0;
+      const totalTokens = usage?.total_tokens ?? (promptTokens + completionTokens);
+      const userObj = await storage.getUserRole(userId);
+      trackAIUsage({
+        userId,
+        userTier: userObj?.subscriptionTier || "FREE",
+        feature: "performance_insights",
+        model: "gpt-4o-mini",
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        costUsd: calculateCost("gpt-4o-mini", promptTokens, completionTokens),
+        requestDuration: duration,
+      }).catch(err => console.error("[AI Cost Tracker] performance_insights error:", err));
 
       const insightText = response.choices[0].message.content || "Unable to generate insights at this time.";
       
@@ -2889,11 +2909,26 @@ FORMAT YOUR RESPONSE EXACTLY:
 ---
 *This review is auto-generated based on your tagged trading data. It is not financial advice.*`;
 
+      const psyStartTime = Date.now();
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 600,
       });
+      const psyDuration = Date.now() - psyStartTime;
+
+      const psyUsage = response.usage;
+      trackAIUsage({
+        userId,
+        userTier: user?.subscriptionTier || "FREE",
+        feature: "psychology_review",
+        model: "gpt-4o-mini",
+        promptTokens: psyUsage?.prompt_tokens ?? 0,
+        completionTokens: psyUsage?.completion_tokens ?? 0,
+        totalTokens: psyUsage?.total_tokens ?? 0,
+        costUsd: calculateCost("gpt-4o-mini", psyUsage?.prompt_tokens ?? 0, psyUsage?.completion_tokens ?? 0),
+        requestDuration: psyDuration,
+      }).catch(err => console.error("[AI Cost Tracker] psychology_review error:", err));
 
       const reviewText = response.choices[0].message.content || "Unable to generate psychology review.";
 
@@ -3143,11 +3178,26 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 ---
 *This review is auto-generated based on trading data. It is not financial advice.*`;
 
+      const mrStartTime = Date.now();
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 800,
       });
+      const mrDuration = Date.now() - mrStartTime;
+
+      const mrUsage = response.usage;
+      trackAIUsage({
+        userId,
+        userTier: user?.subscriptionTier || "FREE",
+        feature: "monthly_review",
+        model: "gpt-4o-mini",
+        promptTokens: mrUsage?.prompt_tokens ?? 0,
+        completionTokens: mrUsage?.completion_tokens ?? 0,
+        totalTokens: mrUsage?.total_tokens ?? 0,
+        costUsd: calculateCost("gpt-4o-mini", mrUsage?.prompt_tokens ?? 0, mrUsage?.completion_tokens ?? 0),
+        requestDuration: mrDuration,
+      }).catch(err => console.error("[AI Cost Tracker] monthly_review error:", err));
 
       const reviewText = response.choices[0].message.content || "Unable to generate review at this time.";
 
@@ -3407,12 +3457,27 @@ Provide a concise 4-5 sentence analysis covering:
 End with: "Review your charts for current market structure."`;
 
       console.log("Calling OpenAI for instrument analysis with model gpt-4o-mini...");
+      const iaStartTime = Date.now();
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 250,
       });
+      const iaDuration = Date.now() - iaStartTime;
       console.log("OpenAI response:", JSON.stringify(response.choices[0]));
+
+      const iaUsage = response.usage;
+      trackAIUsage({
+        userId,
+        userTier: userRole?.subscriptionTier || "FREE",
+        feature: "instrument_analysis",
+        model: "gpt-4o-mini",
+        promptTokens: iaUsage?.prompt_tokens ?? 0,
+        completionTokens: iaUsage?.completion_tokens ?? 0,
+        totalTokens: iaUsage?.total_tokens ?? 0,
+        costUsd: calculateCost("gpt-4o-mini", iaUsage?.prompt_tokens ?? 0, iaUsage?.completion_tokens ?? 0),
+        requestDuration: iaDuration,
+      }).catch(err => console.error("[AI Cost Tracker] instrument_analysis error:", err));
 
       const analysisText = response.choices[0].message.content || "Unable to generate analysis.";
       
@@ -4592,17 +4657,33 @@ Provide a 3-4 sentence factual summary that:
 IMPORTANT: Only state facts from the data above. Do not recommend trades or suggest rule changes.`;
 
       const OpenAI = (await import('openai')).default;
-      const openai = new OpenAI({
+      const openaiLocal = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
       
-      const response = await openai.chat.completions.create({
+      const ceStartTime = Date.now();
+      const response = await openaiLocal.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 300,
       });
+      const ceDuration = Date.now() - ceStartTime;
       
+      const ceUsage = response.usage;
+      const ceUser = await storage.getUserRole(userId);
+      trackAIUsage({
+        userId,
+        userTier: ceUser?.subscriptionTier || "FREE",
+        feature: "ai_tutor",
+        model: "gpt-4o-mini",
+        promptTokens: ceUsage?.prompt_tokens ?? 0,
+        completionTokens: ceUsage?.completion_tokens ?? 0,
+        totalTokens: ceUsage?.total_tokens ?? 0,
+        costUsd: calculateCost("gpt-4o-mini", ceUsage?.prompt_tokens ?? 0, ceUsage?.completion_tokens ?? 0),
+        requestDuration: ceDuration,
+      }).catch(err => console.error("[AI Cost Tracker] compliance_explain error:", err));
+
       const explanation = response.choices[0]?.message?.content || "Unable to generate explanation.";
       
       res.json({
@@ -5098,6 +5179,7 @@ Guidelines:
 - Never provide specific trade recommendations or financial advice
 - Focus on concepts, not predictions`;
 
+      const etStartTime = Date.now();
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
@@ -5107,6 +5189,21 @@ Guidelines:
         max_tokens: 800,
         temperature: 0.7,
       });
+      const etDuration = Date.now() - etStartTime;
+
+      const etUsage = response.usage;
+      const etUser = await storage.getUserRole(userId);
+      trackAIUsage({
+        userId,
+        userTier: etUser?.subscriptionTier || "FREE",
+        feature: "education_ai",
+        model: "gpt-4o-mini",
+        promptTokens: etUsage?.prompt_tokens ?? 0,
+        completionTokens: etUsage?.completion_tokens ?? 0,
+        totalTokens: etUsage?.total_tokens ?? 0,
+        costUsd: calculateCost("gpt-4o-mini", etUsage?.prompt_tokens ?? 0, etUsage?.completion_tokens ?? 0),
+        requestDuration: etDuration,
+      }).catch(err => console.error("[AI Cost Tracker] education_ai error:", err));
       
       const answer = response.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
       
@@ -6463,6 +6560,303 @@ Guidelines:
     } catch (error) {
       console.error("Delete email sequence error:", error);
       res.status(500).json({ message: "Failed to delete email sequence" });
+    }
+  });
+
+  // ==================== COST INTELLIGENCE ROUTES ====================
+
+  app.get("/api/admin/costs/overview", requireAdmin, async (_req, res) => {
+    try {
+      const now = new Date();
+      const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - weekStart.getUTCDay());
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+      const [todayLogs, weekLogs, monthLogs, allTimeLogs] = await Promise.all([
+        storage.getAiUsageLogsByDateRange(todayStart, now),
+        storage.getAiUsageLogsByDateRange(weekStart, now),
+        storage.getAiUsageLogsByDateRange(monthStart, now),
+        storage.getAiUsageLogsByDateRange(new Date(0), now),
+      ]);
+
+      const sumCost = (logs: any[]) => logs.reduce((sum, l) => sum + parseFloat(l.costUsd || "0"), 0);
+
+      const todaySpend = sumCost(todayLogs);
+      const weekSpend = sumCost(weekLogs);
+      const monthSpend = sumCost(monthLogs);
+      const allTimeSpend = sumCost(allTimeLogs);
+
+      const allUsers = await storage.getAllUsers();
+      const activeProUsers = allUsers.filter(u => u.subscriptionTier === "PRO" && (u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "active"));
+      const activeEliteUsers = allUsers.filter(u => u.subscriptionTier === "ELITE" && (u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "active"));
+
+      let monthlyRevenue = 0;
+      for (const u of activeProUsers) {
+        monthlyRevenue += u.billingPeriod === "annual" ? 24.17 : 29;
+      }
+      for (const u of activeEliteUsers) {
+        monthlyRevenue += u.billingPeriod === "annual" ? 49.17 : 59;
+      }
+
+      const profitMargin = monthlyRevenue - monthSpend;
+
+      res.json({
+        today: todaySpend.toFixed(2),
+        week: weekSpend.toFixed(2),
+        month: monthSpend.toFixed(2),
+        allTime: allTimeSpend.toFixed(2),
+        totalRequests: allTimeLogs.length,
+        monthlyRevenue: monthlyRevenue.toFixed(2),
+        profitMargin: profitMargin.toFixed(2),
+        proUsers: activeProUsers.length,
+        eliteUsers: activeEliteUsers.length,
+      });
+    } catch (error) {
+      console.error("Cost overview error:", error);
+      res.status(500).json({ message: "Failed to get cost overview" });
+    }
+  });
+
+  app.get("/api/admin/costs/by-tier", requireAdmin, async (req, res) => {
+    try {
+      const from = req.query.from ? new Date(req.query.from as string) : undefined;
+      const to = req.query.to ? new Date(req.query.to as string) : undefined;
+      const result = await storage.aggregateAiUsageByTier(from, to);
+      const totalCostAll = result.reduce((sum, r) => sum + parseFloat(r.totalCost || "0"), 0);
+      const mapped = result.map(r => ({
+        tier: r.userTier,
+        totalCost: r.totalCost,
+        requestCount: r.count,
+        percentage: totalCostAll > 0 ? ((parseFloat(r.totalCost || "0") / totalCostAll) * 100).toFixed(1) : "0",
+      }));
+      res.json(mapped);
+    } catch (error) {
+      console.error("Cost by tier error:", error);
+      res.status(500).json({ message: "Failed to get cost by tier" });
+    }
+  });
+
+  app.get("/api/admin/costs/by-feature", requireAdmin, async (req, res) => {
+    try {
+      const from = req.query.from ? new Date(req.query.from as string) : undefined;
+      const to = req.query.to ? new Date(req.query.to as string) : undefined;
+      const result = await storage.aggregateAiUsageByFeature(from, to);
+      const totalCostAll = result.reduce((sum, r) => sum + parseFloat(r.totalCost || "0"), 0);
+      const mapped = result.map(r => ({
+        feature: r.feature,
+        totalCost: r.totalCost,
+        requestCount: r.count,
+        percentage: totalCostAll > 0 ? ((parseFloat(r.totalCost || "0") / totalCostAll) * 100).toFixed(1) : "0",
+      }));
+      res.json(mapped);
+    } catch (error) {
+      console.error("Cost by feature error:", error);
+      res.status(500).json({ message: "Failed to get cost by feature" });
+    }
+  });
+
+  app.get("/api/admin/costs/by-model", requireAdmin, async (req, res) => {
+    try {
+      const from = req.query.from ? new Date(req.query.from as string) : undefined;
+      const to = req.query.to ? new Date(req.query.to as string) : undefined;
+      const result = await storage.aggregateAiUsageByModel(from, to);
+      const totalCostAll = result.reduce((sum, r) => sum + parseFloat(r.totalCost || "0"), 0);
+      const mapped = result.map(r => ({
+        model: r.model,
+        totalCost: r.totalCost,
+        requestCount: r.count,
+        percentage: totalCostAll > 0 ? ((parseFloat(r.totalCost || "0") / totalCostAll) * 100).toFixed(1) : "0",
+      }));
+      res.json(mapped);
+    } catch (error) {
+      console.error("Cost by model error:", error);
+      res.status(500).json({ message: "Failed to get cost by model" });
+    }
+  });
+
+  app.get("/api/admin/costs/daily", requireAdmin, async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const result = await storage.getAiUsageDailyTotals(days);
+      const mapped = result.map(r => ({
+        date: r.date,
+        totalCost: r.totalCost,
+        requestCount: r.count,
+      }));
+      res.json(mapped);
+    } catch (error) {
+      console.error("Daily costs error:", error);
+      res.status(500).json({ message: "Failed to get daily costs" });
+    }
+  });
+
+  app.get("/api/admin/costs/top-users", requireAdmin, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const result = await storage.getAiUsageTopUsers(limit);
+      const mapped = result.map(r => ({
+        userId: r.userId,
+        userTier: r.userTier,
+        totalCost: r.totalCost,
+        requestCount: r.count,
+      }));
+      res.json(mapped);
+    } catch (error) {
+      console.error("Top users cost error:", error);
+      res.status(500).json({ message: "Failed to get top users" });
+    }
+  });
+
+  app.get("/api/admin/costs/per-user-tier", requireAdmin, async (_req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const tierCounts: Record<string, number> = { FREE: 0, PRO: 0, ELITE: 0 };
+      for (const u of allUsers) {
+        const t = (u.subscriptionTier || "FREE").toUpperCase();
+        if (t in tierCounts) tierCounts[t]++;
+      }
+
+      const tierCosts = await storage.aggregateAiUsageByTier();
+      const result = tierCosts.map(tc => {
+        const ucTier = tc.userTier.toUpperCase();
+        const userCount = tierCounts[ucTier] || 0;
+        return {
+          tier: tc.userTier,
+          totalCost: tc.totalCost,
+          userCount,
+          avgCost: userCount > 0 ? (parseFloat(tc.totalCost) / userCount).toFixed(4) : "0",
+        };
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("Per user tier cost error:", error);
+      res.status(500).json({ message: "Failed to get per-user tier costs" });
+    }
+  });
+
+  app.get("/api/admin/costs/revenue", requireAdmin, async (_req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const isActive = (u: any) => u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "active";
+      const proUsers = allUsers.filter(u => u.subscriptionTier === "PRO" && isActive(u));
+      const eliteUsers = allUsers.filter(u => u.subscriptionTier === "ELITE" && isActive(u));
+
+      let proRevenue = 0;
+      for (const u of proUsers) {
+        proRevenue += u.billingPeriod === "annual" ? 24.17 : 29;
+      }
+      let eliteRevenue = 0;
+      for (const u of eliteUsers) {
+        eliteRevenue += u.billingPeriod === "annual" ? 49.17 : 59;
+      }
+
+      res.json({
+        estimatedMonthlyRevenue: (proRevenue + eliteRevenue).toFixed(2),
+        proUsers: proUsers.length,
+        eliteUsers: eliteUsers.length,
+        proRevenue: proRevenue.toFixed(2),
+        eliteRevenue: eliteRevenue.toFixed(2),
+      });
+    } catch (error) {
+      console.error("Revenue estimate error:", error);
+      res.status(500).json({ message: "Failed to get revenue estimate" });
+    }
+  });
+
+  app.get("/api/admin/costs/manual", requireAdmin, async (_req, res) => {
+    try {
+      const costs = await storage.listManualCosts();
+      res.json(costs);
+    } catch (error) {
+      console.error("List manual costs error:", error);
+      res.status(500).json({ message: "Failed to list manual costs" });
+    }
+  });
+
+  app.post("/api/admin/costs/manual", requireAdmin, async (req, res) => {
+    try {
+      const createSchema = z.object({
+        name: z.string().min(1),
+        category: z.string().min(1),
+        amount: z.string().min(1),
+        frequency: z.string().min(1),
+        notes: z.string().optional(),
+      });
+      const parsed = createSchema.parse(req.body);
+      const cost = await storage.createManualCost(parsed);
+      res.json(cost);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create manual cost error:", error);
+      res.status(500).json({ message: "Failed to create manual cost" });
+    }
+  });
+
+  app.put("/api/admin/costs/manual/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const updateSchema = z.object({
+        name: z.string().optional(),
+        category: z.string().optional(),
+        amount: z.string().optional(),
+        frequency: z.string().optional(),
+        notes: z.string().optional(),
+      });
+      const parsed = updateSchema.parse(req.body);
+      const cost = await storage.updateManualCost(id, parsed);
+      res.json(cost);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update manual cost error:", error);
+      res.status(500).json({ message: "Failed to update manual cost" });
+    }
+  });
+
+  app.delete("/api/admin/costs/manual/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      await storage.deleteManualCost(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete manual cost error:", error);
+      res.status(500).json({ message: "Failed to delete manual cost" });
+    }
+  });
+
+  app.get("/api/admin/costs/budget", requireAdmin, async (_req, res) => {
+    try {
+      const alert = await storage.getCostBudgetAlert();
+      res.json(alert || null);
+    } catch (error) {
+      console.error("Get budget alert error:", error);
+      res.status(500).json({ message: "Failed to get budget alert" });
+    }
+  });
+
+  app.put("/api/admin/costs/budget", requireAdmin, async (req, res) => {
+    try {
+      const budgetSchema = z.object({
+        monthlyBudget: z.string().min(1),
+        alertThreshold: z.number().min(0).max(100),
+        isActive: z.boolean(),
+      });
+      const parsed = budgetSchema.parse(req.body);
+      const alert = await storage.upsertCostBudgetAlert(parsed);
+      res.json(alert);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update budget alert error:", error);
+      res.status(500).json({ message: "Failed to update budget alert" });
     }
   });
 

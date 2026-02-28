@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { chatStorage } from "../chat/storage";
 import { openai, speechToText, voiceChatWithTextModel } from "./client";
+import { trackAIUsage, calculateCost, estimateTokensFromText } from "../../ai-cost-tracker";
 
 export function registerAudioRoutes(app: Express): void {
   // Get all conversations
@@ -68,7 +69,21 @@ export function registerAudioRoutes(app: Express): void {
 
       // 1. Transcribe user audio
       const audioBuffer = Buffer.from(audio, "base64");
+      const sttStartTime = Date.now();
       const userTranscript = await speechToText(audioBuffer, inputFormat);
+      const sttDuration = Date.now() - sttStartTime;
+
+      trackAIUsage({
+        userId: (req as any).session?.userId || "anonymous",
+        userTier: "FREE",
+        feature: "transcription",
+        model: "gpt-4o-mini-transcribe",
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: Math.ceil(userTranscript.length / 4),
+        costUsd: calculateCost("gpt-4o-mini-transcribe", Math.ceil(audioBuffer.length / 16000 * 60), 0),
+        requestDuration: sttDuration,
+      }).catch(err => console.error("[AI Cost Tracker] transcription error:", err));
 
       // 2. Save user message
       await chatStorage.createMessage(conversationId, "user", userTranscript);
@@ -88,6 +103,7 @@ export function registerAudioRoutes(app: Express): void {
       res.write(`data: ${JSON.stringify({ type: "user_transcript", data: userTranscript })}\n\n`);
 
       // 5. Stream audio response from gpt-audio-mini
+      const voiceStartTime = Date.now();
       const stream = await openai.chat.completions.create({
         model: "gpt-audio-mini",
         modalities: ["text", "audio"],
@@ -111,6 +127,20 @@ export function registerAudioRoutes(app: Express): void {
           res.write(`data: ${JSON.stringify({ type: "audio", data: delta.audio.data })}\n\n`);
         }
       }
+      const voiceDuration = Date.now() - voiceStartTime;
+
+      const voiceEstimated = estimateTokensFromText(assistantTranscript);
+      trackAIUsage({
+        userId: (req as any).session?.userId || "anonymous",
+        userTier: "FREE",
+        feature: "voice_chat",
+        model: "gpt-audio-mini",
+        promptTokens: voiceEstimated.promptTokens,
+        completionTokens: voiceEstimated.completionTokens,
+        totalTokens: voiceEstimated.totalTokens,
+        costUsd: calculateCost("gpt-audio-mini", voiceEstimated.promptTokens, voiceEstimated.completionTokens),
+        requestDuration: voiceDuration,
+      }).catch(err => console.error("[AI Cost Tracker] voice_chat error:", err));
 
       // 6. Save assistant message
       await chatStorage.createMessage(conversationId, "assistant", assistantTranscript);
@@ -155,6 +185,7 @@ export function registerAudioRoutes(app: Express): void {
       const audioBuffer = Buffer.from(audio, "base64");
       let userTranscript = "";
       let assistantTranscript = "";
+      const vsStartTime = Date.now();
 
       // Stream the voice chat pipeline
       for await (const event of voiceChatWithTextModel(audioBuffer, {
@@ -173,6 +204,20 @@ export function registerAudioRoutes(app: Express): void {
 
         res.write(`data: ${JSON.stringify(event)}\n\n`);
       }
+      const vsDuration = Date.now() - vsStartTime;
+
+      const vsEstimated = estimateTokensFromText(assistantTranscript);
+      trackAIUsage({
+        userId: (req as any).session?.userId || "anonymous",
+        userTier: "FREE",
+        feature: "voice_chat",
+        model: "gpt-audio-mini",
+        promptTokens: vsEstimated.promptTokens,
+        completionTokens: vsEstimated.completionTokens,
+        totalTokens: vsEstimated.totalTokens,
+        costUsd: calculateCost("gpt-audio-mini", vsEstimated.promptTokens, vsEstimated.completionTokens),
+        requestDuration: vsDuration,
+      }).catch(err => console.error("[AI Cost Tracker] voice_stream error:", err));
 
       // Save assistant message
       await chatStorage.createMessage(conversationId, "assistant", assistantTranscript);

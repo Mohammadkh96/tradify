@@ -16,6 +16,7 @@ import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ContentStudio from "@/pages/admin/ContentStudio";
 import MetaAdsStrategist from "@/pages/admin/MetaAdsStrategist";
+import CostIntelligence from "@/pages/admin/CostIntelligence";
 
 function AdminAccessTab() {
   const { toast } = useToast();
@@ -1124,6 +1125,11 @@ export default function AdminDashboard() {
   // --- 13. CONTENT LIBRARY PAGE ---
   if (location.pathname === "/admin/marketing/content-library") {
     return <ContentLibrary />;
+  }
+
+  // --- 14. COST INTELLIGENCE PAGE ---
+  if (location.pathname === "/admin/costs") {
+    return <CostIntelligence />;
   }
 
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)

@@ -54,9 +54,18 @@ import {
   type MarketingAdStrategy,
   type InsertMarketingAdStrategy,
   type MarketingEmailSequence,
-  type InsertMarketingEmailSequence
+  type InsertMarketingEmailSequence,
+  aiUsageLogs,
+  manualCosts,
+  costBudgetAlerts,
+  type AiUsageLog,
+  type InsertAiUsageLog,
+  type ManualCost,
+  type InsertManualCost,
+  type CostBudgetAlert,
+  type InsertCostBudgetAlert
 } from "@shared/schema";
-import { eq, desc, and, sql, ilike, or } from "drizzle-orm";
+import { eq, desc, and, sql, ilike, or, gte, lte, between } from "drizzle-orm";
 
 export interface IStorage {
   getTrades(): Promise<Trade[]>;
@@ -179,6 +188,23 @@ export interface IStorage {
   getMarketingEmailSequence(id: number): Promise<MarketingEmailSequence | undefined>;
   updateMarketingEmailSequence(id: number, updates: Partial<InsertMarketingEmailSequence>): Promise<MarketingEmailSequence>;
   deleteMarketingEmailSequence(id: number): Promise<void>;
+  // AI Usage Logs
+  createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
+  getAiUsageLogsByDateRange(from: Date, to: Date): Promise<AiUsageLog[]>;
+  getAiUsageLogsByUser(userId: string): Promise<AiUsageLog[]>;
+  aggregateAiUsageByTier(from?: Date, to?: Date): Promise<{ userTier: string; totalCost: string; count: number }[]>;
+  aggregateAiUsageByFeature(from?: Date, to?: Date): Promise<{ feature: string; totalCost: string; count: number }[]>;
+  aggregateAiUsageByModel(from?: Date, to?: Date): Promise<{ model: string; totalCost: string; count: number }[]>;
+  getAiUsageDailyTotals(days: number): Promise<{ date: string; totalCost: string; count: number }[]>;
+  getAiUsageTopUsers(limit: number): Promise<{ userId: string; userTier: string; totalCost: string; count: number }[]>;
+  // Manual Costs
+  createManualCost(cost: InsertManualCost): Promise<ManualCost>;
+  listManualCosts(): Promise<ManualCost[]>;
+  updateManualCost(id: number, updates: Partial<InsertManualCost>): Promise<ManualCost>;
+  deleteManualCost(id: number): Promise<void>;
+  // Budget Alerts
+  getCostBudgetAlert(): Promise<CostBudgetAlert | undefined>;
+  upsertCostBudgetAlert(alert: InsertCostBudgetAlert): Promise<CostBudgetAlert>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1359,6 +1385,154 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMarketingEmailSequence(id: number): Promise<void> {
     await db.delete(marketingEmailSequences).where(eq(marketingEmailSequences.id, id));
+  }
+
+  // ==================== AI USAGE & COST TRACKING METHODS ====================
+
+  async createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog> {
+    const [created] = await db.insert(aiUsageLogs).values(log).returning();
+    return created;
+  }
+
+  async getAiUsageLogsByDateRange(from: Date, to: Date): Promise<AiUsageLog[]> {
+    return db.select().from(aiUsageLogs)
+      .where(and(gte(aiUsageLogs.createdAt, from), lte(aiUsageLogs.createdAt, to)))
+      .orderBy(desc(aiUsageLogs.createdAt));
+  }
+
+  async getAiUsageLogsByUser(userId: string): Promise<AiUsageLog[]> {
+    return db.select().from(aiUsageLogs)
+      .where(eq(aiUsageLogs.userId, userId))
+      .orderBy(desc(aiUsageLogs.createdAt));
+  }
+
+  async aggregateAiUsageByTier(from?: Date, to?: Date): Promise<{ userTier: string; totalCost: string; count: number }[]> {
+    const conditions: any[] = [];
+    if (from) conditions.push(gte(aiUsageLogs.createdAt, from));
+    if (to) conditions.push(lte(aiUsageLogs.createdAt, to));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const result = await db.select({
+      userTier: aiUsageLogs.userTier,
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs)
+      .where(whereClause)
+      .groupBy(aiUsageLogs.userTier);
+
+    return result;
+  }
+
+  async aggregateAiUsageByFeature(from?: Date, to?: Date): Promise<{ feature: string; totalCost: string; count: number }[]> {
+    const conditions: any[] = [];
+    if (from) conditions.push(gte(aiUsageLogs.createdAt, from));
+    if (to) conditions.push(lte(aiUsageLogs.createdAt, to));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const result = await db.select({
+      feature: aiUsageLogs.feature,
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs)
+      .where(whereClause)
+      .groupBy(aiUsageLogs.feature);
+
+    return result;
+  }
+
+  async aggregateAiUsageByModel(from?: Date, to?: Date): Promise<{ model: string; totalCost: string; count: number }[]> {
+    const conditions: any[] = [];
+    if (from) conditions.push(gte(aiUsageLogs.createdAt, from));
+    if (to) conditions.push(lte(aiUsageLogs.createdAt, to));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const result = await db.select({
+      model: aiUsageLogs.model,
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs)
+      .where(whereClause)
+      .groupBy(aiUsageLogs.model);
+
+    return result;
+  }
+
+  async getAiUsageDailyTotals(days: number): Promise<{ date: string; totalCost: string; count: number }[]> {
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - days);
+
+    const result = await db.select({
+      date: sql<string>`DATE(${aiUsageLogs.createdAt})::TEXT`,
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs)
+      .where(gte(aiUsageLogs.createdAt, fromDate))
+      .groupBy(sql`DATE(${aiUsageLogs.createdAt})`)
+      .orderBy(sql`DATE(${aiUsageLogs.createdAt})`);
+
+    return result;
+  }
+
+  async getAiUsageTopUsers(limit: number): Promise<{ userId: string; userTier: string; totalCost: string; count: number }[]> {
+    const result = await db.select({
+      userId: aiUsageLogs.userId,
+      userTier: sql<string>`MAX(${aiUsageLogs.userTier})`,
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs)
+      .groupBy(aiUsageLogs.userId)
+      .orderBy(sql`SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)) DESC`)
+      .limit(limit);
+
+    return result;
+  }
+
+  // ==================== MANUAL COSTS METHODS ====================
+
+  async createManualCost(cost: InsertManualCost): Promise<ManualCost> {
+    const [created] = await db.insert(manualCosts).values(cost).returning();
+    return created;
+  }
+
+  async listManualCosts(): Promise<ManualCost[]> {
+    return db.select().from(manualCosts).orderBy(desc(manualCosts.createdAt));
+  }
+
+  async updateManualCost(id: number, updates: Partial<InsertManualCost>): Promise<ManualCost> {
+    const [updated] = await db.update(manualCosts)
+      .set(updates)
+      .where(eq(manualCosts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteManualCost(id: number): Promise<void> {
+    await db.delete(manualCosts).where(eq(manualCosts.id, id));
+  }
+
+  // ==================== BUDGET ALERTS METHODS ====================
+
+  async getCostBudgetAlert(): Promise<CostBudgetAlert | undefined> {
+    const [alert] = await db.select().from(costBudgetAlerts)
+      .orderBy(desc(costBudgetAlerts.createdAt))
+      .limit(1);
+    return alert;
+  }
+
+  async upsertCostBudgetAlert(alert: InsertCostBudgetAlert): Promise<CostBudgetAlert> {
+    const existing = await this.getCostBudgetAlert();
+    if (existing) {
+      const [updated] = await db.update(costBudgetAlerts)
+        .set(alert)
+        .where(eq(costBudgetAlerts.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(costBudgetAlerts).values(alert).returning();
+    return created;
   }
 }
 

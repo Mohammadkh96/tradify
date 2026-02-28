@@ -295,6 +295,47 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Create ai_usage_logs table for AI cost tracking
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_usage_logs (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        user_tier TEXT NOT NULL,
+        feature TEXT NOT NULL,
+        model TEXT NOT NULL,
+        prompt_tokens INTEGER DEFAULT 0,
+        completion_tokens INTEGER DEFAULT 0,
+        total_tokens INTEGER DEFAULT 0,
+        cost_usd TEXT NOT NULL,
+        request_duration INTEGER,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Create manual_costs table for fixed expense tracking
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS manual_costs (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        amount TEXT NOT NULL,
+        frequency TEXT NOT NULL,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Create cost_budget_alerts table for budget thresholds
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cost_budget_alerts (
+        id SERIAL PRIMARY KEY,
+        monthly_budget TEXT NOT NULL,
+        alert_threshold INTEGER NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     console.log('Schema columns verified');
   } catch (error) {
     console.error('Schema migration error:', error);
