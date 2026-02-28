@@ -19,6 +19,11 @@ import {
   strategyRules,
   tradeComplianceResults,
   tradeRuleEvaluations,
+  marketingBrandSettings,
+  marketingContent,
+  marketingCampaigns,
+  marketingAdStrategies,
+  marketingEmailSequences,
   type HubPost,
   type HubComment,
   type HubReport,
@@ -39,9 +44,19 @@ import {
   type TradeComplianceResult,
   type InsertTradeComplianceResult,
   type TradeRuleEvaluation,
-  type InsertTradeRuleEvaluation
+  type InsertTradeRuleEvaluation,
+  type MarketingBrandSettings,
+  type InsertMarketingBrandSettings,
+  type MarketingContent,
+  type InsertMarketingContent,
+  type MarketingCampaign,
+  type InsertMarketingCampaign,
+  type MarketingAdStrategy,
+  type InsertMarketingAdStrategy,
+  type MarketingEmailSequence,
+  type InsertMarketingEmailSequence
 } from "@shared/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, ilike, or } from "drizzle-orm";
 
 export interface IStorage {
   getTrades(): Promise<Trade[]>;
@@ -139,6 +154,31 @@ export interface IStorage {
   setActiveMT5Account(userId: string, accountNumber: string): Promise<void>;
   getMT5HistoryByAccount(userId: string, accountNumber: string): Promise<any[]>;
   syncMT5HistoryWithAccount(userId: string, accountNumber: string, trades: any[]): Promise<void>;
+  // Marketing Hub Methods
+  getMarketingBrandSettings(userId: string): Promise<MarketingBrandSettings | undefined>;
+  upsertMarketingBrandSettings(settings: InsertMarketingBrandSettings): Promise<MarketingBrandSettings>;
+  createMarketingContent(content: InsertMarketingContent): Promise<MarketingContent>;
+  listMarketingContent(filters?: { type?: string; platform?: string; campaignId?: number; status?: string; search?: string }): Promise<MarketingContent[]>;
+  getMarketingContent(id: number): Promise<MarketingContent | undefined>;
+  updateMarketingContent(id: number, updates: Partial<InsertMarketingContent>): Promise<MarketingContent>;
+  deleteMarketingContent(id: number): Promise<void>;
+  searchMarketingContent(query: string): Promise<MarketingContent[]>;
+  getRecentMarketingContentByType(type: string, limit?: number): Promise<MarketingContent[]>;
+  createMarketingCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign>;
+  listMarketingCampaigns(): Promise<MarketingCampaign[]>;
+  getMarketingCampaign(id: number): Promise<MarketingCampaign | undefined>;
+  updateMarketingCampaign(id: number, updates: Partial<InsertMarketingCampaign>): Promise<MarketingCampaign>;
+  deleteMarketingCampaign(id: number): Promise<void>;
+  createMarketingAdStrategy(strategy: InsertMarketingAdStrategy): Promise<MarketingAdStrategy>;
+  listMarketingAdStrategies(campaignId?: number): Promise<MarketingAdStrategy[]>;
+  getMarketingAdStrategy(id: number): Promise<MarketingAdStrategy | undefined>;
+  updateMarketingAdStrategy(id: number, updates: Partial<InsertMarketingAdStrategy>): Promise<MarketingAdStrategy>;
+  deleteMarketingAdStrategy(id: number): Promise<void>;
+  createMarketingEmailSequence(sequence: InsertMarketingEmailSequence): Promise<MarketingEmailSequence>;
+  listMarketingEmailSequences(campaignId?: number): Promise<MarketingEmailSequence[]>;
+  getMarketingEmailSequence(id: number): Promise<MarketingEmailSequence | undefined>;
+  updateMarketingEmailSequence(id: number, updates: Partial<InsertMarketingEmailSequence>): Promise<MarketingEmailSequence>;
+  deleteMarketingEmailSequence(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1123,6 +1163,202 @@ export class DatabaseStorage implements IStorage {
     if (inserted > 0 || updated > 0) {
       console.log(`[MT5 Sync] Completed: ${inserted} inserted, ${updated} updated out of ${trades.length} trades`);
     }
+  }
+
+  // ==================== MARKETING HUB METHODS ====================
+
+  async getMarketingBrandSettings(userId: string): Promise<MarketingBrandSettings | undefined> {
+    const [settings] = await db.select().from(marketingBrandSettings)
+      .where(eq(marketingBrandSettings.userId, userId))
+      .limit(1);
+    return settings;
+  }
+
+  async upsertMarketingBrandSettings(settings: InsertMarketingBrandSettings): Promise<MarketingBrandSettings> {
+    const [existing] = await db.select().from(marketingBrandSettings)
+      .where(eq(marketingBrandSettings.userId, settings.userId))
+      .limit(1);
+
+    if (existing) {
+      const [updated] = await db.update(marketingBrandSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(marketingBrandSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(marketingBrandSettings).values(settings).returning();
+    return created;
+  }
+
+  async createMarketingContent(content: InsertMarketingContent): Promise<MarketingContent> {
+    const [created] = await db.insert(marketingContent).values(content).returning();
+    return created;
+  }
+
+  async listMarketingContent(filters?: { type?: string; platform?: string; campaignId?: number; status?: string; search?: string }): Promise<MarketingContent[]> {
+    const conditions: any[] = [];
+
+    if (filters?.type) {
+      conditions.push(eq(marketingContent.type, filters.type));
+    }
+    if (filters?.platform) {
+      conditions.push(eq(marketingContent.platform, filters.platform));
+    }
+    if (filters?.campaignId) {
+      conditions.push(eq(marketingContent.campaignId, filters.campaignId));
+    }
+    if (filters?.status) {
+      conditions.push(eq(marketingContent.status, filters.status));
+    }
+    if (filters?.search) {
+      conditions.push(
+        or(
+          ilike(marketingContent.content, `%${filters.search}%`),
+          ilike(marketingContent.title, `%${filters.search}%`),
+          ilike(marketingContent.hook, `%${filters.search}%`)
+        )
+      );
+    }
+
+    if (conditions.length > 0) {
+      return db.select().from(marketingContent)
+        .where(and(...conditions))
+        .orderBy(desc(marketingContent.createdAt));
+    }
+    return db.select().from(marketingContent).orderBy(desc(marketingContent.createdAt));
+  }
+
+  async getMarketingContent(id: number): Promise<MarketingContent | undefined> {
+    const [content] = await db.select().from(marketingContent)
+      .where(eq(marketingContent.id, id))
+      .limit(1);
+    return content;
+  }
+
+  async updateMarketingContent(id: number, updates: Partial<InsertMarketingContent>): Promise<MarketingContent> {
+    const [updated] = await db.update(marketingContent)
+      .set(updates)
+      .where(eq(marketingContent.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMarketingContent(id: number): Promise<void> {
+    await db.delete(marketingContent).where(eq(marketingContent.id, id));
+  }
+
+  async searchMarketingContent(query: string): Promise<MarketingContent[]> {
+    return db.select().from(marketingContent)
+      .where(
+        or(
+          ilike(marketingContent.content, `%${query}%`),
+          ilike(marketingContent.title, `%${query}%`),
+          ilike(marketingContent.hook, `%${query}%`)
+        )
+      )
+      .orderBy(desc(marketingContent.createdAt));
+  }
+
+  async getRecentMarketingContentByType(type: string, limit: number = 20): Promise<MarketingContent[]> {
+    return db.select().from(marketingContent)
+      .where(eq(marketingContent.type, type))
+      .orderBy(desc(marketingContent.createdAt))
+      .limit(limit);
+  }
+
+  async createMarketingCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign> {
+    const [created] = await db.insert(marketingCampaigns).values(campaign).returning();
+    return created;
+  }
+
+  async listMarketingCampaigns(): Promise<MarketingCampaign[]> {
+    return db.select().from(marketingCampaigns).orderBy(desc(marketingCampaigns.createdAt));
+  }
+
+  async getMarketingCampaign(id: number): Promise<MarketingCampaign | undefined> {
+    const [campaign] = await db.select().from(marketingCampaigns)
+      .where(eq(marketingCampaigns.id, id))
+      .limit(1);
+    return campaign;
+  }
+
+  async updateMarketingCampaign(id: number, updates: Partial<InsertMarketingCampaign>): Promise<MarketingCampaign> {
+    const [updated] = await db.update(marketingCampaigns)
+      .set(updates)
+      .where(eq(marketingCampaigns.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMarketingCampaign(id: number): Promise<void> {
+    await db.delete(marketingCampaigns).where(eq(marketingCampaigns.id, id));
+  }
+
+  async createMarketingAdStrategy(strategy: InsertMarketingAdStrategy): Promise<MarketingAdStrategy> {
+    const [created] = await db.insert(marketingAdStrategies).values(strategy).returning();
+    return created;
+  }
+
+  async listMarketingAdStrategies(campaignId?: number): Promise<MarketingAdStrategy[]> {
+    if (campaignId) {
+      return db.select().from(marketingAdStrategies)
+        .where(eq(marketingAdStrategies.campaignId, campaignId))
+        .orderBy(desc(marketingAdStrategies.createdAt));
+    }
+    return db.select().from(marketingAdStrategies).orderBy(desc(marketingAdStrategies.createdAt));
+  }
+
+  async getMarketingAdStrategy(id: number): Promise<MarketingAdStrategy | undefined> {
+    const [strategy] = await db.select().from(marketingAdStrategies)
+      .where(eq(marketingAdStrategies.id, id))
+      .limit(1);
+    return strategy;
+  }
+
+  async updateMarketingAdStrategy(id: number, updates: Partial<InsertMarketingAdStrategy>): Promise<MarketingAdStrategy> {
+    const [updated] = await db.update(marketingAdStrategies)
+      .set(updates)
+      .where(eq(marketingAdStrategies.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMarketingAdStrategy(id: number): Promise<void> {
+    await db.delete(marketingAdStrategies).where(eq(marketingAdStrategies.id, id));
+  }
+
+  async createMarketingEmailSequence(sequence: InsertMarketingEmailSequence): Promise<MarketingEmailSequence> {
+    const [created] = await db.insert(marketingEmailSequences).values(sequence).returning();
+    return created;
+  }
+
+  async listMarketingEmailSequences(campaignId?: number): Promise<MarketingEmailSequence[]> {
+    if (campaignId) {
+      return db.select().from(marketingEmailSequences)
+        .where(eq(marketingEmailSequences.campaignId, campaignId))
+        .orderBy(desc(marketingEmailSequences.createdAt));
+    }
+    return db.select().from(marketingEmailSequences).orderBy(desc(marketingEmailSequences.createdAt));
+  }
+
+  async getMarketingEmailSequence(id: number): Promise<MarketingEmailSequence | undefined> {
+    const [sequence] = await db.select().from(marketingEmailSequences)
+      .where(eq(marketingEmailSequences.id, id))
+      .limit(1);
+    return sequence;
+  }
+
+  async updateMarketingEmailSequence(id: number, updates: Partial<InsertMarketingEmailSequence>): Promise<MarketingEmailSequence> {
+    const [updated] = await db.update(marketingEmailSequences)
+      .set(updates)
+      .where(eq(marketingEmailSequences.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMarketingEmailSequence(id: number): Promise<void> {
+    await db.delete(marketingEmailSequences).where(eq(marketingEmailSequences.id, id));
   }
 }
 

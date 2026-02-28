@@ -204,6 +204,97 @@ export async function ensureSchemaColumns() {
       // Index may already exist
     }
 
+    // Create marketing_brand_settings table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS marketing_brand_settings (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        brand_name TEXT NOT NULL,
+        description TEXT,
+        target_audience_personas JSONB DEFAULT '[]',
+        unique_selling_points JSONB DEFAULT '[]',
+        competitors JSONB DEFAULT '[]',
+        brand_voice TEXT,
+        brand_tone TEXT,
+        colors JSONB DEFAULT '[]',
+        key_messages JSONB DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Create marketing_content table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS marketing_content (
+        id SERIAL PRIMARY KEY,
+        type TEXT NOT NULL,
+        platform TEXT NOT NULL,
+        title TEXT,
+        content TEXT NOT NULL,
+        hook TEXT,
+        cta TEXT,
+        hashtags TEXT,
+        topic_tags TEXT[] DEFAULT '{}',
+        framework_used TEXT,
+        campaign_id INTEGER,
+        status TEXT NOT NULL DEFAULT 'draft',
+        performance_rating INTEGER,
+        ai_model_used TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Create marketing_campaigns table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS marketing_campaigns (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        goal TEXT,
+        description TEXT,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'planning',
+        start_date TIMESTAMP,
+        end_date TIMESTAMP,
+        budget TEXT,
+        target_audience TEXT,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Create marketing_ad_strategies table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS marketing_ad_strategies (
+        id SERIAL PRIMARY KEY,
+        campaign_id INTEGER,
+        campaign_type TEXT NOT NULL,
+        objective TEXT,
+        audience_targeting JSONB DEFAULT '{}',
+        budget_strategy JSONB DEFAULT '{}',
+        bid_strategy TEXT,
+        ad_copy_ids TEXT[] DEFAULT '{}',
+        optimization_rules JSONB DEFAULT '{}',
+        performance_notes TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Create marketing_email_sequences table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS marketing_email_sequences (
+        id SERIAL PRIMARY KEY,
+        campaign_id INTEGER,
+        name TEXT NOT NULL,
+        subject_line TEXT NOT NULL,
+        body TEXT NOT NULL,
+        recipient_segment TEXT NOT NULL DEFAULT 'all_users',
+        status TEXT NOT NULL DEFAULT 'draft',
+        sent_count INTEGER DEFAULT 0,
+        open_rate TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     console.log('Schema columns verified');
   } catch (error) {
     console.error('Schema migration error:', error);

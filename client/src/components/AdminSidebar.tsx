@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, FolderOpen, Library, Palette } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
@@ -15,6 +15,15 @@ const adminNavItems = [
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/admin/mt5", label: "MT5 Monitor", icon: Zap },
   { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
+];
+
+const marketingNavItems = [
+  { href: "/admin/marketing", label: "Marketing Dashboard", icon: Megaphone },
+  { href: "/admin/marketing/content-studio", label: "Content Studio", icon: PenTool },
+  { href: "/admin/marketing/meta-ads", label: "Meta Ads Strategist", icon: Target },
+  { href: "/admin/marketing/campaigns", label: "Campaigns", icon: FolderOpen },
+  { href: "/admin/marketing/content-library", label: "Content Library", icon: Library },
+  { href: "/admin/marketing/brand-settings", label: "Brand Settings", icon: Palette },
 ];
 
 export function AdminSidebar() {
@@ -42,6 +51,29 @@ export function AdminSidebar() {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={location.pathname === item.href}>
                     <Link to={item.href}>
+                      <div className={cn(
+                        "flex items-center gap-3 w-full px-4 py-2 rounded-md transition-colors",
+                        location.pathname === item.href ? "bg-emerald-500/10 text-emerald-500" : "text-slate-400 hover:text-white hover:bg-slate-900"
+                      )}>
+                        <item.icon size={18} />
+                        <span className="font-medium text-sm">{item.label}</span>
+                      </div>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-slate-500 uppercase text-[10px] font-bold tracking-widest mb-2">Marketing Hub</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {marketingNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.href}>
+                    <Link to={item.href} data-testid={`link-admin-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                       <div className={cn(
                         "flex items-center gap-3 w-full px-4 py-2 rounded-md transition-colors",
                         location.pathname === item.href ? "bg-emerald-500/10 text-emerald-500" : "text-slate-400 hover:text-white hover:bg-slate-900"

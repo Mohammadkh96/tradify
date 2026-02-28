@@ -25,6 +25,8 @@ import Auth from "@/pages/Auth";
 import EarlyAccess from "@/pages/EarlyAccess";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
+import MarketingDashboard from "@/pages/admin/MarketingDashboard";
+import MarketingBrandSettings from "@/pages/admin/MarketingBrandSettings";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Terms from "@/pages/Terms";
@@ -397,6 +399,25 @@ function Router() {
       </Route>
       <Route path="/admin/blog">
         {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+
+      <Route path="/admin/marketing">
+        {() => !isAdmin ? <Redirect to="/" /> : <MarketingDashboard />}
+      </Route>
+      <Route path="/admin/marketing/content-studio">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/marketing/meta-ads">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/marketing/campaigns">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/marketing/content-library">
+        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
+      </Route>
+      <Route path="/admin/marketing/brand-settings">
+        {() => !isAdmin ? <Redirect to="/" /> : <MarketingBrandSettings />}
       </Route>
       
       <Route path="/" component={Landing} />

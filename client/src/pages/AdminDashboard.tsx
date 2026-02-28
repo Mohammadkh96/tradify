@@ -14,6 +14,8 @@ import { format } from "date-fns";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import ContentStudio from "@/pages/admin/ContentStudio";
+import MetaAdsStrategist from "@/pages/admin/MetaAdsStrategist";
 
 function AdminAccessTab() {
   const { toast } = useToast();
@@ -648,6 +650,8 @@ function CreatorApplicationsTab() {
 }
 
 import { useTheme } from "@/components/theme-provider";
+import MarketingCampaigns from "@/pages/admin/MarketingCampaigns";
+import ContentLibrary from "@/pages/admin/ContentLibrary";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -1097,9 +1101,29 @@ export default function AdminDashboard() {
     return <SuggestionsTab />;
   }
 
-  // --- 9. BLOG MANAGEMENT PAGE ---
+  // --- 9. CONTENT STUDIO PAGE ---
+  if (location.pathname === "/admin/marketing/content-studio") {
+    return <ContentStudio />;
+  }
+
+  // --- 10. META ADS STRATEGIST PAGE ---
+  if (location.pathname === "/admin/marketing/meta-ads") {
+    return <MetaAdsStrategist />;
+  }
+
+  // --- 11. BLOG MANAGEMENT PAGE ---
   if (location.pathname === "/admin/blog") {
     return <AdminBlogTab />;
+  }
+
+  // --- 12. MARKETING CAMPAIGNS PAGE ---
+  if (location.pathname === "/admin/marketing/campaigns") {
+    return <MarketingCampaigns />;
+  }
+
+  // --- 13. CONTENT LIBRARY PAGE ---
+  if (location.pathname === "/admin/marketing/content-library") {
+    return <ContentLibrary />;
   }
 
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)

@@ -554,3 +554,101 @@ export type InsertPropFirmChallenge = z.infer<typeof insertPropFirmChallengeSche
 export const insertPropFirmDailyStatSchema = createInsertSchema(propFirmDailyStats).omit({ id: true });
 export type PropFirmDailyStat = typeof propFirmDailyStats.$inferSelect;
 export type InsertPropFirmDailyStat = z.infer<typeof insertPropFirmDailyStatSchema>;
+
+// ==================== MARKETING HUB ====================
+
+export const marketingBrandSettings = pgTable("marketing_brand_settings", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  brandName: text("brand_name").notNull(),
+  description: text("description"),
+  targetAudiencePersonas: jsonb("target_audience_personas").default([]),
+  uniqueSellingPoints: jsonb("unique_selling_points").default([]),
+  competitors: jsonb("competitors").default([]),
+  brandVoice: text("brand_voice"),
+  brandTone: text("brand_tone"),
+  colors: jsonb("colors").default([]),
+  keyMessages: jsonb("key_messages").default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMarketingBrandSettingsSchema = createInsertSchema(marketingBrandSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type MarketingBrandSettings = typeof marketingBrandSettings.$inferSelect;
+export type InsertMarketingBrandSettings = z.infer<typeof insertMarketingBrandSettingsSchema>;
+
+export const marketingContent = pgTable("marketing_content", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(),
+  platform: text("platform").notNull(),
+  title: text("title"),
+  content: text("content").notNull(),
+  hook: text("hook"),
+  cta: text("cta"),
+  hashtags: text("hashtags"),
+  topicTags: text("topic_tags").array().default([]),
+  frameworkUsed: text("framework_used"),
+  campaignId: integer("campaign_id"),
+  status: text("status").notNull().default("draft"),
+  performanceRating: integer("performance_rating"),
+  aiModelUsed: text("ai_model_used"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMarketingContentSchema = createInsertSchema(marketingContent).omit({ id: true, createdAt: true });
+export type MarketingContent = typeof marketingContent.$inferSelect;
+export type InsertMarketingContent = z.infer<typeof insertMarketingContentSchema>;
+
+export const marketingCampaigns = pgTable("marketing_campaigns", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  goal: text("goal"),
+  description: text("description"),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("planning"),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  budget: text("budget"),
+  targetAudience: text("target_audience"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaigns).omit({ id: true, createdAt: true });
+export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;
+export type InsertMarketingCampaign = z.infer<typeof insertMarketingCampaignSchema>;
+
+export const marketingAdStrategies = pgTable("marketing_ad_strategies", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id"),
+  campaignType: text("campaign_type").notNull(),
+  objective: text("objective"),
+  audienceTargeting: jsonb("audience_targeting").default({}),
+  budgetStrategy: jsonb("budget_strategy").default({}),
+  bidStrategy: text("bid_strategy"),
+  adCopyIds: text("ad_copy_ids").array().default([]),
+  optimizationRules: jsonb("optimization_rules").default({}),
+  performanceNotes: text("performance_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMarketingAdStrategySchema = createInsertSchema(marketingAdStrategies).omit({ id: true, createdAt: true });
+export type MarketingAdStrategy = typeof marketingAdStrategies.$inferSelect;
+export type InsertMarketingAdStrategy = z.infer<typeof insertMarketingAdStrategySchema>;
+
+export const marketingEmailSequences = pgTable("marketing_email_sequences", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id"),
+  name: text("name").notNull(),
+  subjectLine: text("subject_line").notNull(),
+  body: text("body").notNull(),
+  recipientSegment: text("recipient_segment").notNull().default("all_users"),
+  status: text("status").notNull().default("draft"),
+  sentCount: integer("sent_count").default(0),
+  openRate: text("open_rate"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMarketingEmailSequenceSchema = createInsertSchema(marketingEmailSequences).omit({ id: true, createdAt: true });
+export type MarketingEmailSequence = typeof marketingEmailSequences.$inferSelect;
+export type InsertMarketingEmailSequence = z.infer<typeof insertMarketingEmailSequenceSchema>;

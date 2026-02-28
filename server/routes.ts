@@ -5882,6 +5882,645 @@ Guidelines:
     }
   });
 
+  // ==================== MARKETING HUB API ROUTES ====================
+
+  // Brand Settings
+  app.get("/api/admin/marketing/brand-settings", requireAdmin, async (req, res) => {
+    try {
+      const settings = await storage.getMarketingBrandSettings("admin");
+      res.json(settings || null);
+    } catch (error) {
+      console.error("Get brand settings error:", error);
+      res.status(500).json({ message: "Failed to get brand settings" });
+    }
+  });
+
+  app.put("/api/admin/marketing/brand-settings", requireAdmin, async (req, res) => {
+    try {
+      const settingsSchema = z.object({
+        brandName: z.string().min(1),
+        description: z.string().optional(),
+        targetAudiencePersonas: z.any().optional(),
+        uniqueSellingPoints: z.any().optional(),
+        competitors: z.any().optional(),
+        brandVoice: z.string().optional(),
+        brandTone: z.string().optional(),
+        colors: z.any().optional(),
+        keyMessages: z.any().optional(),
+      });
+      const parsed = settingsSchema.parse(req.body);
+      const result = await storage.upsertMarketingBrandSettings({
+        userId: "admin",
+        ...parsed,
+        brandName: parsed.brandName,
+      });
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update brand settings error:", error);
+      res.status(500).json({ message: "Failed to update brand settings" });
+    }
+  });
+
+  // Content Generation
+  app.post("/api/admin/marketing/generate/post", requireAdmin, async (req, res) => {
+    try {
+      const { generatePost } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        platform: z.string().min(1),
+        contentType: z.string().min(1),
+        topic: z.string().optional(),
+      });
+      const { platform, contentType, topic } = bodySchema.parse(req.body);
+      const result = await generatePost(platform, contentType, topic);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Generate post error:", error);
+      res.status(500).json({ message: "Failed to generate post" });
+    }
+  });
+
+  app.post("/api/admin/marketing/generate/reel-script", requireAdmin, async (req, res) => {
+    try {
+      const { generateReelScript } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        goal: z.string().min(1),
+        topic: z.string().optional(),
+      });
+      const { goal, topic } = bodySchema.parse(req.body);
+      const result = await generateReelScript(goal, topic);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Generate reel script error:", error);
+      res.status(500).json({ message: "Failed to generate reel script" });
+    }
+  });
+
+  app.post("/api/admin/marketing/generate/blog", requireAdmin, async (req, res) => {
+    try {
+      const { generateBlogArticle } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        topic: z.string().optional(),
+        seoKeyword: z.string().optional(),
+      });
+      const { topic, seoKeyword } = bodySchema.parse(req.body);
+      const result = await generateBlogArticle(topic, seoKeyword);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Generate blog error:", error);
+      res.status(500).json({ message: "Failed to generate blog article" });
+    }
+  });
+
+  app.post("/api/admin/marketing/generate/ad-copy", requireAdmin, async (req, res) => {
+    try {
+      const { generateAdCopy } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        campaignGoal: z.string().min(1),
+        audience: z.string().min(1),
+      });
+      const { campaignGoal, audience } = bodySchema.parse(req.body);
+      const result = await generateAdCopy(campaignGoal, audience);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Generate ad copy error:", error);
+      res.status(500).json({ message: "Failed to generate ad copy" });
+    }
+  });
+
+  app.post("/api/admin/marketing/generate/email", requireAdmin, async (req, res) => {
+    try {
+      const { generateEmailCampaign } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        emailType: z.string().min(1),
+        segment: z.string().min(1),
+      });
+      const { emailType, segment } = bodySchema.parse(req.body);
+      const result = await generateEmailCampaign(emailType, segment);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Generate email error:", error);
+      res.status(500).json({ message: "Failed to generate email campaign" });
+    }
+  });
+
+  // Content Library
+  app.get("/api/admin/marketing/content", requireAdmin, async (req, res) => {
+    try {
+      const filters: { type?: string; platform?: string; campaignId?: number; status?: string; search?: string } = {};
+      if (req.query.type && typeof req.query.type === "string") filters.type = req.query.type;
+      if (req.query.platform && typeof req.query.platform === "string") filters.platform = req.query.platform;
+      if (req.query.campaignId && typeof req.query.campaignId === "string") filters.campaignId = parseInt(req.query.campaignId);
+      if (req.query.status && typeof req.query.status === "string") filters.status = req.query.status;
+      if (req.query.search && typeof req.query.search === "string") filters.search = req.query.search;
+      const content = await storage.listMarketingContent(filters);
+      res.json(content);
+    } catch (error) {
+      console.error("List marketing content error:", error);
+      res.status(500).json({ message: "Failed to list content" });
+    }
+  });
+
+  app.get("/api/admin/marketing/content/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const content = await storage.getMarketingContent(id);
+      if (!content) return res.status(404).json({ message: "Content not found" });
+      res.json(content);
+    } catch (error) {
+      console.error("Get marketing content error:", error);
+      res.status(500).json({ message: "Failed to get content" });
+    }
+  });
+
+  app.post("/api/admin/marketing/content", requireAdmin, async (req, res) => {
+    try {
+      const contentSchema = z.object({
+        type: z.string().min(1),
+        platform: z.string().min(1),
+        title: z.string().optional(),
+        content: z.string().min(1),
+        hook: z.string().optional(),
+        cta: z.string().optional(),
+        hashtags: z.string().optional(),
+        topicTags: z.array(z.string()).optional(),
+        frameworkUsed: z.string().optional(),
+        campaignId: z.number().optional(),
+        status: z.string().optional(),
+        performanceRating: z.number().min(1).max(5).optional(),
+        aiModelUsed: z.string().optional(),
+      });
+      const parsed = contentSchema.parse(req.body);
+      const result = await storage.createMarketingContent(parsed);
+      res.status(201).json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create marketing content error:", error);
+      res.status(500).json({ message: "Failed to create content" });
+    }
+  });
+
+  app.patch("/api/admin/marketing/content/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const updateSchema = z.object({
+        title: z.string().optional(),
+        content: z.string().optional(),
+        hook: z.string().optional(),
+        cta: z.string().optional(),
+        hashtags: z.string().optional(),
+        topicTags: z.array(z.string()).optional(),
+        frameworkUsed: z.string().optional(),
+        campaignId: z.number().nullable().optional(),
+        status: z.string().optional(),
+        performanceRating: z.number().min(1).max(5).nullable().optional(),
+      });
+      const parsed = updateSchema.parse(req.body);
+      const result = await storage.updateMarketingContent(id, parsed);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update marketing content error:", error);
+      res.status(500).json({ message: "Failed to update content" });
+    }
+  });
+
+  app.delete("/api/admin/marketing/content/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      await storage.deleteMarketingContent(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete marketing content error:", error);
+      res.status(500).json({ message: "Failed to delete content" });
+    }
+  });
+
+  // Campaigns
+  app.post("/api/admin/marketing/campaigns", requireAdmin, async (req, res) => {
+    try {
+      const campaignSchema = z.object({
+        name: z.string().min(1),
+        goal: z.string().optional(),
+        description: z.string().optional(),
+        type: z.string().min(1),
+        status: z.string().optional(),
+        startDate: z.string().optional().transform(v => v ? new Date(v) : undefined),
+        endDate: z.string().optional().transform(v => v ? new Date(v) : undefined),
+        budget: z.string().optional(),
+        targetAudience: z.string().optional(),
+        notes: z.string().optional(),
+      });
+      const parsed = campaignSchema.parse(req.body);
+      const result = await storage.createMarketingCampaign(parsed as any);
+      res.status(201).json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create campaign error:", error);
+      res.status(500).json({ message: "Failed to create campaign" });
+    }
+  });
+
+  app.get("/api/admin/marketing/campaigns", requireAdmin, async (_req, res) => {
+    try {
+      const campaigns = await storage.listMarketingCampaigns();
+      res.json(campaigns);
+    } catch (error) {
+      console.error("List campaigns error:", error);
+      res.status(500).json({ message: "Failed to list campaigns" });
+    }
+  });
+
+  app.get("/api/admin/marketing/campaigns/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const campaign = await storage.getMarketingCampaign(id);
+      if (!campaign) return res.status(404).json({ message: "Campaign not found" });
+      res.json(campaign);
+    } catch (error) {
+      console.error("Get campaign error:", error);
+      res.status(500).json({ message: "Failed to get campaign" });
+    }
+  });
+
+  app.patch("/api/admin/marketing/campaigns/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const updateSchema = z.object({
+        name: z.string().optional(),
+        goal: z.string().optional(),
+        description: z.string().optional(),
+        type: z.string().optional(),
+        status: z.string().optional(),
+        startDate: z.string().optional().transform(v => v ? new Date(v) : undefined),
+        endDate: z.string().optional().transform(v => v ? new Date(v) : undefined),
+        budget: z.string().optional(),
+        targetAudience: z.string().optional(),
+        notes: z.string().optional(),
+      });
+      const parsed = updateSchema.parse(req.body);
+      const result = await storage.updateMarketingCampaign(id, parsed);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update campaign error:", error);
+      res.status(500).json({ message: "Failed to update campaign" });
+    }
+  });
+
+  app.delete("/api/admin/marketing/campaigns/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      await storage.deleteMarketingCampaign(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete campaign error:", error);
+      res.status(500).json({ message: "Failed to delete campaign" });
+    }
+  });
+
+  // Ad Strategies
+  app.post("/api/admin/marketing/ad-strategy", requireAdmin, async (req, res) => {
+    try {
+      const { generateCampaignStrategy } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        goal: z.string().min(1),
+        budget: z.string().min(1),
+        audience: z.string().min(1),
+        campaignId: z.number().optional(),
+      });
+      const { goal, budget, audience, campaignId } = bodySchema.parse(req.body);
+      const strategyResult = await generateCampaignStrategy(goal, budget, audience);
+
+      const saved = await storage.createMarketingAdStrategy({
+        campaignId: campaignId || null,
+        campaignType: strategyResult.campaignType,
+        objective: goal,
+        audienceTargeting: strategyResult.audienceTargeting,
+        budgetStrategy: strategyResult.budgetAllocation,
+        bidStrategy: strategyResult.bidStrategy,
+        adCopyIds: [],
+        optimizationRules: {
+          testingPhases: strategyResult.testingPhases,
+          setupInstructions: strategyResult.setupInstructions,
+        },
+        performanceNotes: strategyResult.campaignTypeReasoning,
+      });
+
+      res.status(201).json({ ...saved, fullStrategy: strategyResult });
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Generate ad strategy error:", error);
+      res.status(500).json({ message: "Failed to generate ad strategy" });
+    }
+  });
+
+  app.get("/api/admin/marketing/ad-strategies", requireAdmin, async (req, res) => {
+    try {
+      const campaignId = req.query.campaignId ? parseInt(req.query.campaignId as string) : undefined;
+      const strategies = await storage.listMarketingAdStrategies(campaignId);
+      res.json(strategies);
+    } catch (error) {
+      console.error("List ad strategies error:", error);
+      res.status(500).json({ message: "Failed to list ad strategies" });
+    }
+  });
+
+  app.get("/api/admin/marketing/ad-strategies/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const strategy = await storage.getMarketingAdStrategy(id);
+      if (!strategy) return res.status(404).json({ message: "Strategy not found" });
+      res.json(strategy);
+    } catch (error) {
+      console.error("Get ad strategy error:", error);
+      res.status(500).json({ message: "Failed to get ad strategy" });
+    }
+  });
+
+  app.patch("/api/admin/marketing/ad-strategies/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const updateSchema = z.object({
+        campaignId: z.number().nullable().optional(),
+        campaignType: z.string().optional(),
+        objective: z.string().optional(),
+        audienceTargeting: z.any().optional(),
+        budgetStrategy: z.any().optional(),
+        bidStrategy: z.string().optional(),
+        adCopyIds: z.array(z.string()).optional(),
+        optimizationRules: z.any().optional(),
+        performanceNotes: z.string().optional(),
+      });
+      const parsed = updateSchema.parse(req.body);
+      const result = await storage.updateMarketingAdStrategy(id, parsed);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update ad strategy error:", error);
+      res.status(500).json({ message: "Failed to update ad strategy" });
+    }
+  });
+
+  app.delete("/api/admin/marketing/ad-strategies/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      await storage.deleteMarketingAdStrategy(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete ad strategy error:", error);
+      res.status(500).json({ message: "Failed to delete ad strategy" });
+    }
+  });
+
+  // Audience Strategy Generation
+  app.post("/api/admin/marketing/generate/audience-strategy", requireAdmin, async (req, res) => {
+    try {
+      const { generateAudienceStrategy } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        budget: z.string().min(1),
+        goal: z.string().min(1),
+      });
+      const { budget, goal } = bodySchema.parse(req.body);
+      const result = await generateAudienceStrategy(budget, goal);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Generate audience strategy error:", error);
+      res.status(500).json({ message: "Failed to generate audience strategy" });
+    }
+  });
+
+  // Budget Calculator
+  app.post("/api/admin/marketing/generate/budget", requireAdmin, async (req, res) => {
+    try {
+      const { calculateBudget } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        goal: z.string().min(1),
+        timeline: z.string().min(1),
+      });
+      const { goal, timeline } = bodySchema.parse(req.body);
+      const result = await calculateBudget(goal, timeline);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Calculate budget error:", error);
+      res.status(500).json({ message: "Failed to calculate budget" });
+    }
+  });
+
+  // Optimization Rules Generation
+  app.post("/api/admin/marketing/generate/optimization-rules", requireAdmin, async (req, res) => {
+    try {
+      const { generateOptimizationRules } = await import("./marketing-ai");
+      const bodySchema = z.object({
+        campaignType: z.string().min(1),
+      });
+      const { campaignType } = bodySchema.parse(req.body);
+      const result = await generateOptimizationRules(campaignType);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Generate optimization rules error:", error);
+      res.status(500).json({ message: "Failed to generate optimization rules" });
+    }
+  });
+
+  // Playbooks
+  app.get("/api/admin/marketing/playbooks", requireAdmin, async (_req, res) => {
+    try {
+      const { getCampaignPlaybooks } = await import("./marketing-ai");
+      const playbooks = getCampaignPlaybooks();
+      res.json(playbooks);
+    } catch (error) {
+      console.error("Get playbooks error:", error);
+      res.status(500).json({ message: "Failed to get playbooks" });
+    }
+  });
+
+  // Email Sequences
+  app.post("/api/admin/marketing/email-sequences", requireAdmin, async (req, res) => {
+    try {
+      const seqSchema = z.object({
+        campaignId: z.number().optional(),
+        name: z.string().min(1),
+        subjectLine: z.string().min(1),
+        body: z.string().min(1),
+        recipientSegment: z.string().optional(),
+        status: z.string().optional(),
+      });
+      const parsed = seqSchema.parse(req.body);
+      const result = await storage.createMarketingEmailSequence(parsed as any);
+      res.status(201).json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create email sequence error:", error);
+      res.status(500).json({ message: "Failed to create email sequence" });
+    }
+  });
+
+  app.get("/api/admin/marketing/email-sequences", requireAdmin, async (req, res) => {
+    try {
+      const campaignId = req.query.campaignId ? parseInt(req.query.campaignId as string) : undefined;
+      const sequences = await storage.listMarketingEmailSequences(campaignId);
+      res.json(sequences);
+    } catch (error) {
+      console.error("List email sequences error:", error);
+      res.status(500).json({ message: "Failed to list email sequences" });
+    }
+  });
+
+  app.get("/api/admin/marketing/email-sequences/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const sequence = await storage.getMarketingEmailSequence(id);
+      if (!sequence) return res.status(404).json({ message: "Email sequence not found" });
+      res.json(sequence);
+    } catch (error) {
+      console.error("Get email sequence error:", error);
+      res.status(500).json({ message: "Failed to get email sequence" });
+    }
+  });
+
+  app.patch("/api/admin/marketing/email-sequences/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const updateSchema = z.object({
+        name: z.string().optional(),
+        subjectLine: z.string().optional(),
+        body: z.string().optional(),
+        recipientSegment: z.string().optional(),
+        status: z.string().optional(),
+        sentCount: z.number().optional(),
+        openRate: z.string().optional(),
+      });
+      const parsed = updateSchema.parse(req.body);
+      const result = await storage.updateMarketingEmailSequence(id, parsed);
+      res.json(result);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update email sequence error:", error);
+      res.status(500).json({ message: "Failed to update email sequence" });
+    }
+  });
+
+  app.delete("/api/admin/marketing/email-sequences/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      await storage.deleteMarketingEmailSequence(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete email sequence error:", error);
+      res.status(500).json({ message: "Failed to delete email sequence" });
+    }
+  });
+
+  // Dashboard Stats
+  app.get("/api/admin/marketing/stats", requireAdmin, async (_req, res) => {
+    try {
+      const [allContent, campaigns, allUsers] = await Promise.all([
+        storage.listMarketingContent(),
+        storage.listMarketingCampaigns(),
+        storage.getAllUsers(),
+      ]);
+
+      const now = new Date();
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const contentByType: Record<string, number> = {};
+      const contentByPlatform: Record<string, number> = {};
+      for (const c of allContent) {
+        contentByType[c.type] = (contentByType[c.type] || 0) + 1;
+        contentByPlatform[c.platform] = (contentByPlatform[c.platform] || 0) + 1;
+      }
+
+      const activeCampaigns = campaigns.filter(c => c.status === "active").length;
+      const recentContent = allContent
+        .filter(c => c.createdAt && new Date(c.createdAt) >= weekAgo)
+        .slice(0, 10);
+
+      const totalUsers = allUsers.length;
+      const signupsThisWeek = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= weekAgo).length;
+      const signupsThisMonth = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= monthAgo).length;
+      const freeUsers = allUsers.filter(u => !u.subscriptionTier || u.subscriptionTier === "FREE").length;
+      const proUsers = allUsers.filter(u => u.subscriptionTier === "PRO").length;
+      const eliteUsers = allUsers.filter(u => u.subscriptionTier === "ELITE").length;
+
+      res.json({
+        totalContent: allContent.length,
+        contentByType,
+        contentByPlatform,
+        activeCampaigns,
+        totalCampaigns: campaigns.length,
+        recentContent,
+        userInsights: {
+          totalUsers,
+          signupsThisWeek,
+          signupsThisMonth,
+          freeUsers,
+          proUsers,
+          eliteUsers,
+          conversionRate: totalUsers > 0 ? ((proUsers + eliteUsers) / totalUsers * 100).toFixed(1) : "0",
+        },
+      });
+    } catch (error) {
+      console.error("Marketing stats error:", error);
+      res.status(500).json({ message: "Failed to get marketing stats" });
+    }
+  });
+
   return httpServer;
 }
 
