@@ -1,20 +1,20 @@
 # TRADIFY - Trading Journal Application
 
 ## Overview
-TRADIFY (TradifyApp) is a rule-based trading journal application designed to enforce disciplined trading through real-time validation, following a dark "Stealth" aesthetic. It helps traders record trades, enforce trading rules, analyze performance, and learn trading concepts without AI decision-making, indicators, or guesswork. The application focuses on using predefined Market Knowledge rules for analysis.
+TRADIFY is a rule-based trading journal application that enforces disciplined trading through real-time validation and analysis, all within a dark "Stealth" aesthetic. It enables traders to record trades, enforce rules, analyze performance, and learn trading concepts using predefined Market Knowledge rules. The application avoids AI decision-making, indicators, or guesswork in core trading logic.
 
-Key capabilities include:
-- A dashboard with customizable performance metrics and an equity curve.
-- A trade journal for chronological trade tracking.
-- A "Strategies" section for creating, managing, and validating trading frameworks against predefined rules.
-- An "Education Hub" with 19 progressive lessons organized into 8 phases (0-7) using a gamified progression system. Phase 0 (Orientation) is mandatory. Phases 0-1 are FREE, Phases 2-5 require PRO, Phases 6-7 require ELITE. Lessons are unlocked sequentially by completing the previous lesson AND passing its quiz with 70%+ score. Phase structure: Orientation → Market Foundations → Liquidity & Intent → Smart Money Tools → Execution & Confirmation → Risk & Trade Management → Psychology & Discipline → System Building. Data in `client/src/data/educationLessons.ts` with `EDUCATION_PHASES` and `EDUCATION_LESSONS` arrays. Access control uses `AccessTier` type ("FREE"|"PRO"|"ELITE") and `isLessonUnlocked()` helper. AI Tutor available for Pro/Elite users. Trading knowledge context injected into AI prompts via `server/tradingKnowledge.ts`.
-- Risk/position size calculators.
-- Integration with MetaTrader 5 (MT5) for multi-account trade tracking.
-- An interactive onboarding tour for new users (tracked via `hasSeenTour` database field; tour shows only on first login).
-- Premium features (PRO/ELITE tiers) such as AI Instrument Analysis, Session and Time-Based Performance Analytics, Behavioral Risk Flags, Strategy Deviation Analysis, Monthly Self-Review Reports, and Professional PDF Reports.
-- A tiered plan system (Free, Pro, Elite) with feature gating and differentiated trade history retention.
-- **Founding Member Program:** Early access signup at `/early-access` with exclusive benefits (1 month free Pro automatically granted on registration, lifetime 30% discount, feature influence, exclusive badge). Founding members display amber-styled Crown badge in navigation, dashboard, and profile. Tracked via `foundingMember` field on users and `early_access_signups` table for pre-launch signups. Auto-Pro managed via `foundingMemberProExpiry` timestamp — `/api/user` checks expiry on each request and downgrades to FREE if expired and no active PayPal/Stripe subscription.
-- **Prop Firm Challenge Tracker:** Full prop firm challenge management at `/prop-firm` (Pro+Elite). Tracks FTMO, MyFundedFX, The Funded Trader presets plus custom configs. Features: circular SVG gauges for profit target/drawdown, daily stats logging, trailing drawdown with HWM tracking, consistency scoring, days remaining countdown. AI Risk Analysis panel (Elite) lets users check proposed trade parameters against challenge rules before entry — calculates potential loss, daily/max DD impact, and suggests tighter SL. `PropFirmRiskBanner` on Strategy Validator alerts users with active challenges. DB tables: `prop_firm_challenges`, `prop_firm_daily_stats`. API: `/api/prop-firm/*` routes including `POST /api/prop-firm/ai-risk-check`.
+Key features include:
+- A customizable dashboard with performance metrics and an equity curve.
+- A trade journal for chronological tracking.
+- A "Strategies" section for creating and validating trading frameworks.
+- An "Education Hub" offering 19 progressive lessons across 8 phases with a gamified progression system and an optional AI Tutor for premium users.
+- Risk and position size calculators.
+- Multi-account trade tracking integration with MetaTrader 5 (MT5).
+- An interactive onboarding tour for new users.
+- Premium features (PRO/ELITE tiers) like AI Instrument Analysis, Session/Time-Based Performance Analytics, Behavioral Risk Flags, Strategy Deviation Analysis, Monthly Self-Review Reports, and Professional PDF Reports.
+- A tiered subscription model (Free, Pro, Elite) with feature gating and differentiated data retention.
+- A Founding Member Program offering early access benefits and exclusive discounts.
+- A Prop Firm Challenge Tracker for managing and analyzing performance against proprietary trading firm rules, including an AI Risk Analysis panel for Elite users.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -22,42 +22,42 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### UI/UX Decisions
-- **Aesthetic:** "Stealth" dark theme.
+- **Aesthetic:** Dark "Stealth" theme.
 - **Components:** Uses shadcn/ui components with a New York style.
-- **Icons:** Lucide React for icons.
-- **Visuals:** Elite/Pro badges for subscribers with distinct styling.
+- **Icons:** Lucide React.
+- **Visuals:** Distinct Elite/Pro badges for subscribers.
 
 ### Technical Implementations
-- **Frontend:** React 18 with TypeScript, react-router-dom for routing, TanStack Query for server state, Tailwind CSS for styling, Recharts for data visualization, Framer Motion for animations, and React Hook Form with Zod for forms.
-- **Backend:** Express.js with TypeScript, built with Vite for frontend and esbuild for server bundling. API uses REST endpoints defined in `shared/routes.ts`.
-- **Data Validation:** Zod schemas are shared between client and server for consistent validation.
-- **Rule Engine:** A metadata-driven rule engine (defined in `shared/ruleTypes.ts`) allows for dynamic rule creation and validation. The `RULE_TYPE_CATALOG` centralizes rule types and their metadata for dynamic UI rendering and comparison logic.
+- **Frontend:** React 18, TypeScript, react-router-dom, TanStack Query, Tailwind CSS, Recharts, Framer Motion, React Hook Form with Zod.
+- **Backend:** Express.js with TypeScript, built with Vite (frontend) and esbuild (server). REST API defined in `shared/routes.ts`.
+- **Data Validation:** Zod schemas shared between client and server for consistency.
+- **Rule Engine:** A metadata-driven rule engine (defined in `shared/ruleTypes.ts`) supports dynamic rule creation and validation, centralizing rule types and metadata in `RULE_TYPE_CATALOG`.
 
 ### Feature Specifications
-- **MT5 Bridge:** Supports multi-account connectivity. **Architecture: Account switching only affects live metrics display (balance, equity, margin). All analytics endpoints (equity curve, journal, session analytics, time patterns, behavioral risks, performance intelligence, psychology review, monthly review, instruments, PDF reports) ALWAYS aggregate trade history across ALL accounts via the central `getAllMT5Trades(userId)` helper in `server/routes.ts`.** This uses direct SQL with `DISTINCT ON (mt5_account_id, ticket)` to deduplicate per-account while preserving cross-account trades with the same ticket number.
-- **Plan System:** Centralized configuration in `shared/plans.ts` with feature gating via frontend hooks and backend utilities. Trade history retention is tier-specific.
-- **Email System:** Uses Nodemailer with Google Workspace SMTP for various email types, including welcome, admin-created user, password reset, email verification, subscription notifications, and contact form handling, with rate limiting.
-- **Email Verification:** New users must verify their email before logging in. Verification tokens expire after 24 hours. Admin/Owner accounts bypass verification. Users can resend verification emails from the verification screen.
-- **Admin Panel:** Provides user management (creation, plan changes, deactivation, deletion, founding member status toggle), accessible only by OWNER/ADMIN roles, with audit logging.
-- **Cookie Consent System:** GDPR-compliant cookie banner with Accept All/Reject All/Customize options. Users can manage preferences for Analytics (Google Analytics) and Marketing (Facebook Pixel) cookies via modal. Preferences stored in localStorage. Cookie Policy page at `/cookie-policy`. Footer includes Cookie Policy link and Cookie Settings button. Tracking hooks in `client/src/hooks/useTracking.ts` gate analytics/marketing scripts based on consent.
-- **Psychology & Mood Tracking:** Every trade card in the Journal has inline Mood (confident, calm, neutral, anxious, fearful, greedy, frustrated, revenge) and Mistake Category (early entry, late entry, no stop loss, moved stop loss, oversized, FOMO, revenge trade, ignored rules, poor R:R, early exit, overtrading) selectors. Updates via `PATCH /api/trades/:id/annotations` with `source` parameter to differentiate MT5 vs manual trades. Schema columns: `mood` and `mistake_category` on both `trade_journal` and `mt5_history` tables.
-- **CSV Trade Import:** Import trades from MT4/MT5, TradingView, or any CSV format via `CsvImportDialog` component. Uses PapaParse for client-side parsing. Auto-detects column mappings based on platform presets. Bulk creates trades via `POST /api/trades/import` (max 500 per import). Accessible from Journal header.
-- **Dashboard Customization:** Users can toggle dashboard widget visibility via `DashboardCustomizer` dialog (settings gear icon in dashboard header). Saves to `dashboard_config` JSONB column on `user_role` table via `PATCH /api/user/dashboard-config`. Widgets: stats, equityCurve, aiInstrument, recentTrades, sessionAnalytics, timePatterns, behavioralRisks, strategyDeviation, monthlyReview, psychologyReview.
-- **AI Psychology Review:** Pro+ dashboard widget (`PsychologyTradeReview`) that aggregates mood/mistake data and calls OpenAI for psychology-aware insights. Backend: `GET /api/ai/psychology-review/:userId` with 6-hour cache and `force=1` bypass. Shows mood breakdown stats, mistake impact analysis, and AI-generated review. Gated via `aiAnalysis` feature flag.
-- **AI Marketing Hub:** Admin-only marketing command center at `/admin/marketing/*`. Includes: (1) **Marketing Dashboard** — overview stats with content counts, campaign status, real user data insights (total users, signups, tier distribution, conversion rate), recent activity feed, quick action buttons. (2) **Content Studio** — AI-powered content generation with 4 tabs: Social Posts (platform-specific for Instagram/Facebook/Twitter/LinkedIn/TikTok with captions, hashtags, posting times), Reel Scripts (hook/problem/solution/CTA with visual directions), Blog Articles (SEO-optimized, publishes to existing blog system), Email Campaigns (welcome/announcement/re-engagement/promo by user segment). (3) **Meta Ads Strategist** — 5 tools: Campaign Builder (Advantage+/CBO/manual structure, budget allocation, bid strategy, testing phases), Ad Copy Generator (5-10 variations using AIDA/PAS/Hook-Story-Offer frameworks), Audience Strategy (broad/Andromeda/interest/lookalike/retargeting), Optimization Rules (kill/scale rules, creative fatigue, day-parting), Pre-built Playbooks (4 templates: 100 signups, retargeting, feature launch, free trial). (4) **Brand Settings** — brand voice, tone, audience personas, USPs, competitors, colors, key messages with completeness indicator. (5) **Content Library** — searchable/filterable archive of all generated content with calendar view, star ratings for AI learning, duplicate detection. (6) **Campaigns** — campaign management with detail views, associated content, ad strategies, email sequences. Full deduplication system: every generated piece stored in DB, AI receives last 20-30 pieces as context to avoid repeating hooks/themes/phrases. Data-driven content pulls real stats from Tradify database. DB tables: `marketing_brand_settings`, `marketing_content`, `marketing_campaigns`, `marketing_ad_strategies`, `marketing_email_sequences`. AI engine: `server/marketing-ai.ts` using OpenAI integration.
-- **Blog System:** Full CMS for content marketing. DB table: `blog_posts` with title, slug (unique), excerpt, content (markdown), coverImage, category, tags, status (draft/published), SEO fields (metaTitle, metaDescription). Public routes: `GET /api/blog` (published, supports `?category=X&limit=N`), `GET /api/blog/:slug`, `GET /api/blog/categories`. Admin routes: full CRUD at `/api/admin/blog`. Frontend: `/blog` listing page with category filtering, `/blog/:slug` article page with Open Graph and JSON-LD structured data. Admin panel has Blog tab for content management. Categories: Trading Psychology, Prop Firm Tips, Strategy Building, Platform Updates, Risk Management, Market Analysis.
-- **SEO System:** Enhanced SEO component (`client/src/components/SEO.tsx`) with Open Graph, Twitter Cards, structured data (JSON-LD), and article metadata. Server-side `robots.txt` and dynamic `sitemap.xml` (includes blog posts). Landing page has SoftwareApplication and FAQ structured data. Blog articles have Article structured data.
+- **MT5 Bridge:** Supports multi-account connectivity, aggregating trade history across all accounts for analytics endpoints.
+- **Plan System:** Centralized configuration in `shared/plans.ts` with feature gating and tier-specific trade history retention.
+- **Email System:** Nodemailer with Google Workspace SMTP for various notifications and account management, including rate limiting.
+- **Email Verification:** Mandatory for new users (except Admin/Owner) with a 24-hour token expiry and resend options.
+- **Admin Panel:** User management (creation, plan changes, deactivation, deletion, founding member status) with audit logging, accessible only by OWNER/ADMIN roles.
+- **Cookie Consent System:** GDPR-compliant banner with customizable preferences for Analytics (Google Analytics) and Marketing (Facebook Pixel), stored in localStorage.
+- **Psychology & Mood Tracking:** Inline mood and mistake category selectors on trade cards, updating `trade_journal` and `mt5_history` tables.
+- **CSV Trade Import:** Supports importing trades from MT4/MT5, TradingView, or custom CSVs via client-side parsing (PapaParse) and bulk API import.
+- **Dashboard Customization:** Users can toggle widget visibility, saved to a `dashboard_config` JSONB column on the `user_role` table.
+- **AI Psychology Review:** A Pro+ dashboard widget that aggregates mood/mistake data and uses OpenAI for psychology-aware insights, with a 6-hour cache.
+- **AI Marketing Hub:** Admin-only command center with a Marketing Dashboard, AI-powered Content Studio (Social Posts, Reel Scripts, Blog Articles, Email Campaigns), Meta Ads Strategist, Brand Settings, and Content Library. It uses real user data for content generation and includes a deduplication system.
+- **Blog System:** A full CMS for content marketing with CRUD operations, public listing, category filtering, and SEO optimization (Open Graph, JSON-LD).
+- **SEO System:** Enhanced SEO component with Open Graph, Twitter Cards, structured data (JSON-LD), server-side `robots.txt`, and a dynamic `sitemap.xml`.
 
 ### System Design Choices
-- **Project Structure:** Clearly separates client, server, and shared code.
-- **Database:** PostgreSQL with Drizzle ORM for database interactions and schema management. `drizzle-kit push` for migrations.
-- **Core Tables:** `strategies`, `strategy_rules`, and `trade_journal` store essential application data.
+- **Project Structure:** Clear separation of client, server, and shared code.
+- **Database:** PostgreSQL with Drizzle ORM for interactions and schema management.
+- **Core Tables:** `strategies`, `strategy_rules`, and `trade_journal`.
 
 ## External Dependencies
 
-- **Database:** PostgreSQL (configured via `DATABASE_URL`), Drizzle ORM, `connect-pg-simple` for session storage.
-- **UI Libraries:** shadcn/ui (Radix UI primitives), Tailwind CSS, Lucide React.
-- **MT5 Integration:** Custom Expert Advisor (EA) communicates with the backend via HTTP POST to `/api/mt5/update`.
-- **Payment Gateway:** PayPal for recurring subscriptions with monthly and annual billing options, handling 3-tier pricing (Free, Pro at $29/mo or $290/yr, Elite at $59/mo or $590/yr). Annual plans offer ~2 months free. PayPal Plan IDs stored in env vars (PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_PRO_ANNUAL_PLAN_ID, PAYPAL_ELITE_ANNUAL_PLAN_ID). Billing period tracked via `billingPeriod` column on `user_role` table. Pricing page has monthly/annual toggle. Founding member 30% discount applies to both billing periods. Founding members are routed to separate discounted PayPal plans (PAYPAL_FM_PRO_PLAN_ID, PAYPAL_FM_ELITE_PLAN_ID, PAYPAL_FM_PRO_ANNUAL_PLAN_ID, PAYPAL_FM_ELITE_ANNUAL_PLAN_ID) so they are actually charged 30% less. Integrates with PayPal's webhook system for subscription status management.
-- **AI Integrations (Optional):** OpenAI integration via Replit AI Integrations for features like AI Instrument Analysis and Monthly Self-Review Reports.
-- **AI Cost Intelligence:** Admin-only Cost & Revenue Intelligence dashboard at `/admin/costs`. Tracks every OpenAI API call across the app with: model used, tokens in/out, calculated USD cost, user ID, subscription tier, feature name. Instrumented across all AI call sites: performance insights, psychology review, monthly review, instrument analysis, AI tutor, education AI, marketing content (marketing-ai.ts), chat, voice/audio, image generation, transcription. Dashboard sections: Overview cards (today/week/month/all-time AI spend), Revenue vs Cost (estimated monthly revenue from subscriptions, profit margin), Cost by Tier (Free/Pro/Elite with percentages), Cost by Feature, Cost by Model, Daily Cost Trend (30 days), Top 10 Users by Cost, Avg Cost per User by Tier, Manual Costs (CRUD for fixed expenses like hosting/domain), Budget Alerts (threshold + progress bar). DB tables: `ai_usage_logs`, `manual_costs`, `cost_budget_alerts`. Cost tracker utility: `server/ai-cost-tracker.ts` with `trackAIUsage()`, `calculateCost()`, `wrapOpenAICall()`, `estimateTokensFromText()`. Model pricing: gpt-4o-mini ($0.15/$0.60 per 1M), gpt-4o ($2.50/$10 per 1M), gpt-5.1 ($2.50/$10 per 1M), gpt-image-1 ($0.04/image), gpt-audio-mini ($0.06/$0.24 per 1M). Frontend: `client/src/pages/admin/CostIntelligence.tsx`.
+- **Database:** PostgreSQL, Drizzle ORM, `connect-pg-simple`.
+- **UI Libraries:** shadcn/ui, Tailwind CSS, Lucide React.
+- **MT5 Integration:** Custom Expert Advisor (EA) communicating via HTTP POST.
+- **Payment Gateway:** PayPal for recurring subscriptions across three tiers (Free, Pro, Elite) with monthly/annual options and founding member discounts, integrating with PayPal webhooks.
+- **AI Integrations:** OpenAI for features like AI Instrument Analysis, Monthly Self-Review Reports, AI Tutor, and AI Marketing.
+- **AI Cost Intelligence:** Admin-only dashboard (`/admin/costs`) with global filter bar (period presets, custom date range, tier/feature/model dropdowns), cost overview cards, tier/feature/model breakdowns, daily trend chart, top users table with search and drill-down dialog (per-user cost profile with feature/model breakdown, daily trend, and recent logs), full paginated usage log viewer with sortable columns and CSV export, manual fixed costs CRUD with Replit cost presets (Reserved VM, Deployment, Agent, Neon DB), and budget alert settings with progress visualization. Backend: 14 admin API endpoints under `/api/admin/costs/*` with date range and user filtering, paginated log search, and per-user cost profiles. DB tables: `ai_usage_logs`, `manual_costs`, `cost_budget_alerts`.

@@ -6565,19 +6565,24 @@ Guidelines:
 
   // ==================== COST INTELLIGENCE ROUTES ====================
 
-  app.get("/api/admin/costs/overview", requireAdmin, async (_req, res) => {
+  app.get("/api/admin/costs/overview", requireAdmin, async (req, res) => {
     try {
       const now = new Date();
+      const fromParam = req.query.from ? new Date(req.query.from as string) : undefined;
+      const toParam = req.query.to ? new Date(req.query.to as string) : undefined;
       const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
       const weekStart = new Date(todayStart);
       weekStart.setDate(weekStart.getDate() - weekStart.getUTCDay());
       const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
+      const effectiveFrom = fromParam || new Date(0);
+      const effectiveTo = toParam || now;
+
       const [todayLogs, weekLogs, monthLogs, allTimeLogs] = await Promise.all([
-        storage.getAiUsageLogsByDateRange(todayStart, now),
-        storage.getAiUsageLogsByDateRange(weekStart, now),
-        storage.getAiUsageLogsByDateRange(monthStart, now),
-        storage.getAiUsageLogsByDateRange(new Date(0), now),
+        storage.getAiUsageLogsByDateRange(todayStart > effectiveFrom ? todayStart : effectiveFrom, effectiveTo),
+        storage.getAiUsageLogsByDateRange(weekStart > effectiveFrom ? weekStart : effectiveFrom, effectiveTo),
+        storage.getAiUsageLogsByDateRange(monthStart > effectiveFrom ? monthStart : effectiveFrom, effectiveTo),
+        storage.getAiUsageLogsByDateRange(effectiveFrom, effectiveTo),
       ]);
 
       const sumCost = (logs: any[]) => logs.reduce((sum, l) => sum + parseFloat(l.costUsd || "0"), 0);
@@ -6622,7 +6627,8 @@ Guidelines:
     try {
       const from = req.query.from ? new Date(req.query.from as string) : undefined;
       const to = req.query.to ? new Date(req.query.to as string) : undefined;
-      const result = await storage.aggregateAiUsageByTier(from, to);
+      const userId = req.query.userId as string | undefined;
+      const result = await storage.aggregateAiUsageByTier(from, to, userId);
       const totalCostAll = result.reduce((sum, r) => sum + parseFloat(r.totalCost || "0"), 0);
       const mapped = result.map(r => ({
         tier: r.userTier,
@@ -6641,7 +6647,8 @@ Guidelines:
     try {
       const from = req.query.from ? new Date(req.query.from as string) : undefined;
       const to = req.query.to ? new Date(req.query.to as string) : undefined;
-      const result = await storage.aggregateAiUsageByFeature(from, to);
+      const userId = req.query.userId as string | undefined;
+      const result = await storage.aggregateAiUsageByFeature(from, to, userId);
       const totalCostAll = result.reduce((sum, r) => sum + parseFloat(r.totalCost || "0"), 0);
       const mapped = result.map(r => ({
         feature: r.feature,
@@ -6660,7 +6667,8 @@ Guidelines:
     try {
       const from = req.query.from ? new Date(req.query.from as string) : undefined;
       const to = req.query.to ? new Date(req.query.to as string) : undefined;
-      const result = await storage.aggregateAiUsageByModel(from, to);
+      const userId = req.query.userId as string | undefined;
+      const result = await storage.aggregateAiUsageByModel(from, to, userId);
       const totalCostAll = result.reduce((sum, r) => sum + parseFloat(r.totalCost || "0"), 0);
       const mapped = result.map(r => ({
         model: r.model,
@@ -6678,7 +6686,10 @@ Guidelines:
   app.get("/api/admin/costs/daily", requireAdmin, async (req, res) => {
     try {
       const days = parseInt(req.query.days as string) || 30;
-      const result = await storage.getAiUsageDailyTotals(days);
+      const from = req.query.from ? new Date(req.query.from as string) : undefined;
+      const to = req.query.to ? new Date(req.query.to as string) : undefined;
+      const userId = req.query.userId as string | undefined;
+      const result = await storage.getAiUsageDailyTotals(days, from, to, userId);
       const mapped = result.map(r => ({
         date: r.date,
         totalCost: r.totalCost,
@@ -6694,7 +6705,9 @@ Guidelines:
   app.get("/api/admin/costs/top-users", requireAdmin, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
-      const result = await storage.getAiUsageTopUsers(limit);
+      const from = req.query.from ? new Date(req.query.from as string) : undefined;
+      const to = req.query.to ? new Date(req.query.to as string) : undefined;
+      const result = await storage.getAiUsageTopUsers(limit, from, to);
       const mapped = result.map(r => ({
         userId: r.userId,
         userTier: r.userTier,
@@ -6705,6 +6718,41 @@ Guidelines:
     } catch (error) {
       console.error("Top users cost error:", error);
       res.status(500).json({ message: "Failed to get top users" });
+    }
+  });
+
+  app.get("/api/admin/costs/logs", requireAdmin, async (req, res) => {
+    try {
+      const filters: any = {};
+      if (req.query.userId) filters.userId = req.query.userId as string;
+      if (req.query.tier) filters.userTier = req.query.tier as string;
+      if (req.query.feature) filters.feature = req.query.feature as string;
+      if (req.query.model) filters.model = req.query.model as string;
+      if (req.query.from) filters.dateFrom = new Date(req.query.from as string);
+      if (req.query.to) filters.dateTo = new Date(req.query.to as string);
+      if (req.query.sort) filters.sortBy = req.query.sort as string;
+      if (req.query.order) filters.sortOrder = req.query.order as string;
+      if (req.query.page) filters.page = parseInt(req.query.page as string);
+      if (req.query.limit) filters.limit = parseInt(req.query.limit as string);
+
+      const result = await storage.searchAiUsageLogs(filters);
+      res.json(result);
+    } catch (error) {
+      console.error("Search logs error:", error);
+      res.status(500).json({ message: "Failed to search usage logs" });
+    }
+  });
+
+  app.get("/api/admin/costs/user/:userId", requireAdmin, async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const dateFrom = req.query.from ? new Date(req.query.from as string) : undefined;
+      const dateTo = req.query.to ? new Date(req.query.to as string) : undefined;
+      const result = await storage.getAiUsageByUser(userId, dateFrom, dateTo);
+      res.json(result);
+    } catch (error) {
+      console.error("User cost profile error:", error);
+      res.status(500).json({ message: "Failed to get user cost profile" });
     }
   });
 

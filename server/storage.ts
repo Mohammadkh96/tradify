@@ -192,11 +192,31 @@ export interface IStorage {
   createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
   getAiUsageLogsByDateRange(from: Date, to: Date): Promise<AiUsageLog[]>;
   getAiUsageLogsByUser(userId: string): Promise<AiUsageLog[]>;
-  aggregateAiUsageByTier(from?: Date, to?: Date): Promise<{ userTier: string; totalCost: string; count: number }[]>;
-  aggregateAiUsageByFeature(from?: Date, to?: Date): Promise<{ feature: string; totalCost: string; count: number }[]>;
-  aggregateAiUsageByModel(from?: Date, to?: Date): Promise<{ model: string; totalCost: string; count: number }[]>;
-  getAiUsageDailyTotals(days: number): Promise<{ date: string; totalCost: string; count: number }[]>;
-  getAiUsageTopUsers(limit: number): Promise<{ userId: string; userTier: string; totalCost: string; count: number }[]>;
+  aggregateAiUsageByTier(from?: Date, to?: Date, userId?: string): Promise<{ userTier: string; totalCost: string; count: number }[]>;
+  aggregateAiUsageByFeature(from?: Date, to?: Date, userId?: string): Promise<{ feature: string; totalCost: string; count: number }[]>;
+  aggregateAiUsageByModel(from?: Date, to?: Date, userId?: string): Promise<{ model: string; totalCost: string; count: number }[]>;
+  getAiUsageDailyTotals(days: number, from?: Date, to?: Date, userId?: string): Promise<{ date: string; totalCost: string; count: number }[]>;
+  getAiUsageTopUsers(limit: number, from?: Date, to?: Date): Promise<{ userId: string; userTier: string; totalCost: string; count: number }[]>;
+  searchAiUsageLogs(filters: {
+    userId?: string;
+    userTier?: string;
+    feature?: string;
+    model?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    sortBy?: string;
+    sortOrder?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ logs: AiUsageLog[]; total: number; page: number; totalPages: number }>;
+  getAiUsageByUser(userId: string, dateFrom?: Date, dateTo?: Date): Promise<{
+    totalCost: string;
+    requestCount: number;
+    byFeature: { feature: string; totalCost: string; count: number }[];
+    byModel: { model: string; totalCost: string; count: number }[];
+    dailyTrend: { date: string; totalCost: string; count: number }[];
+    recentLogs: AiUsageLog[];
+  }>;
   // Manual Costs
   createManualCost(cost: InsertManualCost): Promise<ManualCost>;
   listManualCosts(): Promise<ManualCost[]>;
@@ -1406,10 +1426,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(aiUsageLogs.createdAt));
   }
 
-  async aggregateAiUsageByTier(from?: Date, to?: Date): Promise<{ userTier: string; totalCost: string; count: number }[]> {
+  async aggregateAiUsageByTier(from?: Date, to?: Date, userId?: string): Promise<{ userTier: string; totalCost: string; count: number }[]> {
     const conditions: any[] = [];
     if (from) conditions.push(gte(aiUsageLogs.createdAt, from));
     if (to) conditions.push(lte(aiUsageLogs.createdAt, to));
+    if (userId) conditions.push(ilike(aiUsageLogs.userId, `%${userId}%`));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -1424,10 +1445,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async aggregateAiUsageByFeature(from?: Date, to?: Date): Promise<{ feature: string; totalCost: string; count: number }[]> {
+  async aggregateAiUsageByFeature(from?: Date, to?: Date, userId?: string): Promise<{ feature: string; totalCost: string; count: number }[]> {
     const conditions: any[] = [];
     if (from) conditions.push(gte(aiUsageLogs.createdAt, from));
     if (to) conditions.push(lte(aiUsageLogs.createdAt, to));
+    if (userId) conditions.push(ilike(aiUsageLogs.userId, `%${userId}%`));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -1442,10 +1464,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async aggregateAiUsageByModel(from?: Date, to?: Date): Promise<{ model: string; totalCost: string; count: number }[]> {
+  async aggregateAiUsageByModel(from?: Date, to?: Date, userId?: string): Promise<{ model: string; totalCost: string; count: number }[]> {
     const conditions: any[] = [];
     if (from) conditions.push(gte(aiUsageLogs.createdAt, from));
     if (to) conditions.push(lte(aiUsageLogs.createdAt, to));
+    if (userId) conditions.push(ilike(aiUsageLogs.userId, `%${userId}%`));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -1460,34 +1483,162 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAiUsageDailyTotals(days: number): Promise<{ date: string; totalCost: string; count: number }[]> {
-    const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - days);
+  async getAiUsageDailyTotals(days: number, from?: Date, to?: Date, userId?: string): Promise<{ date: string; totalCost: string; count: number }[]> {
+    const conditions: any[] = [];
+    if (from) {
+      conditions.push(gte(aiUsageLogs.createdAt, from));
+    } else {
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - days);
+      conditions.push(gte(aiUsageLogs.createdAt, fromDate));
+    }
+    if (to) conditions.push(lte(aiUsageLogs.createdAt, to));
+    if (userId) conditions.push(ilike(aiUsageLogs.userId, `%${userId}%`));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const result = await db.select({
       date: sql<string>`DATE(${aiUsageLogs.createdAt})::TEXT`,
       totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
       count: sql<number>`COUNT(*)::INTEGER`,
     }).from(aiUsageLogs)
-      .where(gte(aiUsageLogs.createdAt, fromDate))
+      .where(whereClause)
       .groupBy(sql`DATE(${aiUsageLogs.createdAt})`)
       .orderBy(sql`DATE(${aiUsageLogs.createdAt})`);
 
     return result;
   }
 
-  async getAiUsageTopUsers(limit: number): Promise<{ userId: string; userTier: string; totalCost: string; count: number }[]> {
+  async getAiUsageTopUsers(limit: number, from?: Date, to?: Date): Promise<{ userId: string; userTier: string; totalCost: string; count: number }[]> {
+    const conditions: any[] = [];
+    if (from) conditions.push(gte(aiUsageLogs.createdAt, from));
+    if (to) conditions.push(lte(aiUsageLogs.createdAt, to));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
     const result = await db.select({
       userId: aiUsageLogs.userId,
       userTier: sql<string>`MAX(${aiUsageLogs.userTier})`,
       totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
       count: sql<number>`COUNT(*)::INTEGER`,
     }).from(aiUsageLogs)
+      .where(whereClause)
       .groupBy(aiUsageLogs.userId)
       .orderBy(sql`SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)) DESC`)
       .limit(limit);
 
     return result;
+  }
+
+  async searchAiUsageLogs(filters: {
+    userId?: string;
+    userTier?: string;
+    feature?: string;
+    model?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    sortBy?: string;
+    sortOrder?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ logs: AiUsageLog[]; total: number; page: number; totalPages: number }> {
+    const conditions: any[] = [];
+    if (filters.userId) conditions.push(ilike(aiUsageLogs.userId, `%${filters.userId}%`));
+    if (filters.userTier) conditions.push(eq(aiUsageLogs.userTier, filters.userTier));
+    if (filters.feature) conditions.push(eq(aiUsageLogs.feature, filters.feature));
+    if (filters.model) conditions.push(eq(aiUsageLogs.model, filters.model));
+    if (filters.dateFrom) conditions.push(gte(aiUsageLogs.createdAt, filters.dateFrom));
+    if (filters.dateTo) conditions.push(lte(aiUsageLogs.createdAt, filters.dateTo));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const page = filters.page || 1;
+    const limit = filters.limit || 25;
+    const offset = (page - 1) * limit;
+
+    const sortExpr = filters.sortBy === 'cost' ? sql`CAST(${aiUsageLogs.costUsd} AS NUMERIC)`
+      : filters.sortBy === 'tokens' ? sql`COALESCE(${aiUsageLogs.totalTokens}, 0)`
+      : filters.sortBy === 'duration' ? sql`COALESCE(${aiUsageLogs.requestDuration}, 0)`
+      : filters.sortBy === 'user' ? sql`${aiUsageLogs.userId}`
+      : filters.sortBy === 'feature' ? sql`${aiUsageLogs.feature}`
+      : filters.sortBy === 'model' ? sql`${aiUsageLogs.model}`
+      : sql`${aiUsageLogs.createdAt}`;
+
+    const [countResult] = await db.select({
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs).where(whereClause);
+
+    const total = countResult?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    const logs = await db.select().from(aiUsageLogs)
+      .where(whereClause)
+      .orderBy(filters.sortOrder === 'asc' ? sql`${sortExpr} ASC` : sql`${sortExpr} DESC`)
+      .limit(limit)
+      .offset(offset);
+
+    return { logs, total, page, totalPages };
+  }
+
+  async getAiUsageByUser(userId: string, dateFrom?: Date, dateTo?: Date): Promise<{
+    totalCost: string;
+    requestCount: number;
+    byFeature: { feature: string; totalCost: string; count: number }[];
+    byModel: { model: string; totalCost: string; count: number }[];
+    dailyTrend: { date: string; totalCost: string; count: number }[];
+    recentLogs: AiUsageLog[];
+  }> {
+    const conditions: any[] = [eq(aiUsageLogs.userId, userId)];
+    if (dateFrom) conditions.push(gte(aiUsageLogs.createdAt, dateFrom));
+    if (dateTo) conditions.push(lte(aiUsageLogs.createdAt, dateTo));
+
+    const whereClause = and(...conditions);
+
+    const [totals] = await db.select({
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      requestCount: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs).where(whereClause);
+
+    const byFeature = await db.select({
+      feature: aiUsageLogs.feature,
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs)
+      .where(whereClause)
+      .groupBy(aiUsageLogs.feature)
+      .orderBy(sql`SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)) DESC`);
+
+    const byModel = await db.select({
+      model: aiUsageLogs.model,
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs)
+      .where(whereClause)
+      .groupBy(aiUsageLogs.model)
+      .orderBy(sql`SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)) DESC`);
+
+    const dailyTrend = await db.select({
+      date: sql<string>`DATE(${aiUsageLogs.createdAt})::TEXT`,
+      totalCost: sql<string>`COALESCE(SUM(CAST(${aiUsageLogs.costUsd} AS NUMERIC)), 0)::TEXT`,
+      count: sql<number>`COUNT(*)::INTEGER`,
+    }).from(aiUsageLogs)
+      .where(whereClause)
+      .groupBy(sql`DATE(${aiUsageLogs.createdAt})`)
+      .orderBy(sql`DATE(${aiUsageLogs.createdAt})`);
+
+    const recentLogs = await db.select().from(aiUsageLogs)
+      .where(eq(aiUsageLogs.userId, userId))
+      .orderBy(desc(aiUsageLogs.createdAt))
+      .limit(50);
+
+    return {
+      totalCost: totals?.totalCost || "0",
+      requestCount: totals?.requestCount || 0,
+      byFeature,
+      byModel,
+      dailyTrend,
+      recentLogs,
+    };
   }
 
   // ==================== MANUAL COSTS METHODS ====================
