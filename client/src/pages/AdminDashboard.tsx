@@ -17,6 +17,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import ContentStudio from "@/pages/admin/ContentStudio";
 import MetaAdsStrategist from "@/pages/admin/MetaAdsStrategist";
 import CostIntelligence from "@/pages/admin/CostIntelligence";
+import FunnelGenerator from "@/pages/admin/FunnelGenerator";
 
 function AdminAccessTab() {
   const { toast } = useToast();
@@ -1130,6 +1131,11 @@ export default function AdminDashboard() {
   // --- 14. COST INTELLIGENCE PAGE ---
   if (location.pathname === "/admin/costs") {
     return <CostIntelligence />;
+  }
+
+  // --- 15. FUNNEL CONTENT FACTORY ---
+  if (location.pathname === "/admin/marketing/funnel") {
+    return <FunnelGenerator />;
   }
 
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)

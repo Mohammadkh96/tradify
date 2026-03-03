@@ -15,6 +15,10 @@ import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
 import { trackAIUsage, calculateCost, estimateTokensFromText } from "./ai-cost-tracker";
+import { FUNNEL_STAGES, generateFunnelAssets, generateSingleAsset } from "./funnel-generator";
+import archiver from "archiver";
+import fsNode from "node:fs";
+import pathNode from "node:path";
 // Removed pdfkit - using client-side PDF generation with jspdf
 
 const PostgresStore = connectPg(session);
@@ -6960,6 +6964,118 @@ Guidelines:
     } catch (error) {
       console.error("Marketing stats error:", error);
       res.status(500).json({ message: "Failed to get marketing stats" });
+    }
+  });
+
+  app.use("/api/admin/marketing/funnel/file", express.static(pathNode.join(process.cwd(), "public", "generated")));
+
+  app.get("/api/admin/marketing/funnel/stages", requireAdmin, (_req: Request, res: Response) => {
+    res.json(FUNNEL_STAGES);
+  });
+
+  app.post("/api/admin/marketing/funnel/generate", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { stage, assetTypes, topic, platform, imageStyle, videoDuration } = req.body;
+      if (!stage || !assetTypes || !Array.isArray(assetTypes) || assetTypes.length === 0) {
+        return res.status(400).json({ message: "stage and assetTypes[] are required" });
+      }
+      const assets = await generateFunnelAssets({ stage, assetTypes, topic, platform, imageStyle, videoDuration });
+      res.json(assets);
+    } catch (error) {
+      console.error("Funnel generate error:", error);
+      res.status(500).json({ message: "Failed to generate funnel assets" });
+    }
+  });
+
+  app.post("/api/admin/marketing/funnel/generate-single", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { type, stage, topic, platform, imageStyle } = req.body;
+      if (!type || !stage) {
+        return res.status(400).json({ message: "type and stage are required" });
+      }
+      const asset = await generateSingleAsset({ type, stage, topic, platform, imageStyle });
+      res.json(asset);
+    } catch (error) {
+      console.error("Funnel generate-single error:", error);
+      res.status(500).json({ message: "Failed to regenerate asset" });
+    }
+  });
+
+  app.post("/api/admin/marketing/funnel/export-bundle", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { assets } = req.body;
+      if (!assets || !Array.isArray(assets) || assets.length === 0) {
+        return res.status(400).json({ message: "assets[] is required" });
+      }
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="tradify-funnel-assets-${dateStr}.zip"`);
+
+      const archive = archiver("zip", { zlib: { level: 9 } });
+      archive.on("error", (err: Error) => { throw err; });
+      archive.pipe(res);
+
+      const folderMap: Record<string, string> = {
+        ad_image: "images",
+        landing_page: "pages",
+        social_post: "text",
+        reel_script: "text",
+        ad_copy: "text",
+        blog_article: "articles",
+        email_campaign: "emails",
+        comparison_post: "text",
+        testimonial_post: "text",
+        case_study: "articles",
+      };
+
+      const extMap: Record<string, string> = {
+        ad_image: ".png",
+        landing_page: ".html",
+        social_post: ".txt",
+        reel_script: ".txt",
+        ad_copy: ".txt",
+        blog_article: ".md",
+        email_campaign: ".html",
+        comparison_post: ".txt",
+        testimonial_post: ".txt",
+        case_study: ".md",
+      };
+
+      const manifest: any[] = [];
+
+      const safeFileNameRegex = /^[a-z0-9-]+\.(png|html|mp4)$/;
+      const generatedDir = pathNode.resolve(process.cwd(), "public", "generated");
+
+      for (const asset of assets) {
+        const folder = folderMap[asset.type] || "misc";
+        const ext = extMap[asset.type] || ".txt";
+        const baseName = `${(asset.stage || "unknown").replace(/[^a-z0-9-]/gi, "")}-${(asset.type || "unknown").replace(/[^a-z0-9_-]/gi, "")}-${(asset.id || String(Date.now())).replace(/[^a-z0-9]/gi, "")}`;
+
+        if (asset.fileUrl && asset.fileName && safeFileNameRegex.test(asset.fileName)) {
+          const resolvedPath = pathNode.resolve(generatedDir, asset.fileName);
+          if (resolvedPath.startsWith(generatedDir) && fsNode.existsSync(resolvedPath)) {
+            archive.file(resolvedPath, { name: `${folder}/${asset.fileName}` });
+            manifest.push({ type: asset.type, stage: asset.stage, file: `${folder}/${asset.fileName}` });
+          }
+        }
+
+        if (asset.htmlContent) {
+          archive.append(asset.htmlContent, { name: `${folder}/${baseName}.html` });
+          manifest.push({ type: asset.type, stage: asset.stage, file: `${folder}/${baseName}.html` });
+        } else if (asset.content) {
+          archive.append(asset.content, { name: `${folder}/${baseName}${ext}` });
+          manifest.push({ type: asset.type, stage: asset.stage, file: `${folder}/${baseName}${ext}` });
+        }
+      }
+
+      archive.append(JSON.stringify(manifest, null, 2), { name: "manifest.json" });
+      await archive.finalize();
+    } catch (error) {
+      console.error("Funnel export-bundle error:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Failed to export bundle" });
+      }
     }
   });
 

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Megaphone, FileText, BarChart3, Users, TrendingUp, ArrowUpRight, PenTool, Target, FolderOpen, Clock, RefreshCw } from "lucide-react";
+import { Megaphone, FileText, BarChart3, Users, TrendingUp, ArrowUpRight, PenTool, Target, FolderOpen, Clock, RefreshCw, Package } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -141,6 +141,14 @@ export default function MarketingDashboard() {
             data-testid="button-quick-create-campaign"
           >
             <FolderOpen size={16} className="mr-2" /> Create Campaign
+          </Button>
+          <Button
+            variant="outline"
+            className="border-emerald-500/40 text-emerald-400"
+            onClick={() => navigate("/admin/marketing/funnel")}
+            data-testid="button-quick-content-factory"
+          >
+            <Package size={16} className="mr-2" /> Content Factory
           </Button>
         </div>
       </div>

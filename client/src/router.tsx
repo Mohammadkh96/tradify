@@ -463,6 +463,7 @@ function AppRoutes() {
       <Route path="/admin/marketing/campaigns" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/marketing/content-library" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/marketing/brand-settings" element={<AdminRoute><MarketingBrandSettings /></AdminRoute>} />
+      <Route path="/admin/marketing/funnel" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       
       {/* 404 */}
       <Route path="*" element={<NotFound />} />

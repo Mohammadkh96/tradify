@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, FolderOpen, Library, Palette, DollarSign } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, FolderOpen, Library, Palette, DollarSign, Package } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
@@ -24,6 +24,7 @@ const marketingNavItems = [
   { href: "/admin/marketing/meta-ads", label: "Meta Ads Strategist", icon: Target },
   { href: "/admin/marketing/campaigns", label: "Campaigns", icon: FolderOpen },
   { href: "/admin/marketing/content-library", label: "Content Library", icon: Library },
+  { href: "/admin/marketing/funnel", label: "Content Factory", icon: Package },
   { href: "/admin/marketing/brand-settings", label: "Brand Settings", icon: Palette },
 ];
 
