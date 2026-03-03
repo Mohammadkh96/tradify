@@ -569,6 +569,7 @@ export const marketingBrandSettings = pgTable("marketing_brand_settings", {
   brandTone: text("brand_tone"),
   colors: jsonb("colors").default([]),
   keyMessages: jsonb("key_messages").default([]),
+  contentPipeline: jsonb("content_pipeline"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -592,6 +593,8 @@ export const marketingContent = pgTable("marketing_content", {
   status: text("status").notNull().default("draft"),
   performanceRating: integer("performance_rating"),
   aiModelUsed: text("ai_model_used"),
+  scheduledDate: timestamp("scheduled_date"),
+  repurposedFrom: integer("repurposed_from"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

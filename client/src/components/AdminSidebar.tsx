@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, FolderOpen, Library, Palette, DollarSign, Package, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Zap, Shield, LogOut, Activity, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, Library, Palette, DollarSign, ChevronDown, Calendar } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
@@ -29,26 +29,9 @@ const marketingSubGroups: MarketingSubGroup[] = [
     label: "",
     items: [
       { href: "/admin/marketing", label: "Dashboard", icon: Megaphone },
-    ],
-  },
-  {
-    label: "Content",
-    items: [
       { href: "/admin/marketing/content-studio", label: "Content Studio", icon: PenTool },
-      { href: "/admin/marketing/funnel", label: "Content Factory", icon: Package },
-      { href: "/admin/marketing/content-library", label: "Library", icon: Library },
-    ],
-  },
-  {
-    label: "Advertising",
-    items: [
+      { href: "/admin/marketing/content-library", label: "Library & Calendar", icon: Calendar },
       { href: "/admin/marketing/meta-ads", label: "Meta Ads", icon: Target },
-      { href: "/admin/marketing/campaigns", label: "Campaigns", icon: FolderOpen },
-    ],
-  },
-  {
-    label: "",
-    items: [
       { href: "/admin/marketing/brand-settings", label: "Brand Settings", icon: Palette },
     ],
   },

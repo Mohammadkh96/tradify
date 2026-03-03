@@ -23,7 +23,10 @@ import {
   FileText,
   Mail,
   MessageSquare,
+  Package,
+  PenTool,
 } from "lucide-react";
+import FunnelBuilder from "./FunnelGenerator";
 
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(" ");
@@ -1063,45 +1066,76 @@ function EmailGeneratorTab() {
   );
 }
 
+function QuickCreatePanel() {
+  return (
+    <Tabs defaultValue="posts" className="w-full">
+      <TabsList className="bg-muted border border-border w-full flex flex-wrap justify-start gap-1 h-auto p-1" data-testid="tabs-content-studio">
+        <TabsTrigger value="posts" className="text-xs font-bold uppercase tracking-widest gap-1" data-testid="tab-posts">
+          <MessageSquare size={14} /> Posts
+        </TabsTrigger>
+        <TabsTrigger value="reels" className="text-xs font-bold uppercase tracking-widest gap-1" data-testid="tab-reels">
+          <Film size={14} /> Reel Scripts
+        </TabsTrigger>
+        <TabsTrigger value="blog" className="text-xs font-bold uppercase tracking-widest gap-1" data-testid="tab-blog">
+          <FileText size={14} /> Blog Articles
+        </TabsTrigger>
+        <TabsTrigger value="email" className="text-xs font-bold uppercase tracking-widest gap-1" data-testid="tab-email">
+          <Mail size={14} /> Email Campaigns
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="posts" className="mt-6">
+        <PostGeneratorTab />
+      </TabsContent>
+      <TabsContent value="reels" className="mt-6">
+        <ReelScriptGeneratorTab />
+      </TabsContent>
+      <TabsContent value="blog" className="mt-6">
+        <BlogGeneratorTab />
+      </TabsContent>
+      <TabsContent value="email" className="mt-6">
+        <EmailGeneratorTab />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
 export default function ContentStudio() {
+  const [mode, setMode] = useState<"quick" | "funnel">("quick");
+
   return (
     <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
-      <div>
-        <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500" data-testid="text-content-studio-title">
-          <Sparkles /> Content Studio
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">AI-Powered Content Generation Engine</p>
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500" data-testid="text-content-studio-title">
+            <Sparkles /> Content Studio
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">AI-Powered Content Generation Engine</p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-muted rounded-lg border border-border p-1">
+          <Button
+            variant={mode === "quick" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setMode("quick")}
+            className={cn("text-xs font-bold uppercase tracking-widest gap-1.5", mode === "quick" && "bg-emerald-600 text-white")}
+            data-testid="button-mode-quick"
+          >
+            <PenTool size={14} /> Quick Create
+          </Button>
+          <Button
+            variant={mode === "funnel" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setMode("funnel")}
+            className={cn("text-xs font-bold uppercase tracking-widest gap-1.5", mode === "funnel" && "bg-emerald-600 text-white")}
+            data-testid="button-mode-funnel"
+          >
+            <Package size={14} /> Funnel Builder
+          </Button>
+        </div>
       </div>
 
-      <Tabs defaultValue="posts" className="w-full">
-        <TabsList className="bg-muted border border-border w-full flex flex-wrap justify-start gap-1 h-auto p-1" data-testid="tabs-content-studio">
-          <TabsTrigger value="posts" className="text-xs font-bold uppercase tracking-widest gap-1" data-testid="tab-posts">
-            <MessageSquare size={14} /> Posts
-          </TabsTrigger>
-          <TabsTrigger value="reels" className="text-xs font-bold uppercase tracking-widest gap-1" data-testid="tab-reels">
-            <Film size={14} /> Reel Scripts
-          </TabsTrigger>
-          <TabsTrigger value="blog" className="text-xs font-bold uppercase tracking-widest gap-1" data-testid="tab-blog">
-            <FileText size={14} /> Blog Articles
-          </TabsTrigger>
-          <TabsTrigger value="email" className="text-xs font-bold uppercase tracking-widest gap-1" data-testid="tab-email">
-            <Mail size={14} /> Email Campaigns
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="posts" className="mt-6">
-          <PostGeneratorTab />
-        </TabsContent>
-        <TabsContent value="reels" className="mt-6">
-          <ReelScriptGeneratorTab />
-        </TabsContent>
-        <TabsContent value="blog" className="mt-6">
-          <BlogGeneratorTab />
-        </TabsContent>
-        <TabsContent value="email" className="mt-6">
-          <EmailGeneratorTab />
-        </TabsContent>
-      </Tabs>
+      {mode === "quick" ? <QuickCreatePanel /> : <FunnelBuilder />}
     </div>
   );
 }

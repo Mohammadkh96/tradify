@@ -17,7 +17,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import ContentStudio from "@/pages/admin/ContentStudio";
 import MetaAdsStrategist from "@/pages/admin/MetaAdsStrategist";
 import CostIntelligence from "@/pages/admin/CostIntelligence";
-import FunnelGenerator from "@/pages/admin/FunnelGenerator";
 
 function AdminAccessTab() {
   const { toast } = useToast();
@@ -652,7 +651,6 @@ function CreatorApplicationsTab() {
 }
 
 import { useTheme } from "@/components/theme-provider";
-import MarketingCampaigns from "@/pages/admin/MarketingCampaigns";
 import ContentLibrary from "@/pages/admin/ContentLibrary";
 
 export default function AdminDashboard() {
@@ -1118,11 +1116,6 @@ export default function AdminDashboard() {
     return <AdminBlogTab />;
   }
 
-  // --- 12. MARKETING CAMPAIGNS PAGE ---
-  if (location.pathname === "/admin/marketing/campaigns") {
-    return <MarketingCampaigns />;
-  }
-
   // --- 13. CONTENT LIBRARY PAGE ---
   if (location.pathname === "/admin/marketing/content-library") {
     return <ContentLibrary />;
@@ -1131,11 +1124,6 @@ export default function AdminDashboard() {
   // --- 14. COST INTELLIGENCE PAGE ---
   if (location.pathname === "/admin/costs") {
     return <CostIntelligence />;
-  }
-
-  // --- 15. FUNNEL CONTENT FACTORY ---
-  if (location.pathname === "/admin/marketing/funnel") {
-    return <FunnelGenerator />;
   }
 
   // Fallback / Audit Logs / MT5 / Subscriptions (Placeholder style for brevity)

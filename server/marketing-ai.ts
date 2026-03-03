@@ -943,3 +943,315 @@ export function getCampaignPlaybooks(): any[] {
     },
   ];
 }
+
+export async function repurposeContent(
+  originalContent: MarketingContent,
+  targetTypes: string[],
+  brandSettings?: MarketingBrandSettings
+): Promise<Array<{ type: string; platform: string; title: string; content: string; hook?: string; cta?: string; hashtags?: string }>> {
+  const brandPrompt = buildBrandSystemPrompt(brandSettings);
+  const results: Array<{ type: string; platform: string; title: string; content: string; hook?: string; cta?: string; hashtags?: string }> = [];
+
+  for (const targetType of targetTypes) {
+    const platformMap: Record<string, string> = {
+      post: "instagram",
+      reel_script: "instagram",
+      ad_copy: "meta_ads",
+      blog: "blog",
+      email: "email",
+    };
+
+    const targetPlatform = platformMap[targetType] || "instagram";
+
+    const prompt = `You are repurposing existing marketing content into a new format.
+
+ORIGINAL CONTENT:
+Type: ${originalContent.type}
+Platform: ${originalContent.platform}
+Title: ${originalContent.title || "Untitled"}
+Content: ${originalContent.content}
+${originalContent.hook ? `Hook: ${originalContent.hook}` : ""}
+${originalContent.cta ? `CTA: ${originalContent.cta}` : ""}
+
+TASK: Transform this into a ${targetType.replace("_", " ")} for ${targetPlatform}.
+Keep the core message but adapt the format, tone, and length appropriately.
+
+Return JSON:
+{
+  "title": "string",
+  "content": "string (the main body)",
+  "hook": "string (attention-grabbing opener, if applicable)",
+  "cta": "string (call to action, if applicable)",
+  "hashtags": "string (if social media)"
+}`;
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: MODEL,
+        messages: [
+          { role: "system", content: brandPrompt },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 1500,
+      });
+
+      const raw = response.choices[0]?.message?.content || "{}";
+      const parsed = JSON.parse(raw);
+
+      trackAIUsage({
+        userId: "admin",
+        model: MODEL,
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0,
+        totalTokens: response.usage?.total_tokens || 0,
+        costUsd: calculateCost(MODEL, response.usage?.prompt_tokens || 0, response.usage?.completion_tokens || 0),
+        feature: "repurpose_content",
+      });
+
+      results.push({
+        type: targetType,
+        platform: targetPlatform,
+        title: parsed.title || `Repurposed: ${originalContent.title || targetType}`,
+        content: parsed.content || "",
+        hook: parsed.hook,
+        cta: parsed.cta,
+        hashtags: parsed.hashtags,
+      });
+    } catch (err) {
+      console.error(`Failed to repurpose to ${targetType}:`, err);
+    }
+  }
+
+  return results;
+}
+
+export async function generateSmartSuggestions(
+  topContent: MarketingContent[],
+  brandSettings?: MarketingBrandSettings
+): Promise<Array<{ title: string; description: string; type: string; platform: string; topic: string }>> {
+  if (topContent.length === 0) {
+    return [
+      { title: "Get Started", description: "Generate your first piece of content and rate it to unlock AI-powered suggestions.", type: "post", platform: "instagram", topic: "Getting started with Tradify" },
+    ];
+  }
+
+  const brandPrompt = buildBrandSystemPrompt(brandSettings);
+  const contentSummary = topContent.map(c => {
+    return `- [${c.type}/${c.platform}] "${c.title || "Untitled"}" (Rating: ${c.performanceRating}/5) — Hook: "${c.hook || "N/A"}" — Content preview: "${c.content.substring(0, 150)}..."`;
+  }).join("\n");
+
+  const prompt = `Analyze these top-performing marketing content pieces and suggest 3 NEW content ideas that follow similar patterns:
+
+TOP PERFORMERS:
+${contentSummary}
+
+Based on the patterns you see (hooks, topics, tone, platforms), generate 3 fresh content ideas.
+
+Return JSON:
+{
+  "suggestions": [
+    {
+      "title": "Brief title for the content idea",
+      "description": "2-3 sentence explanation of why this would work and what angle to take",
+      "type": "post|reel_script|blog|email|ad_copy",
+      "platform": "instagram|facebook|linkedin|twitter|tiktok|email",
+      "hook": "A compelling opening hook for this content",
+      "reasoning": "Brief explanation of which top performer pattern this is inspired by"
+    }
+  ]
+}`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: "system", content: brandPrompt },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 1000,
+    });
+
+    const raw = response.choices[0]?.message?.content || "{}";
+    const parsed = JSON.parse(raw);
+
+    trackAIUsage({
+      userId: "admin",
+      model: MODEL,
+      promptTokens: response.usage?.prompt_tokens || 0,
+      completionTokens: response.usage?.completion_tokens || 0,
+      totalTokens: response.usage?.total_tokens || 0,
+      costUsd: calculateCost(MODEL, response.usage?.prompt_tokens || 0, response.usage?.completion_tokens || 0),
+      feature: "smart_suggestions",
+    });
+
+    return parsed.suggestions || [];
+  } catch (err) {
+    console.error("Smart suggestions error:", err);
+    return [];
+  }
+}
+
+export async function generateFillWeekContent(
+  brandSettings?: MarketingBrandSettings
+): Promise<Array<{ type: string; platform: string; title: string; content: string; hook?: string; cta?: string; hashtags?: string; dayOffset: number }>> {
+  const schedule = [
+    { type: "post", platform: "instagram", dayOffset: 0 },
+    { type: "reel_script", platform: "instagram", dayOffset: 1 },
+    { type: "post", platform: "linkedin", dayOffset: 2 },
+    { type: "blog", platform: "blog", dayOffset: 3 },
+    { type: "email", platform: "email", dayOffset: 4 },
+    { type: "post", platform: "facebook", dayOffset: 5 },
+    { type: "post", platform: "twitter", dayOffset: 6 },
+  ];
+
+  const results: Array<{ type: string; platform: string; title: string; content: string; hook?: string; cta?: string; hashtags?: string; dayOffset: number }> = [];
+  const brandPrompt = buildBrandSystemPrompt(brandSettings);
+  const dataInsights = await getDataInsights();
+
+  for (const item of schedule) {
+    const prompt = `Generate a ${item.type.replace("_", " ")} for ${item.platform}.
+
+${dataInsights}
+
+Requirements:
+- Make it unique and engaging
+- Follow platform best practices for ${item.platform}
+- Include a strong hook and clear CTA
+${item.type === "blog" ? "- Write 800-1200 words with SEO optimization" : ""}
+${item.type === "email" ? "- Include subject line and body" : ""}
+${item.type === "reel_script" ? "- Include hook, problem, solution, CTA, and visual directions" : ""}
+
+Return JSON:
+{
+  "title": "string",
+  "content": "string (main body text)",
+  "hook": "string (attention grabber)",
+  "cta": "string (call to action)",
+  "hashtags": "string (for social posts, empty for email/blog)"
+}`;
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: MODEL,
+        messages: [
+          { role: "system", content: brandPrompt },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 2000,
+      });
+
+      const raw = response.choices[0]?.message?.content || "{}";
+      const parsed = JSON.parse(raw);
+
+      trackAIUsage({
+        userId: "admin",
+        model: MODEL,
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0,
+        totalTokens: response.usage?.total_tokens || 0,
+        costUsd: calculateCost(MODEL, response.usage?.prompt_tokens || 0, response.usage?.completion_tokens || 0),
+        feature: "fill_week",
+      });
+
+      results.push({
+        type: item.type,
+        platform: item.platform,
+        title: parsed.title || `${item.type} for ${item.platform}`,
+        content: parsed.content || "",
+        hook: parsed.hook,
+        cta: parsed.cta,
+        hashtags: parsed.hashtags,
+        dayOffset: item.dayOffset,
+      });
+    } catch (err) {
+      console.error(`Fill week generation failed for ${item.type}/${item.platform}:`, err);
+    }
+  }
+
+  return results;
+}
+
+export async function generatePipelineContent(
+  pipelineItems: Array<{ type: string; platform: string; count: number }>,
+  brandSettings?: MarketingBrandSettings
+): Promise<Array<{ type: string; platform: string; title: string; content: string; hook?: string; cta?: string; hashtags?: string; dayOffset: number }>> {
+  const schedule: Array<{ type: string; platform: string; dayOffset: number }> = [];
+  let dayOffset = 0;
+
+  for (const item of pipelineItems) {
+    for (let i = 0; i < item.count; i++) {
+      schedule.push({ type: item.type, platform: item.platform, dayOffset: dayOffset % 7 });
+      dayOffset++;
+    }
+  }
+
+  const results: Array<{ type: string; platform: string; title: string; content: string; hook?: string; cta?: string; hashtags?: string; dayOffset: number }> = [];
+  const brandPrompt = buildBrandSystemPrompt(brandSettings);
+  const dataInsights = await getDataInsights();
+
+  for (const item of schedule) {
+    const prompt = `Generate a ${item.type.replace("_", " ")} for ${item.platform}.
+
+${dataInsights}
+
+Requirements:
+- Make it unique and engaging
+- Follow platform best practices for ${item.platform}
+- Include a strong hook and clear CTA
+${item.type === "blog" ? "- Write 800-1200 words with SEO optimization" : ""}
+${item.type === "email" ? "- Include subject line and body" : ""}
+${item.type === "reel_script" ? "- Include hook, problem, solution, CTA, and visual directions" : ""}
+
+Return JSON:
+{
+  "title": "string",
+  "content": "string (main body text)",
+  "hook": "string (attention grabber)",
+  "cta": "string (call to action)",
+  "hashtags": "string (for social posts, empty for email/blog)"
+}`;
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: MODEL,
+        messages: [
+          { role: "system", content: brandPrompt },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 2000,
+      });
+
+      const raw = response.choices[0]?.message?.content || "{}";
+      const parsed = JSON.parse(raw);
+
+      trackAIUsage({
+        userId: "admin",
+        model: MODEL,
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0,
+        totalTokens: response.usage?.total_tokens || 0,
+        costUsd: calculateCost(MODEL, response.usage?.prompt_tokens || 0, response.usage?.completion_tokens || 0),
+        feature: "pipeline",
+      });
+
+      results.push({
+        type: item.type,
+        platform: item.platform,
+        title: parsed.title || `${item.type} for ${item.platform}`,
+        content: parsed.content || "",
+        hook: parsed.hook,
+        cta: parsed.cta,
+        hashtags: parsed.hashtags,
+        dayOffset: item.dayOffset,
+      });
+    } catch (err) {
+      console.error(`Pipeline generation failed for ${item.type}/${item.platform}:`, err);
+    }
+  }
+
+  return results;
+}

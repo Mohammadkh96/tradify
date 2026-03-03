@@ -232,7 +232,7 @@ export default function FunnelGenerator() {
 
   if (stagesLoading) {
     return (
-      <div className="p-8 space-y-8 bg-background min-h-screen" data-testid="funnel-loading">
+      <div className="space-y-6" data-testid="funnel-loading">
         <Skeleton className="h-10 w-80" />
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-40" />)}
@@ -242,16 +242,7 @@ export default function FunnelGenerator() {
   }
 
   return (
-    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground" data-testid="funnel-generator-page">
-      <div>
-        <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500" data-testid="text-page-title">
-          <Package /> Content Factory
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">
-          Generate complete marketing assets by funnel stage
-        </p>
-      </div>
-
+    <div className="space-y-6" data-testid="funnel-generator-page">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" data-testid="funnel-stages-grid">
         {(stages || []).map((stage, idx) => {
           const Icon = stageIcons[stage.id] || Megaphone;

@@ -6221,6 +6221,152 @@ Guidelines:
     }
   });
 
+  app.post("/api/admin/marketing/content/:id/repurpose", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const { targetTypes } = req.body;
+      if (!Array.isArray(targetTypes) || targetTypes.length === 0) {
+        return res.status(400).json({ message: "targetTypes array is required" });
+      }
+      const original = await storage.getMarketingContent(id);
+      if (!original) return res.status(404).json({ message: "Content not found" });
+      const brand = await storage.getMarketingBrandSettings("admin");
+      const { repurposeContent } = await import("./marketing-ai");
+      const repurposed = await repurposeContent(original, targetTypes, brand || undefined);
+      const saved = [];
+      for (const item of repurposed) {
+        const result = await storage.createMarketingContent({
+          type: item.type,
+          platform: item.platform,
+          title: item.title,
+          content: item.content,
+          hook: item.hook || null,
+          cta: item.cta || null,
+          hashtags: item.hashtags || null,
+          status: "draft",
+          aiModelUsed: "openai",
+          repurposedFrom: id,
+          topicTags: [],
+        });
+        saved.push(result);
+      }
+      res.json(saved);
+    } catch (error) {
+      console.error("Repurpose content error:", error);
+      res.status(500).json({ message: "Failed to repurpose content" });
+    }
+  });
+
+  app.post("/api/admin/marketing/smart-suggestions", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const allContent = await storage.listMarketingContent();
+      const topContent = allContent
+        .filter(c => c.performanceRating && c.performanceRating >= 4)
+        .sort((a, b) => (b.performanceRating || 0) - (a.performanceRating || 0))
+        .slice(0, 10);
+      const brand = await storage.getMarketingBrandSettings("admin");
+      const { generateSmartSuggestions } = await import("./marketing-ai");
+      const suggestions = await generateSmartSuggestions(topContent, brand || undefined);
+      res.json({ suggestions });
+    } catch (error) {
+      console.error("Smart suggestions error:", error);
+      res.status(500).json({ message: "Failed to generate suggestions" });
+    }
+  });
+
+  app.post("/api/admin/marketing/content/fill-week", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const brand = await storage.getMarketingBrandSettings("admin");
+      const { generateFillWeekContent } = await import("./marketing-ai");
+      const generated = await generateFillWeekContent(brand || undefined);
+      const now = new Date();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - now.getDay() + 1);
+      monday.setHours(9, 0, 0, 0);
+      const saved = [];
+      for (const item of generated) {
+        const scheduledDate = new Date(monday);
+        scheduledDate.setDate(monday.getDate() + item.dayOffset);
+        const result = await storage.createMarketingContent({
+          type: item.type,
+          platform: item.platform,
+          title: item.title,
+          content: item.content,
+          hook: item.hook || null,
+          cta: item.cta || null,
+          hashtags: item.hashtags || null,
+          status: "draft",
+          aiModelUsed: "openai",
+          scheduledDate,
+          topicTags: [],
+        });
+        saved.push(result);
+      }
+      res.json(saved);
+    } catch (error) {
+      console.error("Fill week error:", error);
+      res.status(500).json({ message: "Failed to fill week" });
+    }
+  });
+
+  app.post("/api/admin/marketing/pipeline/run", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const brand = await storage.getMarketingBrandSettings("admin");
+      const pipeline = (brand as any)?.contentPipeline;
+      if (!pipeline || !Array.isArray(pipeline.weeklyTypes) || pipeline.weeklyTypes.length === 0) {
+        return res.status(400).json({ message: "No content pipeline configured. Set up your pipeline in the Marketing Dashboard first." });
+      }
+      const { generatePipelineContent } = await import("./marketing-ai");
+      const pipelineItems: Array<{ type: string; platform: string; count: number }> = pipeline.weeklyTypes;
+      const generated = await generatePipelineContent(pipelineItems, brand || undefined);
+      const now = new Date();
+      const monday = new Date(now);
+      const dayOfWeek = now.getDay();
+      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      monday.setHours(9, 0, 0, 0);
+      const saved = [];
+      for (const item of generated) {
+        const scheduledDate = new Date(monday);
+        scheduledDate.setDate(monday.getDate() + item.dayOffset);
+        const result = await storage.createMarketingContent({
+          type: item.type,
+          platform: item.platform,
+          title: item.title,
+          content: item.content,
+          hook: item.hook || null,
+          cta: item.cta || null,
+          hashtags: item.hashtags || null,
+          status: "draft",
+          aiModelUsed: "openai",
+          scheduledDate,
+          topicTags: [],
+        });
+        saved.push(result);
+      }
+      res.json({ count: saved.length, content: saved });
+    } catch (error) {
+      console.error("Pipeline run error:", error);
+      res.status(500).json({ message: "Failed to run pipeline" });
+    }
+  });
+
+  app.patch("/api/admin/marketing/pipeline", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { contentPipeline } = req.body;
+      const brand = await storage.getMarketingBrandSettings("admin");
+      if (!brand) return res.status(404).json({ message: "Brand settings not found" });
+      const { db } = await import("./db");
+      const { marketingBrandSettings } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      await db.update(marketingBrandSettings).set({ contentPipeline, updatedAt: new Date() }).where(eq(marketingBrandSettings.id, brand.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update pipeline config error:", error);
+      res.status(500).json({ message: "Failed to update pipeline config" });
+    }
+  });
+
   // Campaigns
   app.post("/api/admin/marketing/campaigns", requireAdmin, async (req, res) => {
     try {

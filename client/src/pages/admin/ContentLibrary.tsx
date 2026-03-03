@@ -3,15 +3,16 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
-import { Search, Library, Star, Trash2, Pencil, X, Calendar, LayoutGrid, AlertTriangle, ChevronLeft, ChevronRight, Copy } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
+import { Search, Library, Star, Trash2, Pencil, X, Calendar, LayoutGrid, ChevronLeft, ChevronRight, Copy, Wand2, Repeat2, Loader2 } from "lucide-react";
 import type { MarketingContent } from "@shared/schema";
 
 function cn(...inputs: any[]) {
@@ -64,16 +65,43 @@ const platformOptions = [
   { value: "email", label: "Email" },
 ];
 
+const repurposeTargets: Record<string, { label: string; value: string }[]> = {
+  blog: [
+    { label: "Social Posts", value: "post" },
+    { label: "Email Campaign", value: "email" },
+    { label: "Ad Copy", value: "ad_copy" },
+  ],
+  post: [
+    { label: "Reel Script", value: "reel_script" },
+    { label: "Ad Copy", value: "ad_copy" },
+    { label: "Blog Article", value: "blog" },
+  ],
+  reel_script: [
+    { label: "Social Posts", value: "post" },
+    { label: "Ad Copy", value: "ad_copy" },
+  ],
+  email: [
+    { label: "Social Posts", value: "post" },
+    { label: "Blog Article", value: "blog" },
+  ],
+  ad_copy: [
+    { label: "Social Posts", value: "post" },
+    { label: "Email Campaign", value: "email" },
+  ],
+};
+
 export default function ContentLibrary() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterPlatform, setFilterPlatform] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "calendar">("calendar");
   const [selectedContent, setSelectedContent] = useState<MarketingContent | null>(null);
   const [editingContent, setEditingContent] = useState<MarketingContent | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [repurposeItem, setRepurposeItem] = useState<MarketingContent | null>(null);
+  const [repurposeTargetTypes, setRepurposeTargetTypes] = useState<string[]>([]);
 
   const { data: content, isLoading } = useQuery<MarketingContent[]>({
     queryKey: ["/api/admin/marketing/content"],
@@ -106,6 +134,38 @@ export default function ContentLibrary() {
     },
     onError: () => {
       toast({ variant: "destructive", title: "Error", description: "Failed to delete content." });
+    },
+  });
+
+  const fillWeekMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/marketing/content/fill-week", {});
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/marketing/content"] });
+      const count = Array.isArray(data) ? data.length : (data.generated?.length || data.count || 0);
+      toast({ title: "Week Filled!", description: `${count} content pieces generated and scheduled across the week.` });
+    },
+    onError: (err: Error) => {
+      toast({ variant: "destructive", title: "Fill My Week Failed", description: err.message });
+    },
+  });
+
+  const repurposeMutation = useMutation({
+    mutationFn: async ({ id, targetTypes }: { id: number; targetTypes: string[] }) => {
+      const res = await apiRequest("POST", `/api/admin/marketing/content/${id}/repurpose`, { targetTypes });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/marketing/content"] });
+      setRepurposeItem(null);
+      setRepurposeTargetTypes([]);
+      const count = Array.isArray(data) ? data.length : (data.repurposed?.length || 0);
+      toast({ title: "Repurposed!", description: `${count} new content pieces created.` });
+    },
+    onError: (err: Error) => {
+      toast({ variant: "destructive", title: "Repurpose Failed", description: err.message });
     },
   });
 
@@ -159,33 +219,54 @@ export default function ContentLibrary() {
   const totalContent = content?.length || 0;
   const draftCount = content?.filter(c => c.status === "draft").length || 0;
   const approvedCount = content?.filter(c => c.status === "approved").length || 0;
+  const now = new Date();
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const thisWeekCount = content?.filter(c => {
+    const d = c.scheduledDate ? new Date(c.scheduledDate) : c.createdAt ? new Date(c.createdAt) : null;
+    return d && isWithinInterval(d, { start: weekStart, end: weekEnd });
+  }).length || 0;
 
   return (
     <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500" data-testid="text-content-library-title">
-            <Library /> Content Library
+            <Library /> Library & Calendar
           </h1>
           <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">All Generated Marketing Content</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant={viewMode === "grid" ? "default" : "outline"}
-            size="icon"
-            onClick={() => setViewMode("grid")}
-            data-testid="button-view-grid"
+            size="sm"
+            className="bg-emerald-600 text-white font-bold uppercase tracking-widest text-xs gap-1.5"
+            onClick={() => fillWeekMutation.mutate()}
+            disabled={fillWeekMutation.isPending}
+            data-testid="button-fill-week"
           >
-            <LayoutGrid size={16} />
+            {fillWeekMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+            {fillWeekMutation.isPending ? "Generating..." : "Fill My Week"}
           </Button>
-          <Button
-            variant={viewMode === "calendar" ? "default" : "outline"}
-            size="icon"
-            onClick={() => setViewMode("calendar")}
-            data-testid="button-view-calendar"
-          >
-            <Calendar size={16} />
-          </Button>
+          <div className="flex items-center gap-1 bg-muted rounded-lg border border-border p-0.5">
+            <Button
+              variant={viewMode === "calendar" ? "default" : "ghost"}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setViewMode("calendar")}
+              data-testid="button-view-calendar"
+            >
+              <Calendar size={14} />
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setViewMode("grid")}
+              data-testid="button-view-grid"
+            >
+              <LayoutGrid size={14} />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -210,8 +291,8 @@ export default function ContentLibrary() {
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-6">
-            <div className="text-3xl font-black text-blue-500" data-testid="text-filtered-count">{filteredContent.length}</div>
-            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Showing</div>
+            <div className="text-3xl font-black text-blue-500" data-testid="text-week-count">{thisWeekCount}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">This Week</div>
           </CardContent>
         </Card>
       </div>
@@ -273,7 +354,15 @@ export default function ContentLibrary() {
         </CardContent>
       </Card>
 
-      {viewMode === "grid" ? (
+      {viewMode === "calendar" ? (
+        <ContentCalendarView
+          content={filteredContent}
+          month={calendarMonth}
+          onMonthChange={setCalendarMonth}
+          onItemClick={setSelectedContent}
+          onRepurpose={setRepurposeItem}
+        />
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredContent.map((item) => (
             <ContentCard
@@ -283,6 +372,7 @@ export default function ContentLibrary() {
               onRate={(rating) => handleRate(item.id, rating)}
               onDelete={() => handleDelete(item.id)}
               onCopy={() => copyToClipboard(item.content)}
+              onRepurpose={() => setRepurposeItem(item)}
             />
           ))}
           {filteredContent.length === 0 && (
@@ -300,8 +390,6 @@ export default function ContentLibrary() {
             </div>
           )}
         </div>
-      ) : (
-        <ContentCalendarView content={filteredContent} month={calendarMonth} onMonthChange={setCalendarMonth} onItemClick={setSelectedContent} />
       )}
 
       {selectedContent && (
@@ -316,19 +404,33 @@ export default function ContentLibrary() {
           onRate={(rating) => handleRate(selectedContent.id, rating)}
           onStatusChange={(status) => handleStatusChange(selectedContent.id, status)}
           onCopy={() => copyToClipboard(selectedContent.content)}
+          onRepurpose={() => { setSelectedContent(null); setRepurposeItem(selectedContent); }}
           isSaving={updateMutation.isPending}
+        />
+      )}
+
+      {repurposeItem && (
+        <RepurposeDialog
+          item={repurposeItem}
+          isOpen={!!repurposeItem}
+          onClose={() => { setRepurposeItem(null); setRepurposeTargetTypes([]); }}
+          selectedTargets={repurposeTargetTypes}
+          onToggleTarget={(t) => setRepurposeTargetTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+          onRepurpose={() => repurposeMutation.mutate({ id: repurposeItem.id, targetTypes: repurposeTargetTypes })}
+          isPending={repurposeMutation.isPending}
         />
       )}
     </div>
   );
 }
 
-function ContentCard({ item, onClick, onRate, onDelete, onCopy }: {
+function ContentCard({ item, onClick, onRate, onDelete, onCopy, onRepurpose }: {
   item: MarketingContent;
   onClick: () => void;
   onRate: (rating: number) => void;
   onDelete: () => void;
   onCopy: () => void;
+  onRepurpose: () => void;
 }) {
   const statusColor = item.status === "approved" ? "border-emerald-500/30 text-emerald-500"
     : item.status === "used" ? "border-blue-500/30 text-blue-500"
@@ -352,6 +454,11 @@ function ContentCard({ item, onClick, onRate, onDelete, onCopy }: {
           <Badge variant="outline" className={cn("text-[9px] font-black uppercase tracking-widest", statusColor)}>
             {item.status}
           </Badge>
+          {(item as any).repurposedFrom && (
+            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-violet-500/30 text-violet-500">
+              Repurposed
+            </Badge>
+          )}
         </div>
 
         {item.title && (
@@ -388,6 +495,9 @@ function ContentCard({ item, onClick, onRate, onDelete, onCopy }: {
             ))}
           </div>
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onRepurpose} data-testid={`button-repurpose-${item.id}`}>
+              <Repeat2 size={12} />
+            </Button>
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onCopy} data-testid={`button-copy-${item.id}`}>
               <Copy size={12} />
             </Button>
@@ -397,31 +507,41 @@ function ContentCard({ item, onClick, onRate, onDelete, onCopy }: {
           </div>
         </div>
 
-        <div className="text-[10px] text-muted-foreground font-mono">
-          {item.createdAt ? format(new Date(item.createdAt), "MMM d, yyyy HH:mm") : ""}
+        <div className="flex items-center justify-between">
+          <div className="text-[10px] text-muted-foreground font-mono">
+            {item.createdAt ? format(new Date(item.createdAt), "MMM d, yyyy HH:mm") : ""}
+          </div>
+          {item.scheduledDate && (
+            <div className="text-[10px] text-emerald-500 font-mono font-bold">
+              Scheduled: {format(new Date(item.scheduledDate), "MMM d, HH:mm")}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function ContentCalendarView({ content, month, onMonthChange, onItemClick }: {
+function ContentCalendarView({ content, month, onMonthChange, onItemClick, onRepurpose }: {
   content: MarketingContent[];
   month: Date;
   onMonthChange: (d: Date) => void;
   onItemClick: (item: MarketingContent) => void;
+  onRepurpose: (item: MarketingContent) => void;
 }) {
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const startDayOfWeek = monthStart.getDay();
-  const paddingDays = Array.from({ length: startDayOfWeek }, (_, i) => i);
+  const adjustedStart = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+  const paddingDays = Array.from({ length: adjustedStart }, (_, i) => i);
 
   const getContentForDay = (day: Date) => {
     return content.filter((item) => {
-      if (!item.createdAt) return false;
-      return isSameDay(new Date(item.createdAt), day);
+      const d = item.scheduledDate ? new Date(item.scheduledDate) : item.createdAt ? new Date(item.createdAt) : null;
+      if (!d) return false;
+      return isSameDay(d, day);
     });
   };
 
@@ -436,6 +556,9 @@ function ContentCalendarView({ content, month, onMonthChange, onItemClick }: {
             <Button size="icon" variant="ghost" onClick={() => onMonthChange(subMonths(month, 1))} data-testid="button-prev-month">
               <ChevronLeft size={16} />
             </Button>
+            <Button size="sm" variant="outline" onClick={() => onMonthChange(new Date())} data-testid="button-today">
+              Today
+            </Button>
             <Button size="icon" variant="ghost" onClick={() => onMonthChange(addMonths(month, 1))} data-testid="button-next-month">
               <ChevronRight size={16} />
             </Button>
@@ -444,14 +567,14 @@ function ContentCalendarView({ content, month, onMonthChange, onItemClick }: {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-7 gap-1">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
             <div key={day} className="text-center text-[10px] font-black text-muted-foreground uppercase tracking-widest py-2">
               {day}
             </div>
           ))}
 
           {paddingDays.map((_, i) => (
-            <div key={`pad-${i}`} className="min-h-[80px] p-1 rounded-md bg-muted/20" />
+            <div key={`pad-${i}`} className="min-h-[90px] p-1 rounded-md bg-muted/20" />
           ))}
 
           {days.map((day) => {
@@ -462,7 +585,7 @@ function ContentCalendarView({ content, month, onMonthChange, onItemClick }: {
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "min-h-[80px] p-1 rounded-md border",
+                  "min-h-[90px] p-1 rounded-md border",
                   isToday ? "border-emerald-500/50 bg-emerald-500/5" : "border-border bg-muted/20",
                   dayContent.length > 0 ? "cursor-pointer" : ""
                 )}
@@ -479,7 +602,7 @@ function ContentCalendarView({ content, month, onMonthChange, onItemClick }: {
                     <div
                       key={item.id}
                       className={cn(
-                        "text-[8px] px-1 py-0.5 rounded truncate font-bold uppercase tracking-widest cursor-pointer",
+                        "text-[8px] px-1 py-0.5 rounded truncate font-bold uppercase tracking-widest cursor-pointer group relative",
                         item.type === "post" ? "bg-blue-500/10 text-blue-500" :
                         item.type === "reel_script" ? "bg-purple-500/10 text-purple-500" :
                         item.type === "blog" ? "bg-emerald-500/10 text-emerald-500" :
@@ -489,7 +612,7 @@ function ContentCalendarView({ content, month, onMonthChange, onItemClick }: {
                       onClick={() => onItemClick(item)}
                       data-testid={`calendar-content-${item.id}`}
                     >
-                      {item.type.replace("_", " ")}
+                      {item.title || item.type.replace("_", " ")}
                     </div>
                   ))}
                   {dayContent.length > 3 && (
@@ -505,7 +628,80 @@ function ContentCalendarView({ content, month, onMonthChange, onItemClick }: {
   );
 }
 
-function ContentDetailDialog({ content, isOpen, onClose, onEdit, isEditing, onSave, onDelete, onRate, onStatusChange, onCopy, isSaving }: {
+function RepurposeDialog({ item, isOpen, onClose, selectedTargets, onToggleTarget, onRepurpose, isPending }: {
+  item: MarketingContent;
+  isOpen: boolean;
+  onClose: () => void;
+  selectedTargets: string[];
+  onToggleTarget: (t: string) => void;
+  onRepurpose: () => void;
+  isPending: boolean;
+}) {
+  const targets = repurposeTargets[item.type] || repurposeTargets.post;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg" data-testid="text-repurpose-title">
+            <Repeat2 size={20} className="text-emerald-500" /> Repurpose Content
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Original</div>
+            <div className="bg-muted p-3 rounded-md">
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className={cn("text-[9px] font-black uppercase tracking-widest", typeColors[item.type] || "")}>
+                  {item.type.replace("_", " ")}
+                </Badge>
+                <Badge variant="outline" className={cn("text-[9px] font-black uppercase tracking-widest", platformColors[item.platform] || "")}>
+                  {item.platform}
+                </Badge>
+              </div>
+              <p className="text-sm text-foreground line-clamp-2">{item.title || item.content?.substring(0, 100)}</p>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Repurpose Into</div>
+            <div className="space-y-2">
+              {targets.map((target) => (
+                <label
+                  key={target.value}
+                  className="flex items-center gap-3 p-2 rounded-md border border-border cursor-pointer hover:bg-muted/50 transition-colors"
+                  data-testid={`checkbox-repurpose-${target.value}`}
+                >
+                  <Checkbox
+                    checked={selectedTargets.includes(target.value)}
+                    onCheckedChange={() => onToggleTarget(target.value)}
+                  />
+                  <span className="text-sm font-bold">{target.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} data-testid="button-cancel-repurpose">Cancel</Button>
+          <Button
+            className="bg-emerald-600 text-white font-bold uppercase tracking-widest text-xs gap-1.5"
+            onClick={onRepurpose}
+            disabled={selectedTargets.length === 0 || isPending}
+            data-testid="button-confirm-repurpose"
+          >
+            {isPending ? <Loader2 size={14} className="animate-spin" /> : <Repeat2 size={14} />}
+            {isPending ? "Repurposing..." : `Repurpose (${selectedTargets.length})`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ContentDetailDialog({ content, isOpen, onClose, onEdit, isEditing, onSave, onDelete, onRate, onStatusChange, onCopy, onRepurpose, isSaving }: {
   content: MarketingContent;
   isOpen: boolean;
   onClose: () => void;
@@ -516,6 +712,7 @@ function ContentDetailDialog({ content, isOpen, onClose, onEdit, isEditing, onSa
   onRate: (rating: number) => void;
   onStatusChange: (status: string) => void;
   onCopy: () => void;
+  onRepurpose: () => void;
   isSaving: boolean;
 }) {
   const [editTitle, setEditTitle] = useState(content.title || "");
@@ -690,6 +887,12 @@ function ContentDetailDialog({ content, isOpen, onClose, onEdit, isEditing, onSa
             </div>
           </div>
 
+          {content.scheduledDate && (
+            <div className="text-[10px] text-emerald-500 font-mono font-bold">
+              Scheduled: {format(new Date(content.scheduledDate), "EEEE, MMM d 'at' HH:mm")}
+            </div>
+          )}
+
           {content.createdAt && (
             <div className="text-[10px] text-muted-foreground font-mono">
               Created: {format(new Date(content.createdAt), "MMM d, yyyy 'at' HH:mm")}
@@ -704,6 +907,9 @@ function ContentDetailDialog({ content, isOpen, onClose, onEdit, isEditing, onSa
             </Button>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={onRepurpose} data-testid="button-detail-repurpose">
+              <Repeat2 size={14} className="mr-1" /> Repurpose
+            </Button>
             <Button variant="outline" size="sm" onClick={onCopy} data-testid="button-detail-copy">
               <Copy size={14} className="mr-1" /> Copy
             </Button>

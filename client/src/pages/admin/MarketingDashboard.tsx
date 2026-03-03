@@ -1,10 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Megaphone, FileText, BarChart3, Users, TrendingUp, ArrowUpRight, PenTool, Target, FolderOpen, Clock, RefreshCw, Package } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Megaphone, FileText, BarChart3, Users, TrendingUp, ArrowUpRight, PenTool, Clock, RefreshCw, Sparkles, Wand2, Loader2, Play, Settings, Lightbulb, Zap, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 
 interface MarketingStats {
@@ -33,6 +38,20 @@ interface MarketingStats {
   };
 }
 
+interface SmartSuggestion {
+  title: string;
+  type: string;
+  platform: string;
+  description: string;
+  hook: string;
+  reasoning: string;
+}
+
+interface PipelineConfig {
+  enabled: boolean;
+  weeklyTypes: { type: string; count: number; platform: string }[];
+}
+
 const typeColors: Record<string, string> = {
   post: "border-blue-500/30 text-blue-500",
   reel_script: "border-purple-500/30 text-purple-500",
@@ -51,12 +70,109 @@ const platformColors: Record<string, string> = {
   email: "border-cyan-500/30 text-cyan-500",
 };
 
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(" ");
+}
+
 export default function MarketingDashboard() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const { data: stats, isLoading, isFetching, refetch } = useQuery<MarketingStats>({
     queryKey: ["/api/admin/marketing/stats"],
   });
+
+  const { data: brandSettings } = useQuery<any>({
+    queryKey: ["/api/admin/marketing/brand-settings"],
+  });
+
+  const [suggestions, setSuggestions] = useState<SmartSuggestion[]>([]);
+  const [pipelineConfig, setPipelineConfig] = useState<PipelineConfig>({
+    enabled: false,
+    weeklyTypes: [
+      { type: "post", count: 3, platform: "instagram" },
+      { type: "blog", count: 1, platform: "instagram" },
+      { type: "email", count: 1, platform: "email" },
+    ],
+  });
+  const [pipelineLoaded, setPipelineLoaded] = useState(false);
+
+  useEffect(() => {
+    if (brandSettings?.contentPipeline && !pipelineLoaded) {
+      try {
+        const saved = typeof brandSettings.contentPipeline === "string"
+          ? JSON.parse(brandSettings.contentPipeline)
+          : brandSettings.contentPipeline;
+        if (saved && saved.weeklyTypes) {
+          setPipelineConfig(saved);
+          setPipelineLoaded(true);
+        }
+      } catch { /* ignore */ }
+    }
+  }, [brandSettings, pipelineLoaded]);
+
+  const suggestionsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/marketing/smart-suggestions", {});
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setSuggestions(data.suggestions || []);
+      toast({ title: "Smart Suggestions Ready", description: `${data.suggestions?.length || 0} content ideas based on your top performers.` });
+    },
+    onError: (err: Error) => {
+      toast({ variant: "destructive", title: "Suggestions Failed", description: err.message });
+    },
+  });
+
+  const pipelineRunMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/marketing/pipeline/run", {});
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/marketing/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/marketing/content"] });
+      toast({ title: "Pipeline Complete!", description: `${data.count || data.content?.length || 0} content pieces generated and scheduled.` });
+    },
+    onError: (err: Error) => {
+      toast({ variant: "destructive", title: "Pipeline Failed", description: err.message });
+    },
+  });
+
+  const pipelineSaveMutation = useMutation({
+    mutationFn: async (config: PipelineConfig) => {
+      const res = await apiRequest("PATCH", "/api/admin/marketing/pipeline", { contentPipeline: config });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Pipeline Saved", description: "Your content pipeline config has been saved." });
+    },
+    onError: (err: Error) => {
+      toast({ variant: "destructive", title: "Save Failed", description: err.message });
+    },
+  });
+
+  const addPipelineType = () => {
+    setPipelineConfig(prev => ({
+      ...prev,
+      weeklyTypes: [...prev.weeklyTypes, { type: "post", count: 1, platform: "instagram" }],
+    }));
+  };
+
+  const removePipelineType = (idx: number) => {
+    setPipelineConfig(prev => ({
+      ...prev,
+      weeklyTypes: prev.weeklyTypes.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const updatePipelineType = (idx: number, field: string, value: any) => {
+    setPipelineConfig(prev => ({
+      ...prev,
+      weeklyTypes: prev.weeklyTypes.map((t, i) => i === idx ? { ...t, [field]: value } : t),
+    }));
+  };
 
   if (isLoading) {
     return (
@@ -74,22 +190,6 @@ export default function MarketingDashboard() {
               </CardContent>
             </Card>
           ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="bg-card border-border">
-            <CardContent className="p-6 space-y-4">
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border">
-            <CardContent className="p-6 space-y-4">
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </CardContent>
-          </Card>
         </div>
       </div>
     );
@@ -126,29 +226,14 @@ export default function MarketingDashboard() {
             onClick={() => navigate("/admin/marketing/content-studio")}
             data-testid="button-quick-generate-post"
           >
-            <PenTool size={16} className="mr-2" /> Generate Post
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/admin/marketing/meta-ads")}
-            data-testid="button-quick-generate-ad"
-          >
-            <Target size={16} className="mr-2" /> Generate Ad Copy
+            <PenTool size={16} className="mr-2" /> Content Studio
           </Button>
           <Button
             className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs"
-            onClick={() => navigate("/admin/marketing/campaigns")}
-            data-testid="button-quick-create-campaign"
+            onClick={() => navigate("/admin/marketing/content-library")}
+            data-testid="button-quick-calendar"
           >
-            <FolderOpen size={16} className="mr-2" /> Create Campaign
-          </Button>
-          <Button
-            variant="outline"
-            className="border-emerald-500/40 text-emerald-400"
-            onClick={() => navigate("/admin/marketing/funnel")}
-            data-testid="button-quick-content-factory"
-          >
-            <Package size={16} className="mr-2" /> Content Factory
+            <Calendar size={16} className="mr-2" /> Library & Calendar
           </Button>
         </div>
       </div>
@@ -163,20 +248,6 @@ export default function MarketingDashboard() {
               </div>
               <div className="h-10 w-10 rounded-md bg-emerald-500/10 flex items-center justify-center">
                 <FileText size={20} className="text-emerald-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border" data-testid="card-active-campaigns">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-3xl font-black text-foreground" data-testid="text-active-campaigns-count">{stats?.activeCampaigns || 0}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Active Campaigns</div>
-              </div>
-              <div className="h-10 w-10 rounded-md bg-blue-500/10 flex items-center justify-center">
-                <FolderOpen size={20} className="text-blue-500" />
               </div>
             </div>
           </CardContent>
@@ -209,6 +280,41 @@ export default function MarketingDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="bg-card border-border" data-testid="card-signups-week">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-3xl font-black text-blue-500" data-testid="text-signups-week">{userInsights?.signupsThisWeek || 0}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Signups This Week</div>
+              </div>
+              <div className="h-10 w-10 rounded-md bg-blue-500/10 flex items-center justify-center">
+                <Users size={20} className="text-blue-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <SmartSuggestionsPanel
+          suggestions={suggestions}
+          isLoading={suggestionsMutation.isPending}
+          onGenerate={() => suggestionsMutation.mutate()}
+          navigate={navigate}
+        />
+
+        <ContentPipelinePanel
+          config={pipelineConfig}
+          onUpdateConfig={setPipelineConfig}
+          onAddType={addPipelineType}
+          onRemoveType={removePipelineType}
+          onUpdateType={updatePipelineType}
+          onSave={() => pipelineSaveMutation.mutate(pipelineConfig)}
+          onRun={() => pipelineRunMutation.mutate()}
+          isSaving={pipelineSaveMutation.isPending}
+          isRunning={pipelineRunMutation.isPending}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -375,24 +481,201 @@ export default function MarketingDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      <Card className="bg-card border-border" data-testid="card-total-campaigns">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1">Total Campaigns</div>
-              <div className="text-2xl font-black text-foreground" data-testid="text-total-campaigns-count">{stats?.totalCampaigns || 0}</div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/marketing/campaigns")}
-              data-testid="button-manage-campaigns"
-            >
-              Manage Campaigns <ArrowUpRight size={14} className="ml-1" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
+  );
+}
+
+function SmartSuggestionsPanel({ suggestions, isLoading, onGenerate, navigate }: {
+  suggestions: SmartSuggestion[];
+  isLoading: boolean;
+  onGenerate: () => void;
+  navigate: (path: string) => void;
+}) {
+  return (
+    <Card className="bg-card border-border" data-testid="card-smart-suggestions">
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+          <Lightbulb size={16} className="text-amber-500" /> Smart Suggestions
+        </CardTitle>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onGenerate}
+          disabled={isLoading}
+          className="gap-1.5"
+          data-testid="button-get-suggestions"
+        >
+          {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+          {isLoading ? "Analyzing..." : "Get Suggestions"}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {suggestions.length === 0 ? (
+          <div className="text-center py-6">
+            <Lightbulb size={32} className="mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground" data-testid="text-no-suggestions">
+              Rate your content to unlock AI-powered suggestions based on your top performers.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Click "Get Suggestions" to analyze your best-rated content and receive personalized ideas.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {suggestions.map((s, idx) => (
+              <div key={idx} className="p-3 border border-border rounded-md space-y-2" data-testid={`card-suggestion-${idx}`}>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className={cn("text-[9px] font-black uppercase tracking-widest", typeColors[s.type] || "border-muted-foreground/30 text-muted-foreground")}>
+                    {s.type.replace(/_/g, " ")}
+                  </Badge>
+                  <Badge variant="outline" className={cn("text-[9px] font-black uppercase tracking-widest", platformColors[s.platform] || "border-muted-foreground/30 text-muted-foreground")}>
+                    {s.platform}
+                  </Badge>
+                </div>
+                <h4 className="text-sm font-bold text-foreground" data-testid={`text-suggestion-title-${idx}`}>{s.title}</h4>
+                <p className="text-xs text-muted-foreground">{s.description}</p>
+                {s.hook && (
+                  <div className="text-xs italic text-foreground/80 bg-muted px-2 py-1 rounded">
+                    Hook: "{s.hook}"
+                  </div>
+                )}
+                <div className="text-[10px] text-amber-500/80">
+                  <Sparkles size={10} className="inline mr-1" /> {s.reasoning}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs gap-1"
+                  onClick={() => navigate("/admin/marketing/content-studio")}
+                  data-testid={`button-generate-suggestion-${idx}`}
+                >
+                  <Wand2 size={12} /> Generate This
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ContentPipelinePanel({ config, onUpdateConfig, onAddType, onRemoveType, onUpdateType, onSave, onRun, isSaving, isRunning }: {
+  config: PipelineConfig;
+  onUpdateConfig: (c: PipelineConfig) => void;
+  onAddType: () => void;
+  onRemoveType: (idx: number) => void;
+  onUpdateType: (idx: number, field: string, value: any) => void;
+  onSave: () => void;
+  onRun: () => void;
+  isSaving: boolean;
+  isRunning: boolean;
+}) {
+  return (
+    <Card className="bg-card border-border" data-testid="card-content-pipeline">
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+          <Zap size={16} className="text-emerald-500" /> Content Pipeline
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onSave}
+            disabled={isSaving}
+            className="gap-1.5 text-xs"
+            data-testid="button-save-pipeline"
+          >
+            {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Settings size={12} />}
+            {isSaving ? "Saving..." : "Save Config"}
+          </Button>
+          <Button
+            size="sm"
+            className="bg-emerald-600 text-white font-bold uppercase tracking-widest text-xs gap-1.5"
+            onClick={onRun}
+            disabled={isRunning || config.weeklyTypes.length === 0}
+            data-testid="button-run-pipeline"
+          >
+            {isRunning ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+            {isRunning ? "Running..." : "Run Pipeline Now"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="text-xs text-muted-foreground mb-2">
+            Configure what content gets auto-generated when you run the pipeline. Content will be scheduled across the current week as drafts.
+          </div>
+
+          {config.weeklyTypes.map((item, idx) => (
+            <div key={idx} className="flex items-center gap-2 flex-wrap" data-testid={`pipeline-row-${idx}`}>
+              <Select value={item.type} onValueChange={(v) => onUpdateType(idx, "type", v)}>
+                <SelectTrigger className="w-32 h-8 text-xs bg-muted border-border" data-testid={`select-pipeline-type-${idx}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="post">Post</SelectItem>
+                  <SelectItem value="reel_script">Reel Script</SelectItem>
+                  <SelectItem value="blog">Blog</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="ad_copy">Ad Copy</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">x</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={item.count}
+                  onChange={(e) => onUpdateType(idx, "count", parseInt(e.target.value) || 1)}
+                  className="w-16 h-8 text-xs bg-muted border-border text-center"
+                  data-testid={`input-pipeline-count-${idx}`}
+                />
+              </div>
+
+              <Select value={item.platform} onValueChange={(v) => onUpdateType(idx, "platform", v)}>
+                <SelectTrigger className="w-32 h-8 text-xs bg-muted border-border" data-testid={`select-pipeline-platform-${idx}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="twitter">Twitter/X</SelectItem>
+                  <SelectItem value="linkedin">LinkedIn</SelectItem>
+                  <SelectItem value="tiktok">TikTok</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-muted-foreground hover:text-rose-500"
+                onClick={() => onRemoveType(idx)}
+                data-testid={`button-remove-pipeline-${idx}`}
+              >
+                <span className="text-lg leading-none">&times;</span>
+              </Button>
+            </div>
+          ))}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAddType}
+            className="text-xs w-full"
+            data-testid="button-add-pipeline-type"
+          >
+            + Add Content Type
+          </Button>
+
+          <div className="text-[10px] text-muted-foreground pt-2 border-t border-border">
+            Total per run: {config.weeklyTypes.reduce((sum, t) => sum + t.count, 0)} pieces
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
