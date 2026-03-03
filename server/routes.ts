@@ -6975,11 +6975,11 @@ Guidelines:
 
   app.post("/api/admin/marketing/funnel/generate", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const { stage, assetTypes, topic, platform, imageStyle, videoDuration } = req.body;
+      const { stage, assetTypes, topic, platform, imageStyle, videoDuration, aspectRatio, photoOrientation, photoStyle } = req.body;
       if (!stage || !assetTypes || !Array.isArray(assetTypes) || assetTypes.length === 0) {
         return res.status(400).json({ message: "stage and assetTypes[] are required" });
       }
-      const assets = await generateFunnelAssets({ stage, assetTypes, topic, platform, imageStyle, videoDuration });
+      const assets = await generateFunnelAssets({ stage, assetTypes, topic, platform, imageStyle, videoDuration, aspectRatio, photoOrientation, photoStyle });
       res.json(assets);
     } catch (error) {
       console.error("Funnel generate error:", error);
@@ -6989,11 +6989,11 @@ Guidelines:
 
   app.post("/api/admin/marketing/funnel/generate-single", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const { type, stage, topic, platform, imageStyle, videoDuration } = req.body;
+      const { type, stage, topic, platform, imageStyle, videoDuration, aspectRatio, photoOrientation, photoStyle } = req.body;
       if (!type || !stage) {
         return res.status(400).json({ message: "type and stage are required" });
       }
-      const asset = await generateSingleAsset({ type, stage, topic, platform, imageStyle, videoDuration });
+      const asset = await generateSingleAsset({ type, stage, topic, platform, imageStyle, videoDuration, aspectRatio, photoOrientation, photoStyle });
       res.json(asset);
     } catch (error) {
       console.error("Funnel generate-single error:", error);

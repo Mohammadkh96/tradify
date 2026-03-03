@@ -110,6 +110,9 @@ export default function FunnelGenerator() {
   const [imageStyle, setImageStyle] = useState("Professional");
   const [results, setResults] = useState<GeneratedAsset[]>([]);
   const [videoDuration, setVideoDuration] = useState(6);
+  const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [photoOrientation, setPhotoOrientation] = useState("landscape");
+  const [photoStyle, setPhotoStyle] = useState("editorial");
   const [showControls, setShowControls] = useState(true);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
@@ -118,7 +121,7 @@ export default function FunnelGenerator() {
   });
 
   const generateMutation = useMutation({
-    mutationFn: async (data: { stage: string; assetTypes: string[]; topic?: string; platform?: string; imageStyle?: string; videoDuration?: number }) => {
+    mutationFn: async (data: { stage: string; assetTypes: string[]; topic?: string; platform?: string; imageStyle?: string; videoDuration?: number; aspectRatio?: string; photoOrientation?: string; photoStyle?: string }) => {
       const res = await apiRequest("POST", "/api/admin/marketing/funnel/generate", data);
       return res.json();
     },
@@ -132,7 +135,7 @@ export default function FunnelGenerator() {
   });
 
   const regenerateMutation = useMutation({
-    mutationFn: async (data: { type: string; stage: string; topic?: string; platform?: string; imageStyle?: string; videoDuration?: number }) => {
+    mutationFn: async (data: { type: string; stage: string; topic?: string; platform?: string; imageStyle?: string; videoDuration?: number; aspectRatio?: string; photoOrientation?: string; photoStyle?: string }) => {
       const res = await apiRequest("POST", "/api/admin/marketing/funnel/generate-single", data);
       return res.json();
     },
@@ -146,7 +149,9 @@ export default function FunnelGenerator() {
   });
 
   const currentStage = stages?.find(s => s.id === selectedStage);
-  const hasImageAssets = selectedAssets.some(a => a.includes("image") || a === "stock_photo");
+  const hasAdImageAssets = selectedAssets.includes("ad_image");
+  const hasStockPhotoAssets = selectedAssets.includes("stock_photo");
+  const hasImageAssets = hasAdImageAssets || hasStockPhotoAssets;
   const hasVideoAssets = selectedAssets.includes("video_reel");
 
   function handleStageSelect(stageId: string) {
@@ -169,6 +174,10 @@ export default function FunnelGenerator() {
     }
   }
 
+  function frameCountEstimate() {
+    return Math.max(4, Math.ceil(videoDuration / 1.5));
+  }
+
   function handleGenerate() {
     if (!selectedStage || selectedAssets.length === 0) return;
     generateMutation.mutate({
@@ -178,6 +187,9 @@ export default function FunnelGenerator() {
       platform: selectedPlatform,
       imageStyle,
       videoDuration: hasVideoAssets ? videoDuration : undefined,
+      aspectRatio: hasAdImageAssets ? aspectRatio : undefined,
+      photoOrientation: hasStockPhotoAssets ? photoOrientation : undefined,
+      photoStyle: hasStockPhotoAssets ? photoStyle : undefined,
     });
   }
 
@@ -396,6 +408,85 @@ export default function FunnelGenerator() {
                 </div>
               )}
 
+              {hasAdImageAssets && (
+                <div>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">
+                    Ad Image Aspect Ratio
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "1:1", label: "Square (1:1)" },
+                      { value: "9:16", label: "Story (9:16)" },
+                      { value: "16:9", label: "Landscape (16:9)" },
+                      { value: "4:5", label: "Post (4:5)" },
+                    ].map(opt => (
+                      <Button
+                        key={opt.value}
+                        variant={aspectRatio === opt.value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setAspectRatio(opt.value)}
+                        className={`text-xs ${aspectRatio === opt.value ? "bg-emerald-600" : ""}`}
+                        data-testid={`button-ratio-${opt.value.replace(":", "-")}`}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {hasStockPhotoAssets && (
+                <div>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">
+                    Photo Orientation
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {["landscape", "portrait", "square"].map(orient => (
+                      <Button
+                        key={orient}
+                        variant={photoOrientation === orient ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPhotoOrientation(orient)}
+                        className={`text-xs capitalize ${photoOrientation === orient ? "bg-emerald-600" : ""}`}
+                        data-testid={`button-orient-${orient}`}
+                      >
+                        {orient}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {hasStockPhotoAssets && (
+                <div>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">
+                    Photo Style
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "editorial", label: "Editorial" },
+                      { value: "lifestyle", label: "Lifestyle" },
+                      { value: "corporate", label: "Corporate" },
+                      { value: "candid", label: "Candid" },
+                    ].map(opt => (
+                      <Button
+                        key={opt.value}
+                        variant={photoStyle === opt.value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPhotoStyle(opt.value)}
+                        className={`text-xs ${photoStyle === opt.value ? "bg-emerald-600" : ""}`}
+                        data-testid={`button-photostyle-${opt.value}`}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Professional photography with camera specs, lighting rigs, and composition rules
+                  </p>
+                </div>
+              )}
+
               {hasVideoAssets && (
                 <div>
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">
@@ -416,7 +507,7 @@ export default function FunnelGenerator() {
                     ))}
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    Video is generated from AI key-frames stitched with smooth transitions
+                    {frameCountEstimate()} AI frames with crossfade transitions and ken-burns motion
                   </p>
                 </div>
               )}
@@ -503,6 +594,9 @@ export default function FunnelGenerator() {
                     platform: selectedPlatform,
                     imageStyle,
                     videoDuration: asset.type === "video_reel" ? videoDuration : undefined,
+                    aspectRatio: asset.type === "ad_image" ? aspectRatio : undefined,
+                    photoOrientation: asset.type === "stock_photo" ? photoOrientation : undefined,
+                    photoStyle: asset.type === "stock_photo" ? photoStyle : undefined,
                   })
                 }
                 isRegenerating={regenerateMutation.isPending}

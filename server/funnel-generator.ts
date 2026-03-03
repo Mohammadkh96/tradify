@@ -155,6 +155,9 @@ interface GenerateOptions {
   platform?: string;
   imageStyle?: string;
   videoDuration?: number;
+  aspectRatio?: string;
+  photoOrientation?: string;
+  photoStyle?: string;
 }
 
 function uid(): string {
@@ -165,15 +168,24 @@ function getStageConfig(stageId: string): FunnelStage | undefined {
   return FUNNEL_STAGES.find(s => s.id === stageId);
 }
 
-function buildFunnelImagePrompt(stage: FunnelStage, topic: string | undefined, imageStyle: string): string {
-  const brandColors = "dark background (#0a0a0a), emerald green (#10b981) accents, clean modern typography";
+const ASPECT_RATIO_SIZES: Record<string, string> = {
+  "1:1": "1024x1024",
+  "9:16": "1024x1792",
+  "16:9": "1792x1024",
+  "4:5": "1024x1792",
+};
+
+function buildFunnelImagePrompt(stage: FunnelStage, topic: string | undefined, imageStyle: string, aspectRatio?: string): string {
+  const brandSpec = `Color palette: jet black (#0a0a0a) background, emerald green (#10b981) as primary accent, white (#ffffff) for contrast elements. Typography feel: clean sans-serif, modern fintech aesthetic. Overall mood: premium, sleek, tech-forward.`;
+  const compositionNote = aspectRatio === "9:16" ? "Vertical composition optimized for mobile Stories/Reels." : aspectRatio === "16:9" ? "Widescreen cinematic composition." : aspectRatio === "4:5" ? "Tall portrait composition optimized for Instagram/Facebook feed posts (4:5 ratio)." : "Square composition optimized for social feed posts.";
+  const negativePrompt = "Absolutely NO text, NO letters, NO words, NO watermarks, NO logos, NO signatures, NO blurry areas, NO distorted elements.";
 
   const stagePrompts: Record<string, string> = {
-    awareness: `Create a bold, eye-catching social media ad for a trading journal app called "Tradify". Style: ${imageStyle}. The image should STOP scrollers and grab attention. ${topic ? `Focus on: ${topic}.` : "Show the pain of unorganized trading."} Use ${brandColors}. Include visual elements that suggest trading/finance (charts, candlesticks, profit). Make it feel premium and professional. NO text in the image - just powerful visuals.`,
-    consideration: `Create a professional, feature-focused marketing image for "Tradify" trading journal app. Style: ${imageStyle}. Show the platform's value and capabilities. ${topic ? `Focus on: ${topic}.` : "Highlight analytics and data-driven insights."} Use ${brandColors}. Show dashboard elements, charts, or data visualization that demonstrate the platform's power. Make it feel trustworthy and authoritative. NO text in the image.`,
-    decision: `Create an urgency-driven, high-converting ad image for "Tradify" trading journal app. Style: ${imageStyle}. The image should create FOMO and desire to act NOW. ${topic ? `Focus on: ${topic}.` : "Show trading success and results."} Use ${brandColors} with amber/gold highlights for urgency. Show success metrics, profit charts, or before/after improvement. Make it feel exclusive and time-sensitive. NO text in the image.`,
-    action: `Create a warm, welcoming marketing image for "Tradify" trading journal app targeting users who are about to sign up. Style: ${imageStyle}. ${topic ? `Focus on: ${topic}.` : "Show the excitement of getting started."} Use ${brandColors} with purple accents. Show a clean, inviting platform interface or celebration of joining. Make it feel like the start of something great. NO text in the image.`,
-    loyalty: `Create a community-focused, appreciative marketing image for "Tradify" trading journal app targeting existing users. Style: ${imageStyle}. ${topic ? `Focus on: ${topic}.` : "Celebrate the trading community and user achievements."} Use ${brandColors} with pink/rose accents. Show achievement, growth, community connection. Make it feel exclusive and rewarding. NO text in the image.`,
+    awareness: `Create a scroll-stopping, high-impact social media ad visual for a premium trading journal & analytics platform. Style: ${imageStyle}. ${compositionNote} ${topic ? `Theme: ${topic}.` : "Theme: the chaos and frustration of unorganized trading vs. the promise of clarity."} Visual direction: dramatic cinematic lighting with volumetric light rays, glowing emerald accent highlights cutting through darkness, financial data visualizations (candlestick charts, equity curves) rendered as beautiful abstract art. Depth: foreground elements sharp, background with cinematic bokeh. ${brandSpec} ${negativePrompt}`,
+    consideration: `Create a sophisticated, trust-building marketing visual for a premium trading analytics platform. Style: ${imageStyle}. ${compositionNote} ${topic ? `Theme: ${topic}.` : "Theme: the power of data-driven trading decisions and professional analytics."} Visual direction: clean, organized dashboard interface elements floating in 3D space, data visualization graphics (heat maps, performance charts, win-rate gauges) rendered beautifully, professional studio lighting with soft key light and rim light separation. Convey authority and intelligence. ${brandSpec} ${negativePrompt}`,
+    decision: `Create a high-converting, urgency-driven ad visual for a premium trading platform's limited-time offer. Style: ${imageStyle}. ${compositionNote} ${topic ? `Theme: ${topic}.` : "Theme: trading success, breakthrough results, and the urgency to act now."} Visual direction: dramatic golden/amber highlights mixed with emerald on dark background, visual metaphors for success (upward arrows, growth charts, unlocked premium features), lens flare and volumetric lighting creating urgency and excitement. Premium and exclusive feeling. ${brandSpec} Add warm amber (#f59e0b) and gold accents for urgency. ${negativePrompt}`,
+    action: `Create a warm, celebratory marketing visual for onboarding new users to a premium trading platform. Style: ${imageStyle}. ${compositionNote} ${topic ? `Theme: ${topic}.` : "Theme: the excitement of a fresh start and unlocking powerful tools."} Visual direction: welcoming composition with soft purple and emerald gradients, clean interface elements suggesting ease of use, subtle celebration particles (confetti, sparkles), inviting and accessible mood with professional polish. ${brandSpec} Add soft purple (#8b5cf6) accents. ${negativePrompt}`,
+    loyalty: `Create a community-celebrating, appreciation-focused marketing visual for existing premium platform users. Style: ${imageStyle}. ${compositionNote} ${topic ? `Theme: ${topic}.` : "Theme: community achievement, growth milestones, and exclusive membership."} Visual direction: warm, inclusive composition with rose/pink and emerald harmony, visual metaphors for achievement (trophies, milestone markers, ascending paths), community connection feeling, premium exclusive club aesthetic with soft warm lighting. ${brandSpec} Add rose (#f43f5e) accents. ${negativePrompt}`,
   };
 
   return stagePrompts[stage.id] || stagePrompts.awareness;
@@ -230,9 +242,10 @@ ${competitors.length > 0 ? `Competitors: ${JSON.stringify(competitors)}` : ""}
 ${keyMessages.length > 0 ? `Key Messages: ${JSON.stringify(keyMessages)}` : ""}`;
 }
 
-async function generateAdImage(stage: FunnelStage, topic: string | undefined, imageStyle: string): Promise<GeneratedAsset> {
-  const prompt = buildFunnelImagePrompt(stage, topic, imageStyle);
-  const buffer = await generateImageBuffer(prompt, "1024x1024");
+async function generateAdImage(stage: FunnelStage, topic: string | undefined, imageStyle: string, aspectRatio: string = "1:1"): Promise<GeneratedAsset> {
+  const prompt = buildFunnelImagePrompt(stage, topic, imageStyle, aspectRatio);
+  const size = ASPECT_RATIO_SIZES[aspectRatio] || "1024x1024";
+  const buffer = await generateImageBuffer(prompt, size);
   const fileName = `${stage.id}-ad-${uid()}.png`;
   const filePath = path.join(GENERATED_DIR, fileName);
   fs.writeFileSync(filePath, buffer);
@@ -249,6 +262,7 @@ async function generateAdImage(stage: FunnelStage, topic: string | undefined, im
     requestDuration: 0,
   }).catch(err => console.error("[AI Cost Tracker] funnel_image error:", err));
 
+  const ratioLabel = aspectRatio === "1:1" ? "Square" : aspectRatio === "9:16" ? "Story" : aspectRatio === "16:9" ? "Landscape" : "Post";
   return {
     id: uid(),
     type: "ad_image",
@@ -257,40 +271,52 @@ async function generateAdImage(stage: FunnelStage, topic: string | undefined, im
     fileUrl: `/api/admin/marketing/funnel/file/${fileName}`,
     fileName,
     mimeType: "image/png",
-    title: `${stage.shortLabel} Ad Creative`,
+    title: `${stage.shortLabel} Ad Creative (${ratioLabel})`,
+    metadata: { aspectRatio, size },
     generatedAt: new Date().toISOString(),
   };
 }
 
 async function generateVideoReel(stage: FunnelStage, topic: string | undefined, imageStyle: string, platform: string, duration: number = 6): Promise<GeneratedAsset> {
-  const brandColors = "dark background (#0a0a0a), emerald green (#10b981) accents";
-  const frameCount = Math.max(3, Math.floor(duration / 2));
+  const brandSpec = "jet black (#0a0a0a) background, emerald (#10b981) accent glow, white highlights, premium fintech aesthetic";
+  const neg = "NO text, NO letters, NO words, NO watermarks, NO logos.";
+  const frameCount = Math.max(4, Math.ceil(duration / 1.5));
+  const topicNote = topic ? `Content theme: ${topic}.` : "";
 
   const stageVideoPrompts: Record<string, string[]> = {
     awareness: [
-      `Dramatic shot of financial charts and candlestick patterns glowing on a dark screen, ${brandColors}, cinematic lighting, ${imageStyle} style. NO text.`,
-      `A frustrated trader staring at messy spreadsheets and sticky notes, cluttered desk, dim moody lighting, ${brandColors} accents. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
-      `Clean, sleek trading dashboard interface glowing with emerald green data visualizations on a dark background, modern and premium feel. NO text.`,
+      `Cinematic close-up of glowing green candlestick charts rising on a dark glass screen, volumetric emerald light rays cutting through darkness, shallow depth of field, anamorphic lens flare. ${brandSpec}. ${imageStyle} style. Vertical 9:16 portrait composition. ${neg}`,
+      `Overhead shot of a frustrated trader's messy desk — scattered sticky notes, coffee rings, multiple browser tabs of spreadsheets, dim blue monitor glow, moody chiaroscuro lighting. ${topicNote} ${neg}`,
+      `Sleek dark trading dashboard interface with emerald green data streams flowing across multiple panels, holographic 3D chart projection effect, futuristic premium feel, ray-traced reflections. ${brandSpec}. ${neg}`,
+      `Abstract data flow visualization: glowing emerald particles forming an upward equity curve against pure black, cinematic depth, bokeh orbs in background. ${imageStyle} style. ${neg}`,
+      `Wide-angle shot of a modern trading floor at night, rows of dark monitors with emerald data, ambient glow, dramatic vanishing point perspective. ${brandSpec}. ${neg}`,
+      `Close-up of a hand touching a glass tablet showing a beautiful profit chart going up, emerald reflections on the hand, dark background, premium tech feel. ${neg}`,
     ],
     consideration: [
-      `Professional trading workspace with multiple monitors showing analytics dashboards, ${brandColors}, clean and organized, ${imageStyle} style. NO text.`,
-      `Side-by-side comparison: messy spreadsheet vs clean modern analytics dashboard, split screen effect, ${brandColors}. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
-      `Data visualization showing an upward performance trend, emerald green chart on dark background, premium and professional. NO text.`,
+      `Professional multi-monitor trading setup in a modern office, clean organized desk, each screen showing different analytics dashboards with emerald data visualizations, soft rim lighting. ${brandSpec}. ${imageStyle} style. ${neg}`,
+      `Split-screen concept: left side shows chaotic spreadsheet data in harsh blue light, right side shows elegant organized dashboard with emerald charts, visual contrast between old and new. ${topicNote} ${neg}`,
+      `3D isometric view of a data analytics platform interface floating in dark space, heat maps and performance gauges glowing, professional studio lighting with soft shadows. ${brandSpec}. ${neg}`,
+      `A focused professional analyzing a large performance chart on a curved ultrawide monitor, emerald data reflections on their face, soft bokeh background. ${topicNote} ${neg}`,
+      `Beautiful infographic-style data visualization floating in dark 3D space: pie charts, bar graphs, win-rate dials all glowing emerald, connected by luminous data streams. ${neg}`,
     ],
     decision: [
-      `Dramatic profit chart showing exponential growth, golden and emerald highlights on dark background, ${imageStyle} style. NO text.`,
-      `Confident trader celebrating a successful trade, modern setup, ${brandColors} with amber/gold accents. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
-      `Premium subscription card or badge glowing with emerald light, exclusive and urgent feeling, dark background. NO text.`,
+      `Dramatic profit chart with exponential growth curve glowing in gold and emerald against pure black, volumetric light rays, lens flare at the peak, cinematic epic feeling. ${imageStyle} style. ${neg}`,
+      `Confident trader in a premium modern office raising their fist in celebration, golden hour backlight mixing with emerald monitor glow, shallow DOF. ${topicNote} ${neg}`,
+      `Luxurious premium membership card floating in dramatic spotlight, holographic emerald shimmer, dark reflective surface below, exclusive VIP aesthetic. ${brandSpec}. ${neg}`,
+      `Before-and-after trading performance visualization: left dimmed red charts, right brilliant emerald green growth, dramatic transition effect in the middle. ${neg}`,
+      `Close-up of a golden trophy with emerald accents on a dark reflective desk, surrounded by subtle bokeh lights, achievement and success mood. ${neg}`,
     ],
     action: [
-      `Hand pressing a glowing emerald "Start" button, dramatic lighting, dark background, ${imageStyle} style. NO text.`,
-      `Welcome screen of a premium trading platform, clean interface, ${brandColors}, celebration confetti. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
-      `Trading dashboard coming to life with real-time data flowing in, emerald green animations on dark background. NO text.`,
+      `A glowing emerald "Get Started" button on a dark glass surface, finger hovering above it, dramatic rim lighting, anticipation moment, premium tech UI feel. ${imageStyle} style. ${neg}`,
+      `Welcome celebration scene: dark background with emerald and purple confetti particles falling in slow motion, spotlight effect, joyous premium feeling. ${topicNote} ${neg}`,
+      `Trading dashboard powering on sequence — screens lighting up one by one with emerald data, futuristic boot-up visualization, dark environment. ${brandSpec}. ${neg}`,
+      `Clean onboarding interface floating in 3D dark space with soft purple and emerald gradient glow, welcoming and modern, step indicators lit up. ${neg}`,
     ],
     loyalty: [
-      `Trophy or achievement badge glowing with emerald and gold light, dark background, premium and exclusive feel. NO text.`,
-      `Community of traders celebrating together, diverse group, ${brandColors} accents, warm lighting. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
-      `Growth chart showing consistent long-term improvement, emerald green on dark background, ${imageStyle} style. NO text.`,
+      `Glowing achievement trophy made of emerald crystal and gold, floating above a dark reflective surface, premium volumetric lighting, exclusive feel. ${imageStyle} style. ${neg}`,
+      `Diverse group of professionals in a modern trading community space, warm amber lighting mixing with emerald accents, celebration mood, team achievement. ${topicNote} ${neg}`,
+      `Long-term growth equity curve spanning years, consistent upward trend glowing emerald with milestone markers in gold, dark cinematic background. ${brandSpec}. ${neg}`,
+      `Premium referral/community badge with holographic effects, emerald and rose gold colors, floating in dramatic spotlight, exclusive membership aesthetic. ${neg}`,
     ],
   };
 
@@ -299,7 +325,7 @@ async function generateVideoReel(stage: FunnelStage, topic: string | undefined, 
 
   const frameBuffers: Buffer[] = [];
   for (const prompt of selectedPrompts) {
-    const buffer = await generateImageBuffer(prompt, "1024x1024");
+    const buffer = await generateImageBuffer(prompt, "1024x1792");
     frameBuffers.push(buffer);
 
     trackAIUsage({
@@ -323,41 +349,68 @@ async function generateVideoReel(stage: FunnelStage, topic: string | undefined, 
     fs.writeFileSync(path.join(tmpDir, `frame-${String(i).padStart(3, "0")}.png`), buf);
   });
 
-  const frameDuration = duration / frameCount;
   const fileName = `${stage.id}-reel-${videoId}.mp4`;
   const outputPath = path.join(GENERATED_DIR, fileName);
-
-  const concatFile = path.join(tmpDir, "concat.txt");
-  const concatContent = frameBuffers.map((_, i) =>
-    `file '${path.join(tmpDir, `frame-${String(i).padStart(3, "0")}.png`)}'\nduration ${frameDuration}`
-  ).join("\n") + `\nfile '${path.join(tmpDir, `frame-${String(frameBuffers.length - 1).padStart(3, "0")}.png`)}'`;
-  fs.writeFileSync(concatFile, concatContent);
+  const fps = 25;
+  const segDuration = Math.max(1.0, duration / frameCount);
+  const segFrames = Math.max(fps, Math.round(segDuration * fps));
 
   try {
+    const inputs = frameBuffers.map((_, i) => `-loop 1 -t ${segDuration} -i "${path.join(tmpDir, `frame-${String(i).padStart(3, "0")}.png`)}"`).join(" ");
+    const xfadeDuration = Math.min(0.8, segDuration * 0.4);
+    let filterChain = "";
+    const totalStreams = frameBuffers.length;
+
+    if (totalStreams >= 2) {
+      let lastStream = "[0:v]";
+      const parts: string[] = [];
+
+      for (let i = 0; i < totalStreams; i++) {
+        parts.push(`[${i}:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,zoompan=z='min(zoom+0.001,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${segFrames}:s=1080x1920:fps=${fps},format=yuv420p[v${i}]`);
+      }
+
+      lastStream = "[v0]";
+      for (let i = 1; i < totalStreams; i++) {
+        const offset = (i * segDuration) - (i * xfadeDuration);
+        const outLabel = i < totalStreams - 1 ? `[xf${i}]` : "[outv]";
+        parts.push(`${lastStream}[v${i}]xfade=transition=fade:duration=${xfadeDuration.toFixed(2)}:offset=${offset.toFixed(2)}${outLabel}`);
+        lastStream = outLabel;
+      }
+
+      filterChain = parts.join("; ");
+    } else {
+      filterChain = `[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,zoompan=z='min(zoom+0.001,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${segFrames}:s=1080x1920:fps=${fps},format=yuv420p[outv]`;
+    }
+
     execSync(
-      `${ffmpegBin} -y -f concat -safe 0 -i "${concatFile}" ` +
-      `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,` +
-      `zoompan=z='min(zoom+0.0015,1.3)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.round(frameDuration * 25)}:s=1080x1920:fps=25,` +
-      `format=yuv420p" ` +
-      `-c:v libx264 -preset fast -crf 23 -t ${duration} "${outputPath}"`,
-      { timeout: 120000, stdio: "pipe" }
+      `${ffmpegBin} -y ${inputs} -filter_complex "${filterChain}" -map "[outv]" -c:v libx264 -preset fast -crf 22 -t ${duration} "${outputPath}"`,
+      { timeout: 180000, stdio: "pipe" }
     );
-  } catch (ffmpegErr) {
-    console.error("FFmpeg zoompan failed, trying simple concat:", (ffmpegErr as Error).message);
+  } catch (xfadeErr) {
+    console.error("FFmpeg xfade pipeline failed, trying simple concat:", (xfadeErr as Error).message);
     try {
+      const concatFile = path.join(tmpDir, "concat.txt");
+      const concatContent = frameBuffers.map((_, i) =>
+        `file '${path.join(tmpDir, `frame-${String(i).padStart(3, "0")}.png`)}'\nduration ${segDuration}`
+      ).join("\n") + `\nfile '${path.join(tmpDir, `frame-${String(frameBuffers.length - 1).padStart(3, "0")}.png`)}'`;
+      fs.writeFileSync(concatFile, concatContent);
+
       execSync(
         `${ffmpegBin} -y -f concat -safe 0 -i "${concatFile}" ` +
-        `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p" ` +
-        `-c:v libx264 -preset fast -crf 23 -t ${duration} "${outputPath}"`,
-        { timeout: 120000, stdio: "pipe" }
+        `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,` +
+        `zoompan=z='min(zoom+0.001,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${segFrames}:s=1080x1920:fps=${fps},format=yuv420p" ` +
+        `-c:v libx264 -preset fast -crf 22 -t ${duration} "${outputPath}"`,
+        { timeout: 180000, stdio: "pipe" }
       );
     } catch (fallbackErr) {
-      console.error("FFmpeg simple also failed:", (fallbackErr as Error).message);
+      console.error("FFmpeg fallback also failed:", (fallbackErr as Error).message);
     }
   }
 
-  fs.readdirSync(tmpDir).forEach(f => fs.unlinkSync(path.join(tmpDir, f)));
-  fs.rmdirSync(tmpDir);
+  try {
+    fs.readdirSync(tmpDir).forEach(f => fs.unlinkSync(path.join(tmpDir, f)));
+    fs.rmdirSync(tmpDir);
+  } catch {}
 
   if (!fs.existsSync(outputPath)) {
     return {
@@ -385,22 +438,56 @@ async function generateVideoReel(stage: FunnelStage, topic: string | undefined, 
       frameCount,
       aspectRatio: "9:16",
       format: "MP4 (H.264)",
+      transitions: "crossfade",
     },
     generatedAt: new Date().toISOString(),
   };
 }
 
-async function generateStockPhoto(stage: FunnelStage, topic: string | undefined): Promise<GeneratedAsset> {
-  const stageStockPrompts: Record<string, string> = {
-    awareness: `Photorealistic professional stock photography: ${topic || "a trader focused on their screen in a modern office"}, natural lighting, shallow depth of field, high-end DSLR quality, business/finance setting. Clean and editorial. NO text, NO logos.`,
-    consideration: `Photorealistic professional stock photography: ${topic || "an analyst reviewing data charts on a large monitor"}, warm office lighting, professional environment, corporate modern. High quality, editorial style. NO text, NO logos.`,
-    decision: `Photorealistic professional stock photography: ${topic || "a confident business professional shaking hands after a deal"}, bright lighting, success and achievement mood, modern office. High quality, editorial. NO text, NO logos.`,
-    action: `Photorealistic professional stock photography: ${topic || "hands typing on a laptop with financial dashboards visible"}, clean modern desk, natural daylight, technology focus. High quality, editorial style. NO text, NO logos.`,
-    loyalty: `Photorealistic professional stock photography: ${topic || "a group of professionals celebrating success together in a modern office"}, warm natural lighting, team achievement mood. High quality, editorial. NO text, NO logos.`,
+const ORIENTATION_SIZES: Record<string, string> = {
+  portrait: "1024x1792",
+  landscape: "1792x1024",
+  square: "1024x1024",
+};
+
+const PHOTO_STYLE_MODIFIERS: Record<string, string> = {
+  editorial: "Clean editorial style, minimal post-processing, natural color grade, magazine-quality composition with strong leading lines and rule-of-thirds framing.",
+  lifestyle: "Warm lifestyle photography style, candid natural moment, soft golden color grade, authentic and relatable feeling, slightly desaturated shadows.",
+  corporate: "Polished corporate photography, bright and clean, professional studio lighting with 3-point setup, sharp focus throughout, neutral modern color palette.",
+  candid: "Candid documentary-style photography, natural unposed moment captured, available light, slight grain, authentic and raw, photojournalistic approach.",
+};
+
+async function generateStockPhoto(stage: FunnelStage, topic: string | undefined, orientation: string = "landscape", photoStyle: string = "editorial"): Promise<GeneratedAsset> {
+  const styleModifier = PHOTO_STYLE_MODIFIERS[photoStyle] || PHOTO_STYLE_MODIFIERS.editorial;
+  const cameraSpec = orientation === "portrait"
+    ? "Shot on Sony A7IV with 85mm f/1.4 GM lens, vertical portrait orientation, shallow depth of field f/2.0, creamy bokeh."
+    : orientation === "landscape"
+    ? "Shot on Canon EOS R5 with 35mm f/1.4L lens, wide landscape orientation, deep focus f/5.6 for environmental context."
+    : "Shot on Nikon Z8 with 50mm f/1.8 lens, square format, balanced composition.";
+
+  const lightingSpec: Record<string, string> = {
+    awareness: "Dramatic chiaroscuro lighting with strong directional key light, deep shadows, rim light separating subject from background. Moody and cinematic.",
+    consideration: "Soft diffused window light from the side, fill card on opposite side reducing contrast ratio to 2:1, warm color temperature 4500K. Professional and approachable.",
+    decision: "Golden hour backlighting creating a warm glow around the subject, fill flash at -2 stops for shadow detail, lens flare. Success and achievement mood.",
+    action: "Clean bright studio lighting, large octabox key light at 45 degrees, white reflector fill, slight hair light for separation. Fresh and energetic.",
+    loyalty: "Warm ambient lighting mixed with tungsten practicals, 3200K color temperature, soft shadows, intimate and celebratory mood. Candid warmth.",
   };
 
-  const prompt = stageStockPrompts[stage.id] || stageStockPrompts.awareness;
-  const buffer = await generateImageBuffer(prompt, "1024x1024");
+  const sceneDesc: Record<string, string> = {
+    awareness: topic || "A focused trader concentrating on their screen in a dimly lit modern home office, multiple monitors showing financial data, the glow of charts illuminating their face, intense concentration",
+    consideration: topic || "A data analyst in a bright modern workspace reviewing performance charts on a large curved monitor, clean organized desk with notebook and coffee, professional and methodical",
+    decision: topic || "A confident financial professional in a premium office celebrating a milestone, genuine smile of achievement, modern minimalist surroundings with city skyline visible through floor-to-ceiling windows",
+    action: topic || "Hands actively interacting with a sleek laptop showing a financial dashboard, modern clean desk setup, morning daylight streaming through windows, fresh start energy",
+    loyalty: topic || "A diverse group of three professionals in a modern co-working space sharing ideas around a screen showing growth charts, genuine collaboration and team spirit, natural interaction",
+  };
+
+  const scene = sceneDesc[stage.id] || sceneDesc.awareness;
+  const lighting = lightingSpec[stage.id] || lightingSpec.awareness;
+
+  const prompt = `Ultra-realistic professional stock photograph. ${cameraSpec} ${lighting} Scene: ${scene}. ${styleModifier} Color science: natural skin tones, accurate white balance, subtle color grading. Technical quality: sharp focus on subject, natural motion blur where appropriate, professional post-production. Absolutely NO text, NO logos, NO watermarks, NO artificial elements, NO CGI.`;
+
+  const size = ORIENTATION_SIZES[orientation] || "1792x1024";
+  const buffer = await generateImageBuffer(prompt, size);
   const fileName = `${stage.id}-stock-${uid()}.png`;
   const filePath = path.join(GENERATED_DIR, fileName);
   fs.writeFileSync(filePath, buffer);
@@ -417,6 +504,8 @@ async function generateStockPhoto(stage: FunnelStage, topic: string | undefined)
     requestDuration: 0,
   }).catch(err => console.error("[AI Cost Tracker] funnel_stock error:", err));
 
+  const orientLabel = orientation.charAt(0).toUpperCase() + orientation.slice(1);
+  const styleLabel = photoStyle.charAt(0).toUpperCase() + photoStyle.slice(1);
   return {
     id: uid(),
     type: "stock_photo",
@@ -425,7 +514,8 @@ async function generateStockPhoto(stage: FunnelStage, topic: string | undefined)
     fileUrl: `/api/admin/marketing/funnel/file/${fileName}`,
     fileName,
     mimeType: "image/png",
-    title: `${stage.shortLabel} Stock Photo`,
+    title: `${stage.shortLabel} Stock Photo (${styleLabel}, ${orientLabel})`,
+    metadata: { orientation, photoStyle, size },
     generatedAt: new Date().toISOString(),
   };
 }
@@ -747,13 +837,13 @@ export async function generateFunnelAssets(options: GenerateOptions): Promise<Ge
       let asset: GeneratedAsset;
       switch (assetType) {
         case "ad_image":
-          asset = await generateAdImage(stage, options.topic, imageStyle);
+          asset = await generateAdImage(stage, options.topic, imageStyle, options.aspectRatio || "1:1");
           break;
         case "video_reel":
           asset = await generateVideoReel(stage, options.topic, imageStyle, platform, options.videoDuration || 6);
           break;
         case "stock_photo":
-          asset = await generateStockPhoto(stage, options.topic);
+          asset = await generateStockPhoto(stage, options.topic, options.photoOrientation || "landscape", options.photoStyle || "editorial");
           break;
         case "social_post":
           asset = await generateSocialPostAsset(stage, options.topic, platform);
@@ -811,6 +901,9 @@ export async function generateSingleAsset(options: {
   platform?: string;
   imageStyle?: string;
   videoDuration?: number;
+  aspectRatio?: string;
+  photoOrientation?: string;
+  photoStyle?: string;
 }): Promise<GeneratedAsset> {
   const result = await generateFunnelAssets({
     stage: options.stage,
@@ -819,6 +912,9 @@ export async function generateSingleAsset(options: {
     platform: options.platform,
     imageStyle: options.imageStyle,
     videoDuration: options.videoDuration,
+    aspectRatio: options.aspectRatio,
+    photoOrientation: options.photoOrientation,
+    photoStyle: options.photoStyle,
   });
   if (result.length === 0) throw new Error("No asset generated");
   return result[0];
