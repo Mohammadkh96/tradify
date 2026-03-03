@@ -170,9 +170,9 @@ function getStageConfig(stageId: string): FunnelStage | undefined {
 
 const ASPECT_RATIO_SIZES: Record<string, string> = {
   "1:1": "1024x1024",
-  "9:16": "1024x1792",
-  "16:9": "1792x1024",
-  "4:5": "1024x1792",
+  "9:16": "1024x1536",
+  "16:9": "1536x1024",
+  "4:5": "1024x1536",
 };
 
 function buildFunnelImagePrompt(stage: FunnelStage, topic: string | undefined, imageStyle: string, aspectRatio?: string): string {
@@ -325,7 +325,7 @@ async function generateVideoReel(stage: FunnelStage, topic: string | undefined, 
 
   const frameBuffers: Buffer[] = [];
   for (const prompt of selectedPrompts) {
-    const buffer = await generateImageBuffer(prompt, "1024x1792");
+    const buffer = await generateImageBuffer(prompt, "1024x1536");
     frameBuffers.push(buffer);
 
     trackAIUsage({
@@ -445,8 +445,8 @@ async function generateVideoReel(stage: FunnelStage, topic: string | undefined, 
 }
 
 const ORIENTATION_SIZES: Record<string, string> = {
-  portrait: "1024x1792",
-  landscape: "1792x1024",
+  portrait: "1024x1536",
+  landscape: "1536x1024",
   square: "1024x1024",
 };
 
@@ -486,7 +486,7 @@ async function generateStockPhoto(stage: FunnelStage, topic: string | undefined,
 
   const prompt = `Ultra-realistic professional stock photograph. ${cameraSpec} ${lighting} Scene: ${scene}. ${styleModifier} Color science: natural skin tones, accurate white balance, subtle color grading. Technical quality: sharp focus on subject, natural motion blur where appropriate, professional post-production. Absolutely NO text, NO logos, NO watermarks, NO artificial elements, NO CGI.`;
 
-  const size = ORIENTATION_SIZES[orientation] || "1792x1024";
+  const size = ORIENTATION_SIZES[orientation] || "1536x1024";
   const buffer = await generateImageBuffer(prompt, size);
   const fileName = `${stage.id}-stock-${uid()}.png`;
   const filePath = path.join(GENERATED_DIR, fileName);
