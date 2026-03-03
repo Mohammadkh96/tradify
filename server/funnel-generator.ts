@@ -16,6 +16,15 @@ const openai = new OpenAI({
 const MODEL = "gpt-4o-mini";
 const GENERATED_DIR = path.join(process.cwd(), "public", "generated");
 
+function getFFmpegBin(): string {
+  try {
+    return execSync("which ffmpeg", { encoding: "utf-8" }).trim();
+  } catch {
+    return "ffmpeg";
+  }
+}
+const ffmpegBin = getFFmpegBin();
+
 if (!fs.existsSync(GENERATED_DIR)) {
   fs.mkdirSync(GENERATED_DIR, { recursive: true });
 }
@@ -326,7 +335,7 @@ async function generateVideoReel(stage: FunnelStage, topic: string | undefined, 
 
   try {
     execSync(
-      `ffmpeg -y -f concat -safe 0 -i "${concatFile}" ` +
+      `${ffmpegBin} -y -f concat -safe 0 -i "${concatFile}" ` +
       `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,` +
       `zoompan=z='min(zoom+0.0015,1.3)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.round(frameDuration * 25)}:s=1080x1920:fps=25,` +
       `format=yuv420p" ` +
@@ -337,7 +346,7 @@ async function generateVideoReel(stage: FunnelStage, topic: string | undefined, 
     console.error("FFmpeg zoompan failed, trying simple concat:", (ffmpegErr as Error).message);
     try {
       execSync(
-        `ffmpeg -y -f concat -safe 0 -i "${concatFile}" ` +
+        `${ffmpegBin} -y -f concat -safe 0 -i "${concatFile}" ` +
         `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p" ` +
         `-c:v libx264 -preset fast -crf 23 -t ${duration} "${outputPath}"`,
         { timeout: 120000, stdio: "pipe" }
