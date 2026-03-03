@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { execSync } from "node:child_process";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -45,6 +46,8 @@ export const FUNNEL_STAGES: FunnelStage[] = [
       { id: "ad_image", label: "Ad Creative Image", icon: "Image", description: "Bold, attention-grabbing visual ads" },
       { id: "social_post", label: "Social Media Post", icon: "MessageSquare", description: "Educational tips, pain point hooks" },
       { id: "reel_script", label: "Reel Script", icon: "Video", description: "Hook → Problem → Solution scripts" },
+      { id: "video_reel", label: "Video Reel (9:16)", icon: "Film", description: "Short video clip for Reels/TikTok" },
+      { id: "stock_photo", label: "Stock Photo", icon: "Camera", description: "Professional trading/finance imagery" },
       { id: "ad_copy", label: "Ad Copy Variations", icon: "FileText", description: "AIDA/PAS framework ad text" },
       { id: "landing_page", label: "Landing Page", icon: "Globe", description: "Waitlist/signup capture page" },
     ],
@@ -63,6 +66,7 @@ export const FUNNEL_STAGES: FunnelStage[] = [
       { id: "email_campaign", label: "Email Sequence", icon: "Mail", description: "Nurture drip campaigns" },
       { id: "comparison_post", label: "Comparison Post", icon: "GitCompare", description: "Tradify vs alternatives" },
       { id: "ad_image", label: "Feature Showcase Image", icon: "Image", description: "Platform features in action" },
+      { id: "stock_photo", label: "Stock Photo", icon: "Camera", description: "Professional analytics imagery" },
       { id: "social_post", label: "Educational Post", icon: "MessageSquare", description: "Trading tips & insights" },
     ],
   },
@@ -79,6 +83,7 @@ export const FUNNEL_STAGES: FunnelStage[] = [
       { id: "testimonial_post", label: "Testimonial Post", icon: "Quote", description: "User success stories" },
       { id: "ad_image", label: "Urgency Ad Image", icon: "Image", description: "Limited-time offer visuals" },
       { id: "case_study", label: "Case Study Post", icon: "TrendingUp", description: "Before/after performance" },
+      { id: "video_reel", label: "Results Video Reel", icon: "Film", description: "Quick results/testimonial video" },
       { id: "landing_page", label: "Conversion Landing Page", icon: "Globe", description: "High-converting signup page" },
       { id: "reel_script", label: "Results Reel Script", icon: "Video", description: "Quick results showcase script" },
     ],
@@ -244,6 +249,174 @@ async function generateAdImage(stage: FunnelStage, topic: string | undefined, im
     fileName,
     mimeType: "image/png",
     title: `${stage.shortLabel} Ad Creative`,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function generateVideoReel(stage: FunnelStage, topic: string | undefined, imageStyle: string, platform: string, duration: number = 6): Promise<GeneratedAsset> {
+  const brandColors = "dark background (#0a0a0a), emerald green (#10b981) accents";
+  const frameCount = Math.max(3, Math.floor(duration / 2));
+
+  const stageVideoPrompts: Record<string, string[]> = {
+    awareness: [
+      `Dramatic shot of financial charts and candlestick patterns glowing on a dark screen, ${brandColors}, cinematic lighting, ${imageStyle} style. NO text.`,
+      `A frustrated trader staring at messy spreadsheets and sticky notes, cluttered desk, dim moody lighting, ${brandColors} accents. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
+      `Clean, sleek trading dashboard interface glowing with emerald green data visualizations on a dark background, modern and premium feel. NO text.`,
+    ],
+    consideration: [
+      `Professional trading workspace with multiple monitors showing analytics dashboards, ${brandColors}, clean and organized, ${imageStyle} style. NO text.`,
+      `Side-by-side comparison: messy spreadsheet vs clean modern analytics dashboard, split screen effect, ${brandColors}. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
+      `Data visualization showing an upward performance trend, emerald green chart on dark background, premium and professional. NO text.`,
+    ],
+    decision: [
+      `Dramatic profit chart showing exponential growth, golden and emerald highlights on dark background, ${imageStyle} style. NO text.`,
+      `Confident trader celebrating a successful trade, modern setup, ${brandColors} with amber/gold accents. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
+      `Premium subscription card or badge glowing with emerald light, exclusive and urgent feeling, dark background. NO text.`,
+    ],
+    action: [
+      `Hand pressing a glowing emerald "Start" button, dramatic lighting, dark background, ${imageStyle} style. NO text.`,
+      `Welcome screen of a premium trading platform, clean interface, ${brandColors}, celebration confetti. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
+      `Trading dashboard coming to life with real-time data flowing in, emerald green animations on dark background. NO text.`,
+    ],
+    loyalty: [
+      `Trophy or achievement badge glowing with emerald and gold light, dark background, premium and exclusive feel. NO text.`,
+      `Community of traders celebrating together, diverse group, ${brandColors} accents, warm lighting. ${topic ? `Related to: ${topic}.` : ""} NO text.`,
+      `Growth chart showing consistent long-term improvement, emerald green on dark background, ${imageStyle} style. NO text.`,
+    ],
+  };
+
+  const prompts = stageVideoPrompts[stage.id] || stageVideoPrompts.awareness;
+  const selectedPrompts = prompts.slice(0, frameCount);
+
+  const frameBuffers: Buffer[] = [];
+  for (const prompt of selectedPrompts) {
+    const buffer = await generateImageBuffer(prompt, "1024x1024");
+    frameBuffers.push(buffer);
+
+    trackAIUsage({
+      userId: "admin",
+      userTier: "ADMIN",
+      feature: "funnel_video_frame",
+      model: "gpt-image-1",
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 1,
+      costUsd: calculateCost("gpt-image-1", 0, 0),
+      requestDuration: 0,
+    }).catch(err => console.error("[AI Cost Tracker] funnel_video_frame error:", err));
+  }
+
+  const videoId = uid();
+  const tmpDir = path.join(GENERATED_DIR, `tmp-${videoId}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+
+  frameBuffers.forEach((buf, i) => {
+    fs.writeFileSync(path.join(tmpDir, `frame-${String(i).padStart(3, "0")}.png`), buf);
+  });
+
+  const frameDuration = duration / frameCount;
+  const fileName = `${stage.id}-reel-${videoId}.mp4`;
+  const outputPath = path.join(GENERATED_DIR, fileName);
+
+  const concatFile = path.join(tmpDir, "concat.txt");
+  const concatContent = frameBuffers.map((_, i) =>
+    `file '${path.join(tmpDir, `frame-${String(i).padStart(3, "0")}.png`)}'\nduration ${frameDuration}`
+  ).join("\n") + `\nfile '${path.join(tmpDir, `frame-${String(frameBuffers.length - 1).padStart(3, "0")}.png`)}'`;
+  fs.writeFileSync(concatFile, concatContent);
+
+  try {
+    execSync(
+      `ffmpeg -y -f concat -safe 0 -i "${concatFile}" ` +
+      `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,` +
+      `zoompan=z='min(zoom+0.0015,1.3)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.round(frameDuration * 25)}:s=1080x1920:fps=25,` +
+      `format=yuv420p" ` +
+      `-c:v libx264 -preset fast -crf 23 -t ${duration} "${outputPath}"`,
+      { timeout: 120000, stdio: "pipe" }
+    );
+  } catch (ffmpegErr) {
+    console.error("FFmpeg zoompan failed, trying simple concat:", (ffmpegErr as Error).message);
+    try {
+      execSync(
+        `ffmpeg -y -f concat -safe 0 -i "${concatFile}" ` +
+        `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p" ` +
+        `-c:v libx264 -preset fast -crf 23 -t ${duration} "${outputPath}"`,
+        { timeout: 120000, stdio: "pipe" }
+      );
+    } catch (fallbackErr) {
+      console.error("FFmpeg simple also failed:", (fallbackErr as Error).message);
+    }
+  }
+
+  fs.readdirSync(tmpDir).forEach(f => fs.unlinkSync(path.join(tmpDir, f)));
+  fs.rmdirSync(tmpDir);
+
+  if (!fs.existsSync(outputPath)) {
+    return {
+      id: videoId,
+      type: "video_reel",
+      stage: stage.id,
+      platform,
+      content: "Video generation failed — frames were generated but ffmpeg encoding encountered an error.",
+      title: `${stage.shortLabel} Video Reel (Failed)`,
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  return {
+    id: videoId,
+    type: "video_reel",
+    stage: stage.id,
+    platform,
+    fileUrl: `/api/admin/marketing/funnel/file/${fileName}`,
+    fileName,
+    mimeType: "video/mp4",
+    title: `${stage.shortLabel} Video Reel (${duration}s)`,
+    metadata: {
+      duration,
+      frameCount,
+      aspectRatio: "9:16",
+      format: "MP4 (H.264)",
+    },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function generateStockPhoto(stage: FunnelStage, topic: string | undefined): Promise<GeneratedAsset> {
+  const stageStockPrompts: Record<string, string> = {
+    awareness: `Photorealistic professional stock photography: ${topic || "a trader focused on their screen in a modern office"}, natural lighting, shallow depth of field, high-end DSLR quality, business/finance setting. Clean and editorial. NO text, NO logos.`,
+    consideration: `Photorealistic professional stock photography: ${topic || "an analyst reviewing data charts on a large monitor"}, warm office lighting, professional environment, corporate modern. High quality, editorial style. NO text, NO logos.`,
+    decision: `Photorealistic professional stock photography: ${topic || "a confident business professional shaking hands after a deal"}, bright lighting, success and achievement mood, modern office. High quality, editorial. NO text, NO logos.`,
+    action: `Photorealistic professional stock photography: ${topic || "hands typing on a laptop with financial dashboards visible"}, clean modern desk, natural daylight, technology focus. High quality, editorial style. NO text, NO logos.`,
+    loyalty: `Photorealistic professional stock photography: ${topic || "a group of professionals celebrating success together in a modern office"}, warm natural lighting, team achievement mood. High quality, editorial. NO text, NO logos.`,
+  };
+
+  const prompt = stageStockPrompts[stage.id] || stageStockPrompts.awareness;
+  const buffer = await generateImageBuffer(prompt, "1024x1024");
+  const fileName = `${stage.id}-stock-${uid()}.png`;
+  const filePath = path.join(GENERATED_DIR, fileName);
+  fs.writeFileSync(filePath, buffer);
+
+  trackAIUsage({
+    userId: "admin",
+    userTier: "ADMIN",
+    feature: "funnel_stock_photo",
+    model: "gpt-image-1",
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 1,
+    costUsd: calculateCost("gpt-image-1", 0, 0),
+    requestDuration: 0,
+  }).catch(err => console.error("[AI Cost Tracker] funnel_stock error:", err));
+
+  return {
+    id: uid(),
+    type: "stock_photo",
+    stage: stage.id,
+    platform: "all",
+    fileUrl: `/api/admin/marketing/funnel/file/${fileName}`,
+    fileName,
+    mimeType: "image/png",
+    title: `${stage.shortLabel} Stock Photo`,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -567,6 +740,12 @@ export async function generateFunnelAssets(options: GenerateOptions): Promise<Ge
         case "ad_image":
           asset = await generateAdImage(stage, options.topic, imageStyle);
           break;
+        case "video_reel":
+          asset = await generateVideoReel(stage, options.topic, imageStyle, platform, options.videoDuration || 6);
+          break;
+        case "stock_photo":
+          asset = await generateStockPhoto(stage, options.topic);
+          break;
         case "social_post":
           asset = await generateSocialPostAsset(stage, options.topic, platform);
           break;
@@ -622,6 +801,7 @@ export async function generateSingleAsset(options: {
   topic?: string;
   platform?: string;
   imageStyle?: string;
+  videoDuration?: number;
 }): Promise<GeneratedAsset> {
   const result = await generateFunnelAssets({
     stage: options.stage,
@@ -629,6 +809,7 @@ export async function generateSingleAsset(options: {
     topic: options.topic,
     platform: options.platform,
     imageStyle: options.imageStyle,
+    videoDuration: options.videoDuration,
   });
   if (result.length === 0) throw new Error("No asset generated");
   return result[0];

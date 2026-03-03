@@ -6989,11 +6989,11 @@ Guidelines:
 
   app.post("/api/admin/marketing/funnel/generate-single", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const { type, stage, topic, platform, imageStyle } = req.body;
+      const { type, stage, topic, platform, imageStyle, videoDuration } = req.body;
       if (!type || !stage) {
         return res.status(400).json({ message: "type and stage are required" });
       }
-      const asset = await generateSingleAsset({ type, stage, topic, platform, imageStyle });
+      const asset = await generateSingleAsset({ type, stage, topic, platform, imageStyle, videoDuration });
       res.json(asset);
     } catch (error) {
       console.error("Funnel generate-single error:", error);
@@ -7018,6 +7018,8 @@ Guidelines:
 
       const folderMap: Record<string, string> = {
         ad_image: "images",
+        video_reel: "videos",
+        stock_photo: "stock",
         landing_page: "pages",
         social_post: "text",
         reel_script: "text",
@@ -7031,6 +7033,8 @@ Guidelines:
 
       const extMap: Record<string, string> = {
         ad_image: ".png",
+        video_reel: ".mp4",
+        stock_photo: ".png",
         landing_page: ".html",
         social_post: ".txt",
         reel_script: ".txt",

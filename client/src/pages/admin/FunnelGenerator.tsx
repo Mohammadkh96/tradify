@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Megaphone, BookOpen, Target, Zap, Heart,
   Image, MessageSquare, Video, FileText, Globe,
-  GitCompare, Quote, TrendingUp, Mail,
+  GitCompare, Quote, TrendingUp, Mail, Film, Camera,
   Download, Copy, Trash2, RefreshCw, Loader2,
   CheckCircle, Package, ExternalLink, ChevronDown, ChevronUp
 } from "lucide-react";
@@ -62,6 +62,8 @@ const stageColors: Record<string, { bg: string; border: string; text: string; gl
 
 const assetTypeIcons: Record<string, any> = {
   ad_image: Image,
+  video_reel: Film,
+  stock_photo: Camera,
   social_post: MessageSquare,
   reel_script: Video,
   ad_copy: FileText,
@@ -75,6 +77,8 @@ const assetTypeIcons: Record<string, any> = {
 
 const typeColors: Record<string, string> = {
   ad_image: "bg-rose-500/20 text-rose-400 border-rose-500/30",
+  video_reel: "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30",
+  stock_photo: "bg-sky-500/20 text-sky-400 border-sky-500/30",
   social_post: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   reel_script: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   ad_copy: "bg-amber-500/20 text-amber-400 border-amber-500/30",
@@ -105,6 +109,7 @@ export default function FunnelGenerator() {
   const [selectedPlatform, setSelectedPlatform] = useState("instagram");
   const [imageStyle, setImageStyle] = useState("Professional");
   const [results, setResults] = useState<GeneratedAsset[]>([]);
+  const [videoDuration, setVideoDuration] = useState(6);
   const [showControls, setShowControls] = useState(true);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
@@ -113,7 +118,7 @@ export default function FunnelGenerator() {
   });
 
   const generateMutation = useMutation({
-    mutationFn: async (data: { stage: string; assetTypes: string[]; topic?: string; platform?: string; imageStyle?: string }) => {
+    mutationFn: async (data: { stage: string; assetTypes: string[]; topic?: string; platform?: string; imageStyle?: string; videoDuration?: number }) => {
       const res = await apiRequest("POST", "/api/admin/marketing/funnel/generate", data);
       return res.json();
     },
@@ -127,7 +132,7 @@ export default function FunnelGenerator() {
   });
 
   const regenerateMutation = useMutation({
-    mutationFn: async (data: { type: string; stage: string; topic?: string; platform?: string; imageStyle?: string }) => {
+    mutationFn: async (data: { type: string; stage: string; topic?: string; platform?: string; imageStyle?: string; videoDuration?: number }) => {
       const res = await apiRequest("POST", "/api/admin/marketing/funnel/generate-single", data);
       return res.json();
     },
@@ -141,7 +146,8 @@ export default function FunnelGenerator() {
   });
 
   const currentStage = stages?.find(s => s.id === selectedStage);
-  const hasImageAssets = selectedAssets.some(a => a.includes("image"));
+  const hasImageAssets = selectedAssets.some(a => a.includes("image") || a === "stock_photo");
+  const hasVideoAssets = selectedAssets.includes("video_reel");
 
   function handleStageSelect(stageId: string) {
     setSelectedStage(stageId);
@@ -171,6 +177,7 @@ export default function FunnelGenerator() {
       topic: topic || undefined,
       platform: selectedPlatform,
       imageStyle,
+      videoDuration: hasVideoAssets ? videoDuration : undefined,
     });
   }
 
@@ -388,6 +395,31 @@ export default function FunnelGenerator() {
                   </div>
                 </div>
               )}
+
+              {hasVideoAssets && (
+                <div>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">
+                    Video Duration
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[4, 6, 8].map(dur => (
+                      <Button
+                        key={dur}
+                        variant={videoDuration === dur ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setVideoDuration(dur)}
+                        className={`text-xs ${videoDuration === dur ? "bg-emerald-600" : ""}`}
+                        data-testid={`button-duration-${dur}`}
+                      >
+                        {dur}s
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Video is generated from AI key-frames stitched with smooth transitions
+                  </p>
+                </div>
+              )}
             </CardContent>
           )}
         </Card>
@@ -470,6 +502,7 @@ export default function FunnelGenerator() {
                     topic: topic || undefined,
                     platform: selectedPlatform,
                     imageStyle,
+                    videoDuration: asset.type === "video_reel" ? videoDuration : undefined,
                   })
                 }
                 isRegenerating={regenerateMutation.isPending}
@@ -537,7 +570,7 @@ function AssetCard({
             <a href={asset.fileUrl} download={asset.fileName} className="inline-flex">
               <Button variant="outline" size="sm" className="text-xs" data-testid={`button-download-${asset.type}`}>
                 <Download size={12} className="mr-1" />
-                Download {asset.mimeType === "image/png" ? "PNG" : asset.mimeType === "text/html" ? "HTML" : "File"}
+                Download {asset.mimeType === "image/png" ? "PNG" : asset.mimeType === "video/mp4" ? "MP4" : asset.mimeType === "text/html" ? "HTML" : "File"}
               </Button>
             </a>
           )}
@@ -594,15 +627,38 @@ function AssetPreview({
   expanded: boolean;
   onToggleExpand: () => void;
 }) {
-  if (asset.type === "ad_image" && asset.fileUrl) {
+  if ((asset.type === "ad_image" || asset.type === "stock_photo") && asset.fileUrl) {
     return (
       <div className="rounded-lg overflow-hidden border border-border/50 bg-black/20">
         <img
           src={asset.fileUrl}
-          alt={asset.title || "Ad Creative"}
+          alt={asset.title || "Image"}
           className="w-full h-auto max-h-80 object-contain"
           data-testid={`img-preview-${asset.id}`}
         />
+      </div>
+    );
+  }
+
+  if (asset.type === "video_reel" && asset.fileUrl) {
+    return (
+      <div className="rounded-lg overflow-hidden border border-border/50 bg-black/20">
+        <video
+          src={asset.fileUrl}
+          controls
+          className="w-full max-h-96"
+          data-testid={`video-preview-${asset.id}`}
+        >
+          Your browser does not support the video tag.
+        </video>
+        {asset.metadata && (
+          <div className="flex gap-2 p-2 text-[10px] text-muted-foreground">
+            <span>{asset.metadata.duration}s</span>
+            <span>{asset.metadata.aspectRatio}</span>
+            <span>{asset.metadata.format}</span>
+            <span>{asset.metadata.frameCount} frames</span>
+          </div>
+        )}
       </div>
     );
   }
