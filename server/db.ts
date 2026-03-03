@@ -218,9 +218,15 @@ export async function ensureSchemaColumns() {
         brand_tone TEXT,
         colors JSONB DEFAULT '[]',
         key_messages JSONB DEFAULT '[]',
+        content_pipeline JSONB,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
+    `);
+
+    // Add content_pipeline column if missing (for existing tables)
+    await pool.query(`
+      ALTER TABLE marketing_brand_settings ADD COLUMN IF NOT EXISTS content_pipeline JSONB;
     `);
 
     // Create marketing_content table
@@ -240,8 +246,16 @@ export async function ensureSchemaColumns() {
         status TEXT NOT NULL DEFAULT 'draft',
         performance_rating INTEGER,
         ai_model_used TEXT,
+        scheduled_date TIMESTAMP,
+        repurposed_from INTEGER,
         created_at TIMESTAMP DEFAULT NOW()
       );
+    `);
+
+    // Add scheduled_date and repurposed_from columns if missing (for existing tables)
+    await pool.query(`
+      ALTER TABLE marketing_content ADD COLUMN IF NOT EXISTS scheduled_date TIMESTAMP;
+      ALTER TABLE marketing_content ADD COLUMN IF NOT EXISTS repurposed_from INTEGER;
     `);
 
     // Create marketing_campaigns table
