@@ -114,24 +114,41 @@ function isWithinDateRangeUTC(
 }
 
 /**
- * Central helper: Fetch ALL MT5 trades across ALL accounts for a user.
+ * Central helper: Fetch MT5 trades for the user's ACTIVE account only.
  * Uses direct SQL with DISTINCT ON to deduplicate by ticket (keeping latest record).
  * Returns trades with camelCase field names matching the Drizzle schema shape.
  * This is the ONLY function analytics endpoints should use for MT5 history.
- * Account switching only affects live metrics display, NOT historical trade data.
  */
 async function getAllMT5Trades(userId: string): Promise<any[]> {
-  const result = await pool.query(
-    `SELECT DISTINCT ON (mt5_account_id, ticket) 
-            id, ticket, user_id, symbol, direction, volume, 
-            entry_price, exit_price, sl, tp, open_time, close_time, 
-            gross_pl, commission, swap, net_pl, duration, notes, tags, 
-            mt5_account_id, mood, mistake_category
-     FROM mt5_history 
-     WHERE user_id = $1 
-     ORDER BY mt5_account_id, ticket, id DESC`,
-    [userId]
-  );
+  const activeAccount = await storage.getActiveMT5Account(userId);
+  const accountFilter = activeAccount ? activeAccount.accountNumber : null;
+
+  let result;
+  if (accountFilter) {
+    result = await pool.query(
+      `SELECT DISTINCT ON (ticket) 
+              id, ticket, user_id, symbol, direction, volume, 
+              entry_price, exit_price, sl, tp, open_time, close_time, 
+              gross_pl, commission, swap, net_pl, duration, notes, tags, 
+              mt5_account_id, mood, mistake_category
+       FROM mt5_history 
+       WHERE user_id = $1 AND mt5_account_id = $2
+       ORDER BY ticket, id DESC`,
+      [userId, accountFilter]
+    );
+  } else {
+    result = await pool.query(
+      `SELECT DISTINCT ON (mt5_account_id, ticket) 
+              id, ticket, user_id, symbol, direction, volume, 
+              entry_price, exit_price, sl, tp, open_time, close_time, 
+              gross_pl, commission, swap, net_pl, duration, notes, tags, 
+              mt5_account_id, mood, mistake_category
+       FROM mt5_history 
+       WHERE user_id = $1 
+       ORDER BY mt5_account_id, ticket, id DESC`,
+      [userId]
+    );
+  }
   const trades = result.rows.map(r => ({
     id: r.id,
     ticket: r.ticket,

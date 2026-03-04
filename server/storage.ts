@@ -1015,10 +1015,15 @@ export class DatabaseStorage implements IStorage {
     // First, check if account already exists
     const existing = await this.getMT5Account(account.userId, account.accountNumber);
     if (existing) {
-      // Update last sync time
       await db.update(mt5Accounts)
-        .set({ lastSyncAt: new Date() })
+        .set({ lastSyncAt: new Date(), isActive: true })
         .where(and(eq(mt5Accounts.userId, account.userId), eq(mt5Accounts.accountNumber, account.accountNumber)));
+      await db.update(mt5Accounts)
+        .set({ isActive: false })
+        .where(and(
+          eq(mt5Accounts.userId, account.userId),
+          sql`${mt5Accounts.accountNumber} != ${account.accountNumber}`
+        ));
       return existing;
     }
     

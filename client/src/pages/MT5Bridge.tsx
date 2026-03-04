@@ -216,7 +216,7 @@ class TradifyConnector:
         except Exception:
             pass
 
-        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_x_close)
 
         self.is_syncing = False
         self.sync_thread = None
@@ -359,6 +359,13 @@ class TradifyConnector:
             self.log_frame.pack(fill=tk.BOTH, expand=True)
             self.log_toggle_btn.configure(text="▼ ACTIVITY LOG")
             self.log_visible = True
+
+    def _on_x_close(self):
+        if self.is_syncing:
+            self.root.iconify()
+            self._log("Minimized to taskbar — sync continues running.", "info")
+        else:
+            self._on_close()
 
     def _log(self, message, tag="info"):
         ts = datetime.now().strftime("%H:%M:%S")
