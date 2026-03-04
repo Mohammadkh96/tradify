@@ -96,8 +96,8 @@ export default function MT5Bridge() {
   const pythonCode = `#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TRADIFY MT5 CONNECTOR v4.1
-Professional GUI connector - double-click to run (.pyw = no console window)
+TRADIFY MT5 CONNECTOR v5.0
+Professional desktop connector — double-click .pyw to run (no console)
 Requires: Python 3.8+, MetaTrader 5 terminal running
 """
 
@@ -105,14 +105,20 @@ import subprocess
 import sys
 import time
 import threading
-import base64
-import io
+import os
 
 def install_packages():
-    packages = ['MetaTrader5', 'requests']
-    for pkg in packages:
+    required = ['MetaTrader5', 'requests', 'pystray', 'Pillow']
+    for pkg in required:
+        mod = pkg.replace('-', '_').lower()
+        if pkg == 'MetaTrader5':
+            mod = 'MetaTrader5'
+        elif pkg == 'Pillow':
+            mod = 'PIL'
+        elif pkg == 'pystray':
+            mod = 'pystray'
         try:
-            __import__(pkg.replace('-', '_').lower() if pkg != 'MetaTrader5' else 'MetaTrader5')
+            __import__(mod)
         except ImportError:
             subprocess.check_call([sys.executable, '-m', 'pip', 'install', pkg, '--quiet'])
 
@@ -137,22 +143,36 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
+HAS_TRAY = False
+try:
+    import pystray
+    from PIL import Image, ImageDraw, ImageFont, ImageTk
+    HAS_TRAY = True
+except ImportError:
+    pass
 
-def create_tradify_icon():
+
+def make_icon_image(size=64):
     try:
-        from PIL import Image, ImageDraw, ImageFont
-        img = Image.new('RGBA', (64, 64), (15, 17, 23, 255))
+        from PIL import Image, ImageDraw
+        img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
-        draw.rounded_rectangle([4, 4, 60, 60], radius=12, fill=(16, 185, 129, 255))
+        draw.rounded_rectangle([0, 0, size-1, size-1], radius=size//5, fill=(16, 185, 129, 255))
         try:
-            font = ImageFont.truetype("segoeui.ttf", 32)
+            from PIL import ImageFont
+            font = ImageFont.truetype("segoeui.ttf", size//2)
         except Exception:
-            font = ImageFont.load_default()
-        draw.text((32, 32), "T", fill=(255, 255, 255, 255), font=font, anchor="mm")
-        buffer = io.BytesIO()
-        img.save(buffer, format='PNG')
-        buffer.seek(0)
-        return buffer
+            try:
+                from PIL import ImageFont
+                font = ImageFont.truetype("arial.ttf", size//2)
+            except Exception:
+                font = None
+        if font:
+            draw.text((size//2, size//2), "T", fill=(255, 255, 255, 255), font=font, anchor="mm")
+        else:
+            cx, cy, fs = size//2, size//2, size//3
+            draw.text((cx - fs//3, cy - fs//2), "T", fill=(255, 255, 255, 255))
+        return img
     except Exception:
         return None
 
@@ -162,158 +182,226 @@ SYNC_TOKEN = "${userRoleData?.syncToken || ""}"
 API_URL = "${window.location.protocol}//${window.location.host}/api/mt5/sync"
 SYNC_INTERVAL = 10
 
+BG = "#0c0e14"
+BG2 = "#141720"
+BG3 = "#1a1e2c"
+BORDER = "#252a3a"
+FG = "#e2e8f0"
+FG2 = "#94a3b8"
+FG3 = "#64748b"
+GREEN = "#10b981"
+RED = "#ef4444"
+AMBER = "#f59e0b"
+BLUE = "#3b82f6"
+
 
 class TradifyConnector:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Tradify MT5 Connector")
-        self.root.geometry("520x640")
-        self.root.minsize(480, 580)
-        self.root.configure(bg="#0f1117")
+        self.root.title("Tradify")
+        self.root.geometry("440x560")
+        self.root.minsize(400, 480)
+        self.root.configure(bg=BG)
         self.root.resizable(True, True)
 
-        self._icon_ref = None
         try:
-            icon_buf = create_tradify_icon()
-            if icon_buf:
-                self._icon_ref = tk.PhotoImage(data=base64.b64encode(icon_buf.read()).decode())
-                self.root.iconphoto(True, self._icon_ref)
+            icon_img = make_icon_image(64)
+            if icon_img:
+                self._icon_photo = ImageTk.PhotoImage(icon_img)
+                self.root.iconphoto(True, self._icon_photo)
         except Exception:
             pass
 
-        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_minimize_to_tray)
 
         self.is_syncing = False
         self.sync_thread = None
         self.sync_count = 0
         self.mt5_connected = False
         self.account_info_data = None
+        self.tray_icon = None
+        self.log_visible = False
 
         self._build_ui()
         self._check_prerequisites()
+        self._setup_tray()
 
     def _build_ui(self):
-        main = tk.Frame(self.root, bg="#0f1117")
-        main.pack(fill=tk.BOTH, expand=True, padx=16, pady=12)
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
 
-        header = tk.Frame(main, bg="#0f1117")
-        header.pack(fill=tk.X, pady=(0, 12))
+        outer = tk.Frame(self.root, bg=BG)
+        outer.pack(fill=tk.BOTH, expand=True)
+        outer.columnconfigure(0, weight=1)
 
-        tk.Label(
-            header, text="TRADIFY", font=("Segoe UI", 20, "bold"),
-            fg="#10b981", bg="#0f1117"
-        ).pack(side=tk.LEFT)
-        tk.Label(
-            header, text="MT5 CONNECTOR", font=("Segoe UI", 20, "bold"),
-            fg="#e2e8f0", bg="#0f1117"
-        ).pack(side=tk.LEFT, padx=(6, 0))
+        header_bar = tk.Frame(outer, bg=BG2, height=56)
+        header_bar.pack(fill=tk.X)
+        header_bar.pack_propagate(False)
 
-        tk.Label(
-            header, text="v4.1", font=("Segoe UI", 9),
-            fg="#64748b", bg="#0f1117"
-        ).pack(side=tk.LEFT, padx=(8, 0), pady=(6, 0))
+        hpad = tk.Frame(header_bar, bg=BG2)
+        hpad.pack(fill=tk.BOTH, expand=True, padx=16)
 
-        sep = tk.Frame(main, bg="#1e293b", height=1)
-        sep.pack(fill=tk.X, pady=(0, 12))
+        logo_canvas = tk.Canvas(hpad, width=32, height=32, bg=BG2, highlightthickness=0)
+        logo_canvas.pack(side=tk.LEFT, pady=12)
+        logo_canvas.create_rectangle(2, 2, 30, 30, fill=GREEN, outline="", width=0)
+        logo_canvas.create_text(16, 16, text="T", fill="white", font=("Segoe UI", 14, "bold"))
 
-        status_frame = tk.Frame(main, bg="#1a1d27", highlightbackground="#2d3548", highlightthickness=1)
-        status_frame.pack(fill=tk.X, pady=(0, 10))
+        tk.Label(hpad, text="Tradify", font=("Segoe UI", 15, "bold"), fg=FG, bg=BG2).pack(side=tk.LEFT, padx=(8, 0))
+        tk.Label(hpad, text="MT5 Connector", font=("Segoe UI", 10), fg=FG3, bg=BG2).pack(side=tk.LEFT, padx=(6, 0), pady=(2, 0))
 
-        status_inner = tk.Frame(status_frame, bg="#1a1d27")
-        status_inner.pack(fill=tk.X, padx=14, pady=10)
+        self.header_status_dot = tk.Canvas(hpad, width=10, height=10, bg=BG2, highlightthickness=0)
+        self.header_status_dot.pack(side=tk.RIGHT, padx=(0, 4), pady=0)
+        self.header_status_dot.create_oval(1, 1, 9, 9, fill=RED, outline="")
 
-        tk.Label(
-            status_inner, text="CONNECTION STATUS",
-            font=("Segoe UI", 8, "bold"), fg="#64748b", bg="#1a1d27"
-        ).pack(anchor=tk.W)
+        self.header_status_text = tk.Label(hpad, text="Offline", font=("Segoe UI", 9), fg=FG3, bg=BG2)
+        self.header_status_text.pack(side=tk.RIGHT, padx=(0, 4))
 
-        status_row = tk.Frame(status_inner, bg="#1a1d27")
-        status_row.pack(fill=tk.X, pady=(4, 0))
+        content = tk.Frame(outer, bg=BG)
+        content.pack(fill=tk.BOTH, expand=True, padx=16, pady=12)
 
-        self.status_dot = tk.Canvas(status_row, width=12, height=12, bg="#1a1d27", highlightthickness=0)
-        self.status_dot.pack(side=tk.LEFT, padx=(0, 8))
-        self.status_dot.create_oval(2, 2, 10, 10, fill="#ef4444", outline="")
+        status_card = tk.Frame(content, bg=BG2)
+        status_card.pack(fill=tk.X, pady=(0, 8))
 
-        self.status_label = tk.Label(
-            status_row, text="DISCONNECTED",
-            font=("Segoe UI", 12, "bold"), fg="#ef4444", bg="#1a1d27"
-        )
+        status_top = tk.Frame(status_card, bg=BG2)
+        status_top.pack(fill=tk.X, padx=16, pady=(14, 0))
+
+        self.status_dot = tk.Canvas(status_top, width=14, height=14, bg=BG2, highlightthickness=0)
+        self.status_dot.pack(side=tk.LEFT, padx=(0, 10))
+        self.status_dot.create_oval(2, 2, 12, 12, fill=RED, outline="")
+
+        self.status_label = tk.Label(status_top, text="DISCONNECTED", font=("Segoe UI", 13, "bold"), fg=RED, bg=BG2)
         self.status_label.pack(side=tk.LEFT)
 
-        self.last_sync_label = tk.Label(
-            status_inner, text="Last sync: --",
-            font=("Segoe UI", 9), fg="#64748b", bg="#1a1d27"
-        )
-        self.last_sync_label.pack(anchor=tk.W, pady=(4, 0))
+        self.last_sync_label = tk.Label(status_top, text="", font=("Segoe UI", 8), fg=FG3, bg=BG2)
+        self.last_sync_label.pack(side=tk.RIGHT)
 
-        acct_frame = tk.Frame(main, bg="#1a1d27", highlightbackground="#2d3548", highlightthickness=1)
-        acct_frame.pack(fill=tk.X, pady=(0, 10))
+        sep1 = tk.Frame(status_card, bg=BORDER, height=1)
+        sep1.pack(fill=tk.X, padx=16, pady=(10, 0))
 
-        acct_inner = tk.Frame(acct_frame, bg="#1a1d27")
-        acct_inner.pack(fill=tk.X, padx=14, pady=10)
-
-        tk.Label(
-            acct_inner, text="ACCOUNT INFORMATION",
-            font=("Segoe UI", 8, "bold"), fg="#64748b", bg="#1a1d27"
-        ).pack(anchor=tk.W, pady=(0, 6))
-
-        metrics_grid = tk.Frame(acct_inner, bg="#1a1d27")
-        metrics_grid.pack(fill=tk.X)
+        metrics_frame = tk.Frame(status_card, bg=BG2)
+        metrics_frame.pack(fill=tk.X, padx=16, pady=(10, 14))
+        metrics_frame.columnconfigure(0, weight=1)
+        metrics_frame.columnconfigure(1, weight=1)
+        metrics_frame.columnconfigure(2, weight=1)
+        metrics_frame.columnconfigure(3, weight=1)
 
         self.acct_labels = {}
-        fields = [
-            ("Account", "--"), ("Broker", "--"),
-            ("Balance", "--"), ("Equity", "--"),
-        ]
-        for i, (label, default) in enumerate(fields):
-            r, c = divmod(i, 2)
-            cell = tk.Frame(metrics_grid, bg="#1a1d27")
-            cell.grid(row=r, column=c, sticky="w", padx=(0, 20), pady=2)
-            tk.Label(cell, text=f"{label}:", font=("Segoe UI", 9), fg="#64748b", bg="#1a1d27").pack(side=tk.LEFT)
-            val = tk.Label(cell, text=default, font=("Segoe UI", 9, "bold"), fg="#e2e8f0", bg="#1a1d27")
-            val.pack(side=tk.LEFT, padx=(4, 0))
+        fields = [("Account", 0), ("Broker", 1), ("Balance", 2), ("Equity", 3)]
+        for label, col in fields:
+            cell = tk.Frame(metrics_frame, bg=BG2)
+            cell.grid(row=0, column=col, sticky="nsew", padx=(0, 4 if col < 3 else 0))
+            tk.Label(cell, text=label.upper(), font=("Segoe UI", 7, "bold"), fg=FG3, bg=BG2).pack(anchor=tk.W)
+            val = tk.Label(cell, text="--", font=("Segoe UI", 9, "bold"), fg=FG, bg=BG2, anchor=tk.W)
+            val.pack(anchor=tk.W, pady=(2, 0))
             self.acct_labels[label.lower()] = val
 
-        log_header = tk.Frame(main, bg="#0f1117")
-        log_header.pack(fill=tk.X, pady=(4, 4))
+        self.sync_count_label = tk.Label(content, text="", font=("Segoe UI", 8), fg=FG3, bg=BG)
 
-        tk.Label(
-            log_header, text="SYNC LOG",
-            font=("Segoe UI", 8, "bold"), fg="#64748b", bg="#0f1117"
-        ).pack(side=tk.LEFT)
-
-        self.sync_count_label = tk.Label(
-            log_header, text="0 syncs",
-            font=("Segoe UI", 8), fg="#64748b", bg="#0f1117"
-        )
-        self.sync_count_label.pack(side=tk.RIGHT)
-
-        self.log_area = scrolledtext.ScrolledText(
-            main, height=10, font=("Consolas", 9),
-            bg="#0d0f14", fg="#94a3b8", insertbackground="#e2e8f0",
-            selectbackground="#1e40af", relief=tk.FLAT,
-            borderwidth=0, wrap=tk.WORD
-        )
-        self.log_area.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-        self.log_area.configure(state=tk.DISABLED)
-
-        self.log_area.tag_config("success", foreground="#10b981")
-        self.log_area.tag_config("error", foreground="#ef4444")
-        self.log_area.tag_config("warn", foreground="#f59e0b")
-        self.log_area.tag_config("info", foreground="#64748b")
-
-        btn_frame = tk.Frame(main, bg="#0f1117")
-        btn_frame.pack(fill=tk.X)
+        btn_row = tk.Frame(content, bg=BG)
+        btn_row.pack(fill=tk.X, pady=(4, 0))
 
         self.toggle_btn = tk.Button(
-            btn_frame, text="START SYNC",
-            font=("Segoe UI", 11, "bold"),
-            fg="#ffffff", bg="#10b981",
-            activebackground="#059669", activeforeground="#ffffff",
-            relief=tk.FLAT, cursor="hand2",
-            command=self._toggle_sync, padx=20, pady=8
+            btn_row, text="▶  START SYNC", font=("Segoe UI", 10, "bold"),
+            fg="#ffffff", bg=GREEN, activebackground="#059669", activeforeground="#ffffff",
+            relief=tk.FLAT, cursor="hand2", command=self._toggle_sync, pady=10
         )
-        self.toggle_btn.pack(fill=tk.X)
+        self.toggle_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        log_section = tk.Frame(content, bg=BG)
+        log_section.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
+
+        log_header = tk.Frame(log_section, bg=BG)
+        log_header.pack(fill=tk.X, pady=(0, 4))
+
+        self.log_toggle_btn = tk.Button(
+            log_header, text="▼ ACTIVITY LOG", font=("Segoe UI", 8, "bold"),
+            fg=FG3, bg=BG, activebackground=BG, activeforeground=FG2,
+            relief=tk.FLAT, cursor="hand2", command=self._toggle_log, bd=0
+        )
+        self.log_toggle_btn.pack(side=tk.LEFT)
+
+        self.sync_count_label = tk.Label(log_header, text="0 syncs", font=("Segoe UI", 8), fg=FG3, bg=BG)
+        self.sync_count_label.pack(side=tk.RIGHT)
+
+        self.log_frame = tk.Frame(log_section, bg=BG)
+
+        self.log_area = scrolledtext.ScrolledText(
+            self.log_frame, height=8, font=("Consolas", 8),
+            bg=BG3, fg=FG2, insertbackground=FG,
+            selectbackground="#1e40af", relief=tk.FLAT,
+            borderwidth=0, wrap=tk.WORD, padx=8, pady=6
+        )
+        self.log_area.pack(fill=tk.BOTH, expand=True)
+        self.log_area.configure(state=tk.DISABLED)
+
+        self.log_area.tag_config("success", foreground=GREEN)
+        self.log_area.tag_config("error", foreground=RED)
+        self.log_area.tag_config("warn", foreground=AMBER)
+        self.log_area.tag_config("info", foreground=FG3)
+
+        self.log_frame.pack(fill=tk.BOTH, expand=True)
+        self.log_visible = True
+
+        footer = tk.Frame(outer, bg=BG2, height=28)
+        footer.pack(fill=tk.X, side=tk.BOTTOM)
+        footer.pack_propagate(False)
+
+        tk.Label(footer, text="Tradify MT5 Connector v5.0", font=("Segoe UI", 7), fg=FG3, bg=BG2).pack(side=tk.LEFT, padx=12)
+        self.footer_status = tk.Label(footer, text="Ready", font=("Segoe UI", 7), fg=FG3, bg=BG2)
+        self.footer_status.pack(side=tk.RIGHT, padx=12)
+
+    def _toggle_log(self):
+        if self.log_visible:
+            self.log_frame.pack_forget()
+            self.log_toggle_btn.configure(text="▶ ACTIVITY LOG")
+            self.log_visible = False
+        else:
+            self.log_frame.pack(fill=tk.BOTH, expand=True)
+            self.log_toggle_btn.configure(text="▼ ACTIVITY LOG")
+            self.log_visible = True
+
+    def _setup_tray(self):
+        if not HAS_TRAY:
+            self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+            return
+        try:
+            icon_img = make_icon_image(64)
+            if not icon_img:
+                self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+                return
+            menu = pystray.Menu(
+                pystray.MenuItem("Show Tradify", self._show_from_tray, default=True),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Quit", self._quit_from_tray)
+            )
+            self.tray_icon = pystray.Icon("tradify", icon_img, "Tradify MT5 Connector", menu)
+            tray_thread = threading.Thread(target=self.tray_icon.run, daemon=True)
+            tray_thread.start()
+        except Exception:
+            self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _on_minimize_to_tray(self):
+        if self.tray_icon:
+            self.root.withdraw()
+            if self.is_syncing:
+                try:
+                    self.tray_icon.notify("Tradify is still syncing in the background.", "Tradify MT5")
+                except Exception:
+                    pass
+        else:
+            self._on_close()
+
+    def _show_from_tray(self, icon=None, item=None):
+        self.root.after(0, self.root.deiconify)
+        self.root.after(10, self.root.lift)
+
+    def _quit_from_tray(self, icon=None, item=None):
+        if self.tray_icon:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
+        self.root.after(0, self._on_close)
 
     def _log(self, message, tag="info"):
         ts = datetime.now().strftime("%H:%M:%S")
@@ -326,21 +414,32 @@ class TradifyConnector:
             self.log_area.delete('1.0', f'{lines - 200}.0')
 
         self.log_area.configure(state=tk.DISABLED)
+        try:
+            self.footer_status.configure(text=message[:60])
+        except Exception:
+            pass
 
     def _set_status(self, connected, text=None):
         self.mt5_connected = connected
-        color = "#10b981" if connected else "#ef4444"
+        color = GREEN if connected else RED
         label = text or ("CONNECTED" if connected else "DISCONNECTED")
         self.status_dot.delete("all")
-        self.status_dot.create_oval(2, 2, 10, 10, fill=color, outline="")
+        self.status_dot.create_oval(2, 2, 12, 12, fill=color, outline="")
         self.status_label.configure(text=label, fg=color)
+        h_color = GREEN if connected else RED
+        h_text = "Online" if connected else "Offline"
+        if text and text not in ("CONNECTED", "DISCONNECTED"):
+            h_text = text
+        self.header_status_dot.delete("all")
+        self.header_status_dot.create_oval(1, 1, 9, 9, fill=h_color, outline="")
+        self.header_status_text.configure(text=h_text, fg=h_color if connected else FG3)
 
     def _update_account(self, info):
         if info:
             self.acct_labels["account"].configure(text=str(info.login))
-            self.acct_labels["broker"].configure(text=str(info.company)[:30])
-            self.acct_labels["balance"].configure(text=f"{info.balance:.2f} {info.currency}")
-            self.acct_labels["equity"].configure(text=f"{info.equity:.2f} {info.currency}")
+            self.acct_labels["broker"].configure(text=str(info.company)[:20])
+            self.acct_labels["balance"].configure(text=f"{info.balance:,.2f}")
+            self.acct_labels["equity"].configure(text=f"{info.equity:,.2f}")
         else:
             for key in self.acct_labels:
                 self.acct_labels[key].configure(text="--")
@@ -361,19 +460,17 @@ class TradifyConnector:
             self.toggle_btn.configure(state=tk.DISABLED, bg="#374151")
             return
 
-        self._log(f"User: {USER_ID}", "info")
-        self._log(f"Token: {SYNC_TOKEN[:8]}...", "info")
-        self._log("Ready. Click START SYNC to begin.", "success")
+        self._log("Ready to connect.", "success")
 
     def _toggle_sync(self):
         if self.is_syncing:
             self.is_syncing = False
-            self.toggle_btn.configure(text="START SYNC", bg="#10b981", activebackground="#059669")
+            self.toggle_btn.configure(text="▶  START SYNC", bg=GREEN, activebackground="#059669")
             self._log("Sync stopped by user.", "warn")
             self._set_status(False, "STOPPED")
         else:
             self.is_syncing = True
-            self.toggle_btn.configure(text="STOP SYNC", bg="#ef4444", activebackground="#dc2626")
+            self.toggle_btn.configure(text="■  STOP SYNC", bg=RED, activebackground="#dc2626")
             self._log("Starting sync...", "info")
             self.sync_thread = threading.Thread(target=self._sync_loop, daemon=True)
             self.sync_thread.start()
@@ -388,7 +485,7 @@ class TradifyConnector:
             self.root.after(0, lambda: self._set_status(False))
             self.is_syncing = False
             self.root.after(0, lambda: self.toggle_btn.configure(
-                text="START SYNC", bg="#10b981", activebackground="#059669"
+                text="▶  START SYNC", bg=GREEN, activebackground="#059669"
             ))
             return
 
@@ -399,7 +496,7 @@ class TradifyConnector:
             mt5.shutdown()
             self.is_syncing = False
             self.root.after(0, lambda: self.toggle_btn.configure(
-                text="START SYNC", bg="#10b981", activebackground="#059669"
+                text="▶  START SYNC", bg=GREEN, activebackground="#059669"
             ))
             return
 
@@ -522,7 +619,6 @@ class TradifyConnector:
     def _on_close(self):
         if self.is_syncing:
             self.is_syncing = False
-            self._log("Shutting down...", "warn")
             if self.sync_thread and self.sync_thread.is_alive():
                 self.sync_thread.join(timeout=3)
         try:
@@ -530,11 +626,16 @@ class TradifyConnector:
                 mt5.shutdown()
         except Exception:
             pass
+        if self.tray_icon:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
         try:
             self.root.destroy()
         except Exception:
             pass
-        sys.exit(0)
+        os._exit(0)
 
     def run(self):
         self.root.mainloop()
