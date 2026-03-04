@@ -145,101 +145,16 @@ except ImportError:
     REQUESTS_AVAILABLE = False
 
 
-def make_tradify_icon_ppm(size=48):
-    pixels = []
-    r_corner = size // 5
-    g_r, g_g, g_b = 16, 185, 129
-    dark_r, dark_g, dark_b = 15, 25, 30
-
-    arrow_points = [
-        (0.12, 0.62), (0.28, 0.50), (0.42, 0.65), (0.72, 0.28),
-        (0.72, 0.38), (0.80, 0.28), (0.88, 0.28),
-        (0.78, 0.28), (0.78, 0.20),
-        (0.72, 0.28),
-    ]
-
-    def in_rounded_rect(x, y, s, r):
-        if r <= 0:
-            return True
-        if x < r and y < r:
-            return (x - r) ** 2 + (y - r) ** 2 <= r * r
-        if x >= s - r and y < r:
-            return (x - (s - r - 1)) ** 2 + (y - r) ** 2 <= r * r
-        if x < r and y >= s - r:
-            return (x - r) ** 2 + (y - (s - r - 1)) ** 2 <= r * r
-        if x >= s - r and y >= s - r:
-            return (x - (s - r - 1)) ** 2 + (y - (s - r - 1)) ** 2 <= r * r
-        return True
-
-    def point_to_line_dist(px, py, x1, y1, x2, y2):
-        dx, dy = x2 - x1, y2 - y1
-        if dx == 0 and dy == 0:
-            return ((px - x1) ** 2 + (py - y1) ** 2) ** 0.5
-        t = max(0, min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
-        proj_x, proj_y = x1 + t * dx, y1 + t * dy
-        return ((px - proj_x) ** 2 + (py - proj_y) ** 2) ** 0.5
-
-    segments = [
-        (0.12, 0.62, 0.30, 0.48),
-        (0.30, 0.48, 0.42, 0.63),
-        (0.42, 0.63, 0.72, 0.28),
-    ]
-    arrow_tip = (0.78, 0.22)
-    arrow_head_pts = [
-        (0.72, 0.28, 0.88, 0.22),
-        (0.72, 0.28, 0.78, 0.12),
-        (0.78, 0.12, 0.88, 0.22),
-    ]
-    thickness = size * 0.09
-
-    for y in range(size):
-        for x in range(size):
-            if not in_rounded_rect(x, y, size, r_corner):
-                pixels.extend([0, 0, 0])
-                continue
-
-            nx, ny = x / size, y / size
-            on_arrow = False
-
-            for sx1, sy1, sx2, sy2 in segments:
-                d = point_to_line_dist(x, y, sx1 * size, sy1 * size, sx2 * size, sy2 * size)
-                if d <= thickness:
-                    on_arrow = True
-                    break
-
-            if not on_arrow:
-                ax, ay = arrow_tip
-                tri = arrow_head_pts
-                x1, y1 = tri[0][0] * size, tri[0][1] * size
-                x2, y2 = tri[1][2] * size, tri[1][3] * size
-                x3, y3 = tri[2][2] * size, tri[2][3] * size
-
-                def sign(px1, py1, px2, py2, px3, py3):
-                    return (px1 - px3) * (py2 - py3) - (px2 - px3) * (py1 - py3)
-
-                d1 = sign(x, y, x1, y1, x2, y2)
-                d2 = sign(x, y, x2, y2, x3, y3)
-                d3 = sign(x, y, x3, y3, x1, y1)
-                has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0)
-                has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
-                if not (has_neg and has_pos):
-                    on_arrow = True
-
-            if on_arrow:
-                pixels.extend([dark_r, dark_g, dark_b])
-            else:
-                pixels.extend([g_r, g_g, g_b])
-
-    header = f"P6\\n{size} {size}\\n255\\n"
-    return header.encode('ascii') + bytes(pixels)
+TRADIFY_ICON_B64 = "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAAA40lEQVR4nO3YOw6DMAwGYG7QrCy9a4/F7TpUom0w9g9+IhJ5i2x/isyAp2n/tOXlFEzTOMQZXLyGM2VpaFOupjelU3pTumOADoHCmj3m5ycEUyTlN9araBCpYV7LF8Rrbg86oXEEiZpQEKKJA2k09iBQowWBtfQaCIQXVVIgEF7aRCOA8AZWGg6ET4N+bmQQPp62GhqUqCFAuZoelK75A1XQfEFFNFVBeANvDfpChwZfo4FA2xw/jQzaS3PSNP6z5zM9NC3mz3WAbEHl1jEDdEVQEVOtVXWtZT6tyTJxmjAc0/QNf08ZmDBpTsMAAAAASUVORK5CYII="
 
 
 def create_icon_file():
     try:
-        ppm = make_tradify_icon_ppm(48)
-        tmp = os.path.join(tempfile.gettempdir(), "tradify_icon.ppm")
+        import base64
+        png_data = base64.b64decode(TRADIFY_ICON_B64)
+        tmp = os.path.join(tempfile.gettempdir(), "tradify_icon.png")
         with open(tmp, 'wb') as f:
-            f.write(ppm)
+            f.write(png_data)
         return tmp
     except Exception:
         return None
@@ -247,32 +162,12 @@ def create_icon_file():
 
 def create_windows_ico():
     try:
-        size = 32
-        ppm_data = make_tradify_icon_ppm(size)
-        header_end = ppm_data.index(b'\\n255\\n') + 5
-        raw_rgb = ppm_data[header_end:]
-
-        rgba = bytearray()
-        for i in range(0, len(raw_rgb), 3):
-            r, g, b = raw_rgb[i], raw_rgb[i+1], raw_rgb[i+2]
-            a = 0 if (r == 0 and g == 0 and b == 0) else 255
-            rgba.extend([b, g, r, a])
-
-        flipped = bytearray()
-        row_size = size * 4
-        for row in range(size - 1, -1, -1):
-            flipped.extend(rgba[row * row_size:(row + 1) * row_size])
-
-        import struct
-        bmp_size = 40 + len(flipped)
-        bmp_header = struct.pack('<IiiHHIIiiII',
-            40, size, size * 2, 1, 32, 0, len(flipped), 0, 0, 0, 0)
-
+        import base64, struct
+        png_data = base64.b64decode(TRADIFY_ICON_B64)
         ico_header = struct.pack('<HHH', 0, 1, 1)
-        ico_entry = struct.pack('<BBBBHHII',
-            size, size, 0, 0, 1, 32, bmp_size, 22)
-
-        ico_data = ico_header + ico_entry + bmp_header + bytes(flipped)
+        png_len = len(png_data)
+        ico_entry = struct.pack('<BBBBHHII', 48, 48, 0, 0, 1, 32, png_len, 22)
+        ico_data = ico_header + ico_entry + png_data
         tmp = os.path.join(tempfile.gettempdir(), "tradify_icon.ico")
         with open(tmp, 'wb') as f:
             f.write(ico_data)
@@ -358,16 +253,17 @@ class TradifyConnector:
 
         self._icon_photo = None
         try:
-            ico_path = create_windows_ico()
-            if ico_path and os.name == 'nt':
-                self.root.iconbitmap(ico_path)
-        except Exception:
-            pass
-        try:
             icon_path = create_icon_file()
             if icon_path:
                 self._icon_photo = tk.PhotoImage(file=icon_path)
                 self.root.iconphoto(True, self._icon_photo)
+        except Exception:
+            pass
+        try:
+            if os.name == 'nt':
+                ico_path = create_windows_ico()
+                if ico_path:
+                    self.root.iconbitmap(default=ico_path)
         except Exception:
             pass
 
