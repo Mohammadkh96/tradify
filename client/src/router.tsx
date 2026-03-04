@@ -23,6 +23,7 @@ import Profile from "@/pages/Profile";
 import Checkout from "@/pages/Checkout";
 import TradersHub from "@/pages/TradersHub";
 import PropFirmTracker from "@/pages/PropFirmTracker";
+import Achievements from "@/pages/Achievements";
 import Auth from "@/pages/Auth";
 import EarlyAccess from "@/pages/EarlyAccess";
 import { MainLayout } from "@/components/MainLayout";
@@ -443,6 +444,7 @@ function AppRoutes() {
       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
       <Route path="/traders-hub" element={<ProtectedRoute><TradersHub /></ProtectedRoute>} />
       <Route path="/prop-firm" element={<ProtectedRoute><PropFirmTracker /></ProtectedRoute>} />
+      <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<AdminRoute><Navigate to="/admin/overview" replace /></AdminRoute>} />

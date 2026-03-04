@@ -795,6 +795,14 @@ ${blogPosts.map(p => `  <url>
       const input = api.trades.create.input.parse(req.body);
       const trade = await storage.createTrade({ ...input, userId: req.session.userId! });
       res.status(201).json(trade);
+      try {
+        const { checkAchievements, updateStreak } = await import("./achievements");
+        const uid = req.session.userId!;
+        updateStreak(uid, "journaling").catch(() => {});
+        updateStreak(uid, "trading").catch(() => {});
+        checkAchievements(uid).catch(() => {});
+      } catch {}
+
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -913,6 +921,12 @@ ${blogPosts.map(p => `  <url>
       }
 
       res.status(201).json({ imported: imported.length });
+      try {
+        const { checkAchievements, updateStreak } = await import("./achievements");
+        updateStreak(userId, "journaling").catch(() => {});
+        updateStreak(userId, "trading").catch(() => {});
+        checkAchievements(userId).catch(() => {});
+      } catch {}
     } catch (error) {
       console.error("Error importing trades:", error);
       res.status(500).json({ message: "Failed to import trades" });
@@ -1102,6 +1116,12 @@ ${blogPosts.map(p => `  <url>
           targetUserId: userId,
           details: { accountNumber: accountId, count: historyData.length, timestamp: new Date() }
         });
+
+        try {
+          const { checkAchievements, updateStreak } = await import("./achievements");
+          updateStreak(userId, "trading").catch(() => {});
+          checkAchievements(userId).catch(() => {});
+        } catch {}
       }
 
       // 5. Auto-sync prop firm challenges linked to this MT5 account
@@ -7227,6 +7247,47 @@ Guidelines:
         res.status(500).json({ message: "Failed to export bundle" });
       }
     }
+  });
+
+  // ========== ACHIEVEMENTS ROUTES ==========
+  const { getUserAchievements: getAchievements, getUserStreaks: getStreaks, checkAchievements: checkAch, checkMt5Achievement, checkEducationAchievement, ACHIEVEMENTS, getLevelFromXp } = await import("./achievements");
+
+  app.get("/api/achievements", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const achievements = await getAchievements(userId);
+      const streakData = await getStreaks(userId);
+      res.json({ achievements, ...streakData });
+    } catch (error) {
+      console.error("Get achievements error:", error);
+      res.status(500).json({ message: "Failed to get achievements" });
+    }
+  });
+
+  app.get("/api/achievements/streaks", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const streakData = await getStreaks(userId);
+      res.json(streakData);
+    } catch (error) {
+      console.error("Get streaks error:", error);
+      res.status(500).json({ message: "Failed to get streaks" });
+    }
+  });
+
+  app.post("/api/achievements/check", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const result = await checkAch(userId);
+      res.json(result);
+    } catch (error) {
+      console.error("Check achievements error:", error);
+      res.status(500).json({ message: "Failed to check achievements" });
+    }
+  });
+
+  app.get("/api/achievements/definitions", async (_req, res) => {
+    res.json(ACHIEVEMENTS);
   });
 
   return httpServer;

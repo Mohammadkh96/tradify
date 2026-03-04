@@ -350,6 +350,30 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Create user_achievements table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_achievements (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        achievement_key TEXT NOT NULL,
+        unlocked_at TIMESTAMP DEFAULT NOW(),
+        progress INTEGER DEFAULT 0
+      );
+    `);
+
+    // Create user_streaks table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_streaks (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        streak_type TEXT NOT NULL,
+        current_streak INTEGER DEFAULT 0,
+        longest_streak INTEGER DEFAULT 0,
+        last_activity_date TIMESTAMP,
+        total_xp INTEGER DEFAULT 0
+      );
+    `);
+
     console.log('Schema columns verified');
   } catch (error) {
     console.error('Schema migration error:', error);

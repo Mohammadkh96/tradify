@@ -46,9 +46,10 @@ import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianG
 import { Link } from "react-router-dom";
 import { format, startOfWeek, startOfMonth, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useMemo, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Progress } from "@/components/ui/progress";
 
 // Type for MT5 Account
 type MT5Account = {
@@ -62,6 +63,133 @@ type MT5Account = {
   isActive: boolean;
   createdAt: string;
 };
+
+import { Trophy as TrophyIcon, Flame, Star, Award as AwardIcon, ArrowRight } from "lucide-react";
+
+function AchievementsWidget() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery<any>({
+    queryKey: ["/api/achievements"],
+    staleTime: 30000,
+  });
+
+  const { data: defData } = useQuery<any[]>({
+    queryKey: ["/api/achievements/definitions"],
+    staleTime: 300000,
+  });
+
+  const [checked, setChecked] = useState(false);
+  useEffect(() => {
+    if (!defData || checked) return;
+    setChecked(true);
+    apiRequest("POST", "/api/achievements/check")
+      .then((res) => res.json())
+      .then((result) => {
+        if (result?.newlyUnlocked?.length > 0) {
+          qc.invalidateQueries({ queryKey: ["/api/achievements"] });
+          for (const key of result.newlyUnlocked) {
+            const def = defData.find((d: any) => d.key === key);
+            if (def) {
+              toast({
+                title: "Achievement Unlocked!",
+                description: `${def.name} — +${def.xpReward} XP`,
+              });
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }, [defData, checked]);
+
+  if (isLoading) {
+    return (
+      <div className="mb-8 bg-card border border-border rounded-2xl p-6 animate-pulse">
+        <div className="h-6 w-48 bg-muted rounded mb-4" />
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-muted rounded-lg" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const level = data?.level;
+  const streaks = data?.streaks || {};
+  const achievements = data?.achievements || [];
+  const recentUnlocked = achievements
+    .filter((a: any) => a.unlocked)
+    .sort((a: any, b: any) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime())
+    .slice(0, 3);
+  const totalXp = data?.totalXp || 0;
+  const journalStreak = streaks.journaling?.currentStreak || 0;
+  const tradingStreak = streaks.trading?.currentStreak || 0;
+  const unlockedCount = achievements.filter((a: any) => a.unlocked).length;
+
+  return (
+    <div className="mb-8 bg-card border border-border rounded-2xl p-6 shadow-2xl" data-testid="dashboard-achievements-widget">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <TrophyIcon size={18} className="text-emerald-500" />
+          Achievements
+        </h3>
+        <Link to="/achievements" className="text-xs font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-1 hover:text-emerald-400" data-testid="link-view-all-achievements">
+          View All <ArrowRight size={12} />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
+        <div className="bg-background/50 rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-2 mb-1">
+            <Star size={14} className="text-emerald-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Level {level?.level || 1}</span>
+          </div>
+          <p className="text-sm font-bold text-foreground">{level?.name || "Beginner"}</p>
+          <Progress value={level?.progress || 0} className="h-1 mt-2" />
+          <p className="text-[10px] text-muted-foreground mt-1">{totalXp} XP</p>
+        </div>
+
+        <div className="bg-background/50 rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-2 mb-1">
+            <Flame size={14} className={journalStreak > 0 ? "text-orange-500" : "text-muted-foreground"} />
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Journal Streak</span>
+          </div>
+          <p className="text-xl font-black text-foreground">{journalStreak}<span className="text-xs text-muted-foreground ml-1">days</span></p>
+        </div>
+
+        <div className="bg-background/50 rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp size={14} className={tradingStreak > 0 ? "text-emerald-500" : "text-muted-foreground"} />
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trading Streak</span>
+          </div>
+          <p className="text-xl font-black text-foreground">{tradingStreak}<span className="text-xs text-muted-foreground ml-1">days</span></p>
+        </div>
+
+        <div className="bg-background/50 rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-2 mb-1">
+            <AwardIcon size={14} className="text-yellow-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Badges</span>
+          </div>
+          <p className="text-xl font-black text-foreground">{unlockedCount}<span className="text-xs text-muted-foreground ml-1">/ {achievements.length}</span></p>
+        </div>
+      </div>
+
+      {recentUnlocked.length > 0 && (
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Recent Achievements</p>
+          <div className="flex gap-3 flex-wrap">
+            {recentUnlocked.map((ach: any) => (
+              <div key={ach.key} className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-2">
+                <AwardIcon size={14} className="text-emerald-500" />
+                <span className="text-xs font-bold text-foreground">{ach.name}</span>
+                <span className="text-[9px] text-muted-foreground">+{ach.xpReward} XP</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [dateFilter, setDateFilter] = useState<string>("all");
@@ -1087,6 +1215,10 @@ export default function Dashboard() {
           <div className="mb-8">
             <MonthlyReviewReport userId={userId} />
           </div>
+        )}
+
+        {dashConfig.widgets.achievements !== false && (
+          <AchievementsWidget />
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

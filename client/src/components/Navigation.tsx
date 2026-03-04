@@ -17,7 +17,9 @@ import {
   Plus,
   ClipboardCheck,
   Sparkles,
-  Trophy
+  Trophy,
+  Award,
+  Flame
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -35,6 +37,7 @@ const navItems = [
   { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
   { href: "/traders-hub", label: "Traders Hub", icon: Users },
   { href: "/knowledge-base", label: "Education", icon: BookOpen },
+  { href: "/achievements", label: "Achievements", icon: Award },
   { href: "/pricing", label: "Plans", icon: CreditCard },
   { href: "/profile", label: "Profile", icon: User },
 ];
@@ -72,6 +75,13 @@ export function Navigation() {
 
   const isConnected = mt5?.status === "CONNECTED";
   const { tier, isPaid } = usePlan();
+
+  const { data: streakData } = useQuery<any>({
+    queryKey: ["/api/achievements/streaks"],
+    staleTime: 60000,
+    enabled: !!userId,
+  });
+  const journalStreak = streakData?.streaks?.journaling?.currentStreak || 0;
 
   const handleLogout = async () => {
     try {
@@ -244,6 +254,12 @@ export function Navigation() {
               {isConnected ? "CONNECTED" : "OFFLINE"}
             </p>
           </div>
+          {journalStreak > 0 && (
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 flex flex-col items-center justify-center gap-0.5" data-testid="sidebar-streak">
+              <Flame size={14} className="text-orange-500" />
+              <span className="text-[9px] font-bold text-orange-500">{journalStreak}</span>
+            </div>
+          )}
           <button
             onClick={() => window.dispatchEvent(new CustomEvent(TOUR_RESTART_EVENT))}
             data-testid="button-restart-tour"

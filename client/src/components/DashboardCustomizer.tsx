@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Settings2, LayoutDashboard, Activity, BarChart3, Clock, Brain, ShieldCheck, FileText, GripVertical, HeartPulse } from "lucide-react";
+import { Settings2, LayoutDashboard, Activity, BarChart3, Clock, Brain, ShieldCheck, FileText, GripVertical, HeartPulse, Trophy } from "lucide-react";
 
 export type DashboardConfig = {
   widgets: {
@@ -18,6 +18,7 @@ export type DashboardConfig = {
     strategyDeviation: boolean;
     monthlyReview: boolean;
     psychologyReview: boolean;
+    achievements: boolean;
   };
 };
 
@@ -33,6 +34,7 @@ export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
     strategyDeviation: true,
     monthlyReview: true,
     psychologyReview: true,
+    achievements: true,
   },
 };
 
@@ -47,6 +49,7 @@ const WIDGET_INFO = [
   { key: "strategyDeviation", label: "Strategy Deviation", icon: ShieldCheck, description: "Rule compliance tracking" },
   { key: "monthlyReview", label: "Monthly Review", icon: FileText, description: "AI-generated monthly report" },
   { key: "psychologyReview", label: "Psychology Review", icon: HeartPulse, description: "AI mood & mistake analysis" },
+  { key: "achievements", label: "Achievements", icon: Trophy, description: "Badges, streaks & XP progress" },
 ] as const;
 
 export function useDashboardConfig() {

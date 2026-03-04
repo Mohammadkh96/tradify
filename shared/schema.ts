@@ -701,3 +701,29 @@ export const costBudgetAlerts = pgTable("cost_budget_alerts", {
 export const insertCostBudgetAlertSchema = createInsertSchema(costBudgetAlerts).omit({ id: true, createdAt: true });
 export type CostBudgetAlert = typeof costBudgetAlerts.$inferSelect;
 export type InsertCostBudgetAlert = z.infer<typeof insertCostBudgetAlertSchema>;
+
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  achievementKey: text("achievement_key").notNull(),
+  unlockedAt: timestamp("unlocked_at").defaultNow(),
+  progress: integer("progress").default(0),
+});
+
+export const insertUserAchievementSchema = createInsertSchema(userAchievements).omit({ id: true, unlockedAt: true });
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
+
+export const userStreaks = pgTable("user_streaks", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  streakType: text("streak_type").notNull(),
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  lastActivityDate: timestamp("last_activity_date"),
+  totalXp: integer("total_xp").default(0),
+});
+
+export const insertUserStreakSchema = createInsertSchema(userStreaks).omit({ id: true });
+export type UserStreak = typeof userStreaks.$inferSelect;
+export type InsertUserStreak = z.infer<typeof insertUserStreakSchema>;

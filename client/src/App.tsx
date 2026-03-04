@@ -21,6 +21,7 @@ import MT5Bridge from "@/pages/MT5Bridge";
 import Profile from "@/pages/Profile";
 import Checkout from "@/pages/Checkout";
 import TradersHub from "@/pages/TradersHub";
+import Achievements from "@/pages/Achievements";
 import Auth from "@/pages/Auth";
 import EarlyAccess from "@/pages/EarlyAccess";
 import { MainLayout } from "@/components/MainLayout";
@@ -376,6 +377,9 @@ function Router() {
       </Route>
       <Route path="/traders-hub">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <TradersHub />}
+      </Route>
+      <Route path="/achievements">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Achievements />}
       </Route>
       
       {/* Admin Routes */}
