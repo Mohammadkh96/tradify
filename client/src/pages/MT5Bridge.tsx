@@ -96,7 +96,7 @@ export default function MT5Bridge() {
   const pythonCode = `#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TRADIFY MT5 CONNECTOR v5.1
+TRADIFY MT5 CONNECTOR v5.2
 Professional desktop connector — double-click .pyw to run (no console)
 Requires: Python 3.8+, MetaTrader 5 terminal running
 """
@@ -106,18 +106,39 @@ import sys
 import time
 import threading
 import os
-import struct
 import tempfile
 
-def install_packages():
-    for pkg in ['MetaTrader5', 'requests']:
+INSTALL_LOG = []
+
+def pip_install(pkg):
+    try:
+        result = subprocess.run(
+            [sys.executable, '-m', 'pip', 'install', pkg, '--quiet'],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode != 0:
+            INSTALL_LOG.append(f"Failed to install {pkg}: {result.stderr.strip()}")
+            return False
+        return True
+    except Exception as e:
+        INSTALL_LOG.append(f"Failed to install {pkg}: {e}")
+        return False
+
+def ensure_packages():
+    core = {'MetaTrader5': 'MetaTrader5', 'requests': 'requests'}
+    for mod, pkg in core.items():
         try:
-            __import__(pkg if pkg == 'MetaTrader5' else pkg.lower())
+            __import__(mod)
         except ImportError:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', pkg, '--quiet'])
+            pip_install(pkg)
+    for mod, pkg in [('PIL', 'Pillow'), ('pystray', 'pystray')]:
+        try:
+            __import__(mod)
+        except ImportError:
+            pip_install(pkg)
 
 try:
-    install_packages()
+    ensure_packages()
 except Exception:
     pass
 
@@ -137,44 +158,59 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
+HAS_TRAY = False
+try:
+    import pystray
+    from PIL import Image, ImageDraw, ImageTk
+    HAS_TRAY = True
+except ImportError:
+    pass
 
-def make_tradify_icon_ppm(size=32):
+
+def make_pil_icon(size=64):
+    if not HAS_TRAY:
+        return None
+    try:
+        img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.rounded_rectangle([0, 0, size-1, size-1], radius=size//5, fill=(16, 185, 129, 255))
+        bar_y = int(size * 0.25)
+        bar_h = max(3, int(size * 0.13))
+        bar_l = int(size * 0.2)
+        bar_r = int(size * 0.8)
+        stem_l = int(size * 0.4)
+        stem_r = int(size * 0.6)
+        stem_b = int(size * 0.78)
+        draw.rectangle([bar_l, bar_y, bar_r, bar_y + bar_h], fill=(255, 255, 255, 255))
+        draw.rectangle([stem_l, bar_y + bar_h, stem_r, stem_b], fill=(255, 255, 255, 255))
+        return img
+    except Exception:
+        return None
+
+
+def make_ppm_icon(size=32):
     g_r, g_g, g_b = 16, 185, 129
     bg_r, bg_g, bg_b = 12, 14, 20
     w_r, w_g, w_b = 255, 255, 255
     pixels = []
-    t_patterns = {}
-    t_top = int(size * 0.22)
-    t_bottom = int(size * 0.78)
-    t_bar_h = max(2, int(size * 0.14))
-    t_left = int(size * 0.22)
-    t_right = int(size * 0.78)
-    stem_left = int(size * 0.42)
-    stem_right = int(size * 0.58)
     margin = max(2, int(size * 0.1))
+    t_top = int(size * 0.22)
+    t_bar_h = max(2, int(size * 0.14))
+    t_left, t_right = int(size * 0.22), int(size * 0.78)
+    stem_l, stem_r = int(size * 0.42), int(size * 0.58)
+    t_bottom = int(size * 0.78)
     for y in range(size):
         for x in range(size):
             if x < margin or x >= size - margin or y < margin or y >= size - margin:
                 pixels.extend([bg_r, bg_g, bg_b])
             elif t_top <= y < t_top + t_bar_h and t_left <= x < t_right:
                 pixels.extend([w_r, w_g, w_b])
-            elif t_top + t_bar_h <= y < t_bottom and stem_left <= x < stem_right:
+            elif t_top + t_bar_h <= y < t_bottom and stem_l <= x < stem_r:
                 pixels.extend([w_r, w_g, w_b])
             else:
                 pixels.extend([g_r, g_g, g_b])
     header = f"P6\\n{size} {size}\\n255\\n"
     return header.encode('ascii') + bytes(pixels)
-
-
-def create_icon_file():
-    try:
-        ppm = make_tradify_icon_ppm(32)
-        tmp = os.path.join(tempfile.gettempdir(), "tradify_icon.ppm")
-        with open(tmp, 'wb') as f:
-            f.write(ppm)
-        return tmp
-    except Exception:
-        return None
 
 
 USER_ID = "${currentUserId || ""}"
@@ -204,13 +240,24 @@ class TradifyConnector:
         self.root.resizable(True, True)
 
         self._icon_photo = None
-        try:
-            icon_path = create_icon_file()
-            if icon_path:
-                self._icon_photo = tk.PhotoImage(file=icon_path)
+        if HAS_TRAY:
+            try:
+                pil_img = make_pil_icon(64)
+                if pil_img:
+                    self._icon_photo = ImageTk.PhotoImage(pil_img)
+                    self.root.iconphoto(True, self._icon_photo)
+            except Exception:
+                pass
+        if not self._icon_photo:
+            try:
+                ppm = make_ppm_icon(32)
+                tmp = os.path.join(tempfile.gettempdir(), "tradify_icon.ppm")
+                with open(tmp, 'wb') as f:
+                    f.write(ppm)
+                self._icon_photo = tk.PhotoImage(file=tmp)
                 self.root.iconphoto(True, self._icon_photo)
-        except Exception:
-            pass
+            except Exception:
+                pass
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_x_close)
 
@@ -220,10 +267,13 @@ class TradifyConnector:
         self.mt5_connected = False
         self.account_info_data = None
         self.log_visible = True
-        self._minimized = False
+        self.tray_icon = None
 
         self._build_ui()
         self._check_prerequisites()
+
+        if HAS_TRAY:
+            self._setup_tray()
 
     def _build_ui(self):
         outer = tk.Frame(self.root, bg=BG)
@@ -335,7 +385,7 @@ class TradifyConnector:
         footer.pack(fill=tk.X, side=tk.BOTTOM)
         footer.pack_propagate(False)
 
-        tk.Label(footer, text="v5.1", font=("Segoe UI", 7), fg=FG3, bg=BG2).pack(side=tk.LEFT, padx=12)
+        tk.Label(footer, text="v5.2", font=("Segoe UI", 7), fg=FG3, bg=BG2).pack(side=tk.LEFT, padx=12)
 
         quit_btn = tk.Button(
             footer, text="✕ DISCONNECT & QUIT", font=("Segoe UI", 7, "bold"),
@@ -357,10 +407,41 @@ class TradifyConnector:
             self.log_toggle_btn.configure(text="▼ ACTIVITY LOG")
             self.log_visible = True
 
+    def _setup_tray(self):
+        try:
+            tray_img = make_pil_icon(64)
+            if not tray_img:
+                return
+            menu = pystray.Menu(
+                pystray.MenuItem("Show Tradify", self._show_from_tray, default=True),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Disconnect && Quit", self._quit_from_tray)
+            )
+            self.tray_icon = pystray.Icon("tradify", tray_img, "Tradify MT5 Connector", menu)
+            t = threading.Thread(target=self.tray_icon.run, daemon=True)
+            t.start()
+            self._log("System tray icon active — closing window keeps sync running.", "info")
+        except Exception as e:
+            INSTALL_LOG.append(f"Tray setup failed: {e}")
+            self.tray_icon = None
+
+    def _show_from_tray(self, icon=None, item=None):
+        self.root.after(0, self.root.deiconify)
+        self.root.after(10, self.root.lift)
+        self.root.after(20, self.root.focus_force)
+
+    def _quit_from_tray(self, icon=None, item=None):
+        self.root.after(0, self._on_close)
+
     def _on_x_close(self):
-        if self.is_syncing:
+        if self.is_syncing and self.tray_icon:
+            self.root.withdraw()
+            try:
+                self.tray_icon.notify("Tradify is syncing in the background.\\nRight-click tray icon to quit.", "Tradify")
+            except Exception:
+                pass
+        elif self.is_syncing:
             self.root.iconify()
-            self._minimized = True
         else:
             self._on_close()
 
@@ -405,6 +486,9 @@ class TradifyConnector:
                 self.acct_labels[key].configure(text="--")
 
     def _check_prerequisites(self):
+        for msg in INSTALL_LOG:
+            self._log(msg, "warn")
+
         if not USER_ID or not SYNC_TOKEN:
             self._log("Missing credentials! Download a fresh connector from Tradify.", "error")
             self.toggle_btn.configure(state=tk.DISABLED, bg="#374151")
@@ -419,6 +503,10 @@ class TradifyConnector:
             self._log("Requests package not found. Install: pip install requests", "error")
             self.toggle_btn.configure(state=tk.DISABLED, bg="#374151")
             return
+
+        if not HAS_TRAY:
+            self._log("Tray packages missing. X will minimize (not hide to tray).", "warn")
+            self._log("To fix: pip install pystray Pillow", "info")
 
         self._log("Ready to connect.", "success")
 
@@ -579,7 +667,6 @@ class TradifyConnector:
     def _on_close(self):
         if self.is_syncing:
             self.is_syncing = False
-            self._log("Disconnecting...", "warn")
             if self.sync_thread and self.sync_thread.is_alive():
                 self.sync_thread.join(timeout=3)
         try:
@@ -587,6 +674,11 @@ class TradifyConnector:
                 mt5.shutdown()
         except Exception:
             pass
+        if self.tray_icon:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
         try:
             self.root.destroy()
         except Exception:
