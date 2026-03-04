@@ -96,8 +96,8 @@ export default function MT5Bridge() {
   const pythonCode = `#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TRADIFY MT5 CONNECTOR v4.0
-Professional GUI connector - double-click to run
+TRADIFY MT5 CONNECTOR v4.1
+Professional GUI connector - double-click to run (.pyw = no console window)
 Requires: Python 3.8+, MetaTrader 5 terminal running
 """
 
@@ -105,6 +105,8 @@ import subprocess
 import sys
 import time
 import threading
+import base64
+import io
 
 def install_packages():
     packages = ['MetaTrader5', 'requests']
@@ -136,6 +138,25 @@ except ImportError:
     REQUESTS_AVAILABLE = False
 
 
+def create_tradify_icon():
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        img = Image.new('RGBA', (64, 64), (15, 17, 23, 255))
+        draw = ImageDraw.Draw(img)
+        draw.rounded_rectangle([4, 4, 60, 60], radius=12, fill=(16, 185, 129, 255))
+        try:
+            font = ImageFont.truetype("segoeui.ttf", 32)
+        except Exception:
+            font = ImageFont.load_default()
+        draw.text((32, 32), "T", fill=(255, 255, 255, 255), font=font, anchor="mm")
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        return buffer
+    except Exception:
+        return None
+
+
 USER_ID = "${currentUserId || ""}"
 SYNC_TOKEN = "${userRoleData?.syncToken || ""}"
 API_URL = "${window.location.protocol}//${window.location.host}/api/mt5/sync"
@@ -151,10 +172,16 @@ class TradifyConnector:
         self.root.configure(bg="#0f1117")
         self.root.resizable(True, True)
 
+        self._icon_ref = None
         try:
-            self.root.iconbitmap(default="")
+            icon_buf = create_tradify_icon()
+            if icon_buf:
+                self._icon_ref = tk.PhotoImage(data=base64.b64encode(icon_buf.read()).decode())
+                self.root.iconphoto(True, self._icon_ref)
         except Exception:
             pass
+
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self.is_syncing = False
         self.sync_thread = None
@@ -182,7 +209,7 @@ class TradifyConnector:
         ).pack(side=tk.LEFT, padx=(6, 0))
 
         tk.Label(
-            header, text="v4.0", font=("Segoe UI", 9),
+            header, text="v4.1", font=("Segoe UI", 9),
             fg="#64748b", bg="#0f1117"
         ).pack(side=tk.LEFT, padx=(8, 0), pady=(6, 0))
 
@@ -492,6 +519,23 @@ class TradifyConnector:
             pass
         self.root.after(0, lambda: self._set_status(False))
 
+    def _on_close(self):
+        if self.is_syncing:
+            self.is_syncing = False
+            self._log("Shutting down...", "warn")
+            if self.sync_thread and self.sync_thread.is_alive():
+                self.sync_thread.join(timeout=3)
+        try:
+            if MT5_AVAILABLE:
+                mt5.shutdown()
+        except Exception:
+            pass
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
+        sys.exit(0)
+
     def run(self):
         self.root.mainloop()
 
@@ -515,13 +559,13 @@ if __name__ == "__main__":
     const element = document.createElement("a");
     const file = new Blob([pythonCode], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
-    element.download = "tradify_connector.py";
+    element.download = "tradify_connector.pyw";
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
     toast({
       title: "Downloading Connector",
-      description: "tradify_connector.py is being downloaded.",
+      description: "tradify_connector.pyw is being downloaded.",
     });
   };
 
@@ -788,7 +832,7 @@ if __name__ == "__main__":
               </p>
 
               <div className="bg-muted p-3 rounded-md border border-border font-mono text-xs text-foreground" data-testid="text-run-command">
-                python tradify_connector.py
+                Double-click tradify_connector.pyw
               </div>
 
               <div className="space-y-2">
