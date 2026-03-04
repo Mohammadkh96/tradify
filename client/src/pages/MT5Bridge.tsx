@@ -1049,11 +1049,12 @@ if __name__ == "__main__":
               </div>
 
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Open MetaTrader 5, log into your account, then double-click the downloaded file to launch. On first run, a <strong>Tradify desktop shortcut</strong> with the branded icon will be created automatically.
+                Open MetaTrader 5, log into your account, then double-click the downloaded file. On first launch, a <strong className="text-emerald-400">"Tradify MT5 Connector"</strong> shortcut with the branded icon will be created on your Desktop automatically.
               </p>
 
-              <div className="bg-muted p-3 rounded-md border border-border font-mono text-xs text-foreground" data-testid="text-run-command">
-                Double-click tradify_connector.pyw (shortcut created on Desktop)
+              <div className="bg-muted p-3 rounded-md border border-border text-xs space-y-1" data-testid="text-run-command">
+                <div className="font-mono text-foreground">1. Double-click tradify_connector.pyw</div>
+                <div className="font-mono text-emerald-400">2. Use the Desktop shortcut from now on</div>
               </div>
 
               <div className="space-y-2">
