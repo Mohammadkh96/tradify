@@ -281,6 +281,55 @@ def create_windows_ico():
         return None
 
 
+def create_desktop_shortcut():
+    if os.name != 'nt':
+        return False
+    try:
+        script_path = os.path.abspath(sys.argv[0])
+        ico_path = create_windows_ico()
+        if not ico_path:
+            return False
+
+        ico_permanent = os.path.join(os.path.dirname(script_path), "tradify_icon.ico")
+        import shutil
+        shutil.copy2(ico_path, ico_permanent)
+
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+        if not os.path.exists(desktop):
+            desktop = os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
+        if not os.path.exists(desktop):
+            return False
+
+        shortcut_path = os.path.join(desktop, "Tradify MT5 Connector.lnk")
+        if os.path.exists(shortcut_path):
+            return True
+
+        pythonw = os.path.join(os.path.dirname(sys.executable), 'pythonw.exe')
+        if not os.path.exists(pythonw):
+            pythonw = sys.executable
+
+        vbs = os.path.join(tempfile.gettempdir(), "tradify_shortcut.vbs")
+        vbs_content = f'''Set WshShell = WScript.CreateObject("WScript.Shell")
+Set shortcut = WshShell.CreateShortcut("{shortcut_path}")
+shortcut.TargetPath = "{pythonw}"
+shortcut.Arguments = """{script_path}"""
+shortcut.WorkingDirectory = "{os.path.dirname(script_path)}"
+shortcut.IconLocation = "{ico_permanent}"
+shortcut.Description = "Tradify MT5 Connector"
+shortcut.Save
+'''
+        with open(vbs, 'w') as f:
+            f.write(vbs_content)
+        subprocess.run(['wscript', vbs], capture_output=True, timeout=10)
+        try:
+            os.remove(vbs)
+        except Exception:
+            pass
+        return os.path.exists(shortcut_path)
+    except Exception:
+        return False
+
+
 USER_ID = "${currentUserId || ""}"
 SYNC_TOKEN = "${userRoleData?.syncToken || ""}"
 API_URL = "${window.location.protocol}//${window.location.host}/api/mt5/sync"
@@ -333,6 +382,11 @@ class TradifyConnector:
 
         self._build_ui()
         self._check_prerequisites()
+
+        if os.name == 'nt':
+            shortcut_ok = create_desktop_shortcut()
+            if shortcut_ok:
+                self._log("Desktop shortcut created with Tradify icon.", "success")
 
     def _build_ui(self):
         outer = tk.Frame(self.root, bg=BG)
@@ -995,11 +1049,11 @@ if __name__ == "__main__":
               </div>
 
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Open MetaTrader 5, log into your account, then double-click the downloaded file to launch:
+                Open MetaTrader 5, log into your account, then double-click the downloaded file to launch. On first run, a <strong>Tradify desktop shortcut</strong> with the branded icon will be created automatically.
               </p>
 
               <div className="bg-muted p-3 rounded-md border border-border font-mono text-xs text-foreground" data-testid="text-run-command">
-                Double-click tradify_connector.pyw
+                Double-click tradify_connector.pyw (shortcut created on Desktop)
               </div>
 
               <div className="space-y-2">
