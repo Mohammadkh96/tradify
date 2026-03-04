@@ -96,7 +96,7 @@ export default function MT5Bridge() {
   const pythonCode = `#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TRADIFY MT5 CONNECTOR v5.0
+TRADIFY MT5 CONNECTOR v5.1
 Professional desktop connector — double-click .pyw to run (no console)
 Requires: Python 3.8+, MetaTrader 5 terminal running
 """
@@ -106,19 +106,13 @@ import sys
 import time
 import threading
 import os
+import struct
+import tempfile
 
 def install_packages():
-    required = ['MetaTrader5', 'requests', 'pystray', 'Pillow']
-    for pkg in required:
-        mod = pkg.replace('-', '_').lower()
-        if pkg == 'MetaTrader5':
-            mod = 'MetaTrader5'
-        elif pkg == 'Pillow':
-            mod = 'PIL'
-        elif pkg == 'pystray':
-            mod = 'pystray'
+    for pkg in ['MetaTrader5', 'requests']:
         try:
-            __import__(mod)
+            __import__(pkg if pkg == 'MetaTrader5' else pkg.lower())
         except ImportError:
             subprocess.check_call([sys.executable, '-m', 'pip', 'install', pkg, '--quiet'])
 
@@ -143,36 +137,42 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
-HAS_TRAY = False
-try:
-    import pystray
-    from PIL import Image, ImageDraw, ImageFont, ImageTk
-    HAS_TRAY = True
-except ImportError:
-    pass
+
+def make_tradify_icon_ppm(size=32):
+    g_r, g_g, g_b = 16, 185, 129
+    bg_r, bg_g, bg_b = 12, 14, 20
+    w_r, w_g, w_b = 255, 255, 255
+    pixels = []
+    t_patterns = {}
+    t_top = int(size * 0.22)
+    t_bottom = int(size * 0.78)
+    t_bar_h = max(2, int(size * 0.14))
+    t_left = int(size * 0.22)
+    t_right = int(size * 0.78)
+    stem_left = int(size * 0.42)
+    stem_right = int(size * 0.58)
+    margin = max(2, int(size * 0.1))
+    for y in range(size):
+        for x in range(size):
+            if x < margin or x >= size - margin or y < margin or y >= size - margin:
+                pixels.extend([bg_r, bg_g, bg_b])
+            elif t_top <= y < t_top + t_bar_h and t_left <= x < t_right:
+                pixels.extend([w_r, w_g, w_b])
+            elif t_top + t_bar_h <= y < t_bottom and stem_left <= x < stem_right:
+                pixels.extend([w_r, w_g, w_b])
+            else:
+                pixels.extend([g_r, g_g, g_b])
+    header = f"P6\\n{size} {size}\\n255\\n"
+    return header.encode('ascii') + bytes(pixels)
 
 
-def make_icon_image(size=64):
+def create_icon_file():
     try:
-        from PIL import Image, ImageDraw
-        img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-        draw.rounded_rectangle([0, 0, size-1, size-1], radius=size//5, fill=(16, 185, 129, 255))
-        try:
-            from PIL import ImageFont
-            font = ImageFont.truetype("segoeui.ttf", size//2)
-        except Exception:
-            try:
-                from PIL import ImageFont
-                font = ImageFont.truetype("arial.ttf", size//2)
-            except Exception:
-                font = None
-        if font:
-            draw.text((size//2, size//2), "T", fill=(255, 255, 255, 255), font=font, anchor="mm")
-        else:
-            cx, cy, fs = size//2, size//2, size//3
-            draw.text((cx - fs//3, cy - fs//2), "T", fill=(255, 255, 255, 255))
-        return img
+        ppm = make_tradify_icon_ppm(32)
+        tmp = os.path.join(tempfile.gettempdir(), "tradify_icon.ppm")
+        with open(tmp, 'wb') as f:
+            f.write(ppm)
+        return tmp
     except Exception:
         return None
 
@@ -192,141 +192,131 @@ FG3 = "#64748b"
 GREEN = "#10b981"
 RED = "#ef4444"
 AMBER = "#f59e0b"
-BLUE = "#3b82f6"
 
 
 class TradifyConnector:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Tradify")
+        self.root.title("Tradify MT5 Connector")
         self.root.geometry("440x560")
         self.root.minsize(400, 480)
         self.root.configure(bg=BG)
         self.root.resizable(True, True)
 
+        self._icon_photo = None
         try:
-            icon_img = make_icon_image(64)
-            if icon_img:
-                self._icon_photo = ImageTk.PhotoImage(icon_img)
+            icon_path = create_icon_file()
+            if icon_path:
+                self._icon_photo = tk.PhotoImage(file=icon_path)
                 self.root.iconphoto(True, self._icon_photo)
         except Exception:
             pass
 
-        self.root.protocol("WM_DELETE_WINDOW", self._on_minimize_to_tray)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_x_close)
 
         self.is_syncing = False
         self.sync_thread = None
         self.sync_count = 0
         self.mt5_connected = False
         self.account_info_data = None
-        self.tray_icon = None
-        self.log_visible = False
+        self.log_visible = True
+        self._minimized = False
 
         self._build_ui()
         self._check_prerequisites()
-        self._setup_tray()
 
     def _build_ui(self):
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-
         outer = tk.Frame(self.root, bg=BG)
         outer.pack(fill=tk.BOTH, expand=True)
-        outer.columnconfigure(0, weight=1)
 
-        header_bar = tk.Frame(outer, bg=BG2, height=56)
+        header_bar = tk.Frame(outer, bg=BG2, height=52)
         header_bar.pack(fill=tk.X)
         header_bar.pack_propagate(False)
 
         hpad = tk.Frame(header_bar, bg=BG2)
-        hpad.pack(fill=tk.BOTH, expand=True, padx=16)
+        hpad.pack(fill=tk.BOTH, expand=True, padx=14)
 
-        logo_canvas = tk.Canvas(hpad, width=32, height=32, bg=BG2, highlightthickness=0)
+        logo_canvas = tk.Canvas(hpad, width=28, height=28, bg=BG2, highlightthickness=0)
         logo_canvas.pack(side=tk.LEFT, pady=12)
-        logo_canvas.create_rectangle(2, 2, 30, 30, fill=GREEN, outline="", width=0)
-        logo_canvas.create_text(16, 16, text="T", fill="white", font=("Segoe UI", 14, "bold"))
+        logo_canvas.create_rectangle(0, 0, 28, 28, fill=GREEN, outline="")
+        logo_canvas.create_text(14, 14, text="T", fill="white", font=("Segoe UI", 13, "bold"))
 
-        tk.Label(hpad, text="Tradify", font=("Segoe UI", 15, "bold"), fg=FG, bg=BG2).pack(side=tk.LEFT, padx=(8, 0))
-        tk.Label(hpad, text="MT5 Connector", font=("Segoe UI", 10), fg=FG3, bg=BG2).pack(side=tk.LEFT, padx=(6, 0), pady=(2, 0))
+        tk.Label(hpad, text="Tradify", font=("Segoe UI", 14, "bold"), fg=FG, bg=BG2).pack(side=tk.LEFT, padx=(8, 0))
 
-        self.header_status_dot = tk.Canvas(hpad, width=10, height=10, bg=BG2, highlightthickness=0)
-        self.header_status_dot.pack(side=tk.RIGHT, padx=(0, 4), pady=0)
-        self.header_status_dot.create_oval(1, 1, 9, 9, fill=RED, outline="")
+        self.header_status_dot = tk.Canvas(hpad, width=8, height=8, bg=BG2, highlightthickness=0)
+        self.header_status_dot.pack(side=tk.RIGHT, padx=(0, 2))
+        self.header_status_dot.create_oval(0, 0, 8, 8, fill=RED, outline="")
 
-        self.header_status_text = tk.Label(hpad, text="Offline", font=("Segoe UI", 9), fg=FG3, bg=BG2)
+        self.header_status_text = tk.Label(hpad, text="Offline", font=("Segoe UI", 8), fg=FG3, bg=BG2)
         self.header_status_text.pack(side=tk.RIGHT, padx=(0, 4))
 
         content = tk.Frame(outer, bg=BG)
-        content.pack(fill=tk.BOTH, expand=True, padx=16, pady=12)
+        content.pack(fill=tk.BOTH, expand=True, padx=14, pady=10)
 
         status_card = tk.Frame(content, bg=BG2)
         status_card.pack(fill=tk.X, pady=(0, 8))
 
         status_top = tk.Frame(status_card, bg=BG2)
-        status_top.pack(fill=tk.X, padx=16, pady=(14, 0))
+        status_top.pack(fill=tk.X, padx=14, pady=(12, 0))
 
-        self.status_dot = tk.Canvas(status_top, width=14, height=14, bg=BG2, highlightthickness=0)
-        self.status_dot.pack(side=tk.LEFT, padx=(0, 10))
-        self.status_dot.create_oval(2, 2, 12, 12, fill=RED, outline="")
+        self.status_dot = tk.Canvas(status_top, width=12, height=12, bg=BG2, highlightthickness=0)
+        self.status_dot.pack(side=tk.LEFT, padx=(0, 8))
+        self.status_dot.create_oval(1, 1, 11, 11, fill=RED, outline="")
 
-        self.status_label = tk.Label(status_top, text="DISCONNECTED", font=("Segoe UI", 13, "bold"), fg=RED, bg=BG2)
+        self.status_label = tk.Label(status_top, text="DISCONNECTED", font=("Segoe UI", 12, "bold"), fg=RED, bg=BG2)
         self.status_label.pack(side=tk.LEFT)
 
         self.last_sync_label = tk.Label(status_top, text="", font=("Segoe UI", 8), fg=FG3, bg=BG2)
         self.last_sync_label.pack(side=tk.RIGHT)
 
         sep1 = tk.Frame(status_card, bg=BORDER, height=1)
-        sep1.pack(fill=tk.X, padx=16, pady=(10, 0))
+        sep1.pack(fill=tk.X, padx=14, pady=(8, 0))
 
         metrics_frame = tk.Frame(status_card, bg=BG2)
-        metrics_frame.pack(fill=tk.X, padx=16, pady=(10, 14))
-        metrics_frame.columnconfigure(0, weight=1)
-        metrics_frame.columnconfigure(1, weight=1)
-        metrics_frame.columnconfigure(2, weight=1)
-        metrics_frame.columnconfigure(3, weight=1)
+        metrics_frame.pack(fill=tk.X, padx=14, pady=(8, 12))
 
         self.acct_labels = {}
-        fields = [("Account", 0), ("Broker", 1), ("Balance", 2), ("Equity", 3)]
-        for label, col in fields:
+        fields = [("Account", "--"), ("Broker", "--"), ("Balance", "--"), ("Equity", "--")]
+        for i, (label, default) in enumerate(fields):
+            r, c = divmod(i, 2)
             cell = tk.Frame(metrics_frame, bg=BG2)
-            cell.grid(row=0, column=col, sticky="nsew", padx=(0, 4 if col < 3 else 0))
+            cell.grid(row=r, column=c, sticky="w", padx=(0, 24), pady=2)
+            metrics_frame.columnconfigure(c, weight=1)
             tk.Label(cell, text=label.upper(), font=("Segoe UI", 7, "bold"), fg=FG3, bg=BG2).pack(anchor=tk.W)
-            val = tk.Label(cell, text="--", font=("Segoe UI", 9, "bold"), fg=FG, bg=BG2, anchor=tk.W)
-            val.pack(anchor=tk.W, pady=(2, 0))
+            val = tk.Label(cell, text=default, font=("Segoe UI", 9, "bold"), fg=FG, bg=BG2)
+            val.pack(anchor=tk.W, pady=(1, 0))
             self.acct_labels[label.lower()] = val
 
-        self.sync_count_label = tk.Label(content, text="", font=("Segoe UI", 8), fg=FG3, bg=BG)
-
         btn_row = tk.Frame(content, bg=BG)
-        btn_row.pack(fill=tk.X, pady=(4, 0))
+        btn_row.pack(fill=tk.X, pady=(2, 0))
 
         self.toggle_btn = tk.Button(
             btn_row, text="▶  START SYNC", font=("Segoe UI", 10, "bold"),
             fg="#ffffff", bg=GREEN, activebackground="#059669", activeforeground="#ffffff",
-            relief=tk.FLAT, cursor="hand2", command=self._toggle_sync, pady=10
+            relief=tk.FLAT, cursor="hand2", command=self._toggle_sync, pady=9
         )
-        self.toggle_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.toggle_btn.pack(fill=tk.X)
 
         log_section = tk.Frame(content, bg=BG)
         log_section.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
 
         log_header = tk.Frame(log_section, bg=BG)
-        log_header.pack(fill=tk.X, pady=(0, 4))
+        log_header.pack(fill=tk.X, pady=(0, 3))
 
         self.log_toggle_btn = tk.Button(
-            log_header, text="▼ ACTIVITY LOG", font=("Segoe UI", 8, "bold"),
+            log_header, text="▼ ACTIVITY LOG", font=("Segoe UI", 7, "bold"),
             fg=FG3, bg=BG, activebackground=BG, activeforeground=FG2,
             relief=tk.FLAT, cursor="hand2", command=self._toggle_log, bd=0
         )
         self.log_toggle_btn.pack(side=tk.LEFT)
 
-        self.sync_count_label = tk.Label(log_header, text="0 syncs", font=("Segoe UI", 8), fg=FG3, bg=BG)
+        self.sync_count_label = tk.Label(log_header, text="0 syncs", font=("Segoe UI", 7), fg=FG3, bg=BG)
         self.sync_count_label.pack(side=tk.RIGHT)
 
         self.log_frame = tk.Frame(log_section, bg=BG)
 
         self.log_area = scrolledtext.ScrolledText(
-            self.log_frame, height=8, font=("Consolas", 8),
+            self.log_frame, height=7, font=("Consolas", 8),
             bg=BG3, fg=FG2, insertbackground=FG,
             selectbackground="#1e40af", relief=tk.FLAT,
             borderwidth=0, wrap=tk.WORD, padx=8, pady=6
@@ -340,15 +330,22 @@ class TradifyConnector:
         self.log_area.tag_config("info", foreground=FG3)
 
         self.log_frame.pack(fill=tk.BOTH, expand=True)
-        self.log_visible = True
 
-        footer = tk.Frame(outer, bg=BG2, height=28)
+        footer = tk.Frame(outer, bg=BG2, height=32)
         footer.pack(fill=tk.X, side=tk.BOTTOM)
         footer.pack_propagate(False)
 
-        tk.Label(footer, text="Tradify MT5 Connector v5.0", font=("Segoe UI", 7), fg=FG3, bg=BG2).pack(side=tk.LEFT, padx=12)
+        tk.Label(footer, text="v5.1", font=("Segoe UI", 7), fg=FG3, bg=BG2).pack(side=tk.LEFT, padx=12)
+
+        quit_btn = tk.Button(
+            footer, text="✕ DISCONNECT & QUIT", font=("Segoe UI", 7, "bold"),
+            fg="#ef4444", bg=BG2, activebackground=BG2, activeforeground="#dc2626",
+            relief=tk.FLAT, cursor="hand2", command=self._on_close, bd=0
+        )
+        quit_btn.pack(side=tk.RIGHT, padx=12)
+
         self.footer_status = tk.Label(footer, text="Ready", font=("Segoe UI", 7), fg=FG3, bg=BG2)
-        self.footer_status.pack(side=tk.RIGHT, padx=12)
+        self.footer_status.pack(side=tk.RIGHT, padx=(0, 8))
 
     def _toggle_log(self):
         if self.log_visible:
@@ -360,48 +357,12 @@ class TradifyConnector:
             self.log_toggle_btn.configure(text="▼ ACTIVITY LOG")
             self.log_visible = True
 
-    def _setup_tray(self):
-        if not HAS_TRAY:
-            self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-            return
-        try:
-            icon_img = make_icon_image(64)
-            if not icon_img:
-                self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-                return
-            menu = pystray.Menu(
-                pystray.MenuItem("Show Tradify", self._show_from_tray, default=True),
-                pystray.Menu.SEPARATOR,
-                pystray.MenuItem("Quit", self._quit_from_tray)
-            )
-            self.tray_icon = pystray.Icon("tradify", icon_img, "Tradify MT5 Connector", menu)
-            tray_thread = threading.Thread(target=self.tray_icon.run, daemon=True)
-            tray_thread.start()
-        except Exception:
-            self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-
-    def _on_minimize_to_tray(self):
-        if self.tray_icon:
-            self.root.withdraw()
-            if self.is_syncing:
-                try:
-                    self.tray_icon.notify("Tradify is still syncing in the background.", "Tradify MT5")
-                except Exception:
-                    pass
+    def _on_x_close(self):
+        if self.is_syncing:
+            self.root.iconify()
+            self._minimized = True
         else:
             self._on_close()
-
-    def _show_from_tray(self, icon=None, item=None):
-        self.root.after(0, self.root.deiconify)
-        self.root.after(10, self.root.lift)
-
-    def _quit_from_tray(self, icon=None, item=None):
-        if self.tray_icon:
-            try:
-                self.tray_icon.stop()
-            except Exception:
-                pass
-        self.root.after(0, self._on_close)
 
     def _log(self, message, tag="info"):
         ts = datetime.now().strftime("%H:%M:%S")
@@ -415,7 +376,7 @@ class TradifyConnector:
 
         self.log_area.configure(state=tk.DISABLED)
         try:
-            self.footer_status.configure(text=message[:60])
+            self.footer_status.configure(text=message[:50])
         except Exception:
             pass
 
@@ -424,22 +385,21 @@ class TradifyConnector:
         color = GREEN if connected else RED
         label = text or ("CONNECTED" if connected else "DISCONNECTED")
         self.status_dot.delete("all")
-        self.status_dot.create_oval(2, 2, 12, 12, fill=color, outline="")
+        self.status_dot.create_oval(1, 1, 11, 11, fill=color, outline="")
         self.status_label.configure(text=label, fg=color)
-        h_color = GREEN if connected else RED
         h_text = "Online" if connected else "Offline"
         if text and text not in ("CONNECTED", "DISCONNECTED"):
             h_text = text
         self.header_status_dot.delete("all")
-        self.header_status_dot.create_oval(1, 1, 9, 9, fill=h_color, outline="")
-        self.header_status_text.configure(text=h_text, fg=h_color if connected else FG3)
+        self.header_status_dot.create_oval(0, 0, 8, 8, fill=color, outline="")
+        self.header_status_text.configure(text=h_text, fg=color if connected else FG3)
 
     def _update_account(self, info):
         if info:
             self.acct_labels["account"].configure(text=str(info.login))
-            self.acct_labels["broker"].configure(text=str(info.company)[:20])
-            self.acct_labels["balance"].configure(text=f"{info.balance:,.2f}")
-            self.acct_labels["equity"].configure(text=f"{info.equity:,.2f}")
+            self.acct_labels["broker"].configure(text=str(info.company)[:24])
+            self.acct_labels["balance"].configure(text=f"{info.balance:,.2f} {info.currency}")
+            self.acct_labels["equity"].configure(text=f"{info.equity:,.2f} {info.currency}")
         else:
             for key in self.acct_labels:
                 self.acct_labels[key].configure(text="--")
@@ -619,6 +579,7 @@ class TradifyConnector:
     def _on_close(self):
         if self.is_syncing:
             self.is_syncing = False
+            self._log("Disconnecting...", "warn")
             if self.sync_thread and self.sync_thread.is_alive():
                 self.sync_thread.join(timeout=3)
         try:
@@ -626,11 +587,6 @@ class TradifyConnector:
                 mt5.shutdown()
         except Exception:
             pass
-        if self.tray_icon:
-            try:
-                self.tray_icon.stop()
-            except Exception:
-                pass
         try:
             self.root.destroy()
         except Exception:
