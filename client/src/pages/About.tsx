@@ -59,18 +59,18 @@ export default function About() {
 
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-8">
-            <Heart size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500" data-testid="text-about-badge">Our Story</span>
+            <Lightbulb size={14} className="text-emerald-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500" data-testid="text-about-badge">Why We Exist</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]" data-testid="text-about-heading">
-            Built by traders.<br />
-            <span className="text-emerald-500">For traders.</span>
+            Discipline is the<br />
+            <span className="text-emerald-500">edge.</span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8" data-testid="text-about-subheading">
-            TradifyApp exists because we believe every trader deserves access to professional-grade
-            analytics and discipline tools — without the noise, the hype, or the false promises.
+            Most traders don't fail because of bad strategies — they fail because they can't stick to them.
+            TradifyApp was built to solve that problem with data, rules, and accountability.
           </p>
         </div>
       </section>
