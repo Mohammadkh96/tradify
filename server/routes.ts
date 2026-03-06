@@ -478,7 +478,9 @@ ${blogPosts.map(p => `  <url>
         })
         .where(eq(schema.userRole.userId, user.userId));
 
-      // Redirect to login with success message
+      emailService.sendWelcomeEmail(user.userId, user.fullName || "Trader")
+        .catch(err => console.error("Failed to send welcome email:", err));
+
       res.redirect("/login?verified=true");
     } catch (error) {
       console.error("Email verification error:", error);
@@ -707,6 +709,12 @@ ${blogPosts.map(p => `  <url>
           subscriptionProvider: 'paypal',
           paypalSubscriptionId: data.id || null,
         }).catch(err => console.error('Failed to upgrade user after PayPal payment:', err));
+
+        storage.getUserRole(userId).then(user => {
+          if (user) {
+            emailService.sendSubscriptionActivatedEmail(userId, user.fullName || "Trader", "Pro");
+          }
+        }).catch(err => console.error('Failed to send subscription email:', err));
       }
       return originalJson(data);
     };
