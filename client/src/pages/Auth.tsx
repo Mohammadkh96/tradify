@@ -189,9 +189,10 @@ export default function Auth() {
     
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+      const refCode = new URLSearchParams(window.location.search).get("ref");
       const payload = isLogin 
         ? { email, password }
-        : { email, password, fullName, country, phoneNumber, timezone };
+        : { email, password, fullName, country, phoneNumber, timezone, ...(refCode ? { ref: refCode } : {}) };
 
       const response = await fetch(endpoint, {
         method: "POST",

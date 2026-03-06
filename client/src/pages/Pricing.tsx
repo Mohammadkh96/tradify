@@ -74,6 +74,44 @@ export default function Pricing() {
         title="Pricing - Free, Pro & Elite Plans | TradifyApp"
         description="Choose your TradifyApp plan. Free MT5 sync, Pro analytics at $29/mo, or Elite with AI insights at $59/mo. Founding members get 30% off forever."
         canonical="https://tradifyapp.com/pricing"
+        breadcrumbs={[
+          { name: "Home", url: "https://tradifyapp.com" },
+          { name: "Pricing", url: "https://tradifyapp.com/pricing" }
+        ]}
+        structuredData={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": "TradifyApp Pro",
+            "description": "Professional trading journal with prop firm tracker, AI instrument analysis, full education hub, and 6-month trade history. Includes MT5 auto-sync, unlimited strategies, and CSV export.",
+            "brand": { "@type": "Brand", "name": "TradifyApp" },
+            "url": "https://tradifyapp.com/pricing",
+            "offers": {
+              "@type": "Offer",
+              "price": "29",
+              "priceCurrency": "USD",
+              "priceValidUntil": "2026-12-31",
+              "availability": "https://schema.org/InStock",
+              "url": "https://tradifyapp.com/pricing"
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": "TradifyApp Elite",
+            "description": "Elite trading journal with session analytics, behavioral risk flags, strategy deviation analysis, AI monthly performance reviews, unlimited trade history, and priority support.",
+            "brand": { "@type": "Brand", "name": "TradifyApp" },
+            "url": "https://tradifyapp.com/pricing",
+            "offers": {
+              "@type": "Offer",
+              "price": "59",
+              "priceCurrency": "USD",
+              "priceValidUntil": "2026-12-31",
+              "availability": "https://schema.org/InStock",
+              "url": "https://tradifyapp.com/pricing"
+            }
+          }
+        ]}
       />
       <main className="p-6 lg:p-10 max-w-6xl mx-auto">
         <header className="text-center mb-10">

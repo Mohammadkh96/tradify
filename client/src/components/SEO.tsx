@@ -1,5 +1,10 @@
 import { Helmet } from 'react-helmet-async';
 
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
 interface SEOProps {
   title?: string;
   description?: string;
@@ -14,6 +19,7 @@ interface SEOProps {
     tags?: string[];
   };
   structuredData?: object | object[];
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 export function SEO({ 
@@ -24,10 +30,22 @@ export function SEO({
   ogType = "website",
   ogImage = "https://tradifyapp.com/images/tradify-promo-1.png",
   article,
-  structuredData
+  structuredData,
+  breadcrumbs
 }: SEOProps) {
   const fullTitle = title.includes("TradifyApp") ? title : `${title} | TradifyApp`;
   const url = canonical || "https://tradifyapp.com";
+
+  const breadcrumbJsonLd = breadcrumbs && breadcrumbs.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": breadcrumbs.map((item, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "name": item.name,
+      "item": item.url
+    }))
+  } : null;
   
   return (
     <Helmet>
@@ -52,6 +70,12 @@ export function SEO({
       {article?.author && <meta property="article:author" content={article.author} />}
       {article?.section && <meta property="article:section" content={article.section} />}
       {article?.tags?.map((tag, i) => <meta key={i} property="article:tag" content={tag} />)}
+
+      {breadcrumbJsonLd && (
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbJsonLd)}
+        </script>
+      )}
 
       {structuredData && Array.isArray(structuredData) ? (
         structuredData.map((data, i) => (

@@ -13,6 +13,12 @@ Allow: /pricing
 Allow: /features
 Allow: /how-it-works
 Allow: /resources
+Allow: /about
+Allow: /blog
+Allow: /blog/
+Allow: /trading-journal
+Allow: /prop-firm-tracker
+Allow: /mt5-trading-analytics
 Allow: /cookie-policy
 Allow: /privacy
 Allow: /terms

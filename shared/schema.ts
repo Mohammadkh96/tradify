@@ -128,6 +128,8 @@ export const userRole = pgTable("user_role", {
   foundingMember: boolean("founding_member").default(false), // Early adopter badge
   foundingMemberProExpiry: timestamp("founding_member_pro_expiry"), // When founding member free Pro access expires
   dashboardConfig: jsonb("dashboard_config"), // User's dashboard widget visibility/order preferences
+  referralCode: text("referral_code"),
+  referredBy: text("referred_by"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

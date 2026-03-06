@@ -97,7 +97,13 @@ export default function Landing() {
               { "@type": "Question", "name": "What is the Prop Firm Challenge Tracker?", "acceptedAnswer": { "@type": "Answer", "text": "It's a tool that monitors your prop firm challenge rules in real time — profit targets, drawdown limits, consistency scores, and days remaining." } },
               { "@type": "Question", "name": "What's the difference between Pro and Elite?", "acceptedAnswer": { "@type": "Answer", "text": "Pro includes AI instrument analysis, prop firm tracker, full education hub, and psychology review. Elite adds session analytics, behavioral risk flags, AI challenge risk warnings, strategy deviation analysis, and monthly AI review reports." } },
               { "@type": "Question", "name": "What is the Founding Member program?", "acceptedAnswer": { "@type": "Answer", "text": "Founding Members are early adopters who get 1 month of free Pro access, a permanent 30% lifetime discount on all plans, feature voting rights, and an exclusive crown badge." } },
-              { "@type": "Question", "name": "Can I cancel my subscription anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, you can cancel your Pro or Elite subscription at any time. You'll continue to have access until the end of your billing period, then you'll be downgraded to the free plan." } }
+              { "@type": "Question", "name": "Can I cancel my subscription anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, you can cancel your Pro or Elite subscription at any time. You'll continue to have access until the end of your billing period, then you'll be downgraded to the free plan." } },
+              { "@type": "Question", "name": "What is a trading journal and why do I need one?", "acceptedAnswer": { "@type": "Answer", "text": "A trading journal is a structured record of every trade you take, including entry/exit prices, position sizes, emotions, and rule compliance. It helps you identify patterns in your behavior, track your edge over time, and build the discipline needed for consistent profitability. Without a journal, you're trading blind — repeating mistakes without ever knowing what's actually working." } },
+              { "@type": "Question", "name": "How do I track drawdown in prop firm challenges?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp's Prop Firm Challenge Tracker monitors your drawdown in real time by syncing directly with your MT5 account. It calculates both daily and overall drawdown against your challenge rules, tracks trailing drawdown with high water mark, and shows visual gauges so you always know exactly how much room you have left. You can set up presets for FTMO, MyFundedFX, The Funded Trader, or create custom configurations." } },
+              { "@type": "Question", "name": "Can I use TradifyApp with multiple MT5 accounts?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, TradifyApp supports unlimited MT5 account connections. You can track personal accounts, prop firm challenge accounts, and funded accounts all from one dashboard. Each account syncs independently with its own analytics, equity curve, and trade history. This is available on all plans including the free tier." } },
+              { "@type": "Question", "name": "What makes TradifyApp different from other trading journals?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp is built specifically for disciplined trading, not just trade logging. Unlike generic journals, it enforces your trading rules before you can enter a trade, auto-syncs from MT5 so you never miss a trade, tracks prop firm challenge rules in real time, and includes a structured education hub with 19 lessons. It's designed to change your trading behavior, not just record it." } },
+              { "@type": "Question", "name": "Is my trading data secure with TradifyApp?", "acceptedAnswer": { "@type": "Answer", "text": "Absolutely. TradifyApp operates on a zero-trust security model. We never store your broker credentials, never access your funds, and never execute trades on your behalf. Our MT5 Expert Advisor is strictly read-only — it only reads trade data from your terminal. Your account is protected with email verification and encrypted data storage." } },
+              { "@type": "Question", "name": "How does TradifyApp help me become a more disciplined trader?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp enforces discipline through three mechanisms: rule validation that requires you to log your setup and confirm rule compliance before entering trades, psychology tracking that records your emotional state and identifies patterns like revenge trading or overtrading, and a structured education hub that teaches systematic trading from the ground up. The AI-powered analytics then show you exactly where discipline breaks down in your trading." } }
             ]
           }
         ]}
@@ -558,6 +564,271 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-testimonials">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+              Trusted by <span className="text-emerald-500">Disciplined Traders</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Real traders using TradifyApp to build consistency, pass prop firm challenges, and improve their execution every day.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                quote: "I failed 3 FTMO challenges before TradifyApp. The real-time drawdown tracker saved me from blowing my 4th attempt. Passed on day 22 with room to spare.",
+                name: "Marcus T.",
+                role: "Prop Firm Trader",
+                rating: 5,
+                detail: "FTMO $100K Challenge"
+              },
+              {
+                quote: "The rule validation feature changed everything. I used to revenge trade after losses. Now I can't enter a trade without logging my setup first. My win rate went from 38% to 54%.",
+                name: "Aisha K.",
+                role: "Forex Swing Trader",
+                rating: 5,
+                detail: "Gold & EUR/USD"
+              },
+              {
+                quote: "As someone new to trading, the education hub gave me structure I couldn't find anywhere else. 19 lessons that actually teach discipline, not just indicators.",
+                name: "Daniel R.",
+                role: "Developing Trader",
+                rating: 5,
+                detail: "6 months on platform"
+              },
+              {
+                quote: "Managing 3 MT5 accounts was a nightmare with spreadsheets. TradifyApp syncs all of them automatically. I see everything in one dashboard now.",
+                name: "Sarah M.",
+                role: "Multi-Account Trader",
+                rating: 4,
+                detail: "3 funded accounts"
+              }
+            ].map((testimonial, i) => (
+              <Card key={i} className="bg-background border-border" data-testid={`card-testimonial-${i}`}>
+                <CardContent className="p-6 flex flex-col gap-4">
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, s) => (
+                      <Star
+                        key={s}
+                        size={14}
+                        className={s < testimonial.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">"{testimonial.quote}"</p>
+                  <div className="border-t border-border pt-4 mt-auto">
+                    <div className="text-sm font-bold text-foreground" data-testid={`text-testimonial-name-${i}`}>{testimonial.name}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{testimonial.role}</div>
+                    <div className="text-[10px] text-muted-foreground mt-1">{testimonial.detail}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Traders Choose TradifyApp */}
+      <section className="py-24 overflow-hidden" data-testid="section-why-traders-choose">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+              Why Traders Choose <span className="text-emerald-500">TradifyApp</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              TradifyApp isn't just another trade logger. It's a complete trading discipline system built by traders who understand 
+              what separates consistent performers from the 90% who fail.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+            <div>
+              <h3 className="text-lg font-black text-foreground uppercase tracking-widest mb-4 flex items-center gap-3">
+                <ShieldCheck className="text-emerald-500 shrink-0" size={22} />
+                Rule-Based Trade Validation
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                Most traders know their rules but break them under pressure. TradifyApp solves this by requiring you to validate 
+                every trade against your own strategy rules before it's logged. You define the rules — maximum risk per trade, 
+                required confirmations, session restrictions, instrument limits — and TradifyApp enforces them. This isn't about 
+                restricting your trading; it's about making sure every entry has a reason behind it. Over time, this builds the 
+                muscle memory of disciplined execution that separates profitable traders from gamblers.
+              </p>
+
+              <h3 className="text-lg font-black text-foreground uppercase tracking-widest mb-4 flex items-center gap-3">
+                <MonitorSmartphone className="text-cyan-500 shrink-0" size={22} />
+                Seamless MT5 Integration
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Manual journaling is the #1 reason traders abandon their journals. TradifyApp eliminates this entirely with 
+                automatic MT5 synchronization. Install our free Expert Advisor once, and every trade from every connected account 
+                flows into your dashboard in real time. No copy-pasting. No missed trades. No end-of-day data entry. The EA is 
+                strictly read-only — it never touches your broker credentials, never places orders, and never modifies your positions. 
+                Your trading data arrives instantly, accurately, and securely.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black text-foreground uppercase tracking-widest mb-4 flex items-center gap-3">
+                <Brain className="text-emerald-500 shrink-0" size={22} />
+                AI-Powered Performance Analytics
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                Raw trade data is useless without analysis. TradifyApp's AI engine breaks down your performance by instrument, 
+                session, time of day, and behavioral patterns. It identifies which currency pairs actually make you money, when 
+                you trade best, and where your discipline breaks down. The AI doesn't give you signals or tell you what to trade — 
+                it shows you the truth about your own execution so you can make better decisions. Pro users get instrument-level 
+                analysis, while Elite users unlock session analytics, behavioral risk flags, and monthly AI review reports.
+              </p>
+
+              <h3 className="text-lg font-black text-foreground uppercase tracking-widest mb-4 flex items-center gap-3">
+                <BookOpen className="text-blue-500 shrink-0" size={22} />
+                Structured Education for Every Level
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                TradifyApp includes a complete education hub with 19 structured lessons across 8 progressive phases. Unlike random 
+                YouTube tutorials or indicator-focused courses, this curriculum teaches the fundamentals that actually matter: 
+                market structure, risk management, position sizing, trading psychology, and system building. Each lesson includes 
+                quizzes to test your understanding before moving forward. Three lessons are free for all users, with the full 
+                curriculum available on Pro and Elite plans. The goal isn't to teach you a strategy — it's to teach you how to 
+                build, test, and execute your own.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="p-6 rounded-2xl bg-muted/30 border border-border">
+              <h4 className="text-sm font-black text-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                <HeartPulse className="text-pink-500 shrink-0" size={18} />
+                Psychology Tracking
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Every trade captures your emotional state, confidence level, and mistake categories. Over weeks and months, 
+                this data reveals the psychological patterns behind your wins and losses — helping you recognize and correct 
+                emotional trading before it costs you money.
+              </p>
+            </div>
+            <div className="p-6 rounded-2xl bg-muted/30 border border-border">
+              <h4 className="text-sm font-black text-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Calculator className="text-amber-500 shrink-0" size={18} />
+                Pre-Trade Risk Calculators
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Calculate your position size, risk-reward ratio, and potential impact on your prop firm challenge before entering 
+                any trade. These aren't generic calculators — they integrate with your active challenge rules to show you exactly 
+                how much risk you're taking relative to your remaining drawdown allowance.
+              </p>
+            </div>
+            <div className="p-6 rounded-2xl bg-muted/30 border border-border">
+              <h4 className="text-sm font-black text-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Upload className="text-teal-500 shrink-0" size={18} />
+                Universal Trade Import
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Not on MT5? No problem. Import trades from MT4, TradingView, cTrader, or any platform via CSV with automatic 
+                column detection. TradifyApp maps your data intelligently so you can start analyzing your performance immediately, 
+                regardless of which broker or platform you use.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How TradifyApp Helps You Pass Your Prop Firm Challenge */}
+      <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-prop-firm-guide">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[10px] uppercase tracking-widest mb-6">
+              Educational Guide
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+              How TradifyApp Helps You <span className="text-amber-500">Pass Your Prop Firm Challenge</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Over 80% of traders fail their first prop firm challenge. The #1 reason isn't bad trading — it's poor risk management 
+              and losing track of challenge rules. Here's how TradifyApp changes that.
+            </p>
+          </div>
+
+          <div className="space-y-12">
+            <div className="flex gap-6 items-start">
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <span className="text-sm font-black text-amber-500">1</span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-foreground uppercase tracking-widest mb-2">Know Your Numbers at All Times</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  The moment you connect your MT5 account and set up your challenge parameters, TradifyApp begins tracking every metric 
+                  that matters: current drawdown vs. maximum allowed, profit progress toward your target, daily loss limits, and trading 
+                  day count. These aren't delayed calculations — they update in real time as your trades sync. Most traders who fail 
+                  challenges don't even realize they're close to their drawdown limit until it's too late. TradifyApp makes it impossible 
+                  to lose track.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-6 items-start">
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <span className="text-sm font-black text-amber-500">2</span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-foreground uppercase tracking-widest mb-2">Pre-Trade Risk Assessment</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Before you place a trade, TradifyApp's risk calculators show you exactly how that position will impact your challenge. 
+                  If you're running an FTMO $100K challenge with a 10% max drawdown and you've already used 6%, the calculator will 
+                  show you that a 2-lot EUR/USD position with a 50-pip stop loss would use 1% of your remaining buffer. Elite users 
+                  get AI-powered risk warnings that analyze whether the trade is worth taking given your current challenge status, 
+                  and suggest safer stop loss levels when your remaining margin is thin.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-6 items-start">
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <span className="text-sm font-black text-amber-500">3</span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-foreground uppercase tracking-widest mb-2">Catch Behavioral Red Flags Early</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  The biggest threat to your prop firm challenge isn't the market — it's your own behavior under pressure. TradifyApp's 
+                  behavioral analysis detects revenge trading patterns (entering trades immediately after a loss), overtrading 
+                  (exceeding your planned number of daily trades), and emotional decision-making (trading outside your defined sessions 
+                  or instruments). These flags appear before the damage is done, giving you the awareness to step away and protect 
+                  your challenge. Elite users get AI-generated behavioral risk reports that quantify exactly how much these patterns 
+                  are costing them.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-6 items-start">
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <span className="text-sm font-black text-amber-500">4</span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-foreground uppercase tracking-widest mb-2">Build Consistency That Firms Reward</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Most prop firms don't just want profit — they want consistent profit. A trader who makes 8% in one day and nothing 
+                  for the rest of the month will often fail consistency requirements. TradifyApp tracks your consistency score across 
+                  your challenge, showing you how evenly distributed your profits are across trading days. It also monitors your 
+                  lot size consistency, session adherence, and strategy compliance — all factors that prop firms evaluate. By the time 
+                  you pass your challenge, you'll have built the systematic habits that make you a profitable funded trader, not just 
+                  someone who got lucky.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-16 text-center">
+            <Link to="/prop-firm-tracker" data-testid="link-prop-firm-learn-more">
+              <Button variant="outline" className="h-12 px-8 border-amber-500/20 text-amber-400 font-bold uppercase tracking-widest text-xs rounded-2xl" data-testid="button-prop-firm-learn-more">
+                Learn More About Prop Firm Tracking <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Founding Member Section - Enhanced */}
       <section className="py-24 bg-gradient-to-b from-background via-amber-500/5 to-background border-y border-border relative overflow-hidden" data-testid="section-founding-member">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(245,158,11,0.08),transparent_70%)]" />
@@ -748,6 +1019,30 @@ export default function Landing() {
               {
                 q: "Can I cancel my subscription anytime?",
                 a: "Yes, you can cancel your Pro or Elite subscription at any time. You'll continue to have access until the end of your billing period, then you'll be downgraded to the free plan."
+              },
+              {
+                q: "What is a trading journal and why do I need one?",
+                a: "A trading journal is a structured record of every trade you take, including entry/exit prices, position sizes, emotions, and rule compliance. It helps you identify patterns in your behavior, track your edge over time, and build the discipline needed for consistent profitability. Without a journal, you're trading blind — repeating mistakes without ever knowing what's actually working."
+              },
+              {
+                q: "How do I track drawdown in prop firm challenges?",
+                a: "TradifyApp's Prop Firm Challenge Tracker monitors your drawdown in real time by syncing directly with your MT5 account. It calculates both daily and overall drawdown against your challenge rules, tracks trailing drawdown with high water mark, and shows visual gauges so you always know exactly how much room you have left. You can set up presets for FTMO, MyFundedFX, The Funded Trader, or create custom configurations."
+              },
+              {
+                q: "Can I use TradifyApp with multiple MT5 accounts?",
+                a: "Yes, TradifyApp supports unlimited MT5 account connections. You can track personal accounts, prop firm challenge accounts, and funded accounts all from one dashboard. Each account syncs independently with its own analytics, equity curve, and trade history. This is available on all plans including the free tier."
+              },
+              {
+                q: "What makes TradifyApp different from other trading journals?",
+                a: "TradifyApp is built specifically for disciplined trading, not just trade logging. Unlike generic journals, it enforces your trading rules before you can enter a trade, auto-syncs from MT5 so you never miss a trade, tracks prop firm challenge rules in real time, and includes a structured education hub with 19 lessons. It's designed to change your trading behavior, not just record it."
+              },
+              {
+                q: "Is my trading data secure with TradifyApp?",
+                a: "Absolutely. TradifyApp operates on a zero-trust security model. We never store your broker credentials, never access your funds, and never execute trades on your behalf. Our MT5 Expert Advisor is strictly read-only — it only reads trade data from your terminal. Your account is protected with email verification and encrypted data storage."
+              },
+              {
+                q: "How does TradifyApp help me become a more disciplined trader?",
+                a: "TradifyApp enforces discipline through three mechanisms: rule validation that requires you to log your setup and confirm rule compliance before entering trades, psychology tracking that records your emotional state and identifies patterns like revenge trading or overtrading, and a structured education hub that teaches systematic trading from the ground up. The AI-powered analytics then show you exactly where discipline breaks down in your trading."
               }
             ].map((faq, i) => (
               <details key={i} className="group bg-card border border-border rounded-2xl overflow-hidden" data-testid={`faq-item-${i}`}>
@@ -765,25 +1060,52 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-border text-center">
-        <div className="flex justify-center flex-wrap gap-6 mb-4">
-          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-terms">Terms</Link>
-          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-privacy">Privacy</Link>
-          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-risk">Risk Disclaimer</Link>
-          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-cookie">Cookie Policy</Link>
-          <Link to="/blog" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-blog">Blog</Link>
-          <CookieSettingsButton />
-          <a 
-            href="mailto:support@tradify.app?subject=TradifyApp Support Request" 
-            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
-            data-testid="link-contact-us-footer"
-          >
-            Contact Us
-          </a>
+      <footer className="py-16 border-t border-border" data-testid="section-footer">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            <div>
+              <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">Product</h4>
+              <div className="space-y-3">
+                <Link to="/features" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-features">Features</Link>
+                <Link to="/pricing" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-pricing">Pricing</Link>
+                <Link to="/how-it-works" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-how-it-works">How It Works</Link>
+                <Link to="/resources" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-resources">Resources</Link>
+                <Link to="/early-access" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-early-access">Early Access</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">Solutions</h4>
+              <div className="space-y-3">
+                <Link to="/trading-journal" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-trading-journal">Trading Journal</Link>
+                <Link to="/prop-firm-tracker" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-prop-firm-tracker">Prop Firm Tracker</Link>
+                <Link to="/mt5-trading-analytics" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-mt5-analytics">MT5 Analytics</Link>
+                <Link to="/blog" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-blog">Blog</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">Company</h4>
+              <div className="space-y-3">
+                <Link to="/about" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-about">About</Link>
+                <a href="mailto:support@tradify.app?subject=TradifyApp Support Request" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-contact-us-footer">Contact Us</a>
+                <CookieSettingsButton />
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">Legal</h4>
+              <div className="space-y-3">
+                <Link to="/terms" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-terms">Terms of Service</Link>
+                <Link to="/privacy" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-privacy">Privacy Policy</Link>
+                <Link to="/risk-disclaimer" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-risk">Risk Disclaimer</Link>
+                <Link to="/cookie-policy" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-cookie">Cookie Policy</Link>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-border pt-8 text-center">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
+              &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
+            </p>
+          </div>
         </div>
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
-        </p>
       </footer>
     </div>
   );

@@ -379,6 +379,22 @@ ${blogPosts.map(p => `  <url>
         ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
         : null;
 
+      let referralCode = crypto.randomBytes(4).toString("hex");
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const [existing] = await db.select({ id: schema.userRole.id }).from(schema.userRole).where(eq(schema.userRole.referralCode, referralCode)).limit(1);
+        if (!existing) break;
+        referralCode = crypto.randomBytes(4).toString("hex");
+      }
+
+      const { ref } = req.body;
+      let referredBy: string | null = null;
+      if (ref && typeof ref === "string" && ref.length <= 16) {
+        const [referrer] = await db.select({ userId: schema.userRole.userId }).from(schema.userRole).where(eq(schema.userRole.referralCode, ref)).limit(1);
+        if (referrer && referrer.userId !== normalizedEmail) {
+          referredBy = ref;
+        }
+      }
+
       const [newUser] = await db.insert(schema.userRole).values({
         userId: normalizedEmail,
         password: hashedPassword,
@@ -394,6 +410,8 @@ ${blogPosts.map(p => `  <url>
         hasSeenTour: false,
         foundingMember: isFoundingMember,
         foundingMemberProExpiry: foundingMemberProExpiry,
+        referralCode,
+        referredBy,
       }).returning();
 
       // If early access signup exists, update it to link to the user (don't block registration)
@@ -625,6 +643,35 @@ ${blogPosts.map(p => `  <url>
     }
     
     res.json(user);
+  });
+
+  app.get("/api/user/referral-stats", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.getUserRole(req.session.userId!);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      let referralCode = user.referralCode;
+      if (!referralCode) {
+        const crypto = await import("crypto");
+        referralCode = crypto.randomBytes(4).toString("hex");
+        await db.update(schema.userRole)
+          .set({ referralCode })
+          .where(eq(schema.userRole.userId, req.session.userId!));
+      }
+
+      const referrals = await db.select({ id: schema.userRole.id })
+        .from(schema.userRole)
+        .where(eq(schema.userRole.referredBy, referralCode));
+
+      res.json({
+        referralCode,
+        referralCount: referrals.length,
+        referralLink: `https://tradifyapp.com/signup?ref=${referralCode}`,
+      });
+    } catch (error) {
+      console.error("Error fetching referral stats:", error);
+      res.status(500).json({ message: "Failed to fetch referral stats" });
+    }
   });
 
   // Mark tour as seen

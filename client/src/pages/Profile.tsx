@@ -243,6 +243,76 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
   );
 }
 
+function ReferralCard() {
+  const { toast } = useToast();
+  const { data: referralStats, isLoading } = useQuery<{
+    referralCode: string;
+    referralCount: number;
+    referralLink: string;
+  }>({
+    queryKey: ["/api/user/referral-stats"],
+  });
+
+  const copyLink = () => {
+    if (referralStats?.referralLink) {
+      navigator.clipboard.writeText(referralStats.referralLink);
+      toast({ title: "Link Copied", description: "Referral link copied to clipboard." });
+    }
+  };
+
+  return (
+    <Card className="bg-card border-border shadow-2xl overflow-hidden">
+      <CardHeader className="border-b border-border bg-muted/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-500/10 rounded-lg">
+            <Users size={20} className="text-emerald-500" />
+          </div>
+          <div>
+            <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">Invite Friends</CardTitle>
+            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Share Tradify</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-6 w-6 text-emerald-500 animate-spin" />
+          </div>
+        ) : referralStats ? (
+          <>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Share your referral link with fellow traders. Help them discover disciplined trading.
+            </p>
+            <div className="p-3 bg-background rounded-lg border border-border">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Your Referral Link</p>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={referralStats.referralLink}
+                  readOnly
+                  className="bg-muted border-border text-foreground text-xs font-mono h-9"
+                  data-testid="input-referral-link"
+                />
+                <Button
+                  onClick={copyLink}
+                  size="sm"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-[10px] h-9 px-4 shrink-0"
+                  data-testid="button-copy-referral"
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Referrals</span>
+              <span className="text-lg font-black text-emerald-500" data-testid="text-referral-count">{referralStats.referralCount}</span>
+            </div>
+          </>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Profile() {
   const { toast } = useToast();
   const { data: user, isLoading } = useQuery<UserRole>({
@@ -743,6 +813,9 @@ export default function Profile() {
           {user?.foundingMember && (
             <FoundingSuggestionsCard userId={user.userId} />
           )}
+
+          {/* Referral Card */}
+          <ReferralCard />
 
           {/* Contact Us Card */}
           <Card className="bg-card border-border shadow-2xl overflow-hidden">

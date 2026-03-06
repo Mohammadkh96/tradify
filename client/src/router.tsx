@@ -38,6 +38,10 @@ import RiskDisclaimer from "@/pages/RiskDisclaimer";
 import CookiePolicy from "@/pages/CookiePolicy";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
+import About from "@/pages/About";
+import SEOTradingJournal from "@/pages/SEOTradingJournal";
+import SEOPropFirmTracker from "@/pages/SEOPropFirmTracker";
+import SEOMT5Analytics from "@/pages/SEOMT5Analytics";
 import { useQuery } from "@tanstack/react-query";
 
 function HybridRoute({ children }: { children: React.ReactNode }) {
@@ -133,6 +137,10 @@ function FeaturesPage() {
         title="Features - Trade Visualization & Analytics | Tradify"
         description="Explore Tradify's features: live MT5 sync, equity curves, performance analytics, behavioral insights, and strategy validation for disciplined trading."
         canonical="https://tradifyapp.com/features"
+        breadcrumbs={[
+          { name: "Home", url: "https://tradifyapp.com" },
+          { name: "Features", url: "https://tradifyapp.com/features" }
+        ]}
       />
       <PublicNavbar />
       <div className="max-w-7xl mx-auto px-6 py-20">
@@ -239,6 +247,47 @@ function HowItWorksPage() {
         title="How It Works - Simple MT5 Integration | Tradify"
         description="Learn how Tradify works: connect your MT5, sync trades automatically, build strategies, and track your trading performance in 3 simple steps."
         canonical="https://tradifyapp.com/how-it-works"
+        breadcrumbs={[
+          { name: "Home", url: "https://tradifyapp.com" },
+          { name: "How It Works", url: "https://tradifyapp.com/how-it-works" }
+        ]}
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "HowTo",
+          "name": "How to Use TradifyApp for Disciplined Trading",
+          "description": "Learn how to connect your MT5 trading account, analyze your trading data, generate insights, and improve your trading discipline with TradifyApp.",
+          "totalTime": "PT10M",
+          "step": [
+            {
+              "@type": "HowToStep",
+              "position": 1,
+              "name": "Connect Your Trading Account",
+              "text": "Securely connect your trading account to Tradify. Tradify is read-only. It never places trades, modifies orders, or interferes with execution.",
+              "url": "https://tradifyapp.com/how-it-works#step-1"
+            },
+            {
+              "@type": "HowToStep",
+              "position": 2,
+              "name": "Your Trading Data Is Analyzed",
+              "text": "Tradify processes your activity to evaluate performance metrics, risk behavior, consistency and discipline, and session and contextual impact. There are no signals, recommendations, or forecasts.",
+              "url": "https://tradifyapp.com/how-it-works#step-2"
+            },
+            {
+              "@type": "HowToStep",
+              "position": 3,
+              "name": "Insights Are Generated",
+              "text": "Tradify highlights what contributes positively to performance and what introduces unnecessary risk. Each insight focuses on cause and effect, not future price direction.",
+              "url": "https://tradifyapp.com/how-it-works#step-3"
+            },
+            {
+              "@type": "HowToStep",
+              "position": 4,
+              "name": "Review, Reflect, Improve",
+              "text": "Use analytics, charts, and journaling to review performance objectively and improve decision-making gradually. Progress is measured, not assumed.",
+              "url": "https://tradifyapp.com/how-it-works#step-4"
+            }
+          ]
+        }}
       />
       <PublicNavbar />
       <div className="max-w-4xl mx-auto px-6 py-20">
@@ -328,6 +377,10 @@ function ResourcesPage() {
         title="Resources - Trading Education & Tools | Tradify"
         description="Access Tradify's trading resources: risk calculators, educational content, strategy guides, and professional tools to improve your trading discipline."
         canonical="https://tradifyapp.com/resources"
+        breadcrumbs={[
+          { name: "Home", url: "https://tradifyapp.com" },
+          { name: "Resources", url: "https://tradifyapp.com/resources" }
+        ]}
       />
       <PublicNavbar />
       <div className="max-w-7xl mx-auto px-6 py-20">
@@ -424,6 +477,10 @@ function AppRoutes() {
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<BlogPost />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/trading-journal" element={<SEOTradingJournal />} />
+      <Route path="/prop-firm-tracker" element={<SEOPropFirmTracker />} />
+      <Route path="/mt5-trading-analytics" element={<SEOMT5Analytics />} />
       
       {/* Auth Routes */}
       <Route path="/login" element={<AuthRoute><Auth /></AuthRoute>} />
