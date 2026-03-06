@@ -4216,20 +4216,86 @@ End with: "Review your charts for current market structure."`;
   });
 
   app.post("/api/user/reset-password-request", async (req, res) => {
-    const { email } = req.body;
-    const normalizedEmail = email.toLowerCase();
-    
-    // For demo/emergency purposes: If it's the user's email, we'll reset it to a temporary one
-    if (normalizedEmail === "scarymohd2@gmail.com") {
-      const hashedPassword = await bcrypt.hash("Tradify2026!", 10);
-      await db.update(schema.userRole)
-        .set({ password: hashedPassword, updatedAt: new Date() })
-        .where(eq(schema.userRole.userId, normalizedEmail));
-      return res.json({ message: "EMERGENCY RESET: Password set to Tradify2026!" });
-    }
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required." });
+      }
+      const normalizedEmail = email.toLowerCase().trim();
 
-    console.log(`Password reset requested for: ${normalizedEmail}`);
-    res.json({ message: "If an account exists, a reset link has been sent." });
+      const user = await storage.getUserRole(normalizedEmail);
+      if (user) {
+        const crypto = await import("crypto");
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+        const resetExpiry = new Date(Date.now() + 60 * 60 * 1000);
+
+        await db.update(schema.userRole)
+          .set({
+            passwordResetToken: hashedToken,
+            passwordResetExpiry: resetExpiry,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.userRole.userId, normalizedEmail));
+
+        const resetUrl = `https://tradifyapp.com/reset-password?token=${rawToken}`;
+        await emailService.sendPasswordResetEmail(normalizedEmail, user.fullName || normalizedEmail, resetUrl);
+      }
+
+      res.json({ message: "If an account exists with that email, a password reset link has been sent." });
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      res.json({ message: "If an account exists with that email, a password reset link has been sent." });
+    }
+  });
+
+  app.post("/api/auth/reset-password-with-token", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required." });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters." });
+      }
+
+      const crypto = await import("crypto");
+      const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+      const [user] = await db.select()
+        .from(schema.userRole)
+        .where(eq(schema.userRole.passwordResetToken, hashedToken))
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset link. Please request a new one." });
+      }
+
+      if (!user.passwordResetExpiry || new Date() > new Date(user.passwordResetExpiry)) {
+        await db.update(schema.userRole)
+          .set({ passwordResetToken: null, passwordResetExpiry: null })
+          .where(eq(schema.userRole.userId, user.userId));
+        return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      await db.update(schema.userRole)
+        .set({
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpiry: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.userRole.userId, user.userId));
+
+      res.json({ success: true, message: "Your password has been reset successfully. You can now log in." });
+    } catch (error) {
+      console.error("Password reset with token error:", error);
+      res.status(500).json({ message: "Failed to reset password. Please try again." });
+    }
   });
 
   // ===== STRATEGY ROUTES =====

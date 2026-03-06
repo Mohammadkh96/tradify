@@ -42,6 +42,7 @@ import About from "@/pages/About";
 import SEOTradingJournal from "@/pages/SEOTradingJournal";
 import SEOPropFirmTracker from "@/pages/SEOPropFirmTracker";
 import SEOMT5Analytics from "@/pages/SEOMT5Analytics";
+import ResetPassword from "@/pages/ResetPassword";
 import { useQuery } from "@tanstack/react-query";
 
 function HybridRoute({ children }: { children: React.ReactNode }) {
@@ -478,6 +479,7 @@ function AppRoutes() {
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<BlogPost />} />
       <Route path="/about" element={<About />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/trading-journal" element={<SEOTradingJournal />} />
       <Route path="/prop-firm-tracker" element={<SEOPropFirmTracker />} />
       <Route path="/mt5-trading-analytics" element={<SEOMT5Analytics />} />

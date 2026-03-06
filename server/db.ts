@@ -52,6 +52,8 @@ export async function ensureSchemaColumns() {
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS billing_period TEXT DEFAULT 'monthly';
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS referral_code TEXT;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS referred_by TEXT;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS password_reset_token TEXT;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS password_reset_expiry TIMESTAMP;
       ALTER TABLE trade_journal ADD COLUMN IF NOT EXISTS mood TEXT;
       ALTER TABLE trade_journal ADD COLUMN IF NOT EXISTS mistake_category TEXT;
       ALTER TABLE mt5_history ADD COLUMN IF NOT EXISTS mood TEXT;

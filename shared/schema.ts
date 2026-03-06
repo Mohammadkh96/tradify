@@ -122,8 +122,10 @@ export const userRole = pgTable("user_role", {
   timezone: text("timezone"), // Added per spec
   mustResetPassword: boolean("must_reset_password").default(false), // For admin-created users
   emailVerified: boolean("email_verified").default(false), // Email verification status
-  emailVerificationToken: text("email_verification_token"), // Token for email verification
-  emailVerificationExpiry: timestamp("email_verification_expiry"), // Token expiry
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationExpiry: timestamp("email_verification_expiry"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpiry: timestamp("password_reset_expiry"),
   hasSeenTour: boolean("has_seen_tour").default(false), // Onboarding tour completed
   foundingMember: boolean("founding_member").default(false), // Early adopter badge
   foundingMemberProExpiry: timestamp("founding_member_pro_expiry"), // When founding member free Pro access expires
