@@ -28,8 +28,8 @@ export default function About() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO
-        title="About TradifyApp - Our Mission, Story & Team"
-        description="Learn about TradifyApp's mission to help traders build discipline through data. Founded by traders, for traders. Read-only MT5 integration, no signals, no predictions — just clarity."
+        title="About TradifyApp - Trading Discipline Platform"
+        description="TradifyApp is a discipline enforcement platform for serious traders. Auto-sync MT5 trades, validate rules before every entry, and track prop firm challenges in real time. No signals, no predictions — just discipline."
         canonical="https://tradifyapp.com/about"
         breadcrumbs={[
           { name: "Home", url: "https://tradifyapp.com" },
@@ -151,10 +151,10 @@ export default function About() {
                 <div>
                   <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">The Solution We Built</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-solution-statement">
-                    TradifyApp was created to be the discipline partner every trader needs. Instead of telling you what
-                    to trade, we help you understand how you trade. Instead of promising profits, we help you identify
-                    patterns in your own behavior. Instead of complex setups, we auto-sync your trades from MT5 and
-                    do the analysis for you.
+                    TradifyApp is a discipline enforcement platform for traders who know their strategy works but 
+                    struggle to follow it. Instead of telling you what to trade, we enforce the rules you already set. 
+                    Instead of promising profits, we expose the behavioral patterns holding you back. Instead of 
+                    complex setups, we auto-sync your trades from MT5 and do the analysis for you.
                   </p>
                 </div>
               </div>
@@ -182,8 +182,8 @@ export default function About() {
                 <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400 mb-4">What TradifyApp IS</h4>
                 <div className="space-y-3">
                   {[
-                    "A rule-based trading journal with auto-sync",
-                    "A discipline and accountability platform",
+                    "A discipline enforcement platform with MT5 auto-sync",
+                    "A rule validation and accountability system",
                     "A data-driven performance analytics tool",
                     "A prop firm challenge management system"
                   ].map((item, i) => (

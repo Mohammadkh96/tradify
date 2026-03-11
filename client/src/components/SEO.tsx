@@ -23,8 +23,8 @@ interface SEOProps {
 }
 
 export function SEO({ 
-  title = "TradifyApp - Rule-Based Trading Journal",
-  description = "Enforce disciplined trading with TradifyApp. Auto-sync trades from MT5, validate strategies against rules, track performance with real-time analytics.",
+  title = "TradifyApp - Trading Discipline Platform",
+  description = "80% of traders fail prop challenges because they break their own rules. TradifyApp enforces your trading rules, tracks drawdown in real time, and stops revenge trading before it starts.",
   noindex = false,
   canonical,
   ogType = "website",

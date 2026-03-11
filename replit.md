@@ -1,7 +1,7 @@
-# TRADIFY - Trading Journal Application
+# TRADIFY - Trading Discipline Platform
 
 ## Overview
-TRADIFY is a rule-based trading journal application that enforces disciplined trading through real-time validation and analysis, all within a dark "Stealth" aesthetic. It enables traders to record trades, enforce rules, analyze performance, and learn trading concepts using predefined Market Knowledge rules. The application avoids AI decision-making, indicators, or guesswork in core trading logic.
+TRADIFY is a discipline enforcement platform for serious traders, built with a dark "Stealth" aesthetic. It enforces trading rules through real-time validation and behavioral analysis. The landing page positioning is "Your Rules. Enforced." with the tagline "Discipline is the edge." All messaging is problem-led (leads with trader pain, not features) and targets prop firm traders as the primary audience.
 
 Key features include:
 - A customizable dashboard with performance metrics and an equity curve.
