@@ -175,9 +175,104 @@ export default function Landing() {
             </Link>
           </div>
           
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mb-16">
             Free forever plan available. No credit card needed. Set up in under 2 minutes.
           </p>
+
+          <div className="max-w-5xl mx-auto" data-testid="hero-dashboard-preview">
+            <div className="rounded-2xl border border-border bg-card shadow-2xl shadow-emerald-500/5 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-muted/50 border-b border-border">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/60" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+                </div>
+                <span className="text-[9px] font-mono text-muted-foreground ml-2">TradifyApp Dashboard</span>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                    <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Balance</div>
+                    <div className="text-sm sm:text-lg font-black text-foreground font-mono">$104,280</div>
+                    <div className="text-[9px] text-emerald-500 font-bold">+4.28%</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                    <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Win Rate</div>
+                    <div className="text-sm sm:text-lg font-black text-emerald-500 font-mono">62.4%</div>
+                    <div className="text-[9px] text-muted-foreground font-bold">78 trades</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                    <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Rule Compliance</div>
+                    <div className="text-sm sm:text-lg font-black text-amber-500 font-mono">87%</div>
+                    <div className="text-[9px] text-rose-400 font-bold">3 violations</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                    <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Max Drawdown</div>
+                    <div className="text-sm sm:text-lg font-black text-foreground font-mono">4.2%</div>
+                    <div className="text-[9px] text-muted-foreground font-bold">of 10% limit</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2 p-4 rounded-xl bg-muted/30 border border-border">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Equity Curve</span>
+                      <span className="text-[9px] font-bold text-emerald-500">+$4,280</span>
+                    </div>
+                    <div className="h-24 sm:h-32 flex items-end gap-[2px]">
+                      {[40,42,38,45,43,48,46,52,50,55,53,58,56,61,59,64,62,58,63,67,65,70,68,73,71,76,74,72,78,80,77,82,85,83,88,86,90,88,92,95].map((h, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 rounded-sm bg-emerald-500/40 hover:bg-emerald-500/70 transition-colors"
+                          style={{ height: `${h}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-muted/30 border border-border">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Prop Challenge</div>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Profit Target</span>
+                          <span className="text-[10px] font-black text-emerald-500">72%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-muted rounded-full">
+                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: "72%" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Drawdown Used</span>
+                          <span className="text-[10px] font-black text-amber-500">42%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-muted rounded-full">
+                          <div className="h-full bg-amber-500 rounded-full" style={{ width: "42%" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Consistency</span>
+                          <span className="text-[10px] font-black text-blue-400">91%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-muted rounded-full">
+                          <div className="h-full bg-blue-400 rounded-full" style={{ width: "91%" }} />
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-border">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Days Left</span>
+                          <span className="text-xs font-black text-foreground">18</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
