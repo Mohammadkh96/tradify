@@ -24,10 +24,15 @@ import {
   ChevronRight,
   Flame,
   Upload,
-  HeartPulse
+  HeartPulse,
+  Mail,
+  Download,
+  FileText,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 
 import { PublicNavbar } from "@/components/PublicNavbar";
@@ -58,6 +63,58 @@ function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: str
 }
 
 export default function Landing() {
+  const [checklistEmail, setChecklistEmail] = useState("");
+  const [checklistLoading, setChecklistLoading] = useState(false);
+  const [checklistSubmitted, setChecklistSubmitted] = useState(false);
+
+  const [calcAccountSize, setCalcAccountSize] = useState("");
+  const [calcDrawdown, setCalcDrawdown] = useState("");
+  const [calcProfitTarget, setCalcProfitTarget] = useState("");
+  const [calcEmail, setCalcEmail] = useState("");
+  const [calcLoading, setCalcLoading] = useState(false);
+  const [calcSaved, setCalcSaved] = useState(false);
+
+  const handleChecklistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChecklistLoading(true);
+    try {
+      const res = await fetch("/api/leads/checklist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: checklistEmail }),
+      });
+      if (res.ok) {
+        setChecklistSubmitted(true);
+      }
+    } catch {
+    } finally {
+      setChecklistLoading(false);
+    }
+  };
+
+  const handleCalcSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCalcLoading(true);
+    try {
+      const res = await fetch("/api/leads/calculator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: calcEmail,
+          accountSize: calcAccountSize,
+          drawdownPercent: calcDrawdown,
+          profitTarget: calcProfitTarget,
+        }),
+      });
+      if (res.ok) {
+        setCalcSaved(true);
+      }
+    } catch {
+    } finally {
+      setCalcLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO 
@@ -351,6 +408,91 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Lead Magnet: Pre-Trade Checklist */}
+      <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-checklist-lead">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
+                <Download size={12} className="text-emerald-500" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Free Download</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+                Get the Free<br /><span className="text-emerald-500">Pre-Trade Checklist</span>
+              </h2>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                The same checklist disciplined traders use before every single trade. 
+                Print it, pin it to your monitor, and stop making impulsive entries.
+              </p>
+              <div className="space-y-3 mb-6">
+                {[
+                  "HTF bias confirmation steps",
+                  "Entry & exit validation rules",
+                  "Risk management checks",
+                  "Psychology & emotional state audit"
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-8 rounded-2xl bg-background border border-border">
+              <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
+                <FileText className="text-emerald-500" size={28} />
+              </div>
+              <h3 className="text-lg font-black text-foreground text-center uppercase tracking-widest mb-2">
+                Enter Your Email
+              </h3>
+              <p className="text-xs text-muted-foreground text-center mb-6">
+                Get instant access — no spam, ever.
+              </p>
+              {checklistSubmitted ? (
+                <div className="text-center space-y-4" data-testid="checklist-success">
+                  <div className="h-14 w-14 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="text-emerald-500" size={28} />
+                  </div>
+                  <p className="text-sm font-bold text-emerald-500">Checklist ready!</p>
+                  <Link to="/checklist" target="_blank">
+                    <Button className="w-full h-12 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-emerald-400" data-testid="button-download-checklist">
+                      <Download className="mr-2 h-4 w-4" />
+                      View & Print Checklist
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <form onSubmit={handleChecklistSubmit} className="space-y-3" data-testid="form-checklist">
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={checklistEmail}
+                    onChange={(e) => setChecklistEmail(e.target.value)}
+                    required
+                    className="h-12 bg-muted/50 border-border text-foreground rounded-xl"
+                    data-testid="input-checklist-email"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={checklistLoading}
+                    className="w-full h-12 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-emerald-400"
+                    data-testid="button-checklist-submit"
+                  >
+                    {checklistLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Get Free Checklist
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* TradifyApp vs Spreadsheets Comparison */}
       <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-comparison">
         <div className="max-w-4xl mx-auto px-6">
@@ -628,6 +770,142 @@ export default function Landing() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Lead Magnet: Prop Firm Challenge Calculator */}
+      <section className="py-24 bg-gradient-to-b from-background via-blue-500/5 to-background border-y border-border" data-testid="section-calculator-lead">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
+              <Calculator size={12} className="text-blue-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Free Tool</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+              Prop Firm Challenge<br /><span className="text-blue-400">Calculator</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Find out exactly what you need to pass your prop firm challenge. Enter your numbers below.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border">
+              <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-6">Your Challenge Details</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Account Size ($)</label>
+                  <Input
+                    type="number"
+                    placeholder="100000"
+                    value={calcAccountSize}
+                    onChange={(e) => setCalcAccountSize(e.target.value)}
+                    className="h-12 bg-muted/50 border-border text-foreground rounded-xl font-mono"
+                    data-testid="input-calc-account-size"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Max Drawdown (%)</label>
+                  <Input
+                    type="number"
+                    placeholder="10"
+                    value={calcDrawdown}
+                    onChange={(e) => setCalcDrawdown(e.target.value)}
+                    className="h-12 bg-muted/50 border-border text-foreground rounded-xl font-mono"
+                    data-testid="input-calc-drawdown"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Profit Target (%)</label>
+                  <Input
+                    type="number"
+                    placeholder="8"
+                    value={calcProfitTarget}
+                    onChange={(e) => setCalcProfitTarget(e.target.value)}
+                    className="h-12 bg-muted/50 border-border text-foreground rounded-xl font-mono"
+                    data-testid="input-calc-profit-target"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border">
+              <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-6">Your Numbers</h3>
+              {calcAccountSize && calcDrawdown && calcProfitTarget ? (() => {
+                const acctSize = parseFloat(calcAccountSize) || 0;
+                const dd = parseFloat(calcDrawdown) || 0;
+                const pt = parseFloat(calcProfitTarget) || 0;
+                const maxLoss = acctSize * (dd / 100);
+                const profitNeeded = acctSize * (pt / 100);
+                const riskPerTrade = maxLoss * 0.02;
+                const riskPercent = (riskPerTrade / acctSize) * 100;
+                const avgRR = 2;
+                const winRate = 55;
+                const avgWin = riskPerTrade * avgRR;
+                const avgLoss = riskPerTrade;
+                const expectancy = (winRate / 100) * avgWin - ((100 - winRate) / 100) * avgLoss;
+                const tradesNeeded = expectancy > 0 ? Math.ceil(profitNeeded / expectancy) : 0;
+                const tradingDays = 22;
+                const dailyTarget = profitNeeded / tradingDays;
+
+                return (
+                  <div className="space-y-4">
+                    {[
+                      { label: "Max Drawdown Amount", value: `$${maxLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-rose-400" },
+                      { label: "Profit Target Amount", value: `$${profitNeeded.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-emerald-500" },
+                      { label: "Suggested Risk/Trade (2% of DD)", value: `$${riskPerTrade.toLocaleString(undefined, { maximumFractionDigits: 0 })} (${riskPercent.toFixed(2)}%)`, color: "text-blue-400" },
+                      { label: "Est. Trades Needed (2R, 55% WR)", value: tradesNeeded > 0 ? `~${tradesNeeded} trades` : "—", color: "text-amber-400" },
+                      { label: "Daily P&L Target (22 days)", value: `$${dailyTarget.toLocaleString(undefined, { maximumFractionDigits: 0 })}/day`, color: "text-emerald-500" },
+                    ].map((row, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border">
+                        <span className="text-xs text-muted-foreground">{row.label}</span>
+                        <span className={`text-sm font-black font-mono ${row.color}`}>{row.value}</span>
+                      </div>
+                    ))}
+                    
+                    <div className="pt-4 border-t border-border">
+                      {calcSaved ? (
+                        <div className="text-center space-y-2" data-testid="calculator-success">
+                          <div className="flex items-center justify-center gap-2">
+                            <CheckCircle2 className="text-emerald-500" size={18} />
+                            <span className="text-sm font-bold text-emerald-500">Results saved to your email!</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleCalcSubmit} className="space-y-3" data-testid="form-calculator">
+                          <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest font-bold">Save your results</p>
+                          <div className="flex gap-2">
+                            <Input
+                              type="email"
+                              placeholder="your@email.com"
+                              value={calcEmail}
+                              onChange={(e) => setCalcEmail(e.target.value)}
+                              required
+                              className="h-10 bg-muted/50 border-border text-foreground rounded-xl text-sm"
+                              data-testid="input-calc-email"
+                            />
+                            <Button
+                              type="submit"
+                              disabled={calcLoading}
+                              className="h-10 px-6 bg-blue-500 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-blue-400 shrink-0"
+                              data-testid="button-calc-submit"
+                            >
+                              {calcLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                            </Button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                );
+              })() : (
+                <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                  <Calculator className="text-muted-foreground/30 mb-4" size={48} />
+                  <p className="text-sm text-muted-foreground">Enter your challenge details to see your numbers</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

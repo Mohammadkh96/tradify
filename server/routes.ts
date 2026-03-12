@@ -343,6 +343,69 @@ ${blogPosts.map(p => `  <url>
     }
   });
   
+  // Lead magnet endpoints
+  app.post("/api/leads/checklist", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ message: "Valid email is required" });
+      }
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const [existing] = await db.select()
+        .from(schema.leads)
+        .where(and(eq(schema.leads.email, normalizedEmail), eq(schema.leads.source, "checklist")))
+        .limit(1);
+
+      if (existing) {
+        return res.json({ success: true, message: "Checklist ready for download!" });
+      }
+
+      await db.insert(schema.leads).values({
+        email: normalizedEmail,
+        source: "checklist",
+      });
+
+      res.json({ success: true, message: "Checklist ready for download!" });
+    } catch (error: any) {
+      console.error("Checklist lead error:", error);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
+  app.post("/api/leads/calculator", async (req, res) => {
+    try {
+      const { email, accountSize, drawdownPercent, profitTarget } = req.body;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ message: "Valid email is required" });
+      }
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const [existing] = await db.select()
+        .from(schema.leads)
+        .where(and(eq(schema.leads.email, normalizedEmail), eq(schema.leads.source, "calculator")))
+        .limit(1);
+
+      if (existing) {
+        await db.update(schema.leads)
+          .set({ metadata: { accountSize, drawdownPercent, profitTarget } })
+          .where(eq(schema.leads.id, existing.id));
+        return res.json({ success: true, message: "Results saved!" });
+      }
+
+      await db.insert(schema.leads).values({
+        email: normalizedEmail,
+        source: "calculator",
+        metadata: { accountSize, drawdownPercent, profitTarget },
+      });
+
+      res.json({ success: true, message: "Results saved!" });
+    } catch (error: any) {
+      console.error("Calculator lead error:", error);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
   // Registration Endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {

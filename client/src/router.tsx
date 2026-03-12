@@ -43,6 +43,7 @@ import SEOTradingJournal from "@/pages/SEOTradingJournal";
 import SEOPropFirmTracker from "@/pages/SEOPropFirmTracker";
 import SEOMT5Analytics from "@/pages/SEOMT5Analytics";
 import ResetPassword from "@/pages/ResetPassword";
+import PreTradeChecklist from "@/pages/PreTradeChecklist";
 import { useQuery } from "@tanstack/react-query";
 
 function HybridRoute({ children }: { children: React.ReactNode }) {
@@ -468,6 +469,7 @@ function AppRoutes() {
       {/* Public Routes */}
       <Route path="/" element={<Landing />} />
       <Route path="/early-access" element={<EarlyAccess />} />
+      <Route path="/checklist" element={<PreTradeChecklist />} />
       <Route path="/pricing" element={<HybridRoute><Pricing /></HybridRoute>} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />

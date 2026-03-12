@@ -15,6 +15,7 @@ Key features include:
 - A tiered subscription model (Free, Pro, Elite) with feature gating and differentiated data retention.
 - A Founding Member Program offering early access benefits and exclusive discounts.
 - A Prop Firm Challenge Tracker for managing and analyzing performance against proprietary trading firm rules, including an AI Risk Analysis panel for Elite users.
+- Landing page lead magnets: Pre-Trade Checklist (email capture → printable checklist at /checklist) and Prop Firm Challenge Calculator (interactive tool with email save). Leads stored in `leads` table with `email`, `source`, `metadata`.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

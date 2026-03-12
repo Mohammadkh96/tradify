@@ -127,6 +127,18 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Create leads table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS leads (
+        id SERIAL PRIMARY KEY,
+        email TEXT NOT NULL,
+        source TEXT NOT NULL,
+        metadata JSONB,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(email, source)
+      );
+    `);
+
     // Create founding member suggestions table if not exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS founding_member_suggestions (

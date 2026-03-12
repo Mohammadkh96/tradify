@@ -731,3 +731,17 @@ export const userStreaks = pgTable("user_streaks", {
 export const insertUserStreakSchema = createInsertSchema(userStreaks).omit({ id: true });
 export type UserStreak = typeof userStreaks.$inferSelect;
 export type InsertUserStreak = z.infer<typeof insertUserStreakSchema>;
+
+// ==================== LEAD MAGNETS ====================
+
+export const leads = pgTable("leads", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  source: text("source").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true });
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
