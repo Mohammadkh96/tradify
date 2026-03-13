@@ -524,12 +524,13 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex flex-col relative pt-20">
       <SEO 
-        title={isLogin ? "Login | Tradify" : "Create Account | Tradify"}
+        title={isLogin ? "Login | TradifyApp" : "Create Account | TradifyApp"}
         description={isLogin 
-          ? "Sign in to your Tradify trading journal. Access your MT5 sync, analytics, and strategy validation tools."
-          : "Create your free Tradify account. Start tracking your trades with MT5 auto-sync and professional analytics."
+          ? "Sign in to your TradifyApp trading discipline platform. Access your MT5 sync, analytics, and strategy validation tools."
+          : "Create your free TradifyApp account. Start enforcing your trading rules with MT5 auto-sync and discipline analytics."
         }
         canonical={isLogin ? "https://tradifyapp.com/login" : "https://tradifyapp.com/signup"}
+        noindex={true}
       />
       <PublicNavbar />
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">

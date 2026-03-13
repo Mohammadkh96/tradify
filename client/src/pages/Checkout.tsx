@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { NoIndexSEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -137,6 +138,7 @@ export default function Checkout() {
 
   return (
     <div className="flex-1 bg-background text-foreground min-h-screen p-6 lg:p-10">
+      <NoIndexSEO title="Billing & Subscription | TradifyApp" />
       <div className="max-w-4xl mx-auto space-y-8">
         <header>
           <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase italic mb-2">

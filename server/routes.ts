@@ -1,4 +1,5 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
+import { botSeoMiddleware } from "./bot-seo";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
@@ -215,6 +216,14 @@ export async function registerRoutes(
     res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
   });
 
+  // Security headers
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+  });
+
   // SEO: robots.txt
   app.get("/robots.txt", (_req, res) => {
     res.type("text/plain").send(`User-agent: *
@@ -227,6 +236,8 @@ Disallow: /strategies
 Disallow: /profile
 Disallow: /checkout
 Disallow: /mt5-bridge
+Disallow: /login
+Disallow: /signup
 
 Sitemap: https://tradifyapp.com/sitemap.xml`);
   });
@@ -238,26 +249,31 @@ Sitemap: https://tradifyapp.com/sitemap.xml`);
         .from(schema.blogPosts)
         .where(eq(schema.blogPosts.status, "published"));
 
+      const today = new Date().toISOString().split("T")[0];
       const staticPages = [
-        { url: "/", priority: "1.0", changefreq: "weekly" },
-        { url: "/features", priority: "0.8", changefreq: "monthly" },
-        { url: "/pricing", priority: "0.9", changefreq: "weekly" },
-        { url: "/how-it-works", priority: "0.7", changefreq: "monthly" },
-        { url: "/resources", priority: "0.7", changefreq: "monthly" },
-        { url: "/blog", priority: "0.8", changefreq: "daily" },
-        { url: "/early-access", priority: "0.9", changefreq: "weekly" },
-        { url: "/signup", priority: "0.8", changefreq: "monthly" },
-        { url: "/login", priority: "0.6", changefreq: "monthly" },
-        { url: "/terms", priority: "0.3", changefreq: "yearly" },
-        { url: "/privacy", priority: "0.3", changefreq: "yearly" },
-        { url: "/risk-disclaimer", priority: "0.3", changefreq: "yearly" },
-        { url: "/cookie-policy", priority: "0.3", changefreq: "yearly" },
+        { url: "/", priority: "1.0", changefreq: "weekly", lastmod: today },
+        { url: "/features", priority: "0.8", changefreq: "monthly", lastmod: today },
+        { url: "/pricing", priority: "0.9", changefreq: "weekly", lastmod: today },
+        { url: "/how-it-works", priority: "0.7", changefreq: "monthly", lastmod: today },
+        { url: "/resources", priority: "0.7", changefreq: "monthly", lastmod: today },
+        { url: "/blog", priority: "0.8", changefreq: "daily", lastmod: today },
+        { url: "/about", priority: "0.5", changefreq: "monthly", lastmod: today },
+        { url: "/demo", priority: "0.7", changefreq: "monthly", lastmod: today },
+        { url: "/checklist", priority: "0.6", changefreq: "monthly", lastmod: today },
+        { url: "/trading-journal", priority: "0.7", changefreq: "monthly", lastmod: today },
+        { url: "/prop-firm-tracker", priority: "0.7", changefreq: "monthly", lastmod: today },
+        { url: "/mt5-trading-analytics", priority: "0.6", changefreq: "monthly", lastmod: today },
+        { url: "/terms", priority: "0.3", changefreq: "yearly", lastmod: today },
+        { url: "/privacy", priority: "0.3", changefreq: "yearly", lastmod: today },
+        { url: "/risk-disclaimer", priority: "0.3", changefreq: "yearly", lastmod: today },
+        { url: "/cookie-policy", priority: "0.3", changefreq: "yearly", lastmod: today },
       ];
 
       let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${staticPages.map(p => `  <url>
     <loc>https://tradifyapp.com${p.url}</loc>
+    <lastmod>${p.lastmod}</lastmod>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`).join("\n")}
@@ -7527,4 +7543,7 @@ async function seedDatabase() {
       notes: "Perfect textbook setup. Liquidity sweep of Asian high, displacement down, entered on FVG retest."
     });
   }
+
+  // Bot SEO middleware — serves per-page meta to crawlers before SPA catch-all
+  app.use(botSeoMiddleware);
 }

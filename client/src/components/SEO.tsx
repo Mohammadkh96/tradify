@@ -62,6 +62,8 @@ export function SEO({
       <meta property="og:site_name" content="TradifyApp" />
 
       <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@tradifyapp" />
+      <meta name="twitter:creator" content="@tradifyapp" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
