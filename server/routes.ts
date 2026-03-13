@@ -245,24 +245,25 @@ Sitemap: https://tradifyapp.com/sitemap.xml`);
   // SEO: sitemap.xml (dynamic, includes blog posts)
   app.get("/sitemap.xml", async (_req, res) => {
     try {
-      const blogPosts = await db.select({ slug: schema.blogPosts.slug, updatedAt: schema.blogPosts.updatedAt })
+      const blogPosts = await db.select({ slug: schema.blogPosts.slug, publishedAt: schema.blogPosts.publishedAt })
         .from(schema.blogPosts)
         .where(eq(schema.blogPosts.status, "published"));
 
       const today = new Date().toISOString().split("T")[0];
       const staticPages = [
         { url: "/", priority: "1.0", changefreq: "weekly", lastmod: today },
-        { url: "/features", priority: "0.8", changefreq: "monthly", lastmod: today },
         { url: "/pricing", priority: "0.9", changefreq: "weekly", lastmod: today },
-        { url: "/how-it-works", priority: "0.7", changefreq: "monthly", lastmod: today },
-        { url: "/resources", priority: "0.7", changefreq: "monthly", lastmod: today },
+        { url: "/features", priority: "0.9", changefreq: "weekly", lastmod: today },
+        { url: "/how-it-works", priority: "0.8", changefreq: "monthly", lastmod: today },
+        { url: "/trading-journal", priority: "0.9", changefreq: "weekly", lastmod: today },
+        { url: "/prop-firm-tracker", priority: "0.9", changefreq: "weekly", lastmod: today },
+        { url: "/mt5-trading-analytics", priority: "0.9", changefreq: "weekly", lastmod: today },
+        { url: "/about", priority: "0.8", changefreq: "monthly", lastmod: today },
         { url: "/blog", priority: "0.8", changefreq: "daily", lastmod: today },
-        { url: "/about", priority: "0.5", changefreq: "monthly", lastmod: today },
-        { url: "/demo", priority: "0.7", changefreq: "monthly", lastmod: today },
-        { url: "/checklist", priority: "0.6", changefreq: "monthly", lastmod: today },
-        { url: "/trading-journal", priority: "0.7", changefreq: "monthly", lastmod: today },
-        { url: "/prop-firm-tracker", priority: "0.7", changefreq: "monthly", lastmod: today },
-        { url: "/mt5-trading-analytics", priority: "0.6", changefreq: "monthly", lastmod: today },
+        { url: "/resources", priority: "0.7", changefreq: "monthly", lastmod: today },
+        { url: "/early-access", priority: "0.8", changefreq: "weekly", lastmod: today },
+        { url: "/signup", priority: "0.8", changefreq: "monthly", lastmod: today },
+        { url: "/login", priority: "0.6", changefreq: "monthly", lastmod: today },
         { url: "/terms", priority: "0.3", changefreq: "yearly", lastmod: today },
         { url: "/privacy", priority: "0.3", changefreq: "yearly", lastmod: today },
         { url: "/risk-disclaimer", priority: "0.3", changefreq: "yearly", lastmod: today },
@@ -279,7 +280,7 @@ ${staticPages.map(p => `  <url>
   </url>`).join("\n")}
 ${blogPosts.map(p => `  <url>
     <loc>https://tradifyapp.com/blog/${p.slug}</loc>
-    <lastmod>${p.updatedAt ? new Date(p.updatedAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]}</lastmod>
+    <lastmod>${p.publishedAt ? new Date(p.publishedAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>`).join("\n")}
@@ -4162,6 +4163,9 @@ End with: "Review your charts for current market structure."`;
   // Seed data on startup
   await seedDatabase();
 
+  // Bot SEO middleware — serves per-page meta to crawlers before SPA catch-all
+  app.use(botSeoMiddleware);
+
   app.get("/api/user/role", async (req, res) => {
     // Check for hardcoded admin first
     const userId = req.query.userId as string || req.headers["x-user-id"] as string;
@@ -7543,7 +7547,4 @@ async function seedDatabase() {
       notes: "Perfect textbook setup. Liquidity sweep of Asian high, displacement down, entered on FVG retest."
     });
   }
-
-  // Bot SEO middleware — serves per-page meta to crawlers before SPA catch-all
-  app.use(botSeoMiddleware);
 }

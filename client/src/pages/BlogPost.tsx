@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

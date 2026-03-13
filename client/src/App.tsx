@@ -33,6 +33,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import RiskDisclaimer from "@/pages/RiskDisclaimer";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
+import SEOTradingJournal from "@/pages/SEOTradingJournal";
+import SEOPropFirmTracker from "@/pages/SEOPropFirmTracker";
+import SEOMT5Analytics from "@/pages/SEOMT5Analytics";
+import About from "@/pages/About";
+import CookiePolicy from "@/pages/CookiePolicy";
 import { useQuery } from "@tanstack/react-query";
 
 function Router() {
@@ -46,7 +53,9 @@ function Router() {
 
   const isPublicPage = isLandingPage || isPricingPage || isEarlyAccessPage || isAuthPage || isPublicLegalPage || 
                        location === "/features" || location === "/how-it-works" || location === "/resources" ||
-                       location === "/blog" || location.startsWith("/blog/");
+                       location === "/blog" || location.startsWith("/blog/") ||
+                       location === "/trading-journal" || location === "/prop-firm-tracker" || 
+                       location === "/mt5-trading-analytics" || location === "/about";
 
   const { data: userRole, isLoading: isRoleLoading, isError: isRoleError } = useQuery<any>({
     queryKey: ["/api/user"],
@@ -82,6 +91,13 @@ function Router() {
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/risk-disclaimer" component={RiskDisclaimer} />
+      <Route path="/cookie-policy" component={CookiePolicy} />
+      <Route path="/blog" component={Blog} />
+      <Route path="/blog/:slug" component={BlogPost} />
+      <Route path="/trading-journal" component={SEOTradingJournal} />
+      <Route path="/prop-firm-tracker" component={SEOPropFirmTracker} />
+      <Route path="/mt5-trading-analytics" component={SEOMT5Analytics} />
+      <Route path="/about" component={About} />
       <Route path="/features" component={() => (
         <div className="min-h-screen bg-background pt-20">
           <PublicNavbar />
