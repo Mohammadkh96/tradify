@@ -1,61 +1,61 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Printer, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Printer, ArrowLeft, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SEO } from "@/components/SEO";
 
 const sections = [
   {
-    title: "1. Higher Timeframe Bias",
+    title: "1. HTF Bias & Rule Enforcement",
     items: [
-      "Checked daily/4H trend direction",
-      "Identified key support/resistance zones",
-      "Confirmed HTF bias is clear (not ranging/uncertain)",
-      "Noted any upcoming high-impact news events",
+      "Confirmed daily/4H trend direction aligns with my rule set",
+      "Checked TradifyApp rule engine — no active session restrictions triggered",
+      "Verified no high-impact news within my restricted news window",
+      "HTF bias is clear and matches my allowed trading direction rules",
     ],
   },
   {
-    title: "2. Entry Zone Validation",
+    title: "2. Entry & Exit Validation Against Session Rules",
     items: [
-      "Price is at a valid supply/demand zone",
-      "Zone has not been previously mitigated",
-      "Liquidity has been swept before entry",
-      "Structure shift (BOS/CHoCH) confirmed on LTF",
+      "Entry setup matches one of my pre-defined strategy templates",
+      "Stop loss is placed beyond structure — not an arbitrary round number",
+      "Take profit is at the next key level with minimum acceptable R:R",
+      "This trade passes my TradifyApp entry checklist rule (if configured)",
     ],
   },
   {
-    title: "3. Entry & Exit Plan",
+    title: "3. Prop Firm Drawdown Awareness Check",
     items: [
-      "Entry trigger confirmed (engulfing, pin bar, order block reaction)",
-      "Stop loss placed beyond structure (not arbitrary)",
-      "Take profit at next key level (minimum 1:2 RR)",
-      "Risk-to-reward ratio acceptable (≥ 1:2)",
+      "Checked current drawdown distance in TradifyApp Prop Tracker",
+      "This trade's risk will NOT push me within 50% of my daily drawdown limit",
+      "Total open risk across all positions stays within max drawdown threshold",
+      "If trailing drawdown: verified high-water mark and current cushion",
     ],
   },
   {
-    title: "4. Risk Management",
+    title: "4. Position Size & Risk Calculator Input",
     items: [
-      "Risk per trade ≤ 1-2% of account",
-      "Not exceeding max daily drawdown limit",
-      "Not over-leveraged on this position",
-      "No correlated trades open (double exposure)",
+      "Calculated position size using TradifyApp risk calculator (not mental math)",
+      "Risk per trade is ≤ 2% of current drawdown allowance (not account balance)",
+      "No correlated positions open that double my effective exposure",
+      "Lot size matches my pre-committed session rule — no manual override",
     ],
   },
   {
-    title: "5. Psychology & Emotional State",
+    title: "5. Psychological & Emotional State Audit",
     items: [
-      "Not revenge trading after a loss",
-      "Not FOMO entering a move I missed",
-      "Emotionally calm and focused",
-      "Following my trading plan — not improvising",
+      "Logged my pre-session mood in TradifyApp (calm / anxious / frustrated / confident)",
+      "Not revenge trading after a previous loss this session",
+      "Not FOMO entering because I missed the initial move",
+      "I slept enough, I'm not fatigued, and I can think clearly right now",
     ],
   },
   {
-    title: "6. Final Confirmation",
+    title: "6. Behavioral Discipline Trigger Review",
     items: [
-      "This trade fits my strategy rules exactly",
-      "I would take this same trade 100 times",
-      "I can accept the loss if stopped out",
-      "Trade logged in journal before execution",
+      "I have not exceeded my max trades per session rule",
+      "My session loss limit has NOT been hit — TradifyApp confirms green status",
+      "I am trading within my defined session hours (not outside my window)",
+      "This is a planned trade from my watchlist — not a spontaneous impulse entry",
     ],
   },
 ];
@@ -65,7 +65,7 @@ export default function PreTradeChecklist() {
     <div className="min-h-screen bg-background text-foreground">
       <SEO
         title="Free Pre-Trade Checklist | TradifyApp"
-        description="The discipline checklist every serious trader needs. Print it, pin it to your monitor, and stop making impulsive entries."
+        description="The TradifyApp-specific pre-trade discipline checklist. HTF bias confirmation, prop firm drawdown checks, position sizing, psychology audit, and behavioral trigger review — all enforced automatically inside TradifyApp."
       />
 
       <div className="max-w-3xl mx-auto px-6 py-12 print:py-4 print:px-2">
@@ -88,7 +88,7 @@ export default function PreTradeChecklist() {
 
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight uppercase mb-2 print:text-2xl">
-            Pre-Trade <span className="text-emerald-500">Checklist</span>
+            Pre-Trade <span className="text-emerald-500">Discipline</span> Checklist
           </h1>
           <p className="text-sm text-muted-foreground">
             Complete every item before executing a trade. No exceptions.
@@ -120,13 +120,20 @@ export default function PreTradeChecklist() {
           ))}
         </div>
 
-        <div className="mt-10 text-center print:hidden">
-          <p className="text-xs text-muted-foreground mb-4">
-            Want to automate this entire process? TradifyApp validates every trade against your rules automatically.
+        <div className="mt-10 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-8 text-center print:hidden">
+          <div className="h-14 w-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+            <Shield className="text-emerald-500" size={28} />
+          </div>
+          <h3 className="text-lg font-black text-foreground uppercase tracking-widest mb-2">
+            This Checklist Is Automated Inside TradifyApp
+          </h3>
+          <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto leading-relaxed">
+            Every item you just checked is enforced automatically when you connect your MT5 account. 
+            Drawdown tracking, rule enforcement, position sizing, session limits — all running in real time.
           </p>
           <Link to="/signup" data-testid="link-checklist-signup">
-            <Button className="bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs hover:bg-emerald-400" data-testid="button-checklist-signup">
-              Start Free — Automate Your Discipline
+            <Button className="bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs hover:bg-emerald-400 h-12 px-8" data-testid="button-checklist-signup">
+              Start Free — Your Rules. Enforced.
             </Button>
           </Link>
         </div>

@@ -431,18 +431,26 @@ export default function Landing() {
                 The same checklist disciplined traders use before every single trade. 
                 Print it, pin it to your monitor, and stop making impulsive entries.
               </p>
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 mb-6">
                 {[
-                  "HTF bias confirmation steps",
-                  "Entry & exit validation rules",
-                  "Risk management checks",
-                  "Psychology & emotional state audit"
+                  { text: "HTF bias confirmation with rule enforcement check", num: "01" },
+                  { text: "Drawdown status vs current prop firm limit", num: "02" },
+                  { text: "Behavioral discipline trigger review", num: "03" },
+                  { text: "Emotional readiness audit", num: "04" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                    {item}
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 group" data-testid={`checklist-preview-${i}`}>
+                    <div className="h-7 w-7 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-black text-emerald-500 font-mono">{item.num}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">{item.text}</span>
                   </div>
                 ))}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/10 border border-dashed border-border/30 opacity-50">
+                  <div className="h-7 w-7 rounded bg-muted/30 border border-border/30 flex items-center justify-center shrink-0">
+                    <Lock size={12} className="text-muted-foreground/50" />
+                  </div>
+                  <span className="text-sm text-muted-foreground/60 italic">+ 20 more items — enter email to unlock</span>
+                </div>
               </div>
             </div>
 
@@ -959,40 +967,76 @@ export default function Landing() {
                 const riskPerTrade = maxLoss * 0.02;
                 const riskPercent = (riskPerTrade / acctSize) * 100;
                 const avgRR = 2;
-                const winRate = 55;
                 const avgWin = riskPerTrade * avgRR;
-                const avgLoss = riskPerTrade;
-                const expectancy = (winRate / 100) * avgWin - ((100 - winRate) / 100) * avgLoss;
+                const avgLoss2 = riskPerTrade;
+                const minWinRate = avgRR > 0 ? (1 / (1 + avgRR)) * 100 : 50;
+                const safeWinRate = Math.ceil(minWinRate + 5);
+                const expectancy = (safeWinRate / 100) * avgWin - ((100 - safeWinRate) / 100) * avgLoss2;
                 const tradesNeeded = expectancy > 0 ? Math.ceil(profitNeeded / expectancy) : 0;
                 const tradingDays = 22;
                 const dailyTarget = profitNeeded / tradingDays;
 
+                const difficultyRatio = dd > 0 ? pt / dd : 99;
+                const difficultyLabel = difficultyRatio <= 0.6 ? "Achievable" : difficultyRatio <= 1.0 ? "Moderate" : difficultyRatio <= 1.5 ? "Aggressive" : "Very Hard";
+                const difficultyColor = difficultyRatio <= 0.6 ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" : difficultyRatio <= 1.0 ? "text-amber-400 bg-amber-400/10 border-amber-400/20" : "text-rose-400 bg-rose-400/10 border-rose-400/20";
+
+                const resultRows = [
+                  { label: "Max Drawdown Amount", value: `$${maxLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-rose-400" },
+                  { label: "Profit Target Amount", value: `$${profitNeeded.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-emerald-500" },
+                  { label: "Suggested Risk/Trade (2% of DD)", value: `$${riskPerTrade.toLocaleString(undefined, { maximumFractionDigits: 0 })} (${riskPercent.toFixed(2)}%)`, color: "text-blue-400" },
+                  { label: "Min Win Rate Required (at 2R)", value: `${safeWinRate}%`, color: "text-violet-400" },
+                  { label: "Est. Trades Needed", value: tradesNeeded > 0 ? `~${tradesNeeded} trades` : "—", color: "text-amber-400" },
+                  { label: "Daily P&L Target (22 days)", value: `$${dailyTarget.toLocaleString(undefined, { maximumFractionDigits: 0 })}/day`, color: "text-emerald-500" },
+                ];
+
+                const isUnlocked = calcSaved;
+
                 return (
                   <div className="space-y-4">
-                    {[
-                      { label: "Max Drawdown Amount", value: `$${maxLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-rose-400" },
-                      { label: "Profit Target Amount", value: `$${profitNeeded.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-emerald-500" },
-                      { label: "Suggested Risk/Trade (2% of DD)", value: `$${riskPerTrade.toLocaleString(undefined, { maximumFractionDigits: 0 })} (${riskPercent.toFixed(2)}%)`, color: "text-blue-400" },
-                      { label: "Est. Trades Needed (2R, 55% WR)", value: tradesNeeded > 0 ? `~${tradesNeeded} trades` : "—", color: "text-amber-400" },
-                      { label: "Daily P&L Target (22 days)", value: `$${dailyTarget.toLocaleString(undefined, { maximumFractionDigits: 0 })}/day`, color: "text-emerald-500" },
-                    ].map((row, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border">
-                        <span className="text-xs text-muted-foreground">{row.label}</span>
-                        <span className={`text-sm font-black font-mono ${row.color}`}>{row.value}</span>
+                    <div className={`relative ${!isUnlocked ? "select-none" : ""}`}>
+                      <div className={!isUnlocked ? "blur-[6px] pointer-events-none" : ""}>
+                        <div className="space-y-3">
+                          {resultRows.map((row, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border">
+                              <span className="text-xs text-muted-foreground">{row.label}</span>
+                              <span className={`text-sm font-black font-mono ${row.color}`}>{row.value}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className={`mt-3 flex items-center justify-between p-3 rounded-xl border ${difficultyColor}`}>
+                          <span className="text-xs font-bold uppercase tracking-widest">Difficulty Score</span>
+                          <span className="text-sm font-black">{difficultyLabel}</span>
+                        </div>
                       </div>
-                    ))}
-                    
+
+                      {!isUnlocked && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/60 backdrop-blur-[2px] rounded-xl">
+                          <Lock className="text-blue-400 mb-2" size={24} />
+                          <p className="text-sm font-black text-foreground uppercase tracking-widest mb-1">Unlock Your Results</p>
+                          <p className="text-[10px] text-muted-foreground">Enter your email below</p>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="pt-4 border-t border-border">
-                      {calcSaved ? (
-                        <div className="text-center space-y-2" data-testid="calculator-success">
-                          <div className="flex items-center justify-center gap-2">
-                            <CheckCircle2 className="text-emerald-500" size={18} />
-                            <span className="text-sm font-bold text-emerald-500">Results saved to your email!</span>
+                      {isUnlocked ? (
+                        <div className="space-y-4">
+                          <div className="text-center space-y-2" data-testid="calculator-success">
+                            <div className="flex items-center justify-center gap-2">
+                              <CheckCircle2 className="text-emerald-500" size={18} />
+                              <span className="text-sm font-bold text-emerald-500">Results unlocked!</span>
+                            </div>
                           </div>
+                          <Link to="/signup" className="block">
+                            <Button className="w-full h-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-emerald-400" data-testid="button-calc-signup">
+                              TradifyApp Tracks These Metrics Automatically. Start Free →
+                            </Button>
+                          </Link>
                         </div>
                       ) : (
                         <form onSubmit={handleCalcSubmit} className="space-y-3" data-testid="form-calculator">
-                          <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest font-bold">Save your results</p>
+                          <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest font-bold">Enter your email to unlock results</p>
                           <div className="flex gap-2">
                             <Input
                               type="email"
@@ -1009,7 +1053,7 @@ export default function Landing() {
                               className="h-10 px-6 bg-blue-500 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-blue-400 shrink-0"
                               data-testid="button-calc-submit"
                             >
-                              {calcLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                              {calcLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Unlock"}
                             </Button>
                           </div>
                         </form>
