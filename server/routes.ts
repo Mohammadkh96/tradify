@@ -3179,7 +3179,7 @@ FORMAT YOUR RESPONSE EXACTLY:
           ...(meta.currentMetrics ? {
             metrics: {
               current: meta.currentMetrics,
-              previous: meta.prevMetrics || {},
+              previous: meta.prevMetrics || { tradeCount: 0, winRate: 0, totalPnL: 0, profitFactor: 0 },
             }
           } : {}),
         });
