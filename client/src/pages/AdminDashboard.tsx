@@ -668,6 +668,10 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/users"],
   });
 
+  const { data: utmStats } = useQuery<{ leads: any[]; signups: any[] }>({
+    queryKey: ["/api/admin/utm-stats"],
+  });
+
   const createUserMutation = useMutation({
     mutationFn: async (data: { email: string; subscriptionTier: string }) => {
       const res = await apiRequest("POST", "/api/admin/create-user", data);
@@ -820,6 +824,83 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="bg-card border-border" data-testid="card-utm-attribution">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Activity size={14} /> Campaign Attribution (UTM)
+            </CardTitle>
+            <CardDescription className="text-[10px] text-muted-foreground uppercase tracking-widest">
+              Leads & signups by campaign source
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {utmStats ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-3">Lead Captures</h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead className="text-muted-foreground font-bold uppercase text-[9px] tracking-widest">Campaign</TableHead>
+                        <TableHead className="text-muted-foreground font-bold uppercase text-[9px] tracking-widest">Source</TableHead>
+                        <TableHead className="text-right text-muted-foreground font-bold uppercase text-[9px] tracking-widest">Leads</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {utmStats.leads.length > 0 ? utmStats.leads.map((row: any, i: number) => (
+                        <TableRow key={i} className="border-border">
+                          <TableCell className="font-mono text-xs" data-testid={`text-utm-lead-campaign-${i}`}>
+                            <Badge variant="outline" className={row.campaign === "direct" ? "border-muted-foreground/30 text-muted-foreground" : "border-emerald-500/30 text-emerald-500"}>
+                              {row.campaign}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{row.source}</TableCell>
+                          <TableCell className="text-right font-black text-foreground">{row.lead_count}</TableCell>
+                        </TableRow>
+                      )) : (
+                        <TableRow className="border-border">
+                          <TableCell colSpan={3} className="text-center text-xs text-muted-foreground py-4">No lead data yet</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-3">User Signups</h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead className="text-muted-foreground font-bold uppercase text-[9px] tracking-widest">Campaign</TableHead>
+                        <TableHead className="text-muted-foreground font-bold uppercase text-[9px] tracking-widest">Source</TableHead>
+                        <TableHead className="text-right text-muted-foreground font-bold uppercase text-[9px] tracking-widest">Signups</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {utmStats.signups.length > 0 ? utmStats.signups.map((row: any, i: number) => (
+                        <TableRow key={i} className="border-border">
+                          <TableCell className="font-mono text-xs" data-testid={`text-utm-signup-campaign-${i}`}>
+                            <Badge variant="outline" className={row.campaign === "direct" ? "border-muted-foreground/30 text-muted-foreground" : "border-blue-400/30 text-blue-400"}>
+                              {row.campaign}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{row.source}</TableCell>
+                          <TableCell className="text-right font-black text-foreground">{row.signup_count}</TableCell>
+                        </TableRow>
+                      )) : (
+                        <TableRow className="border-border">
+                          <TableCell colSpan={3} className="text-center text-xs text-muted-foreground py-4">No signup data yet</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ) : (
+              <Skeleton className="h-32 w-full bg-slate-800" />
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }

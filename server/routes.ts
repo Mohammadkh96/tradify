@@ -363,7 +363,7 @@ ${blogPosts.map(p => `  <url>
   // Lead magnet endpoints
   app.post("/api/leads/checklist", async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, utm_source, utm_campaign } = req.body;
       if (!email || !email.includes("@")) {
         return res.status(400).json({ message: "Valid email is required" });
       }
@@ -381,6 +381,8 @@ ${blogPosts.map(p => `  <url>
       await db.insert(schema.leads).values({
         email: normalizedEmail,
         source: "checklist",
+        utmSource: utm_source || null,
+        utmCampaign: utm_campaign || null,
       });
 
       emailService.queueLeadSequence(normalizedEmail)
@@ -395,7 +397,7 @@ ${blogPosts.map(p => `  <url>
 
   app.post("/api/leads/calculator", async (req, res) => {
     try {
-      const { email, accountSize, drawdownPercent, profitTarget } = req.body;
+      const { email, accountSize, drawdownPercent, profitTarget, utm_source, utm_campaign } = req.body;
       if (!email || !email.includes("@")) {
         return res.status(400).json({ message: "Valid email is required" });
       }
@@ -417,6 +419,8 @@ ${blogPosts.map(p => `  <url>
         email: normalizedEmail,
         source: "calculator",
         metadata: { accountSize, drawdownPercent, profitTarget },
+        utmSource: utm_source || null,
+        utmCampaign: utm_campaign || null,
       });
 
       emailService.queueLeadSequence(normalizedEmail)
@@ -432,7 +436,7 @@ ${blogPosts.map(p => `  <url>
   // Registration Endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, fullName, country, phoneNumber, timezone } = req.body;
+      const { email, password, fullName, country, phoneNumber, timezone, utm_source, utm_campaign } = req.body;
       
       if (!email || !password || !fullName || !country || !timezone) {
         return res.status(400).json({ message: "Required fields missing" });
@@ -498,6 +502,8 @@ ${blogPosts.map(p => `  <url>
         foundingMemberProExpiry: foundingMemberProExpiry,
         referralCode,
         referredBy,
+        utmSource: utm_source || null,
+        utmCampaign: utm_campaign || null,
       }).returning();
 
       // If early access signup exists, update it to link to the user (don't block registration)
@@ -3831,6 +3837,34 @@ End with: "Review your charts for current market structure."`;
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     const users = await db.select().from(schema.userRole);
     res.json(users);
+  });
+
+  app.get("/api/admin/utm-stats", requireAdmin, async (_req, res) => {
+    try {
+      const leadStats = await pool.query(`
+        SELECT 
+          COALESCE(utm_campaign, 'direct') AS campaign,
+          COALESCE(utm_source, 'direct') AS source,
+          COUNT(*) AS lead_count
+        FROM leads
+        GROUP BY utm_campaign, utm_source
+        ORDER BY lead_count DESC
+      `);
+      const signupStats = await pool.query(`
+        SELECT 
+          COALESCE(utm_campaign, 'direct') AS campaign,
+          COALESCE(utm_source, 'direct') AS source,
+          COUNT(*) AS signup_count
+        FROM user_role
+        WHERE role = 'TRADER'
+        GROUP BY utm_campaign, utm_source
+        ORDER BY signup_count DESC
+      `);
+      res.json({ leads: leadStats.rows, signups: signupStats.rows });
+    } catch (error) {
+      console.error("UTM stats error:", error);
+      res.status(500).json({ message: "Failed to fetch UTM stats" });
+    }
   });
 
   // Get all early access signups for admin

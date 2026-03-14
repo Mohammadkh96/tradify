@@ -132,6 +132,8 @@ export const userRole = pgTable("user_role", {
   dashboardConfig: jsonb("dashboard_config"), // User's dashboard widget visibility/order preferences
   referralCode: text("referral_code"),
   referredBy: text("referred_by"),
+  utmSource: text("utm_source"),
+  utmCampaign: text("utm_campaign"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -739,6 +741,8 @@ export const leads = pgTable("leads", {
   email: text("email").notNull(),
   source: text("source").notNull(),
   metadata: jsonb("metadata"),
+  utmSource: text("utm_source"),
+  utmCampaign: text("utm_campaign"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

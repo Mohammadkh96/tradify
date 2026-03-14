@@ -58,6 +58,10 @@ export async function ensureSchemaColumns() {
       ALTER TABLE trade_journal ADD COLUMN IF NOT EXISTS mistake_category TEXT;
       ALTER TABLE mt5_history ADD COLUMN IF NOT EXISTS mood TEXT;
       ALTER TABLE mt5_history ADD COLUMN IF NOT EXISTS mistake_category TEXT;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS utm_source TEXT;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source TEXT;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
     `);
     
     // Create early access signups table if not exists

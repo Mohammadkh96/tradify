@@ -39,6 +39,7 @@ import { useState, useEffect } from "react";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { CookieSettingsButton } from "@/components/CookieConsent";
 import { SEO } from "@/components/SEO";
+import { captureUTMParams, getStoredUTM } from "@/lib/utm";
 
 function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);
@@ -76,14 +77,19 @@ export default function Landing() {
   const [calcLoading, setCalcLoading] = useState(false);
   const [calcSaved, setCalcSaved] = useState(false);
 
+  useEffect(() => {
+    captureUTMParams();
+  }, []);
+
   const handleChecklistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setChecklistLoading(true);
     try {
+      const utm = getStoredUTM();
       const res = await fetch("/api/leads/checklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: checklistEmail }),
+        body: JSON.stringify({ email: checklistEmail, ...(utm || {}) }),
       });
       if (res.ok) {
         setChecklistSubmitted(true);
@@ -98,6 +104,7 @@ export default function Landing() {
     e.preventDefault();
     setCalcLoading(true);
     try {
+      const utm = getStoredUTM();
       const res = await fetch("/api/leads/calculator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,6 +113,7 @@ export default function Landing() {
           accountSize: calcAccountSize,
           drawdownPercent: calcDrawdown,
           profitTarget: calcProfitTarget,
+          ...(utm || {}),
         }),
       });
       if (res.ok) {

@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { getStoredUTM } from "@/lib/utm";
 import { queryClient, getQueryFn } from "@/lib/queryClient";
 import { trackFBEvent } from "@/lib/fbpixel";
 import { useQuery } from "@tanstack/react-query";
@@ -190,9 +191,10 @@ export default function Auth() {
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const refCode = new URLSearchParams(window.location.search).get("ref");
+      const utm = getStoredUTM();
       const payload = isLogin 
         ? { email, password }
-        : { email, password, fullName, country, phoneNumber, timezone, ...(refCode ? { ref: refCode } : {}) };
+        : { email, password, fullName, country, phoneNumber, timezone, ...(refCode ? { ref: refCode } : {}), ...(utm || {}) };
 
       const response = await fetch(endpoint, {
         method: "POST",

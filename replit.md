@@ -15,7 +15,8 @@ Key features include:
 - A tiered subscription model (Free, Pro, Elite) with feature gating and differentiated data retention.
 - A Founding Member Program offering early access benefits and exclusive discounts.
 - A Prop Firm Challenge Tracker for managing and analyzing performance against proprietary trading firm rules, including an AI Risk Analysis panel for Elite users.
-- Landing page lead magnets: Pre-Trade Checklist (email capture → printable checklist at /checklist) and Prop Firm Challenge Calculator (interactive tool with email save). Leads stored in `leads` table with `email`, `source`, `metadata`.
+- Landing page lead magnets: Pre-Trade Checklist (email capture → printable checklist at /checklist) and Prop Firm Challenge Calculator (interactive tool with email save). Leads stored in `leads` table with `email`, `source`, `metadata`, `utm_source`, `utm_campaign`.
+- UTM Attribution Tracking: `client/src/lib/utm.ts` captures `utm_source` and `utm_campaign` from URL params into localStorage (30-day expiry). Passed on lead capture forms and user registration. Admin overview shows Campaign Attribution breakdown. API: `GET /api/admin/utm-stats`. UTM columns on both `leads` and `user_role` tables.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
