@@ -1101,6 +1101,8 @@ export class DatabaseStorage implements IStorage {
       openTime: mt5History.openTime,
       closeTime: mt5History.closeTime,
       duration: mt5History.duration,
+      grossPl: mt5History.grossPl,
+      netPl: mt5History.netPl,
     }).from(mt5History)
       .where(and(eq(mt5History.userId, userId), eq(mt5History.mt5AccountId, accountNumber)));
     
@@ -1188,7 +1190,9 @@ export class DatabaseStorage implements IStorage {
           inserted++;
         } else {
           const directionWrong = existing.direction !== direction;
+          const plChanged = existing.grossPl !== profit.toString() || existing.netPl !== netPl;
           const needsUpdate = directionWrong
+            || plChanged
             || existing.entryPrice === existing.exitPrice && entryPrice !== exitPrice
             || (existing.duration === 0 || existing.duration === null) && durationSecs > 0
             || existing.openTime?.getTime() === existing.closeTime?.getTime() && openTime.getTime() !== closeTime.getTime();
@@ -1202,6 +1206,10 @@ export class DatabaseStorage implements IStorage {
                 openTime,
                 closeTime,
                 duration: durationSecs,
+                grossPl: profit.toString(),
+                commission: commission.toString(),
+                swap: swap.toString(),
+                netPl,
               })
               .where(eq(mt5History.id, existing.id));
             updated++;

@@ -570,7 +570,7 @@ class TradifyConnector:
                         if d.entry == 0 and d.position_id > 0:
                             open_deals[d.position_id] = d
                     for d in history:
-                        if d.entry == 1:
+                        if d.entry in (1, 2, 3):
                             opener = open_deals.get(d.position_id)
                             hist_list.append({
                                 "ticket": d.ticket, "symbol": d.symbol,
