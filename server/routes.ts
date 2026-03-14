@@ -3169,11 +3169,19 @@ FORMAT YOUR RESPONSE EXACTLY:
       // Check for cached report
       const existing = await storage.getAIInsights(userId, monthKey);
       if (existing.length > 0) {
+        const cachedRecord = existing[0];
+        const meta = (cachedRecord.metadata as any) || {};
         return res.json({
-          ...existing[0],
+          ...cachedRecord,
           month: targetMonth,
           year: targetYear,
           cached: true,
+          ...(meta.currentMetrics ? {
+            metrics: {
+              current: meta.currentMetrics,
+              previous: meta.prevMetrics || {},
+            }
+          } : {}),
         });
       }
 
