@@ -525,7 +525,7 @@ export default function Landing() {
                     <div className="text-sm font-black text-muted-foreground uppercase tracking-widest">Edgewonk</div>
                   </th>
                   <th className="py-4 px-3 text-center">
-                    <div className="text-sm font-black text-muted-foreground uppercase tracking-widest">TradeZella</div>
+                    <div className="text-sm font-black text-muted-foreground uppercase tracking-widest">TradeZella / Tradervue</div>
                   </th>
                 </tr>
               </thead>
@@ -633,7 +633,7 @@ export default function Landing() {
                   <span className="text-[8px] font-bold text-emerald-500">+$4,280</span>
                 </div>
                 <div className="h-12 flex items-end gap-[1px]">
-                  {[40,45,43,50,48,55,53,58,56,62,60,65,63,68,70,73,71,76,78,80,82,85,88,90,92,95].map((h, i) => (
+                  {[40,42,38,45,43,48,46,52,50,55,53,58,56,61,59,64,62,58,63,67,65,70,68,73,71,76,74,72,78,80,77,82,85,83,88,86,90,88,92,95].map((h, i) => (
                     <div key={i} className="flex-1 rounded-sm bg-emerald-500/40" style={{ height: `${h}%` }} />
                   ))}
                 </div>
