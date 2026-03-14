@@ -1129,6 +1129,7 @@ export default function Landing() {
                           key={tab.label}
                           role="tab"
                           aria-selected={activeScreenshotTab === idx}
+                          aria-controls="screenshot-panel"
                           onClick={() => setActiveScreenshotTab(idx)}
                           className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded-t-lg transition-colors ${
                             activeScreenshotTab === idx
@@ -1144,7 +1145,7 @@ export default function Landing() {
                     </div>
                   </div>
 
-                  <div className="relative overflow-hidden" role="tabpanel">
+                  <div className="relative overflow-hidden" role="tabpanel" id="screenshot-panel">
                     {[
                       { src: "/images/screenshots/dashboard.png", alt: "TradifyApp Dashboard — balance, win rate, rule compliance, equity curve, and prop challenge progress" },
                       { src: "/images/screenshots/prop-firm.png", alt: "Prop Firm Challenge Tracker — profit target, drawdown monitoring, consistency score, and days remaining" },
