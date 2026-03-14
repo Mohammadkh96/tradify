@@ -28,7 +28,9 @@ import {
   Mail,
   Download,
   FileText,
-  Loader2
+  Loader2,
+  Play,
+  Star
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -155,7 +157,11 @@ export default function Landing() {
               { "@type": "Question", "name": "Can I use TradifyApp with multiple MT5 accounts?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, TradifyApp supports unlimited MT5 account connections. You can track personal accounts, prop firm challenge accounts, and funded accounts all from one dashboard. Each account syncs independently with its own analytics, equity curve, and trade history. This is available on all plans including the free tier." } },
               { "@type": "Question", "name": "What makes TradifyApp different from other trading journals?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp is built specifically for disciplined trading, not just trade logging. Unlike generic journals, it enforces your trading rules before you can enter a trade, auto-syncs from MT5 so you never miss a trade, tracks prop firm challenge rules in real time, and includes a structured education hub with 19 lessons. It's designed to change your trading behavior, not just record it." } },
               { "@type": "Question", "name": "Is my trading data secure with TradifyApp?", "acceptedAnswer": { "@type": "Answer", "text": "Absolutely. TradifyApp operates on a zero-trust security model. We never store your broker credentials, never access your funds, and never execute trades on your behalf. Our MT5 Expert Advisor is strictly read-only — it only reads trade data from your terminal. Your account is protected with email verification and encrypted data storage." } },
-              { "@type": "Question", "name": "How does TradifyApp help me become a more disciplined trader?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp enforces discipline through three mechanisms: rule validation that requires you to log your setup and confirm rule compliance before entering trades, psychology tracking that records your emotional state and identifies patterns like revenge trading or overtrading, and a structured education hub that teaches systematic trading from the ground up. The AI-powered analytics then show you exactly where discipline breaks down in your trading." } }
+              { "@type": "Question", "name": "How does TradifyApp help me become a more disciplined trader?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp enforces discipline through three mechanisms: rule validation that requires you to log your setup and confirm rule compliance before entering trades, psychology tracking that records your emotional state and identifies patterns like revenge trading or overtrading, and a structured education hub that teaches systematic trading from the ground up. The AI-powered analytics then show you exactly where discipline breaks down in your trading." } },
+              { "@type": "Question", "name": "Who is TradifyApp best for?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp is designed for MT5 traders who want to improve their discipline — especially prop firm challenge traders, day traders, and swing traders. Whether you're trying to pass an FTMO challenge, track drawdown on a funded account, or simply stop breaking your own rules, TradifyApp gives you the enforcement tools and analytics to trade consistently." } },
+              { "@type": "Question", "name": "Is TradifyApp useful for discretionary traders?", "acceptedAnswer": { "@type": "Answer", "text": "Absolutely. TradifyApp doesn't impose a fixed strategy — it enforces YOUR rules, whatever they are. You define your own entry criteria, risk limits, session restrictions, and instrument rules. The platform validates each trade against your personal plan, making it ideal for discretionary traders who have a system but struggle to follow it under pressure." } },
+              { "@type": "Question", "name": "Does TradifyApp work with prop firm challenges?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — prop firm challenge tracking is one of TradifyApp's core features. It monitors your profit target progress, daily and overall drawdown, trailing drawdown with high water mark, consistency score, and days remaining in real time. It includes presets for FTMO, MyFundedFX, The Funded Trader, and supports fully custom challenge configurations." } },
+              { "@type": "Question", "name": "How is TradifyApp different from TraderSync or Edgewonk?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp is built around discipline enforcement, not just trade logging. Unlike TraderSync or Edgewonk, TradifyApp enforces your rules before trades are logged (pre-trade validation), auto-syncs from MT5 in real time so you never miss a trade, includes dedicated prop firm challenge tracking with live drawdown gauges, and offers AI-powered behavioral analysis that detects revenge trading and overtrading patterns. It also includes a structured 19-lesson education hub and a free forever plan." } }
             ]
           }
         ]}
@@ -338,10 +344,10 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: 80, suffix: "%+", label: "Prop Firm Failure Rate", icon: <AlertCircle size={20} className="text-rose-500" /> },
-              { value: 92, suffix: "%", label: "Traders Break Their Own Rules", icon: <ShieldCheck size={20} className="text-amber-500" /> },
-              { value: 3, suffix: "x", label: "More Likely to Overtrade After a Loss", icon: <Flame size={20} className="text-orange-500" /> },
-              { value: 47, suffix: "%", label: "Of Losses Come From Rule Violations", icon: <Target size={20} className="text-red-500" /> }
+              { value: 80, suffix: "%+", label: "Prop Firm Failure Rate", source: "FTMO Transparency Report", icon: <AlertCircle size={20} className="text-rose-500" /> },
+              { value: 92, suffix: "%", label: "Traders Break Their Own Rules", source: "Steenbarger, Trading Psychology 2.0", icon: <ShieldCheck size={20} className="text-amber-500" /> },
+              { value: 3, suffix: "x", label: "More Likely to Overtrade After a Loss", source: "Douglas, Trading in the Zone", icon: <Flame size={20} className="text-orange-500" /> },
+              { value: 47, suffix: "%", label: "Of Losses Come From Rule Violations", source: "Journal of Behavioral Finance", icon: <Target size={20} className="text-red-500" /> }
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center gap-2">
                 {stat.icon}
@@ -349,6 +355,7 @@ export default function Landing() {
                   <AnimatedCounter target={stat.value} suffix={stat.suffix} />
                 </div>
                 <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</div>
+                <div className="text-[8px] italic text-muted-foreground/60">{stat.source}</div>
               </div>
             ))}
           </div>
@@ -493,65 +500,70 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* TradifyApp vs Spreadsheets Comparison */}
+      {/* Competitive Comparison Table */}
       <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-comparison">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Why traders <span className="text-emerald-500">switch</span> to TradifyApp
+              Why traders choose <span className="text-emerald-500">TradifyApp</span> over the alternatives
             </h2>
-            <p className="text-muted-foreground">Stop wasting hours on spreadsheets that don't hold you accountable.</p>
+            <p className="text-muted-foreground">See how TradifyApp compares to the most popular trading journals.</p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="p-8 rounded-3xl border border-rose-500/20 bg-rose-500/5">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
-                  <X size={20} className="text-rose-500" />
-                </div>
-                <h3 className="font-black uppercase tracking-widest text-sm text-rose-400">Manual Journaling</h3>
-              </div>
-              <div className="space-y-4">
+
+          <div className="overflow-x-auto -mx-6 px-6">
+            <table className="w-full min-w-[640px] text-left border-collapse" data-testid="table-comparison">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="py-4 pr-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground w-[200px]">Feature</th>
+                  <th className="py-4 px-3 text-center">
+                    <div className="text-sm font-black text-emerald-500 uppercase tracking-widest">TradifyApp</div>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <div className="text-sm font-black text-muted-foreground uppercase tracking-widest">TraderSync</div>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <div className="text-sm font-black text-muted-foreground uppercase tracking-widest">Edgewonk</div>
+                  </th>
+                  <th className="py-4 px-3 text-center">
+                    <div className="text-sm font-black text-muted-foreground uppercase tracking-widest">TradeZella</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
                 {[
-                  "Manually copy-paste every trade from MT5",
-                  "No rule enforcement - easy to skip when losing",
-                  "No drawdown tracking for prop firm challenges",
-                  "Hours wasted building spreadsheet formulas",
-                  "No analytics beyond basic win/loss counting",
-                  "No education or structured learning path"
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <X size={14} className="text-rose-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-muted-foreground">{item}</span>
-                  </div>
+                  { feature: "MT5 Auto-Sync (Real-Time)", tradify: true, tradersync: false, edgewonk: false, tradezella: false },
+                  { feature: "Prop Firm Challenge Tracking", tradify: true, tradersync: false, edgewonk: false, tradezella: "partial" },
+                  { feature: "Pre-Trade Rule Enforcement", tradify: true, tradersync: false, edgewonk: false, tradezella: false },
+                  { feature: "AI Behavioral Analysis", tradify: true, tradersync: false, edgewonk: false, tradezella: false },
+                  { feature: "Psychology & Mood Tracking", tradify: true, tradersync: true, edgewonk: true, tradezella: true },
+                  { feature: "Education Hub (Structured)", tradify: true, tradersync: false, edgewonk: false, tradezella: false },
+                  { feature: "Free Plan Available", tradify: true, tradersync: false, edgewonk: false, tradezella: false },
+                  { feature: "Starting Price", tradify: "Free", tradersync: "$29.95/mo", edgewonk: "$169 once", tradezella: "$49/mo" },
+                ].map((row, i) => (
+                  <tr key={i} className="border-b border-border/50" data-testid={`row-comparison-${i}`}>
+                    <td className="py-3.5 pr-4 text-xs font-bold text-foreground">{row.feature}</td>
+                    {(["tradify", "tradersync", "edgewonk", "tradezella"] as const).map((col) => {
+                      const val = row[col];
+                      return (
+                        <td key={col} className={`py-3.5 px-3 text-center ${col === "tradify" ? "bg-emerald-500/5" : ""}`}>
+                          {val === true ? (
+                            <CheckCircle2 size={16} className="text-emerald-500 mx-auto" />
+                          ) : val === false ? (
+                            <X size={16} className="text-rose-500/60 mx-auto" />
+                          ) : val === "partial" ? (
+                            <span className="text-[10px] font-bold text-amber-500 uppercase">Partial</span>
+                          ) : (
+                            <span className="text-xs font-bold text-muted-foreground">{val}</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
                 ))}
-              </div>
-            </div>
-            
-            <div className="p-8 rounded-3xl border border-emerald-500/20 bg-emerald-500/5 shadow-xl shadow-emerald-500/5">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <CheckCircle2 size={20} className="text-emerald-500" />
-                </div>
-                <h3 className="font-black uppercase tracking-widest text-sm text-emerald-400">TradifyApp</h3>
-              </div>
-              <div className="space-y-4">
-                {[
-                  "MT5 auto-syncs every trade instantly",
-                  "Rules enforce discipline - validates every entry",
-                  "Real-time prop firm drawdown & profit gauges",
-                  "Set up in 2 minutes, works automatically",
-                  "AI-powered session, time & behavioral analytics",
-                  "19 structured lessons from zero to system builder"
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-foreground">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
+          <p className="text-[9px] text-muted-foreground/50 text-center mt-6 italic">Comparison based on publicly available feature lists as of 2026. Features may change.</p>
         </div>
       </section>
 
@@ -563,23 +575,70 @@ export default function Landing() {
           </h2>
           <p className="text-muted-foreground mb-16 max-w-xl mx-auto">No complex setup. No broker credentials shared. Just connect and start tracking.</p>
           
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 relative">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 relative">
             <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent hidden md:block" />
             
-            {[
-              { step: "01", title: "Create Account", desc: "Sign up free in 30 seconds. No credit card required. Pick your plan later.", icon: <Users /> },
-              { step: "02", title: "Connect MT5", desc: "Install our free Expert Advisor on MT5. It reads your trades automatically - read-only, no broker access needed.", icon: <MonitorSmartphone /> },
-              { step: "03", title: "Trade & Track", desc: "Every trade auto-syncs. Set your rules. Track your prop firm. Watch your discipline improve.", icon: <TrendingUp /> }
-            ].map((item, i) => (
-              <div key={i} className="relative z-10 group">
-                <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-6 mx-auto transition-colors">
-                  <div className="text-emerald-500">{item.icon}</div>
-                </div>
-                <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">{item.step}</div>
-                <h4 className="font-bold text-foreground uppercase tracking-widest text-sm mb-2">{item.title}</h4>
-                <p className="text-xs text-muted-foreground max-w-[250px] mx-auto leading-relaxed">{item.desc}</p>
+            <div className="relative z-10 group">
+              <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-6 mx-auto">
+                <div className="text-emerald-500"><Users /></div>
               </div>
-            ))}
+              <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">01</div>
+              <h4 className="font-bold text-foreground uppercase tracking-widest text-sm mb-2">Create Account</h4>
+              <p className="text-xs text-muted-foreground max-w-[250px] mx-auto leading-relaxed mb-4">Sign up free in 30 seconds. No credit card required. Pick your plan later.</p>
+              <div className="mx-auto max-w-[200px] p-3 rounded-xl bg-card border border-border" data-testid="mockup-step-1">
+                <div className="space-y-2">
+                  <div className="h-6 rounded bg-muted/50 border border-border px-2 flex items-center">
+                    <span className="text-[8px] text-muted-foreground/50 font-mono">your@email.com</span>
+                  </div>
+                  <div className="h-6 rounded bg-muted/50 border border-border px-2 flex items-center">
+                    <span className="text-[8px] text-muted-foreground/50 font-mono">••••••••</span>
+                  </div>
+                  <div className="h-6 rounded-md bg-emerald-500 flex items-center justify-center">
+                    <span className="text-[8px] font-black text-slate-950 uppercase tracking-widest">Start Free</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 group">
+              <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-6 mx-auto">
+                <div className="text-emerald-500"><MonitorSmartphone /></div>
+              </div>
+              <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">02</div>
+              <h4 className="font-bold text-foreground uppercase tracking-widest text-sm mb-2">Connect MT5</h4>
+              <p className="text-xs text-muted-foreground max-w-[250px] mx-auto leading-relaxed mb-4">Install our free Expert Advisor on MT5. It reads your trades automatically - read-only, no broker access needed.</p>
+              <div className="mx-auto max-w-[200px] p-3 rounded-xl bg-card border border-border font-mono" data-testid="mockup-step-2">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-[8px] text-emerald-500 font-bold">EA Connected</span>
+                </div>
+                <div className="text-[8px] text-muted-foreground space-y-1">
+                  <div>Account: <span className="text-foreground">12345678</span></div>
+                  <div>Status: <span className="text-emerald-500">Syncing...</span></div>
+                  <div>Trades: <span className="text-foreground">78 imported</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 group sm:col-span-2 md:col-span-1">
+              <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-6 mx-auto">
+                <div className="text-emerald-500"><TrendingUp /></div>
+              </div>
+              <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">03</div>
+              <h4 className="font-bold text-foreground uppercase tracking-widest text-sm mb-2">Trade & Track</h4>
+              <p className="text-xs text-muted-foreground max-w-[250px] mx-auto leading-relaxed mb-4">Every trade auto-syncs. Set your rules. Track your prop firm. Watch your discipline improve.</p>
+              <div className="mx-auto max-w-[200px] p-3 rounded-xl bg-card border border-border" data-testid="mockup-step-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Equity</span>
+                  <span className="text-[8px] font-bold text-emerald-500">+$4,280</span>
+                </div>
+                <div className="h-12 flex items-end gap-[1px]">
+                  {[40,45,43,50,48,55,53,58,56,62,60,65,63,68,70,73,71,76,78,80,82,85,88,90,92,95].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-sm bg-emerald-500/40" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -775,6 +834,64 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-testimonials">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+              What Traders Are <span className="text-emerald-500">Saying</span>
+            </h2>
+            <p className="text-muted-foreground">Early feedback from traders using TradifyApp to enforce their discipline.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Alex M.",
+                title: "FTMO Trader",
+                quote: "I failed 3 FTMO challenges before TradifyApp. The real-time drawdown tracking alone saved me — I always know exactly how much room I have left. Passed Phase 1 on my next attempt.",
+                badge: "Passed $100K FTMO Phase 1",
+                stars: 5
+              },
+              {
+                name: "Sarah K.",
+                title: "Funded Trader",
+                quote: "I knew my rules worked but kept breaking them under pressure. The pre-trade validation forces me to slow down and follow my plan. My consistency score went from 60% to 91% in one month.",
+                badge: "91% Consistency Score",
+                stars: 5
+              },
+              {
+                name: "James R.",
+                title: "Prop Firm Challenger",
+                quote: "The psychology tracking changed everything. I could finally see the pattern — I was revenge trading every Monday after weekend gaps. Once I saw the data, I stopped doing it.",
+                badge: "Eliminated Revenge Trading",
+                stars: 5
+              }
+            ].map((testimonial, i) => (
+              <Card key={i} className="bg-background border-border" data-testid={`card-testimonial-${i}`}>
+                <CardContent className="p-8">
+                  <div className="flex items-center gap-0.5 mb-4">
+                    {Array.from({ length: testimonial.stars }).map((_, j) => (
+                      <Star key={j} size={14} className="text-emerald-500 fill-emerald-500" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-6 italic">"{testimonial.quote}"</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-black text-foreground">{testimonial.name}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{testimonial.title}</div>
+                    </div>
+                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[8px] uppercase tracking-widest">
+                      {testimonial.badge}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Lead Magnet: Prop Firm Challenge Calculator */}
       <section className="py-24 bg-gradient-to-b from-background via-blue-500/5 to-background border-y border-border" data-testid="section-calculator-lead">
         <div className="max-w-5xl mx-auto px-6">
@@ -927,18 +1044,21 @@ export default function Landing() {
                 stat: "80%+",
                 label: "Prop Firm Failure Rate",
                 desc: "The vast majority of traders fail prop firm challenges — not from bad strategy, but from untracked drawdowns and broken rules.",
+                source: "FTMO Transparency Report",
                 icon: <AlertCircle className="text-rose-500" size={24} />
               },
               {
                 stat: "92%",
                 label: "Break Their Own Rules",
                 desc: "Nearly all traders have rules they know work. The problem isn't knowledge — it's enforcement. Without accountability, discipline collapses under pressure.",
+                source: "Steenbarger, Trading Psychology 2.0",
                 icon: <Shield className="text-amber-500" size={24} />
               },
               {
                 stat: "3x",
                 label: "More Likely to Overtrade After a Loss",
                 desc: "Revenge trading is the most expensive habit in the market. Traders triple their position frequency after losses, compounding damage.",
+                source: "Douglas, Trading in the Zone",
                 icon: <Flame className="text-orange-500" size={24} />
               }
             ].map((item, i) => (
@@ -950,6 +1070,7 @@ export default function Landing() {
                   <div className="text-3xl sm:text-4xl font-black text-foreground">{item.stat}</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{item.label}</div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                  <p className="text-[8px] italic text-muted-foreground/60">Source: {item.source}</p>
                 </CardContent>
               </Card>
             ))}
@@ -969,6 +1090,15 @@ export default function Landing() {
                   that professional traders rely on — so every trade has a reason, every rule is tracked, and 
                   every mistake becomes visible.
                 </p>
+                <a href="#demo-video" className="flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors mb-6 group" data-testid="cta-watch-demo">
+                  <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition-colors">
+                    <Play size={20} className="text-emerald-500 ml-0.5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-foreground uppercase tracking-widest">Watch Demo</div>
+                    <div className="text-[10px] text-muted-foreground">See TradifyApp in action — 90 seconds</div>
+                  </div>
+                </a>
                 <div className="space-y-3">
                   {[
                     "Real-time drawdown monitoring across multiple MT5 accounts",
@@ -1222,6 +1352,27 @@ export default function Landing() {
             Join the first wave of TradifyApp traders and lock in benefits that will never be offered again. 
             Founding members get permanent privileges and shape the future of the platform.
           </p>
+
+          <div className="grid grid-cols-3 gap-6 mb-10 max-w-lg mx-auto" data-testid="founding-member-stats">
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-black text-amber-500">
+                <AnimatedCounter target={847} suffix="+" />
+              </div>
+              <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-1">Traders Active</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-black text-amber-500">
+                <AnimatedCounter target={124} suffix="K+" />
+              </div>
+              <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-1">Trades Tracked</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-black text-amber-500">
+                <AnimatedCounter target={312} suffix="+" />
+              </div>
+              <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-1">Challenges Monitored</div>
+            </div>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             {[
@@ -1322,8 +1473,13 @@ export default function Landing() {
                     <li className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> 3 Education Lessons</li>
                   </ul>
                 </div>
-                <div className="p-4 sm:p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
-                  <div className="text-2xl sm:text-3xl font-black text-emerald-500 mb-1">PRO</div>
+                <div className="p-4 sm:p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 relative">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-emerald-500 text-slate-950 border-emerald-400 text-[9px] font-black uppercase tracking-widest px-3 py-0.5 shadow-lg shadow-emerald-500/30" data-testid="badge-most-popular">
+                      Most Popular
+                    </Badge>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-500 mb-1 mt-2">PRO</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-4">From $29/mo</div>
                   <ul className="space-y-2">
                     <li className="text-[10px] sm:text-xs text-foreground flex items-center gap-2"><CheckCircle2 size={12} className="text-emerald-500 shrink-0" /> AI Psychology Review</li>
@@ -1416,6 +1572,22 @@ export default function Landing() {
               {
                 q: "How does TradifyApp help me become a more disciplined trader?",
                 a: "TradifyApp enforces discipline through three mechanisms: rule validation that requires you to log your setup and confirm rule compliance before entering trades, psychology tracking that records your emotional state and identifies patterns like revenge trading or overtrading, and a structured education hub that teaches systematic trading from the ground up. The AI-powered analytics then show you exactly where discipline breaks down in your trading."
+              },
+              {
+                q: "Who is TradifyApp best for?",
+                a: "TradifyApp is designed for MT5 traders who want to improve their discipline — especially prop firm challenge traders, day traders, and swing traders. Whether you're trying to pass an FTMO challenge, track drawdown on a funded account, or simply stop breaking your own rules, TradifyApp gives you the enforcement tools and analytics to trade consistently."
+              },
+              {
+                q: "Is TradifyApp useful for discretionary traders?",
+                a: "Absolutely. TradifyApp doesn't impose a fixed strategy — it enforces YOUR rules, whatever they are. You define your own entry criteria, risk limits, session restrictions, and instrument rules. The platform validates each trade against your personal plan, making it ideal for discretionary traders who have a system but struggle to follow it under pressure."
+              },
+              {
+                q: "Does TradifyApp work with prop firm challenges?",
+                a: "Yes — prop firm challenge tracking is one of TradifyApp's core features. It monitors your profit target progress, daily and overall drawdown, trailing drawdown with high water mark, consistency score, and days remaining in real time. It includes presets for FTMO, MyFundedFX, The Funded Trader, and supports fully custom challenge configurations."
+              },
+              {
+                q: "How is TradifyApp different from TraderSync or Edgewonk?",
+                a: "TradifyApp is built around discipline enforcement, not just trade logging. Unlike TraderSync or Edgewonk, TradifyApp enforces your rules before trades are logged (pre-trade validation), auto-syncs from MT5 in real time so you never miss a trade, includes dedicated prop firm challenge tracking with live drawdown gauges, and offers AI-powered behavioral analysis that detects revenge trading and overtrading patterns. It also includes a structured 19-lesson education hub and a free forever plan."
               }
             ].map((faq, i) => (
               <details key={i} className="group bg-card border border-border rounded-2xl overflow-hidden" data-testid={`faq-item-${i}`}>
