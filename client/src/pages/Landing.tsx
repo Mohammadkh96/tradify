@@ -65,6 +65,7 @@ function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: str
 }
 
 export default function Landing() {
+  const [activeScreenshotTab, setActiveScreenshotTab] = useState(0);
   const [checklistEmail, setChecklistEmail] = useState("");
   const [checklistLoading, setChecklistLoading] = useState(false);
   const [checklistSubmitted, setChecklistSubmitted] = useState(false);
@@ -1090,16 +1091,7 @@ export default function Landing() {
                   that professional traders rely on — so every trade has a reason, every rule is tracked, and 
                   every mistake becomes visible.
                 </p>
-                <a href="#demo-video" className="flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors mb-6 group" data-testid="cta-watch-demo">
-                  <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition-colors">
-                    <Play size={20} className="text-emerald-500 ml-0.5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-black text-foreground uppercase tracking-widest">Watch Demo</div>
-                    <div className="text-[10px] text-muted-foreground">See TradifyApp in action — 90 seconds</div>
-                  </div>
-                </a>
-                <div className="space-y-3">
+                <div className="space-y-3 mb-6">
                   {[
                     "Real-time drawdown monitoring across multiple MT5 accounts",
                     "Pre-trade rule validation — no trade logged without a setup",
@@ -1113,23 +1105,221 @@ export default function Landing() {
                     </div>
                   ))}
                 </div>
+                <Link to="/early-access">
+                  <Button className="bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-full px-8 hover:bg-emerald-400" data-testid="button-proof-founding-cta">
+                    Become a Founding Member <ArrowRight className="ml-2 h-3 w-3" />
+                  </Button>
+                </Link>
               </div>
-              <div className="text-center lg:text-left">
-                <div className="inline-flex flex-col items-center lg:items-start gap-4 p-8 rounded-2xl bg-background/50 border border-border">
-                  <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <Target className="text-emerald-500" size={28} />
+              <div>
+                <div className="rounded-2xl border border-border bg-card shadow-2xl shadow-emerald-500/5 overflow-hidden" data-testid="screenshot-gallery">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-muted/50 border-b border-border">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500/60" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+                    </div>
+                    <div className="flex gap-0 ml-3 -mb-[1px] relative z-10" role="tablist">
+                      {[
+                        { label: "Dashboard", icon: <Activity size={12} /> },
+                        { label: "Prop Tracker", icon: <Target size={12} /> },
+                        { label: "Rules & Journal", icon: <BookOpen size={12} /> },
+                        { label: "Education", icon: <Brain size={12} /> }
+                      ].map((tab, idx) => (
+                        <button
+                          key={tab.label}
+                          role="tab"
+                          aria-selected={activeScreenshotTab === idx}
+                          onClick={() => setActiveScreenshotTab(idx)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded-t-lg transition-colors ${
+                            activeScreenshotTab === idx
+                              ? "bg-card text-emerald-500 border border-border border-b-card"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                          data-testid={`tab-screenshot-${idx}`}
+                        >
+                          {tab.icon}
+                          <span className="hidden sm:inline">{tab.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <h4 className="text-lg font-black text-foreground uppercase tracking-widest">Join the First Wave</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-                    TradifyApp is in its founding phase. Early adopters get free Pro access, a permanent 30% lifetime discount, 
-                    and a direct voice in shaping the platform. No fake reviews. No inflated numbers. Just a product built to 
-                    enforce the discipline most traders are missing.
-                  </p>
-                  <Link to="/early-access">
-                    <Button className="bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-full px-8 hover:bg-emerald-400" data-testid="button-proof-founding-cta">
-                      Become a Founding Member <ArrowRight className="ml-2 h-3 w-3" />
-                    </Button>
-                  </Link>
+
+                  <div className="p-4 sm:p-5 min-h-[320px] transition-all duration-300">
+                    {activeScreenshotTab === 0 && (
+                      <div className="space-y-3 animate-in fade-in duration-300">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground mb-1">Balance</div>
+                            <div className="text-sm font-black text-foreground font-mono">$104,280</div>
+                            <div className="text-[8px] text-emerald-500 font-bold">+4.28%</div>
+                          </div>
+                          <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground mb-1">Win Rate</div>
+                            <div className="text-sm font-black text-emerald-500 font-mono">62.4%</div>
+                            <div className="text-[8px] text-muted-foreground font-bold">78 trades</div>
+                          </div>
+                          <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground mb-1">Rule Compliance</div>
+                            <div className="text-sm font-black text-amber-500 font-mono">87%</div>
+                            <div className="text-[8px] text-rose-400 font-bold">3 violations</div>
+                          </div>
+                          <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground mb-1">Max Drawdown</div>
+                            <div className="text-sm font-black text-foreground font-mono">4.2%</div>
+                            <div className="text-[8px] text-muted-foreground font-bold">of 10% limit</div>
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Equity Curve</span>
+                            <span className="text-[8px] font-bold text-emerald-500">+$4,280</span>
+                          </div>
+                          <div className="h-16 flex items-end gap-[2px]">
+                            {[40,42,38,45,43,48,46,52,50,55,53,58,56,61,59,64,62,58,63,67,65,70,68,73,71,76,74,72,78,80,77,82,85,83,88,86,90,88,92,95].map((h, i) => (
+                              <div
+                                key={i}
+                                className="flex-1 rounded-sm bg-emerald-500/40"
+                                style={{ height: `${h}%` }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeScreenshotTab === 1 && (
+                      <div className="space-y-3 animate-in fade-in duration-300">
+                        <div className="flex items-center justify-between mb-1">
+                          <div>
+                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground">Active Challenge</div>
+                            <div className="text-sm font-black text-foreground">FTMO $100K — Phase 1</div>
+                          </div>
+                          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px] uppercase tracking-widest">On Track</Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {[
+                            { label: "Profit Target", value: "$7,200 / $10,000", pct: 72, color: "bg-emerald-500", textColor: "text-emerald-500" },
+                            { label: "Daily Drawdown", value: "$1,840 / $5,000", pct: 37, color: "bg-amber-500", textColor: "text-amber-500" },
+                            { label: "Overall Drawdown", value: "$4,200 / $10,000", pct: 42, color: "bg-rose-500", textColor: "text-rose-400" },
+                            { label: "Consistency Score", value: "91%", pct: 91, color: "bg-blue-400", textColor: "text-blue-400" }
+                          ].map((bar, i) => (
+                            <div key={i}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[7px] uppercase tracking-widest text-muted-foreground font-bold">{bar.label}</span>
+                                <span className={`text-[9px] font-black ${bar.textColor}`}>{bar.value}</span>
+                              </div>
+                              <div className="w-full h-2 bg-muted rounded-full">
+                                <div className={`h-full ${bar.color} rounded-full transition-all duration-500`} style={{ width: `${bar.pct}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-2">
+                          <div className="p-2 rounded-lg bg-muted/30 border border-border text-center">
+                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground">Days Left</div>
+                            <div className="text-sm font-black text-foreground">18</div>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted/30 border border-border text-center">
+                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground">Trades</div>
+                            <div className="text-sm font-black text-foreground">34</div>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted/30 border border-border text-center">
+                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground">Win Rate</div>
+                            <div className="text-sm font-black text-emerald-500">67%</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeScreenshotTab === 2 && (
+                      <div className="space-y-3 animate-in fade-in duration-300">
+                        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <ShieldCheck size={14} className="text-emerald-500" />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">Rule Validation Active</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Max 2% risk per trade", "Only trade London/NY session", "No trading after 2 losses", "Minimum 1:2 RR required"].map((rule, i) => (
+                              <div key={i} className="flex items-center gap-1.5">
+                                <CheckCircle2 size={10} className="text-emerald-500 shrink-0" />
+                                <span className="text-[8px] text-muted-foreground">{rule}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {[
+                            { pair: "EUR/USD", dir: "LONG", pnl: "+$320", time: "09:32 AM", status: "compliant", emotion: "Focused" },
+                            { pair: "GBP/JPY", dir: "SHORT", pnl: "-$180", time: "11:15 AM", status: "compliant", emotion: "Calm" },
+                            { pair: "XAU/USD", dir: "LONG", pnl: "+$540", time: "02:48 PM", status: "violation", emotion: "Revenge" }
+                          ].map((trade, i) => (
+                            <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border border-border">
+                              <div className="flex items-center gap-3">
+                                <div>
+                                  <div className="text-[10px] font-black text-foreground">{trade.pair}</div>
+                                  <div className="text-[7px] text-muted-foreground">{trade.dir} · {trade.time}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Badge className={`text-[7px] uppercase tracking-widest ${
+                                  trade.emotion === "Revenge" 
+                                    ? "bg-rose-500/10 text-rose-400 border-rose-500/20" 
+                                    : "bg-muted/50 text-muted-foreground border-border"
+                                }`}>{trade.emotion}</Badge>
+                                <Badge className={`text-[7px] uppercase tracking-widest ${
+                                  trade.status === "violation" 
+                                    ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                }`}>
+                                  {trade.status === "violation" ? <AlertCircle size={8} className="mr-1" /> : <CheckCircle2 size={8} className="mr-1" />}
+                                  {trade.status}
+                                </Badge>
+                                <span className={`text-[10px] font-black font-mono ${trade.pnl.startsWith("+") ? "text-emerald-500" : "text-rose-400"}`}>{trade.pnl}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {activeScreenshotTab === 3 && (
+                      <div className="space-y-3 animate-in fade-in duration-300">
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { title: "Risk Management", lessons: 5, progress: 100, color: "text-emerald-500" },
+                            { title: "Trading Psychology", lessons: 4, progress: 75, color: "text-blue-400" },
+                            { title: "Prop Firm Mastery", lessons: 5, progress: 40, color: "text-amber-500" },
+                            { title: "Advanced Strategy", lessons: 5, progress: 0, color: "text-muted-foreground" }
+                          ].map((module, i) => (
+                            <div key={i} className="p-3 rounded-xl bg-muted/30 border border-border">
+                              <div className="text-[10px] font-black text-foreground mb-1">{module.title}</div>
+                              <div className="text-[7px] text-muted-foreground mb-2">{module.lessons} lessons</div>
+                              <div className="w-full h-1.5 bg-muted rounded-full">
+                                <div className={`h-full rounded-full transition-all ${
+                                  module.progress === 100 ? "bg-emerald-500" : module.progress > 0 ? "bg-blue-400" : "bg-muted"
+                                }`} style={{ width: `${module.progress}%` }} />
+                              </div>
+                              <div className={`text-[7px] font-bold mt-1 ${module.color}`}>
+                                {module.progress === 100 ? "Completed" : module.progress > 0 ? `${module.progress}% complete` : "Not started"}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Trophy size={14} className="text-amber-500" />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-foreground">Current Lesson</span>
+                          </div>
+                          <div className="text-[10px] font-bold text-foreground mb-1">The 2% Rule: Position Sizing for Survival</div>
+                          <div className="text-[8px] text-muted-foreground leading-relaxed">
+                            Learn why risking more than 2% per trade is the #1 account killer — and how to calculate 
+                            position size automatically for any instrument.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
