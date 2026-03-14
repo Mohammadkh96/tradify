@@ -139,6 +139,20 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Create email drip sequences table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS email_sequences (
+        id SERIAL PRIMARY KEY,
+        email TEXT,
+        user_id TEXT,
+        track TEXT NOT NULL,
+        current_step INTEGER NOT NULL DEFAULT 0,
+        next_send_at TIMESTAMP NOT NULL,
+        completed BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     // Create founding member suggestions table if not exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS founding_member_suggestions (

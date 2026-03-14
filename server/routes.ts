@@ -383,6 +383,9 @@ ${blogPosts.map(p => `  <url>
         source: "checklist",
       });
 
+      emailService.queueLeadSequence(normalizedEmail)
+        .catch(err => console.error("Failed to queue lead drip sequence:", err));
+
       res.json({ success: true, message: "Checklist ready for download!" });
     } catch (error: any) {
       console.error("Checklist lead error:", error);
@@ -415,6 +418,9 @@ ${blogPosts.map(p => `  <url>
         source: "calculator",
         metadata: { accountSize, drawdownPercent, profitTarget },
       });
+
+      emailService.queueLeadSequence(normalizedEmail)
+        .catch(err => console.error("Failed to queue lead drip sequence:", err));
 
       res.json({ success: true, message: "Results saved!" });
     } catch (error: any) {
@@ -514,6 +520,12 @@ ${blogPosts.map(p => `  <url>
       // Notify admin of new signup (don't await - run in background)
       emailService.sendAdminSignupNotification(normalizedEmail, fullName, country, isFoundingMember)
         .catch(err => console.error("Failed to send admin signup notification:", err));
+
+      // Queue free user activation drip sequence (only for free tier users)
+      if (!isFoundingMember) {
+        emailService.queueFreeUserSequence(normalizedEmail)
+          .catch(err => console.error("Failed to queue free user drip sequence:", err));
+      }
 
       res.status(201).json({ 
         message: isFoundingMember 

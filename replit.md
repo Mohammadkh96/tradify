@@ -37,7 +37,7 @@ Preferred communication style: Simple, everyday language.
 ### Feature Specifications
 - **MT5 Bridge:** Supports multi-account connectivity, aggregating trade history across all accounts for analytics endpoints.
 - **Plan System:** Centralized configuration in `shared/plans.ts` with feature gating and tier-specific trade history retention.
-- **Email System:** Nodemailer with Google Workspace SMTP for various notifications and account management, including rate limiting.
+- **Email System:** Nodemailer with Google Workspace SMTP for various notifications and account management, including rate limiting. Includes a 7-email lead nurture drip (Track 1: `lead_7day`) and a 5-email free-user activation drip (Track 2: `free_user`) with 30-min background job in `server/index.ts`. Sequences stored in `email_sequences` table. Queue functions: `emailService.queueLeadSequence()`, `emailService.queueFreeUserSequence()`.
 - **Email Verification:** Mandatory for new users (except Admin/Owner) with a 24-hour token expiry and resend options.
 - **Admin Panel:** User management (creation, plan changes, deactivation, deletion, founding member status) with audit logging, accessible only by OWNER/ADMIN roles.
 - **Cookie Consent System:** GDPR-compliant banner with customizable preferences for Analytics (Google Analytics) and Marketing (Facebook Pixel), stored in localStorage.

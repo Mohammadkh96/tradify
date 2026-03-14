@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { ensureSchemaColumns } from "./db";
+import { emailService } from "./emailService";
 
 
 const app = express();
@@ -93,6 +94,17 @@ async function initializeApp() {
   httpServer.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
+
+  // Start email drip sequence background job (runs every 30 minutes)
+  const DRIP_INTERVAL_MS = 30 * 60 * 1000;
+  setTimeout(async () => {
+    log("Running initial drip sequence check...", "drip");
+    await emailService.processDripSequences();
+    setInterval(async () => {
+      log("Running drip sequence check...", "drip");
+      await emailService.processDripSequences();
+    }, DRIP_INTERVAL_MS);
+  }, 60 * 1000);
 }
 
 // Start the application

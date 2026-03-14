@@ -745,3 +745,20 @@ export const leads = pgTable("leads", {
 export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true });
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
+
+// ==================== EMAIL DRIP SEQUENCES ====================
+
+export const emailSequences = pgTable("email_sequences", {
+  id: serial("id").primaryKey(),
+  email: text("email"),
+  userId: text("user_id"),
+  track: text("track").notNull(),
+  currentStep: integer("current_step").default(0).notNull(),
+  nextSendAt: timestamp("next_send_at").notNull(),
+  completed: boolean("completed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEmailSequenceSchema = createInsertSchema(emailSequences).omit({ id: true, createdAt: true });
+export type EmailSequence = typeof emailSequences.$inferSelect;
+export type InsertEmailSequence = z.infer<typeof insertEmailSequenceSchema>;
