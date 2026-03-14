@@ -8,6 +8,9 @@ interface UTMData {
 }
 
 export function captureUTMParams(): void {
+  const existing = getStoredUTM();
+  if (existing) return;
+
   const params = new URLSearchParams(window.location.search);
   const utmSource = params.get("utm_source");
   const utmCampaign = params.get("utm_campaign");
