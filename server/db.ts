@@ -153,6 +153,26 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Backfill existing free users into the drip sequence (idempotent — uses NOT EXISTS)
+    try {
+      const backfillResult = await pool.query(`
+        INSERT INTO email_sequences (user_id, track, current_step, next_send_at, completed)
+        SELECT u.user_id, 'free_user', 0, NOW(), false
+        FROM user_role u
+        WHERE UPPER(u.subscription_tier) = 'FREE'
+          AND u.role = 'TRADER'
+          AND NOT EXISTS (
+            SELECT 1 FROM email_sequences e
+            WHERE e.user_id = u.user_id AND e.track = 'free_user'
+          )
+      `);
+      if (backfillResult.rowCount && backfillResult.rowCount > 0) {
+        console.log(`[Startup] Backfilled ${backfillResult.rowCount} existing free user(s) into drip sequence`);
+      }
+    } catch (e) {
+      console.error('[Startup] Drip backfill error:', e);
+    }
+
     // Create founding member suggestions table if not exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS founding_member_suggestions (
