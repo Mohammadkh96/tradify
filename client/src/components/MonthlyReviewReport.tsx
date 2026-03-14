@@ -236,8 +236,17 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
     );
   };
 
+  const normalizeMarkdown = (text: string): string => {
+    let normalized = text.replace(/\\n/g, '\n');
+    normalized = normalized.replace(/([^\n])(\n)(#{1,4}\s)/g, '$1\n\n$3');
+    normalized = normalized.replace(/([^\n])(\n)(---)/g, '$1\n\n$3');
+    return normalized;
+  };
+
   const renderReviewContent = () => {
     if (!data?.insightText) return null;
+    
+    const processedText = normalizeMarkdown(data.insightText);
     
     return (
       <div className="space-y-1" data-testid="review-content">
@@ -305,7 +314,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
             ),
           }}
         >
-          {data.insightText}
+          {processedText}
         </ReactMarkdown>
       </div>
     );

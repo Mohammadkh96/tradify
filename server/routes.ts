@@ -3425,20 +3425,11 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
       const mt5Trades = await getAllMT5Trades(userId);
 
-      const manualTrades = await storage.getTrades(userId);
-
       const months = new Set<string>();
       
       for (const trade of mt5Trades) {
         const date = new Date(trade.closeTime);
         months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
-      }
-      
-      for (const trade of manualTrades) {
-        if (trade.createdAt) {
-          const date = new Date(trade.createdAt);
-          months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
-        }
       }
 
       const sortedMonths = Array.from(months).sort().reverse();
