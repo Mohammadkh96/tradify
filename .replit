@@ -65,3 +65,7 @@ APP_URL = "https://tradifyapp.com"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-8936a1f8-2dad-4729-b100-8306e576f172"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
