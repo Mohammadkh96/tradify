@@ -29,7 +29,6 @@ import {
   Download,
   FileText,
   Loader2,
-  Play,
   Star
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
