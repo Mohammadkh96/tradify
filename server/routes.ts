@@ -3170,16 +3170,19 @@ FORMAT YOUR RESPONSE EXACTLY:
       const existing = await storage.getAIInsights(userId, monthKey);
       if (existing.length > 0) {
         const cachedRecord = existing[0];
-        const meta = (cachedRecord.metadata as any) || {};
+        const meta = cachedRecord.metadata && typeof cachedRecord.metadata === "object" ? cachedRecord.metadata as Record<string, unknown> : {};
+        const storedCurrentMetrics = meta.currentMetrics;
+        const storedPrevMetrics = meta.prevMetrics;
+        const emptyMetrics = { tradeCount: 0, winRate: 0, totalPnL: 0, profitFactor: "0.00" };
         return res.json({
           ...cachedRecord,
           month: targetMonth,
           year: targetYear,
           cached: true,
-          ...(meta.currentMetrics ? {
+          ...(storedCurrentMetrics ? {
             metrics: {
-              current: meta.currentMetrics,
-              previous: meta.prevMetrics || { tradeCount: 0, winRate: 0, totalPnL: 0, profitFactor: 0 },
+              current: storedCurrentMetrics,
+              previous: storedPrevMetrics || emptyMetrics,
             }
           } : {}),
         });
