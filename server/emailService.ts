@@ -210,7 +210,7 @@ async function sendWelcomeEmail(email: string, userName: string): Promise<boolea
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
               <tr><td style="padding-bottom: 16px;"><p style="color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 8px 0;">1. Connect Your MT5 Account</p><p style="color: #9CA3AF; font-size: 14px; margin: 0;">Auto-sync your trades from MetaTrader 5</p></td></tr>
               <tr><td style="padding-bottom: 16px;"><p style="color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 8px 0;">2. Set Up Your Trading Rules</p><p style="color: #9CA3AF; font-size: 14px; margin: 0;">Define your strategy and track rule compliance</p></td></tr>
-              <tr><td><p style="color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 8px 0;">3. Start Journaling</p><p style="color: #9CA3AF; font-size: 14px; margin: 0;">Log your trades and track your progress</p></td></tr>
+              <tr><td><p style="color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 8px 0;">3. Review Your Analytics</p><p style="color: #9CA3AF; font-size: 14px; margin: 0;">Track performance and identify patterns</p></td></tr>
             </table>
           </td></tr>
         </table>
@@ -220,7 +220,7 @@ async function sendWelcomeEmail(email: string, userName: string): Promise<boolea
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 32px;">
           <tr><td style="background-color: #1F2937; padding: 20px; border-radius: 8px;">
             <p style="color: #D1D5DB; font-size: 14px; margin: 0 0 12px 0;"><strong style="color: #ffffff;">&#128161; Pro Tip:</strong></p>
-            <p style="color: #9CA3AF; font-size: 14px; margin: 0; line-height: 1.6;">The most successful traders journal every single trade. Make it a habit from day one and watch your consistency improve.</p>
+            <p style="color: #9CA3AF; font-size: 14px; margin: 0; line-height: 1.6;">The most successful traders review every single trade. Make it a habit from day one and watch your consistency improve.</p>
           </td></tr>
         </table>`;
 
@@ -302,7 +302,7 @@ async function sendSubscriptionActivatedEmail(email: string, userName: string, p
                   <li>Advanced analytics &amp; reports</li>
                   <li>Custom trading rules (unlimited)</li>
                   <li>Performance insights dashboard</li>
-                  <li>Trade correlation analysis</li>
+                  <li>AI-powered monthly self-review</li>
                   <li>Priority support</li>
                 </ul>
               </td></tr>
@@ -511,7 +511,7 @@ function dripFooterNote(isLead: boolean): string {
 
 function buildLeadEmail(step: number, email: string): { subject: string; html: string } | null {
   const appUrl = APP_URL;
-  const checklistUrl = `${appUrl}/resources/trading-discipline-checklist.pdf`;
+  const checklistUrl = `${appUrl}/checklist`;
   const signupUrl = `${appUrl}/signup`;
 
   const emails: Array<{ subject: string; body: string }> = [
@@ -520,8 +520,8 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
       body: `
         <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">Your checklist is ready.</h1>
         <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">Day 1 — Getting started</p>
-        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">The Trading Discipline Checklist is attached below. It covers the 10 pre-session checks that separate consistent traders from those who blow accounts.</p>
-        ${dripCta('Download Your Checklist →', checklistUrl)}
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">The Trading Discipline Checklist covers the 10 pre-session checks that separate consistent traders from those who blow accounts. Click below to access it.</p>
+        ${dripCta('View Your Checklist →', checklistUrl)}
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Over the next 6 days I'll send you short, direct emails on the psychology and mechanics of trading discipline — the stuff most trading courses skip entirely.</p>
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Tomorrow: why trying harder is the worst thing you can do as a trader.</p>
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
@@ -610,7 +610,7 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
           <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">Did this match my defined setup criteria?</li>
           <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">Would I take this trade again tomorrow, exactly as executed?</li>
         </ol>
-        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">TradifyApp auto-syncs every trade from your MT5 account. Each trade in your journal already has P&L, time, instrument, and direction populated. You just add the context.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">TradifyApp auto-syncs every trade from your MT5 account. Each trade in your history already has P&L, time, instrument, and direction populated. You just add the context.</p>
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Takes 2 minutes. Compounds over months.</p>
         ${dripCta('Start Your Accountability Practice →', signupUrl)}
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
@@ -644,8 +644,8 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
             <td style="padding: 12px 8px; font-size: 15px; color: #00D9A3;">Max lot size rules</td>
           </tr>
           <tr>
-            <td style="padding: 12px 8px; font-size: 15px; color: #D1D5DB;">Accountability journaling</td>
-            <td style="padding: 12px 8px; font-size: 15px; color: #00D9A3;">Auto-populated MT5 journal</td>
+            <td style="padding: 12px 8px; font-size: 15px; color: #D1D5DB;">Accountability tracking</td>
+            <td style="padding: 12px 8px; font-size: 15px; color: #00D9A3;">Auto-populated MT5 trade history</td>
           </tr>
         </table>
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">It's free to start. No card required. Connect your MT5 account in under 3 minutes.</p>
@@ -672,7 +672,7 @@ async function buildFreeUserEmail(
   const appUrl = APP_URL;
   const upgradeUrl = `${appUrl}/pricing`;
   const dashboardUrl = `${appUrl}/dashboard`;
-  const mt5GuideUrl = `${appUrl}/dashboard/mt5-setup`;
+  const mt5GuideUrl = `${appUrl}/mt5-bridge`;
 
   const hasMt5 = await db.select({ id: schema.mt5Accounts.id })
     .from(schema.mt5Accounts)
@@ -704,12 +704,12 @@ async function buildFreeUserEmail(
             <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">You're missing the best part.</h1>
             <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">MT5 not connected yet</p>
             <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Hey ${userName} — you've signed up but haven't connected your MT5 account yet. That's where the real value is.</p>
-            <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Without MT5 sync, TradifyApp is just a manual journal. With it, every trade is automatically imported — instrument, size, entry, exit, P&L — and your prop firm tracker updates in real time.</p>
+            <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Without MT5 sync, TradifyApp is just a manual trade log. With it, every trade is automatically imported — instrument, size, entry, exit, P&L — and your prop firm tracker updates in real time.</p>
             <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; color: #ffffff;">3-minute setup:</p>
             <ol style="margin: 0 0 20px 0; padding: 0 0 0 20px; color: #D1D5DB;">
-              <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">Download the TradifyApp MT5 Expert Advisor from your dashboard.</li>
-              <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">Copy it into your MT5 <code style="background: #0d1117; padding: 2px 6px; border-radius: 3px; color: #00D9A3;">Experts</code> folder and restart MT5.</li>
-              <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">Attach the EA to any chart. Your trades start syncing immediately.</li>
+              <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">Open the <strong style="color: #ffffff;">MT5 Bridge</strong> page in your TradifyApp dashboard and download the connector file.</li>
+              <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">Double-click <code style="background: #0d1117; padding: 2px 6px; border-radius: 3px; color: #00D9A3;">tradify_connector.pyw</code> to run it. The app opens automatically.</li>
+              <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">Keep your MT5 terminal running in the background. Your trades start syncing immediately.</li>
             </ol>
             ${dripCta('Connect MT5 Now →', mt5GuideUrl)}
             <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If you hit any issues, reply to this email and I'll help you get set up.</p>
