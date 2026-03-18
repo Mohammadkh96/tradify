@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, Ban, CheckCircle, Clock, LayoutDashboard, Activity, Plus, Key, Trash2, History, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, CheckCircle, LayoutDashboard, Activity, Plus, Key, Trash2, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil, Star, Wifi, WifiOff, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
+import { format, formatDistanceToNow, startOfDay, startOfWeek, startOfMonth } from "date-fns";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -152,53 +153,6 @@ function AdminAccessTab() {
   );
 }
 
-function AuditLogsTab() {
-  const { data: logs, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/audit-logs"],
-  });
-
-  if (isLoading) return <div className="p-8 text-emerald-500 font-mono">RETRIEVING AUDIT TRAIL...</div>;
-
-  return (
-    <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
-      <div>
-        <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
-          <History /> Operational Audit Log
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Trace Admin Interventions</p>
-      </div>
-
-      <Card className="bg-card border-border overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow className="border-border">
-              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Admin</TableHead>
-              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Action</TableHead>
-              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Target User</TableHead>
-              <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Timestamp</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {logs?.map((log) => (
-              <TableRow key={log.id} className="border-border hover:bg-muted/40">
-                <TableCell className="font-bold text-foreground text-xs">{log.adminId}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-emerald-500/20 text-emerald-500">
-                    {log.actionType}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground text-xs font-mono">{log.targetUserId}</TableCell>
-                <TableCell className="text-muted-foreground text-[10px] font-mono">
-                  {log.timestamp ? format(new Date(log.timestamp), "MMM d, HH:mm:ss") : "N/A"}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
-    </div>
-  );
-}
 
 function EarlyAccessTab() {
   const { data: signups, isLoading } = useQuery<any[]>({
@@ -663,6 +617,8 @@ export default function AdminDashboard() {
   const [newUserPlan, setNewUserPlan] = useState<string>("FREE");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createdUserPassword, setCreatedUserPassword] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<"today" | "week" | "month" | "all">("all");
+  const [planFilter, setPlanFilter] = useState<string>("all");
 
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
@@ -706,10 +662,20 @@ export default function AdminDashboard() {
     },
   });
 
-  const filteredUsers = users?.filter(u => 
-    u.userId.toLowerCase().includes(searchEmail.toLowerCase()) && 
-    u.role !== "OWNER"
-  ) || [];
+  const filteredUsers = (users || []).filter(u => {
+    if (u.role === "OWNER") return false;
+    const searchLower = searchEmail.toLowerCase();
+    if (searchLower && !u.userId.toLowerCase().includes(searchLower) && !(u.fullName || "").toLowerCase().includes(searchLower)) return false;
+    if (planFilter !== "all" && u.subscriptionTier !== planFilter) return false;
+    if (dateFilter !== "all" && u.createdAt) {
+      const createdAt = new Date(u.createdAt);
+      const now = new Date();
+      if (dateFilter === "today" && createdAt < startOfDay(now)) return false;
+      if (dateFilter === "week" && createdAt < startOfWeek(now)) return false;
+      if (dateFilter === "month" && createdAt < startOfMonth(now)) return false;
+    }
+    return true;
+  });
 
   const updateMutation = useMutation({
     mutationFn: async ({ targetUserId, updates }: { targetUserId: string, updates: any }) => {
@@ -905,33 +871,125 @@ export default function AdminDashboard() {
     );
   }
 
-  // --- 2. USERS MANAGEMENT PAGE ---
+  // --- 2. USERS CRM PAGE ---
   if (location.pathname === "/admin/users") {
+    const allNonOwners = (users || []).filter(u => u.role !== "OWNER");
+    const today = startOfDay(new Date());
+    const newToday = allNonOwners.filter(u => u.createdAt && new Date(u.createdAt) >= today).length;
+    const mt5Connected = allNonOwners.filter(u => u.mt5Connected).length;
+    const paidCount = allNonOwners.filter(u => u.subscriptionTier === "PRO" || u.subscriptionTier === "ELITE").length;
+
+    const planColors: Record<string, string> = {
+      ELITE: "bg-amber-500 text-slate-950",
+      PRO: "bg-blue-500 text-white",
+      FREE: "bg-muted text-muted-foreground",
+    };
+
+    const avatarColors: Record<string, string> = {
+      ELITE: "bg-amber-500/20 text-amber-500 border border-amber-500/30",
+      PRO: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+      FREE: "bg-muted text-muted-foreground border border-border",
+    };
+
+    const getInitials = (userId: string, fullName?: string) => {
+      if (fullName) {
+        const parts = fullName.trim().split(" ");
+        return parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : parts[0].slice(0, 2).toUpperCase();
+      }
+      const email = userId.includes("@") ? userId : userId;
+      return email.slice(0, 2).toUpperCase();
+    };
+
     return (
-      <div className="p-8 space-y-8 bg-background min-h-screen text-foreground">
+      <div className="p-8 space-y-6 bg-background min-h-screen text-foreground">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black uppercase tracking-tighter italic flex items-center gap-3 text-emerald-500">
-              <Users /> User Management
+              <Users /> User CRM
             </h1>
-            <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Control Access & Tiers</p>
+            <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">Member Intelligence & Access Control</p>
           </div>
-          <div className="flex items-center gap-4">
-            <Input 
-              placeholder="Search by email..." 
+          <Button 
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs"
+            data-testid="button-create-user"
+          >
+            <UserPlus size={14} className="mr-2" />
+            Create User
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-card border-border" data-testid="card-stat-total">
+            <CardContent className="p-5">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                <Users size={10} /> Total Users
+              </div>
+              <div className="text-3xl font-black text-foreground">{allNonOwners.length}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border" data-testid="card-stat-new-today">
+            <CardContent className="p-5">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                <UserPlus size={10} /> New Today
+              </div>
+              <div className="text-3xl font-black text-emerald-500">{newToday}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border" data-testid="card-stat-mt5">
+            <CardContent className="p-5">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                <Zap size={10} /> MT5 Connected
+              </div>
+              <div className="text-3xl font-black text-cyan-400">{mt5Connected}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border" data-testid="card-stat-paid">
+            <CardContent className="p-5">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                <CreditCard size={10} /> Paid Subscribers
+              </div>
+              <div className="text-3xl font-black text-blue-400">{paidCount}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
+          <div className="flex gap-1 bg-muted/40 rounded-lg p-1 border border-border">
+            {(["today", "week", "month", "all"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setDateFilter(f)}
+                data-testid={`button-date-filter-${f}`}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-colors",
+                  dateFilter === f ? "bg-emerald-500 text-slate-950" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {f === "today" ? "Today" : f === "week" ? "This Week" : f === "month" ? "This Month" : "All Time"}
+              </button>
+            ))}
+          </div>
+          <Select value={planFilter} onValueChange={setPlanFilter}>
+            <SelectTrigger className="h-9 w-36 text-xs bg-muted border-border" data-testid="select-plan-filter">
+              <SelectValue placeholder="All Plans" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Plans</SelectItem>
+              <SelectItem value="FREE">Free</SelectItem>
+              <SelectItem value="PRO">Pro</SelectItem>
+              <SelectItem value="ELITE">Elite</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search name or email..."
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
-              className="bg-muted border-border text-xs w-full md:w-64"
+              className="bg-muted border-border text-xs pl-8 h-9"
               data-testid="input-search-users"
             />
-            <Button 
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs"
-              data-testid="button-create-user"
-            >
-              <UserPlus size={14} className="mr-2" />
-              Create User
-            </Button>
           </div>
         </div>
 
@@ -1045,65 +1103,75 @@ export default function AdminDashboard() {
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Email/ID</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest pl-4">Member</TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Plan</TableHead>
-                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Founding Member</TableHead>
-                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Account Status</TableHead>
-                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Registered</TableHead>
-                  <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">MT5</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Joined</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Source</TableHead>
+                  <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest pr-4">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id} className="border-border hover:bg-muted/40" data-testid={`row-user-${user.userId}`}>
-                    <TableCell>
-                      <div className="font-mono text-xs text-foreground">{user.userId}</div>
-                      <div className="text-[9px] text-muted-foreground uppercase tracking-tighter">{user.role}</div>
+                    <TableCell className="pl-4">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center text-xs font-black shrink-0", avatarColors[user.subscriptionTier] || avatarColors.FREE)}>
+                          {getInitials(user.userId, user.fullName)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <div className="font-semibold text-xs text-foreground truncate max-w-[160px]">
+                              {user.fullName || user.userId}
+                            </div>
+                            {user.foundingMember && (
+                              <Star size={11} className="text-amber-500 shrink-0" fill="currentColor" />
+                            )}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[160px]">
+                            {user.fullName ? user.userId : ""}
+                          </div>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={
-                        user.subscriptionTier === "ELITE" ? "bg-amber-500 text-slate-950" :
-                        user.subscriptionTier === "PRO" ? "bg-emerald-500 text-slate-950" : 
-                        "bg-muted text-muted-foreground"
-                      }>
-                        {user.subscriptionTier === "ELITE" && <Crown size={10} className="mr-1" />}
+                      <Badge className={cn("text-[9px] font-black uppercase tracking-widest", planColors[user.subscriptionTier] || planColors.FREE)}>
+                        {user.subscriptionTier === "ELITE" && <Crown size={9} className="mr-1" />}
                         {user.subscriptionTier}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {user.foundingMember ? (
-                          <Badge className="bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-500 border border-amber-500/30">
-                            <Crown size={10} className="mr-1" />
-                            FOUNDER
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
-                            —
-                          </Badge>
-                        )}
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className={`h-6 px-2 text-[9px] ${user.foundingMember ? "text-rose-400 hover:bg-rose-500/10" : "text-amber-500 hover:bg-amber-500/10"}`}
-                          onClick={() => toggleFoundingMemberMutation.mutate({ userId: user.userId, foundingMember: !user.foundingMember })}
-                          disabled={toggleFoundingMemberMutation.isPending}
-                          data-testid={`button-toggle-founder-${user.userId}`}
-                        >
-                          {user.foundingMember ? "Revoke" : "Grant"}
-                        </Button>
+                      {user.mt5Connected ? (
+                        <div className="flex items-center gap-1.5 text-emerald-500">
+                          <Wifi size={12} />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Live</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-muted-foreground/50">
+                          <WifiOff size={12} />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">None</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs text-foreground">
+                        {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {user.createdAt ? formatDistanceToNow(new Date(user.createdAt), { addSuffix: true }) : ""}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={user.role === "DEACTIVATED" ? "border-rose-500/50 text-rose-500" : "border-emerald-500/50 text-emerald-500"}>
-                        {user.role === "DEACTIVATED" ? "DEACTIVATED" : "ACTIVE"}
-                      </Badge>
+                      {user.utmSource ? (
+                        <Badge variant="outline" className="text-[9px] font-bold border-blue-500/20 text-blue-400 uppercase tracking-widest">
+                          {user.utmSource}
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/40">—</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-[10px] font-mono text-muted-foreground">
-                      {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "N/A"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <TableCell className="pr-4">
+                      <div className="flex items-center justify-end gap-1.5">
                         <Select 
                           value={user.subscriptionTier} 
                           onValueChange={(tier) => updateMutation.mutate({ targetUserId: user.userId, updates: { subscriptionTier: tier } })}
@@ -1117,13 +1185,13 @@ export default function AdminDashboard() {
                             <SelectItem value="ELITE">Elite</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button size="sm" variant="ghost" className="h-7 text-[10px] text-rose-500 hover:bg-rose-500/10"
+                        <Button size="sm" variant="ghost" className={cn("h-7 text-[10px]", user.role === "DEACTIVATED" ? "text-emerald-500 hover:bg-emerald-500/10" : "text-rose-500 hover:bg-rose-500/10")}
                           onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { role: user.role === "DEACTIVATED" ? "TRADER" : "DEACTIVATED" } })}
                           data-testid={`button-toggle-status-${user.userId}`}
                         >
                           {user.role === "DEACTIVATED" ? "Reactivate" : "Deactivate"}
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 text-[10px] text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
                           onClick={() => {
                             if (confirm("Are you sure you want to permanently delete this user? This action cannot be undone.")) {
                               deleteUserMutation.mutate(user.userId);
@@ -1140,7 +1208,7 @@ export default function AdminDashboard() {
                 {filteredUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic text-sm">
-                      No users found matching your search.
+                      No users match your filters.
                     </TableCell>
                   </TableRow>
                 )}
@@ -1157,10 +1225,6 @@ export default function AdminDashboard() {
     return <AdminAccessTab />;
   }
 
-  // --- 4. AUDIT LOGS PAGE ---
-  if (location.pathname === "/admin/audit-logs") {
-    return <AuditLogsTab />;
-  }
 
   // --- 5. CREATOR APPLICATIONS PAGE ---
   if (location.pathname === "/admin/creator-applications") {
@@ -1623,6 +1687,3 @@ function AdminBlogTab() {
   );
 }
 
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
-}

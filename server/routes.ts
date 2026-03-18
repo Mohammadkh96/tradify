@@ -3836,7 +3836,10 @@ End with: "Review your charts for current market structure."`;
 
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     const users = await db.select().from(schema.userRole);
-    res.json(users);
+    const mt5Result = await pool.query(`SELECT DISTINCT user_id FROM mt5_accounts`);
+    const mt5UserIds = new Set((mt5Result.rows as any[]).map(r => r.user_id));
+    const enriched = users.map(u => ({ ...u, mt5Connected: mt5UserIds.has(u.userId) }));
+    res.json(enriched);
   });
 
   app.get("/api/admin/utm-stats", requireAdmin, async (_req, res) => {
