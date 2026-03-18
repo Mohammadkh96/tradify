@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,13 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
     queryKey: [`/api/monthly-review/${userId}/available`],
     enabled: !!userId && isElite,
   });
+
+  useEffect(() => {
+    if (!selectedMonth && availableMonths?.availableMonths?.length) {
+      const most = availableMonths.availableMonths[0];
+      setSelectedMonth(`${most.year}-${String(most.month).padStart(2, '0')}`);
+    }
+  }, [availableMonths, selectedMonth]);
 
   const currentSelection = selectedMonth ? selectedMonth.split('-') : null;
   const queryMonth = currentSelection ? currentSelection[1] : undefined;
