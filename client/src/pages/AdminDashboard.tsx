@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, CheckCircle, LayoutDashboard, Activity, Plus, Key, Trash2, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil, Star, Wifi, WifiOff, Search } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, CheckCircle, LayoutDashboard, Activity, Plus, Key, Trash2, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil, Star, Wifi, WifiOff, Search, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -619,6 +619,8 @@ export default function AdminDashboard() {
   const [createdUserPassword, setCreatedUserPassword] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<"today" | "week" | "month" | "all">("all");
   const [planFilter, setPlanFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<string>("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
@@ -920,6 +922,46 @@ export default function AdminDashboard() {
       return "🌍";
     };
 
+    const handleSort = (field: string) => {
+      if (sortField === field) {
+        setSortDir(d => d === "asc" ? "desc" : "asc");
+      } else {
+        setSortField(field);
+        setSortDir("desc");
+      }
+    };
+
+    const SortIcon = ({ field }: { field: string }) => {
+      if (sortField !== field) return <ChevronsUpDown size={11} className="text-muted-foreground/40 ml-1 inline" />;
+      return sortDir === "asc"
+        ? <ChevronUp size={11} className="text-emerald-500 ml-1 inline" />
+        : <ChevronDown size={11} className="text-emerald-500 ml-1 inline" />;
+    };
+
+    const sortedUsers = [...filteredUsers].sort((a, b) => {
+      let aVal: any, bVal: any;
+      if (sortField === "createdAt") {
+        aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      } else if (sortField === "name") {
+        aVal = (a.fullName || a.userId || "").toLowerCase();
+        bVal = (b.fullName || b.userId || "").toLowerCase();
+      } else if (sortField === "plan") {
+        const order: Record<string, number> = { ELITE: 3, PRO: 2, FREE: 1 };
+        aVal = order[a.subscriptionTier] || 0;
+        bVal = order[b.subscriptionTier] || 0;
+      } else if (sortField === "mt5") {
+        aVal = a.mt5Connected ? 1 : 0;
+        bVal = b.mt5Connected ? 1 : 0;
+      } else {
+        aVal = a[sortField] ?? "";
+        bVal = b[sortField] ?? "";
+      }
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+
     return (
       <div className="p-8 space-y-6 bg-background min-h-screen text-foreground">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1123,17 +1165,33 @@ export default function AdminDashboard() {
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest pl-4">Member</TableHead>
-                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Plan</TableHead>
-                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">MT5</TableHead>
-                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Joined</TableHead>
+                  <TableHead className="pl-4">
+                    <button onClick={() => handleSort("name")} className="flex items-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:text-foreground cursor-pointer">
+                      Member <SortIcon field="name" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort("plan")} className="flex items-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:text-foreground cursor-pointer">
+                      Plan <SortIcon field="plan" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort("mt5")} className="flex items-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:text-foreground cursor-pointer">
+                      MT5 <SortIcon field="mt5" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort("createdAt")} className="flex items-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:text-foreground cursor-pointer">
+                      Joined <SortIcon field="createdAt" />
+                    </button>
+                  </TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Country</TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Source</TableHead>
                   <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest pr-4">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
+                {sortedUsers.map((user) => (
                   <TableRow key={user.id} className="border-border hover:bg-muted/40" data-testid={`row-user-${user.userId}`}>
                     <TableCell className="pl-4">
                       <div className="flex items-center gap-3">
@@ -1245,7 +1303,7 @@ export default function AdminDashboard() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredUsers.length === 0 && (
+                {sortedUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic text-sm">
                       No users match your filters.
