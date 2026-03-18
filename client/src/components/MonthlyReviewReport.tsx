@@ -99,7 +99,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
-    enabled: !!userId && isElite,
+    enabled: !!userId && isElite && !!selectedMonth,
   });
 
   const handleExport = () => {
