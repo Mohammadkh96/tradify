@@ -639,7 +639,6 @@ export default function AdminDashboard() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setNewUserEmail("");
       setNewUserPlan("FREE");
       setCreatedUserPassword(data.tempPassword);
@@ -657,7 +656,6 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       toast({ title: "User Deleted", description: "The user account has been permanently removed." });
     },
   });
@@ -684,8 +682,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
-      toast({ title: "Success", description: "User record updated and logged." });
+      toast({ title: "Success", description: "User record updated." });
     },
   });
 
@@ -697,7 +694,6 @@ export default function AdminDashboard() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/founding-members"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       toast({ 
         title: "Success", 
         description: variables.foundingMember ? "Founding member status granted." : "Founding member status revoked." 
@@ -705,6 +701,21 @@ export default function AdminDashboard() {
     },
     onError: () => {
       toast({ variant: "destructive", title: "Error", description: "Failed to update founding member status." });
+    },
+  });
+
+  const grantProAdminMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("PATCH", `/api/admin/users/${encodeURIComponent(userId)}/grant-pro`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/founding-members"] });
+      toast({ title: "Success", description: "Pro access granted." });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Error", description: "Failed to grant Pro access." });
     },
   });
 
@@ -1205,6 +1216,15 @@ export default function AdminDashboard() {
                             <SelectItem value="ELITE">Elite</SelectItem>
                           </SelectContent>
                         </Select>
+                        {user.subscriptionTier === "FREE" && (
+                          <Button size="sm" variant="ghost" className="h-7 text-[10px] text-emerald-500 hover:bg-emerald-500/10"
+                            onClick={() => grantProAdminMutation.mutate(user.userId)}
+                            disabled={grantProAdminMutation.isPending}
+                            data-testid={`button-grant-pro-${user.userId}`}
+                          >
+                            Grant Pro
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" className={cn("h-7 text-[10px]", user.role === "DEACTIVATED" ? "text-emerald-500 hover:bg-emerald-500/10" : "text-rose-500 hover:bg-rose-500/10")}
                           onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { role: user.role === "DEACTIVATED" ? "TRADER" : "DEACTIVATED" } })}
                           data-testid={`button-toggle-status-${user.userId}`}
