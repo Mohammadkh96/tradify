@@ -900,6 +900,15 @@ export default function AdminDashboard() {
       return email.slice(0, 2).toUpperCase();
     };
 
+    const getCountryFlag = (country: string | null | undefined): string => {
+      if (!country) return "";
+      const code = country.trim().toUpperCase();
+      if (code.length === 2 && /^[A-Z]{2}$/.test(code)) {
+        return String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+      }
+      return "🌍";
+    };
+
     return (
       <div className="p-8 space-y-6 bg-background min-h-screen text-foreground">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1107,6 +1116,7 @@ export default function AdminDashboard() {
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Plan</TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">MT5</TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Joined</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Country</TableHead>
                   <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Source</TableHead>
                   <TableHead className="text-right text-muted-foreground font-bold uppercase text-[10px] tracking-widest pr-4">Actions</TableHead>
                 </TableRow>
@@ -1162,6 +1172,16 @@ export default function AdminDashboard() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      {user.country ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base leading-none">{getCountryFlag(user.country)}</span>
+                          <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">{user.country}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/40">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {user.utmSource ? (
                         <Badge variant="outline" className="text-[9px] font-bold border-blue-500/20 text-blue-400 uppercase tracking-widest">
                           {user.utmSource}
@@ -1207,7 +1227,7 @@ export default function AdminDashboard() {
                 ))}
                 {filteredUsers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic text-sm">
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic text-sm">
                       No users match your filters.
                     </TableCell>
                   </TableRow>
