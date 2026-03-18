@@ -1165,12 +1165,12 @@ export default function AdminDashboard() {
                       {user.mt5Connected ? (
                         <div className="flex items-center gap-1.5 text-emerald-500">
                           <Wifi size={12} />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">Live</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Connected</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 text-muted-foreground/50">
                           <WifiOff size={12} />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">None</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Not Connected</span>
                         </div>
                       )}
                     </TableCell>
