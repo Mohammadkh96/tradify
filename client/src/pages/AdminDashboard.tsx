@@ -1283,6 +1283,16 @@ export default function AdminDashboard() {
                             Grant Pro
                           </Button>
                         )}
+                        <Button size="sm" variant="ghost"
+                          className={cn("h-7 text-[10px]", user.foundingMember ? "text-amber-500 hover:bg-amber-500/10" : "text-muted-foreground hover:bg-muted/60")}
+                          onClick={() => toggleFoundingMemberMutation.mutate({ userId: user.userId, foundingMember: !user.foundingMember })}
+                          disabled={toggleFoundingMemberMutation.isPending}
+                          title={user.foundingMember ? "Revoke Founding Member" : "Grant Founding Member"}
+                          data-testid={`button-toggle-founder-${user.userId}`}
+                        >
+                          <Star size={12} fill={user.foundingMember ? "currentColor" : "none"} className="mr-1" />
+                          {user.foundingMember ? "Founder" : "Founder"}
+                        </Button>
                         <Button size="sm" variant="ghost" className={cn("h-7 text-[10px]", user.role === "DEACTIVATED" ? "text-emerald-500 hover:bg-emerald-500/10" : "text-rose-500 hover:bg-rose-500/10")}
                           onClick={() => updateMutation.mutate({ targetUserId: user.userId, updates: { role: user.role === "DEACTIVATED" ? "TRADER" : "DEACTIVATED" } })}
                           data-testid={`button-toggle-status-${user.userId}`}
