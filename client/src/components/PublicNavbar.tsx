@@ -5,7 +5,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export function PublicNavbar() {
+interface PublicNavbarProps {
+  topOffset?: number;
+}
+
+export function PublicNavbar({ topOffset = 0 }: PublicNavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
@@ -17,7 +21,10 @@ export function PublicNavbar() {
   ];
 
   return (
-    <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/80 backdrop-blur-md">
+    <nav
+      className="fixed w-full z-50 border-b border-border bg-background/80 backdrop-blur-md transition-[top] duration-300"
+      style={{ top: topOffset }}
+    >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link to="/">

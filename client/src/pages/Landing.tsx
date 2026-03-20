@@ -181,15 +181,15 @@ export default function Landing() {
           }
         ]}
       />
-      <PublicNavbar />
+      <PublicNavbar topOffset={!topBannerDismissed && founderCount && !founderCount.isFull ? 36 : 0} />
 
-      {/* Top Announcement Bar */}
+      {/* Top Announcement Bar — exactly 36px (h-9) so navbar top offset matches */}
       {!topBannerDismissed && founderCount && !founderCount.isFull && (
         <div
-          className={`fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4 py-2 text-center transition-all ${
+          className={`fixed top-0 left-0 right-0 h-9 z-[60] flex items-center justify-center px-10 text-center ${
             founderCount.remaining <= 50
-              ? "bg-red-600/95 border-b border-red-400/30"
-              : "bg-amber-500/95 border-b border-amber-400/30"
+              ? "bg-red-600/97 border-b border-red-400/30"
+              : "bg-amber-500/97 border-b border-amber-400/30"
           } backdrop-blur-md`}
           data-testid="banner-top-announcement"
         >
