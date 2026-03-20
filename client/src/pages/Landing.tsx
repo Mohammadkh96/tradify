@@ -183,37 +183,28 @@ export default function Landing() {
       <PublicNavbar />
 
       {/* Founding Member Sticky Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-amber-500/97 to-amber-600/97 backdrop-blur-sm border-t border-amber-400/30 py-2.5 px-4 shadow-2xl shadow-amber-500/20" data-testid="banner-founding-member">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <Crown className="h-4 w-4 text-slate-900 shrink-0" />
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0A0F1E]/96 backdrop-blur-md border-t border-amber-500/25 shadow-2xl shadow-black/40" data-testid="banner-founding-member">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <Crown className="h-4 w-4 text-amber-500" />
+            </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-slate-900 text-xs font-black uppercase tracking-wide">
-                  Founding Member — 1 month FREE Pro + 30% off forever
-                </span>
-                {founderCount && !founderCount.isFull && (
-                  <span className="text-slate-900/70 text-[10px] font-bold">
-                    · <span className="text-slate-900 font-black">{founderCount.remaining}</span> of {founderCount.total} spots left
-                  </span>
-                )}
-                {founderCount?.isFull && (
-                  <Badge className="bg-slate-900/30 text-slate-900 border-slate-900/30 text-[9px] uppercase tracking-widest shrink-0">Closed</Badge>
-                )}
+              <div className="text-[10px] font-black uppercase tracking-[0.15em] text-amber-500 mb-0.5">
+                Founding Member Program
               </div>
-              {founderCount && !founderCount.isFull && (
-                <div className="w-full max-w-xs mt-1 h-1 bg-slate-900/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-slate-900/60 rounded-full transition-all duration-700"
-                    style={{ width: `${(founderCount.claimed / founderCount.total) * 100}%` }}
-                  />
-                </div>
-              )}
+              <div className="text-[11px] text-muted-foreground font-medium leading-none">
+                {founderCount
+                  ? founderCount.isFull
+                    ? "All 500 founding spots have been claimed."
+                    : <>1 month free Pro · 30% lifetime discount · <span className="text-foreground font-bold">{founderCount.remaining} of {founderCount.total} spots remaining</span></>
+                  : "1 month free Pro · 30% lifetime discount · Limited to 500 members"}
+              </div>
             </div>
           </div>
-          <Link to="/signup" data-testid="button-sticky-founding-cta">
-            <Button size="sm" className="bg-slate-900 text-amber-500 hover:bg-slate-800 font-black uppercase tracking-widest text-[10px] rounded-full px-6 whitespace-nowrap shrink-0">
-              {founderCount?.isFull ? "Join Waitlist" : "Claim Your Spot"} <ArrowRight className="ml-1 h-3 w-3" />
+          <Link to="/signup" className="shrink-0" data-testid="button-sticky-founding-cta">
+            <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-lg px-5 h-8 shadow-lg shadow-amber-500/20 whitespace-nowrap">
+              {founderCount?.isFull ? "Create Account" : "Claim Your Spot"} <ArrowRight className="ml-1.5 h-3 w-3" />
             </Button>
           </Link>
         </div>
@@ -1465,26 +1456,14 @@ export default function Landing() {
             Founding members get permanent privileges and shape the future of the platform.
           </p>
 
-          <div className="grid grid-cols-3 gap-6 mb-10 max-w-lg mx-auto" data-testid="founding-member-stats">
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl font-black text-amber-500">
-                <AnimatedCounter target={847} suffix="+" />
-              </div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-1">Traders Active</div>
+          {founderCount && !founderCount.isFull && (
+            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 mb-10">
+              <Crown size={16} className="text-amber-500 shrink-0" />
+              <span className="text-amber-500 font-black text-sm uppercase tracking-widest">
+                {founderCount.remaining} of {founderCount.total} founding spots remaining
+              </span>
             </div>
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl font-black text-amber-500">
-                <AnimatedCounter target={124} suffix="K+" />
-              </div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-1">Trades Tracked</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl font-black text-amber-500">
-                <AnimatedCounter target={312} suffix="+" />
-              </div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-1">Challenges Monitored</div>
-            </div>
-          </div>
+          )}
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             {[
