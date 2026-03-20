@@ -77,8 +77,14 @@ export default function Landing() {
   const [calcLoading, setCalcLoading] = useState(false);
   const [calcSaved, setCalcSaved] = useState(false);
 
+  const [founderCount, setFounderCount] = useState<{ claimed: number; remaining: number; total: number; isFull: boolean } | null>(null);
+
   useEffect(() => {
     captureUTMParams();
+    fetch("/api/founding-members/count")
+      .then(r => r.json())
+      .then(d => setFounderCount(d))
+      .catch(() => {});
   }, []);
 
   const handleChecklistSubmit = async (e: React.FormEvent) => {
@@ -177,20 +183,37 @@ export default function Landing() {
       <PublicNavbar />
 
       {/* Founding Member Sticky Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-amber-500/95 to-amber-600/95 backdrop-blur-sm border-t border-amber-400/30 py-3 px-4 shadow-2xl shadow-amber-500/20" data-testid="banner-founding-member">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-amber-500/97 to-amber-600/97 backdrop-blur-sm border-t border-amber-400/30 py-2.5 px-4 shadow-2xl shadow-amber-500/20" data-testid="banner-founding-member">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <Crown className="h-5 w-5 text-slate-900 shrink-0" />
-            <span className="text-slate-900 text-xs sm:text-sm font-bold">
-              <span className="hidden sm:inline">Founding Member Program: </span>1 month FREE Pro + 30% off forever
-            </span>
-            <Badge className="bg-slate-900/20 text-slate-900 border-slate-900/30 text-[9px] uppercase tracking-widest animate-pulse shrink-0">
-              Limited Spots
-            </Badge>
+          <div className="flex items-center gap-3 min-w-0">
+            <Crown className="h-4 w-4 text-slate-900 shrink-0" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-slate-900 text-xs font-black uppercase tracking-wide">
+                  Founding Member — 1 month FREE Pro + 30% off forever
+                </span>
+                {founderCount && !founderCount.isFull && (
+                  <span className="text-slate-900/70 text-[10px] font-bold">
+                    · <span className="text-slate-900 font-black">{founderCount.remaining}</span> of {founderCount.total} spots left
+                  </span>
+                )}
+                {founderCount?.isFull && (
+                  <Badge className="bg-slate-900/30 text-slate-900 border-slate-900/30 text-[9px] uppercase tracking-widest shrink-0">Closed</Badge>
+                )}
+              </div>
+              {founderCount && !founderCount.isFull && (
+                <div className="w-full max-w-xs mt-1 h-1 bg-slate-900/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-slate-900/60 rounded-full transition-all duration-700"
+                    style={{ width: `${(founderCount.claimed / founderCount.total) * 100}%` }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-          <Link to="/early-access">
-            <Button size="sm" className="bg-slate-900 text-amber-500 hover:bg-slate-800 font-black uppercase tracking-widest text-[10px] rounded-full px-6 whitespace-nowrap" data-testid="button-sticky-founding-cta">
-              Claim Your Spot <ArrowRight className="ml-1 h-3 w-3" />
+          <Link to="/signup" data-testid="button-sticky-founding-cta">
+            <Button size="sm" className="bg-slate-900 text-amber-500 hover:bg-slate-800 font-black uppercase tracking-widest text-[10px] rounded-full px-6 whitespace-nowrap shrink-0">
+              {founderCount?.isFull ? "Join Waitlist" : "Claim Your Spot"} <ArrowRight className="ml-1 h-3 w-3" />
             </Button>
           </Link>
         </div>

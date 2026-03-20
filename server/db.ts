@@ -63,6 +63,20 @@ export async function ensureSchemaColumns() {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source TEXT;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
     `);
+
+    // Retroactively grant founding member status to all existing non-owner users
+    // who registered before the 500-cap system was introduced (one-time backfill)
+    await pool.query(`
+      UPDATE user_role
+      SET 
+        founding_member = true,
+        founding_member_pro_expiry = COALESCE(founding_member_pro_expiry, NOW() + INTERVAL '30 days'),
+        subscription_tier = CASE WHEN subscription_tier = 'FREE' THEN 'PRO' ELSE subscription_tier END,
+        updated_at = NOW()
+      WHERE role != 'OWNER'
+        AND founding_member = false
+        AND (SELECT COUNT(*) FROM user_role WHERE founding_member = true AND role != 'OWNER') < 500;
+    `);
     
     // Create early access signups table if not exists
     await pool.query(`

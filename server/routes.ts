@@ -433,6 +433,20 @@ ${blogPosts.map(p => `  <url>
     }
   });
 
+  // Public founding member counter (no auth required)
+  const FOUNDING_MEMBER_CAP = 500;
+  app.get("/api/founding-members/count", async (req, res) => {
+    try {
+      const { rows: [{ count }] } = await pool.query(
+        `SELECT COUNT(*) as count FROM user_role WHERE founding_member = true AND role != 'OWNER'`
+      );
+      const claimed = parseInt(count as string);
+      res.json({ claimed, remaining: Math.max(0, FOUNDING_MEMBER_CAP - claimed), total: FOUNDING_MEMBER_CAP, isFull: claimed >= FOUNDING_MEMBER_CAP });
+    } catch (error) {
+      res.json({ claimed: 0, remaining: FOUNDING_MEMBER_CAP, total: FOUNDING_MEMBER_CAP, isFull: false });
+    }
+  });
+
   // Registration Endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -449,13 +463,12 @@ ${blogPosts.map(p => `  <url>
         return res.status(400).json({ message: "An account with this email already exists." });
       }
 
-      // Check if this email has an early access signup - auto-grant founding member status
-      const [earlyAccessRecord] = await db.select()
-        .from(schema.earlyAccessSignups)
-        .where(eq(schema.earlyAccessSignups.email, normalizedEmail))
-        .limit(1);
-      
-      const isFoundingMember = !!earlyAccessRecord;
+      // Auto-grant founding member to the first 500 registrations
+      const { rows: [{ count: founderCount }] } = await pool.query(
+        `SELECT COUNT(*) as count FROM user_role WHERE founding_member = true AND role != 'OWNER'`
+      );
+      const isFoundingMember = parseInt(founderCount as string) < FOUNDING_MEMBER_CAP;
+      const earlyAccessRecord = null;
 
       const hashedPassword = await bcrypt.hash(password, 10);
       
