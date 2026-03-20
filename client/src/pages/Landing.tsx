@@ -78,6 +78,7 @@ export default function Landing() {
   const [calcSaved, setCalcSaved] = useState(false);
 
   const [founderCount, setFounderCount] = useState<{ claimed: number; remaining: number; total: number; isFull: boolean } | null>(null);
+  const [topBannerDismissed, setTopBannerDismissed] = useState(() => sessionStorage.getItem("top_banner_dismissed") === "1");
 
   useEffect(() => {
     captureUTMParams();
@@ -182,33 +183,106 @@ export default function Landing() {
       />
       <PublicNavbar />
 
-      {/* Founding Member Sticky Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0A0F1E]/96 backdrop-blur-md border-t border-amber-500/25 shadow-2xl shadow-black/40" data-testid="banner-founding-member">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <Crown className="h-4 w-4 text-amber-500" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-black uppercase tracking-[0.15em] text-amber-500 mb-0.5">
-                Founding Member Program
+      {/* Top Announcement Bar */}
+      {!topBannerDismissed && founderCount && !founderCount.isFull && (
+        <div
+          className={`fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4 py-2 text-center transition-all ${
+            founderCount.remaining <= 50
+              ? "bg-red-600/95 border-b border-red-400/30"
+              : "bg-amber-500/95 border-b border-amber-400/30"
+          } backdrop-blur-md`}
+          data-testid="banner-top-announcement"
+        >
+          <div className="flex items-center gap-2">
+            {founderCount.remaining <= 50 ? (
+              <Flame className={`h-3.5 w-3.5 text-white shrink-0 ${founderCount.remaining <= 10 ? "animate-pulse" : ""}`} />
+            ) : (
+              <Crown className="h-3.5 w-3.5 text-slate-950 shrink-0" />
+            )}
+            <span className={`text-[11px] font-black uppercase tracking-[0.12em] ${founderCount.remaining <= 50 ? "text-white" : "text-slate-950"}`}>
+              {founderCount.remaining <= 10
+                ? `Only ${founderCount.remaining} founding spots left — almost gone`
+                : founderCount.remaining <= 50
+                ? `${founderCount.remaining} founding spots remaining — filling fast`
+                : `Founding Member Program · ${founderCount.remaining} of ${founderCount.total} spots remaining`}
+            </span>
+            <Link to="/signup" data-testid="link-top-banner-cta">
+              <span className={`text-[10px] font-black uppercase tracking-widest underline underline-offset-2 ${founderCount.remaining <= 50 ? "text-white/90 hover:text-white" : "text-slate-900/80 hover:text-slate-900"}`}>
+                Claim yours →
+              </span>
+            </Link>
+          </div>
+          <button
+            onClick={() => {
+              setTopBannerDismissed(true);
+              sessionStorage.setItem("top_banner_dismissed", "1");
+            }}
+            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded ${founderCount.remaining <= 50 ? "text-white/70 hover:text-white" : "text-slate-900/60 hover:text-slate-900"}`}
+            data-testid="button-dismiss-top-banner"
+            aria-label="Dismiss"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      {/* Bottom Sticky Banner */}
+      {(() => {
+        const urgent = founderCount && founderCount.remaining <= 50 && !founderCount.isFull;
+        const critical = founderCount && founderCount.remaining <= 10 && !founderCount.isFull;
+        return (
+          <div
+            className={`fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md border-t shadow-2xl shadow-black/40 ${
+              critical
+                ? "bg-red-950/96 border-red-500/30"
+                : urgent
+                ? "bg-orange-950/96 border-orange-500/25"
+                : "bg-[#0A0F1E]/96 border-amber-500/25"
+            }`}
+            data-testid="banner-founding-member"
+          >
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  critical ? "bg-red-500/20 border border-red-500/40"
+                  : urgent ? "bg-orange-500/20 border border-orange-500/40"
+                  : "bg-amber-500/15 border border-amber-500/30"
+                }`}>
+                  {critical
+                    ? <Flame className={`h-4 w-4 text-red-400 animate-pulse`} />
+                    : urgent
+                    ? <Flame className="h-4 w-4 text-orange-400" />
+                    : <Crown className="h-4 w-4 text-amber-500" />
+                  }
+                </div>
+                <div className="min-w-0">
+                  <div className={`text-[10px] font-black uppercase tracking-[0.15em] mb-0.5 ${
+                    critical ? "text-red-400" : urgent ? "text-orange-400" : "text-amber-500"
+                  }`}>
+                    {critical ? "Almost Gone — Last Spots" : urgent ? "Filling Fast" : "Founding Member Program"}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground font-medium leading-none">
+                    {founderCount
+                      ? founderCount.isFull
+                        ? "All 500 founding spots have been claimed."
+                        : <>1 month free Pro · 30% lifetime discount · <span className="text-foreground font-bold">{founderCount.remaining} of {founderCount.total} spots remaining</span></>
+                      : "1 month free Pro · 30% lifetime discount · Limited to 500 members"}
+                  </div>
+                </div>
               </div>
-              <div className="text-[11px] text-muted-foreground font-medium leading-none">
-                {founderCount
-                  ? founderCount.isFull
-                    ? "All 500 founding spots have been claimed."
-                    : <>1 month free Pro · 30% lifetime discount · <span className="text-foreground font-bold">{founderCount.remaining} of {founderCount.total} spots remaining</span></>
-                  : "1 month free Pro · 30% lifetime discount · Limited to 500 members"}
-              </div>
+              <Link to="/signup" className="shrink-0" data-testid="button-sticky-founding-cta">
+                <Button size="sm" className={`font-black uppercase tracking-widest text-[10px] rounded-lg px-5 h-8 whitespace-nowrap ${
+                  critical ? "bg-red-500 hover:bg-red-400 text-white shadow-lg shadow-red-500/20"
+                  : urgent ? "bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/20"
+                  : "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20"
+                }`}>
+                  {founderCount?.isFull ? "Create Account" : "Claim Your Spot"} <ArrowRight className="ml-1.5 h-3 w-3" />
+                </Button>
+              </Link>
             </div>
           </div>
-          <Link to="/signup" className="shrink-0" data-testid="button-sticky-founding-cta">
-            <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-widest text-[10px] rounded-lg px-5 h-8 shadow-lg shadow-amber-500/20 whitespace-nowrap">
-              {founderCount?.isFull ? "Create Account" : "Claim Your Spot"} <ArrowRight className="ml-1.5 h-3 w-3" />
-            </Button>
-          </Link>
-        </div>
-      </div>
+        );
+      })()}
       
       {/* Hero Section */}
       <section className="relative pt-40 pb-24 overflow-hidden">

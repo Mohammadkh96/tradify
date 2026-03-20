@@ -7,7 +7,7 @@ import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
 import { db, pool } from "./db";
 import * as schema from "@shared/schema";
-import { eq, or, desc, and, sql } from "drizzle-orm";
+import { eq, or, desc, and, sql, ne } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -546,6 +546,16 @@ ${blogPosts.map(p => `  <url>
           .catch(err => console.error("Failed to queue free user drip sequence:", err));
       }
 
+      // Get the founding member spot number if applicable
+      let founderSpotNumber: number | null = null;
+      if (isFoundingMember) {
+        const countResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(schema.userRole)
+          .where(and(eq(schema.userRole.foundingMember, true), ne(schema.userRole.role, "OWNER")));
+        founderSpotNumber = Number(countResult[0]?.count ?? 0);
+      }
+
       res.status(201).json({ 
         message: isFoundingMember 
           ? "Founding member account created! Please check your email to verify your account."
@@ -553,6 +563,7 @@ ${blogPosts.map(p => `  <url>
         requiresVerification: true,
         userId: newUser.userId,
         foundingMember: isFoundingMember,
+        founderSpotNumber,
       });
     } catch (error: any) {
       console.error("Registration error:", error);

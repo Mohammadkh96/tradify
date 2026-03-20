@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link, Navigate, useSearchParams } from "react-router-dom";
-import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History, Check, X, Globe, User, RefreshCw } from "lucide-react";
+import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History, Check, X, Globe, User, RefreshCw, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,8 @@ export default function Auth() {
   const [requiresVerification, setRequiresVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [resendingVerification, setResendingVerification] = useState(false);
+  const [isFoundingMemberSignup, setIsFoundingMemberSignup] = useState(false);
+  const [founderSpotNumber, setFounderSpotNumber] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -231,9 +233,13 @@ export default function Auth() {
       if (!isLogin && data.requiresVerification) {
         setRequiresVerification(true);
         setVerificationEmail(email);
+        if (data.foundingMember) {
+          setIsFoundingMemberSignup(true);
+          setFounderSpotNumber(data.founderSpotNumber ?? null);
+        }
         trackFBEvent('CompleteRegistration');
         toast({
-          title: "Account Created",
+          title: data.foundingMember ? "Founding Member Spot Secured!" : "Account Created",
           description: "Please check your email to verify your account.",
         });
         return;
@@ -429,21 +435,55 @@ export default function Auth() {
       <div className="min-h-screen bg-background flex flex-col relative pt-20">
         <PublicNavbar />
         <div className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-2xl border border-border text-center">
-            <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <Mail className="text-emerald-500" size={40} />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-foreground uppercase italic tracking-tighter">Verify Your Email</h3>
+          <div className="w-full max-w-md space-y-6 text-center">
+            {/* Founding Member Celebration Block */}
+            {isFoundingMemberSignup && (
+              <div className="bg-card border border-amber-500/30 rounded-2xl p-6 mb-2" data-testid="banner-founding-celebration">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mb-4">
+                  <Crown className="text-amber-500" size={28} />
+                </div>
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-500 mb-1">
+                  Founding Member Secured
+                </div>
+                {founderSpotNumber && (
+                  <div className="text-4xl font-black text-foreground tracking-tighter mb-1">
+                    #{founderSpotNumber} <span className="text-muted-foreground text-xl font-bold">/ 500</span>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-2">
+                  You're locked in. 1 month free Pro + 30% off your subscription, forever.
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-left">
+                  {[
+                    "1 Month Free Pro",
+                    "30% Lifetime Discount",
+                    "Early Feature Access",
+                    "Founding Badge",
+                  ].map((perk) => (
+                    <div key={perk} className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wide">
+                      <div className="w-3.5 h-3.5 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      </div>
+                      {perk}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Verify email panel */}
+            <div className="bg-card p-8 rounded-2xl border border-border">
+              <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                <Mail className="text-emerald-500" size={28} />
+              </div>
+              <h3 className="text-xl font-bold text-foreground uppercase italic tracking-tighter">Verify Your Email</h3>
               <p className="text-muted-foreground mt-2 text-sm">
-                We've sent a verification link to <span className="text-emerald-500 font-bold">{verificationEmail}</span>
+                We've sent a link to <span className="text-emerald-500 font-bold">{verificationEmail}</span>
               </p>
-            </div>
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest">
-                Please check your inbox and click the verification link to activate your account.
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mt-4">
+                Click the link to activate your account.
               </p>
-              <div className="p-4 bg-muted rounded-lg border border-border">
+              <div className="mt-4 p-4 bg-muted rounded-lg border border-border">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Didn't receive the email?</p>
                 <Button
                   onClick={handleResendVerification}
@@ -465,18 +505,19 @@ export default function Auth() {
                   )}
                 </Button>
               </div>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setRequiresVerification(false);
+                  setIsFoundingMemberSignup(false);
+                  setIsLogin(true);
+                }}
+                className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-4"
+                data-testid="button-back-to-login"
+              >
+                Back to Login
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setRequiresVerification(false);
-                setIsLogin(true);
-              }}
-              className="text-muted-foreground text-xs font-bold uppercase tracking-widest"
-              data-testid="button-back-to-login"
-            >
-              Back to Login
-            </Button>
           </div>
         </div>
       </div>
