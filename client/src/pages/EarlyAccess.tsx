@@ -40,7 +40,7 @@ export default function EarlyAccess() {
   const [founderCount, setFounderCount] = useState<FounderCount | null>(null);
 
   useEffect(() => {
-    fetch("/api/founding-members/count")
+    fetch("/api/founding-members/count", { cache: "no-store" })
       .then(r => r.json())
       .then(d => setFounderCount(d))
       .catch(() => {});

@@ -437,6 +437,8 @@ ${blogPosts.map(p => `  <url>
   const FOUNDING_MEMBER_CAP = 500;
   app.get("/api/founding-members/count", async (req, res) => {
     try {
+      res.set("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.set("Pragma", "no-cache");
       const { rows: [{ count }] } = await pool.query(
         `SELECT COUNT(*) as count FROM user_role WHERE founding_member = true AND role != 'OWNER'`
       );

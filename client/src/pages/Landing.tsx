@@ -82,7 +82,7 @@ export default function Landing() {
 
   useEffect(() => {
     captureUTMParams();
-    fetch("/api/founding-members/count")
+    fetch("/api/founding-members/count", { cache: "no-store" })
       .then(r => r.json())
       .then(d => setFounderCount(d))
       .catch(() => {});
