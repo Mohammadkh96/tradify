@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Link2, Check, X } from "lucide-react";
+import { Download, Link2, Check } from "lucide-react";
 import MilestoneShareCard, { MilestoneShareCardProps } from "./MilestoneShareCard";
 
 interface MilestoneShareModalProps extends MilestoneShareCardProps {
@@ -10,6 +10,10 @@ interface MilestoneShareModalProps extends MilestoneShareCardProps {
   title?: string;
   subtitle?: string;
 }
+
+const CARD_SIZE = 1080;
+const PREVIEW_SIZE = 340;
+const SCALE = PREVIEW_SIZE / CARD_SIZE;
 
 export function MilestoneShareModal({
   open,
@@ -30,10 +34,12 @@ export function MilestoneShareModal({
     try {
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
+        scale: 1,
         backgroundColor: "#0A0F1E",
         useCORS: true,
         logging: false,
+        width: CARD_SIZE,
+        height: CARD_SIZE,
       });
       const link = document.createElement("a");
       link.download = `tradifyapp-${variant}-card.png`;
@@ -66,24 +72,32 @@ export function MilestoneShareModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-[560px] bg-[#0D1426] border border-white/10 p-6"
+        className="max-w-[420px] bg-[#0D1426] border border-white/10 p-6"
         data-testid="milestone-share-modal"
       >
         <DialogHeader className="mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-base font-black uppercase tracking-wider text-white">
-                {title || "Share Your Milestone"}
-              </DialogTitle>
-              {subtitle && (
-                <p className="text-xs text-white/40 mt-1">{subtitle}</p>
-              )}
-            </div>
-          </div>
+          <DialogTitle className="text-base font-black uppercase tracking-wider text-white">
+            {title || "Share Your Milestone"}
+          </DialogTitle>
+          {subtitle && (
+            <p className="text-xs text-white/40 mt-1">{subtitle}</p>
+          )}
         </DialogHeader>
 
-        <div className="flex justify-center mb-5">
-          <div style={{ transform: "scale(0.92)", transformOrigin: "top center" }}>
+        <div
+          className="flex justify-center mb-5 overflow-hidden rounded-xl"
+          style={{ height: PREVIEW_SIZE + 2 }}
+        >
+          <div
+            style={{
+              transform: `scale(${SCALE})`,
+              transformOrigin: "top left",
+              width: CARD_SIZE,
+              height: CARD_SIZE,
+              borderRadius: 0,
+              flexShrink: 0,
+            }}
+          >
             <MilestoneShareCard
               ref={cardRef}
               variant={variant}
@@ -101,7 +115,7 @@ export function MilestoneShareModal({
             data-testid="button-download-card"
           >
             <Download className="w-4 h-4" />
-            {downloading ? "Generating..." : "Download Card"}
+            {downloading ? "Generating..." : "Download 1080×1080"}
           </Button>
 
           <Button

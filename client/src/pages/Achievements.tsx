@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { MilestoneShareModal } from "@/components/MilestoneShareModal";
+import { parseTier } from "@/components/MilestoneShareCard";
 import type { AchievementCardData, StreakCardData, MilestoneCardVariant } from "@/components/MilestoneShareCard";
 
 const ICON_MAP: Record<string, any> = {
@@ -129,11 +130,11 @@ interface ShareState {
   data: AchievementCardData | StreakCardData | null;
 }
 
-const LS_SHARED_KEY = "tradify_shared_milestones";
+const LS_KEY = "tradify_shown_milestones";
 
-function getSharedMilestones(): Set<string> {
+function getShownMilestones(): Set<string> {
   try {
-    const raw = localStorage.getItem(LS_SHARED_KEY);
+    const raw = localStorage.getItem(LS_KEY);
     return new Set(raw ? JSON.parse(raw) : []);
   } catch {
     return new Set();
@@ -142,11 +143,13 @@ function getSharedMilestones(): Set<string> {
 
 function markMilestoneShown(key: string) {
   try {
-    const set = getSharedMilestones();
+    const set = getShownMilestones();
     set.add(key);
-    localStorage.setItem(LS_SHARED_KEY, JSON.stringify(Array.from(set)));
+    localStorage.setItem(LS_KEY, JSON.stringify(Array.from(set)));
   } catch {}
 }
+
+const STREAK_MILESTONES = [7, 30, 100];
 
 export default function Achievements() {
   const { toast } = useToast();
@@ -168,6 +171,43 @@ export default function Achievements() {
 
   const userName = user?.fullName || undefined;
 
+  useEffect(() => {
+    if (!data) return;
+    const shown = getShownMilestones();
+
+    const streakTypes = ["journaling", "trading", "compliance"] as const;
+    for (const type of streakTypes) {
+      const streak = data.streaks?.[type];
+      if (!streak) continue;
+      const current = streak.currentStreak;
+
+      for (const threshold of STREAK_MILESTONES) {
+        if (current >= threshold) {
+          const key = `streak_${type}_${threshold}`;
+          if (!shown.has(key)) {
+            markMilestoneShown(key);
+            const cardData: StreakCardData = {
+              streakType: type,
+              currentStreak: current,
+              longestStreak: streak.longestStreak,
+              levelName: data.level?.name || "Beginner",
+              levelNumber: data.level?.level || 1,
+              totalXp: data.totalXp || 0,
+            };
+            setShareState({
+              open: true,
+              variant: "streak",
+              title: `${threshold}-Day Streak!`,
+              subtitle: `${type.charAt(0).toUpperCase() + type.slice(1)} — ${current} consecutive days`,
+              data: cardData,
+            });
+            return;
+          }
+        }
+      }
+    }
+  }, [data]);
+
   const checkMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/achievements/check");
@@ -180,9 +220,10 @@ export default function Achievements() {
           title: "Achievements Unlocked!",
           description: `You unlocked ${result.newlyUnlocked.length} new achievement${result.newlyUnlocked.length > 1 ? "s" : ""}!`,
         });
-        const shared = getSharedMilestones();
+        const shown = getShownMilestones();
         const firstNew = result.newlyUnlocked[0] as string;
-        if (!shared.has(`ach_${firstNew}`)) {
+        const key = `ach_${firstNew}`;
+        if (!shown.has(key)) {
           const currentData = data;
           if (currentData) {
             const achDef = currentData.achievements.find((a) => a.key === firstNew);
@@ -190,14 +231,14 @@ export default function Achievements() {
               const cardData: AchievementCardData = {
                 achievementName: achDef.name,
                 achievementDescription: achDef.description,
-                tier: achDef.tier as any,
+                tier: parseTier(achDef.tier),
                 xpEarned: achDef.xpReward,
                 totalXp: (currentData.totalXp || 0) + achDef.xpReward,
                 levelName: currentData.level?.name || "Beginner",
                 levelNumber: currentData.level?.level || 1,
                 complianceStreak: currentData.streaks?.compliance?.currentStreak,
               };
-              markMilestoneShown(`ach_${firstNew}`);
+              markMilestoneShown(key);
               setShareState({
                 open: true,
                 variant: "achievement",
@@ -222,7 +263,7 @@ export default function Achievements() {
     const cardData: AchievementCardData = {
       achievementName: achievement.name,
       achievementDescription: achievement.description,
-      tier: achievement.tier as any,
+      tier: parseTier(achievement.tier),
       xpEarned: achievement.xpReward,
       totalXp: data.totalXp || 0,
       levelName: data.level?.name || "Beginner",

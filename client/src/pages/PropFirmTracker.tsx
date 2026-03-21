@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -459,6 +459,36 @@ export default function PropFirmTracker() {
     queryKey: ["/api/prop-firm/mt5-accounts"],
     enabled: view === "create",
   });
+
+  useEffect(() => {
+    if (view !== "detail" || !detailData) return;
+    const challenge = detailData.challenge;
+    const progress = detailData.progress;
+    if (!challenge || !progress || !progress.passEligible) return;
+
+    const key = `pass_eligible_${challenge.id}`;
+    try {
+      const raw = localStorage.getItem("tradify_shown_milestones");
+      const shown: string[] = raw ? JSON.parse(raw) : [];
+      if (shown.includes(key)) return;
+      shown.push(key);
+      localStorage.setItem("tradify_shown_milestones", JSON.stringify(shown));
+    } catch {
+      return;
+    }
+
+    const cardData: ChallengeCardData = {
+      challengeName: challenge.challengeName,
+      firmName: challenge.firmName,
+      profitPercent: progress.profitProgress,
+      drawdownUsedPercent: progress.dailyDDUsedPercent,
+      tradingDays: progress.uniqueTradingDays,
+      accountSize: challenge.accountSize,
+      currency: challenge.currency || "USD",
+    };
+    setChallengeShareData(cardData);
+    setChallengeShareOpen(true);
+  }, [view, detailData]);
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {

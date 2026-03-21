@@ -1,11 +1,19 @@
 import { forwardRef } from "react";
 
 export type MilestoneCardVariant = "achievement" | "challenge" | "streak";
+export type TierType = "bronze" | "silver" | "gold" | "platinum";
+
+export function parseTier(value: string): TierType {
+  if (value === "bronze" || value === "silver" || value === "gold" || value === "platinum") {
+    return value;
+  }
+  return "bronze";
+}
 
 export interface AchievementCardData {
   achievementName: string;
   achievementDescription: string;
-  tier: "bronze" | "silver" | "gold" | "platinum";
+  tier: TierType;
   xpEarned: number;
   totalXp: number;
   levelName: string;
@@ -38,7 +46,7 @@ export interface MilestoneShareCardProps {
   data: AchievementCardData | ChallengeCardData | StreakCardData;
 }
 
-const TIER_COLORS: Record<string, string> = {
+const TIER_ACCENT: Record<TierType, string> = {
   bronze: "#b45309",
   silver: "#94a3b8",
   gold: "#d97706",
@@ -53,53 +61,48 @@ const STREAK_LABELS: Record<string, string> = {
 
 function LogoRow() {
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 28,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
           <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" stroke="#00D9A3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           <polyline points="16 7 22 7 22 13" stroke="#00D9A3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.05em", color: "#ffffff", textTransform: "uppercase" as const }}>
+        <span style={{ fontSize: 18, fontWeight: 900, letterSpacing: "0.05em", color: "#ffffff", textTransform: "uppercase" as const }}>
           TradifyApp
         </span>
       </div>
-      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", color: "rgba(255,255,255,0.2)", textTransform: "uppercase" as const }}>
+      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.15em", color: "rgba(255,255,255,0.2)", textTransform: "uppercase" as const }}>
         tradifyapp.com
       </span>
     </div>
   );
 }
 
-function MiniStatBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function StatBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div style={{
       background: "rgba(255,255,255,0.04)",
-      border: `1px solid ${accent ? "rgba(0,217,163,0.2)" : "rgba(255,255,255,0.07)"}`,
-      borderRadius: 10,
-      padding: "13px 15px",
+      border: `1px solid ${accent ? "rgba(0,217,163,0.25)" : "rgba(255,255,255,0.08)"}`,
+      borderRadius: 16,
+      padding: "28px 32px",
       flex: 1,
       minWidth: 0,
     }}>
       <div style={{
-        fontSize: 9,
+        fontSize: 12,
         fontWeight: 800,
-        letterSpacing: "0.12em",
+        letterSpacing: "0.14em",
         textTransform: "uppercase" as const,
         color: accent ? "#00D9A3" : "rgba(255,255,255,0.35)",
-        marginBottom: 7,
+        marginBottom: 14,
       }}>
         {label}
       </div>
       <div style={{
-        fontSize: 20,
+        fontSize: 34,
         fontWeight: 900,
         color: accent ? "#00D9A3" : "#ffffff",
-        letterSpacing: "-0.02em",
+        letterSpacing: "-0.03em",
         lineHeight: 1,
       }}>
         {value}
@@ -109,122 +112,129 @@ function MiniStatBox({ label, value, accent }: { label: string; value: string; a
 }
 
 function AchievementBody({ data, userName }: { data: AchievementCardData; userName?: string }) {
-  const tierColor = TIER_COLORS[data.tier] || TIER_COLORS.bronze;
+  const accentColor = TIER_ACCENT[data.tier];
   return (
-    <>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 7,
-          background: `${tierColor}20`, border: `1px solid ${tierColor}44`,
-          borderRadius: 100, padding: "4px 12px", marginBottom: 10,
-        }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: tierColor }} />
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: tierColor, textTransform: "uppercase" as const }}>
-            {data.tier} achievement
-          </span>
-        </div>
-        <div style={{ fontSize: 26, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.02em", lineHeight: 1.1, textTransform: "uppercase" as const, marginBottom: 6 }}>
-          {data.achievementName}
-        </div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
-          {data.achievementDescription}
-        </div>
+    <div style={{ display: "flex", flexDirection: "column" as const, flex: 1 }}>
+      <div style={{
+        display: "inline-flex", alignItems: "center", gap: 10,
+        background: `${accentColor}20`, border: `1px solid ${accentColor}44`,
+        borderRadius: 100, padding: "8px 20px", marginBottom: 28, alignSelf: "flex-start",
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: accentColor }} />
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: accentColor, textTransform: "uppercase" as const }}>
+          {data.tier} achievement
+        </span>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        <MiniStatBox label="XP EARNED" value={`+${data.xpEarned}`} accent />
-        <MiniStatBox label="TOTAL XP" value={data.totalXp.toLocaleString()} />
+
+      <div style={{ fontSize: 56, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.03em", lineHeight: 1.05, textTransform: "uppercase" as const, marginBottom: 20 }}>
+        {data.achievementName}
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <MiniStatBox label="LEVEL" value={`${data.levelNumber} · ${data.levelName}`} />
+      <div style={{ fontSize: 20, color: "rgba(255,255,255,0.45)", lineHeight: 1.4, marginBottom: 48 }}>
+        {data.achievementDescription}
+      </div>
+
+      <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+        <StatBox label="XP Earned" value={`+${data.xpEarned}`} accent />
+        <StatBox label="Total XP" value={data.totalXp.toLocaleString()} />
+      </div>
+      <div style={{ display: "flex", gap: 16 }}>
+        <StatBox label="Level" value={`${data.levelNumber}`} />
+        <StatBox label="Rank" value={data.levelName} />
         {(data.complianceStreak ?? 0) > 0 && (
-          <MiniStatBox label="COMPLIANCE" value={`${data.complianceStreak}d streak`} />
+          <StatBox label="Streak" value={`${data.complianceStreak}d`} />
         )}
       </div>
+
       {userName && (
-        <div style={{ marginTop: 16, fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
+        <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
           Earned by {userName}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
 function ChallengeBody({ data, userName }: { data: ChallengeCardData; userName?: string }) {
   const sym = data.currency === "EUR" ? "€" : data.currency === "GBP" ? "£" : "$";
+  const acctNum = parseInt(data.accountSize.replace(/[^\d]/g, "")) || 0;
+
   return (
-    <>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 7,
-          background: "rgba(0,217,163,0.1)", border: "1px solid rgba(0,217,163,0.28)",
-          borderRadius: 100, padding: "4px 12px", marginBottom: 10,
-        }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#00D9A3" }} />
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "#00D9A3", textTransform: "uppercase" as const }}>
-            challenge passed
-          </span>
-        </div>
-        <div style={{ fontSize: 26, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.02em", lineHeight: 1.1, textTransform: "uppercase" as const, marginBottom: 6 }}>
-          {data.firmName}
-        </div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>
-          {data.challengeName} · {sym}{parseInt(data.accountSize).toLocaleString()}
-        </div>
+    <div style={{ display: "flex", flexDirection: "column" as const, flex: 1 }}>
+      <div style={{
+        display: "inline-flex", alignItems: "center", gap: 10,
+        background: "rgba(0,217,163,0.1)", border: "1px solid rgba(0,217,163,0.3)",
+        borderRadius: 100, padding: "8px 20px", marginBottom: 28, alignSelf: "flex-start",
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00D9A3" }} />
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: "#00D9A3", textTransform: "uppercase" as const }}>
+          challenge passed
+        </span>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        <MiniStatBox label="PROFIT" value={`+${data.profitPercent.toFixed(2)}%`} accent />
-        <MiniStatBox label="DD USED" value={`${data.drawdownUsedPercent.toFixed(1)}%`} />
+
+      <div style={{ fontSize: 56, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.03em", lineHeight: 1.05, textTransform: "uppercase" as const, marginBottom: 14 }}>
+        {data.firmName}
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <MiniStatBox label="TRADING DAYS" value={`${data.tradingDays}d`} />
-        <MiniStatBox label="ACCOUNT SIZE" value={`${sym}${parseInt(data.accountSize).toLocaleString()}`} />
+      <div style={{ fontSize: 20, color: "rgba(255,255,255,0.4)", marginBottom: 48 }}>
+        {data.challengeName} · {sym}{acctNum.toLocaleString()}
       </div>
+
+      <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+        <StatBox label="Profit" value={`+${data.profitPercent.toFixed(2)}%`} accent />
+        <StatBox label="DD Used" value={`${data.drawdownUsedPercent.toFixed(1)}%`} />
+      </div>
+      <div style={{ display: "flex", gap: 16 }}>
+        <StatBox label="Trading Days" value={`${data.tradingDays}`} />
+        <StatBox label="Account" value={`${sym}${acctNum.toLocaleString()}`} />
+      </div>
+
       {userName && (
-        <div style={{ marginTop: 16, fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
+        <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
           Achieved by {userName}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
 function StreakBody({ data, userName }: { data: StreakCardData; userName?: string }) {
   return (
-    <>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 7,
-          background: "rgba(251,146,60,0.1)", border: "1px solid rgba(251,146,60,0.28)",
-          borderRadius: 100, padding: "4px 12px", marginBottom: 10,
-        }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fb923c" }} />
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "#fb923c", textTransform: "uppercase" as const }}>
-            streak milestone
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
-          <span style={{ fontSize: 52, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.04em", lineHeight: 1 }}>
-            {data.currentStreak}
-          </span>
-          <span style={{ fontSize: 20, fontWeight: 700, color: "rgba(255,255,255,0.35)" }}>days</span>
-        </div>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" as const }}>
-          {STREAK_LABELS[data.streakType]}
-        </div>
+    <div style={{ display: "flex", flexDirection: "column" as const, flex: 1 }}>
+      <div style={{
+        display: "inline-flex", alignItems: "center", gap: 10,
+        background: "rgba(251,146,60,0.1)", border: "1px solid rgba(251,146,60,0.3)",
+        borderRadius: 100, padding: "8px 20px", marginBottom: 28, alignSelf: "flex-start",
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#fb923c" }} />
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: "#fb923c", textTransform: "uppercase" as const }}>
+          streak milestone
+        </span>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        <MiniStatBox label="BEST STREAK" value={`${data.longestStreak}d`} />
-        <MiniStatBox label="TOTAL XP" value={data.totalXp.toLocaleString()} accent />
+
+      <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 14 }}>
+        <span style={{ fontSize: 120, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.05em", lineHeight: 1 }}>
+          {data.currentStreak}
+        </span>
+        <span style={{ fontSize: 36, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>days</span>
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <MiniStatBox label="LEVEL" value={`${data.levelNumber} · ${data.levelName}`} />
+      <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "0.16em", color: "rgba(255,255,255,0.35)", textTransform: "uppercase" as const, marginBottom: 48 }}>
+        {STREAK_LABELS[data.streakType]}
       </div>
+
+      <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+        <StatBox label="Best Streak" value={`${data.longestStreak}d`} />
+        <StatBox label="Total XP" value={data.totalXp.toLocaleString()} accent />
+      </div>
+      <div style={{ display: "flex", gap: 16 }}>
+        <StatBox label="Level" value={`${data.levelNumber}`} />
+        <StatBox label="Rank" value={data.levelName} />
+      </div>
+
       {userName && (
-        <div style={{ marginTop: 16, fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
+        <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
           Tracked by {userName}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -235,46 +245,46 @@ const MilestoneShareCard = forwardRef<HTMLDivElement, MilestoneShareCardProps>(
         ref={ref}
         data-testid="milestone-share-card"
         style={{
-          width: 480,
+          width: 1080,
+          height: 1080,
           background: "#0A0F1E",
-          borderRadius: 20,
-          padding: 32,
+          borderRadius: 0,
+          padding: 80,
           display: "flex",
           flexDirection: "column" as const,
           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           position: "relative" as const,
           overflow: "hidden",
-          border: "1px solid rgba(0,217,163,0.12)",
           boxSizing: "border-box" as const,
         }}
       >
         <div style={{
-          position: "absolute" as const, top: 0, left: 0, right: 0, height: 3,
+          position: "absolute" as const, top: 0, left: 0, right: 0, height: 6,
           background: "#00D9A3",
         }} />
         <div style={{
-          position: "absolute" as const, top: -100, right: -100,
-          width: 280, height: 280, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0,217,163,0.05) 0%, transparent 70%)",
+          position: "absolute" as const, top: -200, right: -200,
+          width: 600, height: 600, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(0,217,163,0.04) 0%, transparent 70%)",
           pointerEvents: "none" as const,
         }} />
 
         <LogoRow />
 
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" as const }}>
           {variant === "achievement" && <AchievementBody data={data as AchievementCardData} userName={userName} />}
           {variant === "challenge" && <ChallengeBody data={data as ChallengeCardData} userName={userName} />}
           {variant === "streak" && <StreakBody data={data as StreakCardData} userName={userName} />}
         </div>
 
         <div style={{
-          marginTop: 24,
-          paddingTop: 16,
-          borderTop: "1px solid rgba(255,255,255,0.05)",
-          fontSize: 9,
+          marginTop: 40,
+          paddingTop: 24,
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          fontSize: 12,
           fontWeight: 900,
-          letterSpacing: "0.2em",
-          color: "rgba(0,217,163,0.5)",
+          letterSpacing: "0.22em",
+          color: "rgba(0,217,163,0.45)",
           textTransform: "uppercase" as const,
         }}>
           YOUR RULES. ENFORCED.
