@@ -339,32 +339,45 @@ async function sendSubscriptionCanceledEmail(email: string, userName: string, pl
   return sendEmail(email, `Your ${APP_NAME} ${planName} Subscription Has Been Canceled`, html);
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function sendContactFormNotification(fromEmail: string, fromName: string, subject: string, message: string): Promise<boolean> {
+  const safeFrom = escapeHtml(fromName);
+  const safeEmail = escapeHtml(fromEmail);
+  const safeSubject = escapeHtml(subject);
+  const safeMessage = escapeHtml(message);
   const content = `
     <h1 style="margin: 0 0 20px 0; font-size: 22px; font-weight: bold; color: #ffffff; font-family: Arial, sans-serif;">&#128235; New Contact Form Submission</h1>
     <div style="background-color: #131A2B; border: 1px solid #1F2937; border-radius: 8px; padding: 24px; margin-bottom: 16px;">
       <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #1F2937;">
         <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">FROM</p>
-        <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">${fromName} &lt;${fromEmail}&gt;</p>
+        <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">${safeFrom} &lt;${safeEmail}&gt;</p>
       </div>
       <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #1F2937;">
         <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">SUBJECT</p>
-        <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">${subject}</p>
+        <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">${safeSubject}</p>
       </div>
       <div>
         <p style="margin: 0 0 8px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">MESSAGE</p>
-        <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #D1D5DB; white-space: pre-wrap; font-family: Arial, sans-serif;">${message}</p>
+        <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #D1D5DB; white-space: pre-wrap; font-family: Arial, sans-serif;">${safeMessage}</p>
       </div>
     </div>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 16px 0 0 0;">
       <tr>
         <td style="background-color: #00D9A3; border-radius: 6px;">
-          <a href="mailto:${fromEmail}" style="display: inline-block; padding: 12px 24px; font-size: 15px; font-weight: bold; color: #000000; text-decoration: none; font-family: Arial, sans-serif;">Reply to ${fromName} &#8594;</a>
+          <a href="mailto:${safeEmail}" style="display: inline-block; padding: 12px 24px; font-size: 15px; font-weight: bold; color: #000000; text-decoration: none; font-family: Arial, sans-serif;">Reply to ${safeFrom} &#8594;</a>
         </td>
       </tr>
     </table>`;
   const html = wrapEmailBody(content, 'Contact Form Submission', 'Contact Form Submission');
-  return sendEmail(SUPPORT_EMAIL, `[Contact Form] ${subject}`, html);
+  return sendEmail(SUPPORT_EMAIL, `[Contact Form] ${safeSubject}`, html);
 }
 
 async function sendContactFormAutoReply(email: string, name: string): Promise<boolean> {
@@ -607,6 +620,7 @@ async function fetchMarketNews(): Promise<string[]> {
     const queries = [
       'prop firm trading news 2025',
       'forex discipline trading psychology',
+      'algorithmic trading risk management prop firm',
     ];
     const headlines: string[] = [];
 

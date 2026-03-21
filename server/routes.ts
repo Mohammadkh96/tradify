@@ -4323,6 +4323,9 @@ End with: "Review your charts for current market structure."`;
   app.post("/api/user/upgrade-dev", async (req, res) => {
     const userId = req.headers["x-user-id"] as string || "dev-user";
     await storage.updateUserSubscription(userId, "PRO");
+    emailService.cancelActiveTrack(userId, 'free_user').catch(() => {});
+    emailService.cancelActiveTrack(userId, 'free_ongoing').catch(() => {});
+    emailService.queueProToEliteSequence(userId).catch(() => {});
     res.json({ success: true, message: "Developer PRO access granted" });
   });
 
