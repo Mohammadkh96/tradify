@@ -38,6 +38,8 @@ export interface StreakCardData {
   levelName: string;
   levelNumber: number;
   totalXp: number;
+  complianceRate?: number;
+  accountHealth?: "healthy" | "caution" | "needs-attention";
 }
 
 export interface MilestoneShareCardProps {
@@ -196,7 +198,15 @@ function ChallengeBody({ data, userName }: { data: ChallengeCardData; userName?:
   );
 }
 
+const HEALTH_LABEL: Record<string, { label: string; color: string }> = {
+  healthy: { label: "Healthy", color: "#00D9A3" },
+  caution: { label: "Caution", color: "#f59e0b" },
+  "needs-attention": { label: "Needs Attention", color: "#f87171" },
+};
+
 function StreakBody({ data, userName }: { data: StreakCardData; userName?: string }) {
+  const health = data.accountHealth ? HEALTH_LABEL[data.accountHealth] : null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column" as const, flex: 1 }}>
       <div style={{
@@ -221,12 +231,28 @@ function StreakBody({ data, userName }: { data: StreakCardData; userName?: strin
       </div>
 
       <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+        <StatBox label="Compliance %" value={data.complianceRate != null ? `${Math.round(data.complianceRate)}%` : "—"} accent />
         <StatBox label="Best Streak" value={`${data.longestStreak}d`} />
-        <StatBox label="Total XP" value={data.totalXp.toLocaleString()} accent />
       </div>
       <div style={{ display: "flex", gap: 16 }}>
-        <StatBox label="Level" value={`${data.levelNumber}`} />
-        <StatBox label="Rank" value={data.levelName} />
+        <StatBox label="Level" value={`${data.levelNumber} · ${data.levelName}`} />
+        {health && (
+          <div style={{
+            background: "rgba(255,255,255,0.04)",
+            border: `1px solid ${health.color}33`,
+            borderRadius: 16,
+            padding: "28px 32px",
+            flex: 1,
+            minWidth: 0,
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.35)", marginBottom: 14 }}>
+              Account Health
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: health.color, letterSpacing: "-0.02em", lineHeight: 1 }}>
+              {health.label}
+            </div>
+          </div>
+        )}
       </div>
 
       {userName && (

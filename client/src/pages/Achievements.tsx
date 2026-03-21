@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -151,6 +151,16 @@ function markMilestoneShown(key: string) {
 
 const STREAK_MILESTONES = [7, 30, 100];
 
+function computeStreakMeta(data: AchievementsResponse, type: "journaling" | "trading" | "compliance") {
+  const complianceStreak = data.streaks?.compliance?.currentStreak || 0;
+  const longestCompliance = data.streaks?.compliance?.longestStreak || 1;
+  const complianceRate = Math.min(Math.round((complianceStreak / Math.max(longestCompliance, 7)) * 100), 100);
+  const levelProgress = data.level?.progress || 0;
+  const accountHealth: StreakCardData["accountHealth"] =
+    levelProgress >= 66 ? "healthy" : levelProgress >= 33 ? "caution" : "needs-attention";
+  return { complianceRate, accountHealth };
+}
+
 export default function Achievements() {
   const { toast } = useToast();
 
@@ -161,6 +171,8 @@ export default function Achievements() {
     data: null,
   });
 
+  const prevUnlockedKeysRef = useRef<Set<string>>(new Set());
+
   const { data, isLoading } = useQuery<AchievementsResponse>({
     queryKey: ["/api/achievements"],
   });
@@ -170,6 +182,50 @@ export default function Achievements() {
   });
 
   const userName = user?.fullName || undefined;
+
+  useEffect(() => {
+    if (!data) return;
+
+    const currentUnlocked = new Set(
+      data.achievements.filter((a) => a.unlocked).map((a) => a.key)
+    );
+
+    if (prevUnlockedKeysRef.current.size > 0) {
+      const shown = getShownMilestones();
+      let triggered = false;
+      currentUnlocked.forEach((key) => {
+        if (!prevUnlockedKeysRef.current.has(key) && !triggered) {
+          const lsKey = `ach_${key}`;
+          if (!shown.has(lsKey)) {
+            const achDef = data.achievements.find((a) => a.key === key);
+            if (achDef) {
+              const cardData: AchievementCardData = {
+                achievementName: achDef.name,
+                achievementDescription: achDef.description,
+                tier: parseTier(achDef.tier),
+                xpEarned: achDef.xpReward,
+                totalXp: (data.totalXp || 0) + achDef.xpReward,
+                levelName: data.level?.name || "Beginner",
+                levelNumber: data.level?.level || 1,
+                complianceStreak: data.streaks?.compliance?.currentStreak,
+              };
+              markMilestoneShown(lsKey);
+              setShareState({
+                open: true,
+                variant: "achievement",
+                title: "Achievement Unlocked",
+                subtitle: "Share your progress with the trading community",
+                data: cardData,
+              });
+              triggered = true;
+            }
+          }
+        }
+      });
+    }
+
+    prevUnlockedKeysRef.current = currentUnlocked;
+  }, [data]);
 
   useEffect(() => {
     if (!data) return;
@@ -186,6 +242,7 @@ export default function Achievements() {
           const key = `streak_${type}_${threshold}`;
           if (!shown.has(key)) {
             markMilestoneShown(key);
+            const { complianceRate, accountHealth } = computeStreakMeta(data, type);
             const cardData: StreakCardData = {
               streakType: type,
               currentStreak: current,
@@ -193,6 +250,8 @@ export default function Achievements() {
               levelName: data.level?.name || "Beginner",
               levelNumber: data.level?.level || 1,
               totalXp: data.totalXp || 0,
+              complianceRate,
+              accountHealth,
             };
             setShareState({
               open: true,
@@ -281,6 +340,7 @@ export default function Achievements() {
 
   function openStreakShare(type: "journaling" | "trading" | "compliance", streak: StreakInfo) {
     if (!data) return;
+    const { complianceRate, accountHealth } = computeStreakMeta(data, type);
     const cardData: StreakCardData = {
       streakType: type,
       currentStreak: streak.currentStreak,
@@ -288,6 +348,8 @@ export default function Achievements() {
       levelName: data.level?.name || "Beginner",
       levelNumber: data.level?.level || 1,
       totalXp: data.totalXp || 0,
+      complianceRate,
+      accountHealth,
     };
     setShareState({
       open: true,
