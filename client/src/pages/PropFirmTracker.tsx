@@ -485,6 +485,7 @@ export default function PropFirmTracker() {
       tradingDays: progress.uniqueTradingDays,
       accountSize: challenge.accountSize,
       currency: challenge.currency || "USD",
+      status: "passed",
     };
     setChallengeShareData(cardData);
     setChallengeShareOpen(true);
@@ -1334,6 +1335,7 @@ export default function PropFirmTracker() {
                         tradingDays: progress.uniqueTradingDays,
                         accountSize: challenge.accountSize,
                         currency: challenge.currency || "USD",
+                        status: "passed",
                       };
                       setChallengeShareData(cardData);
                       setChallengeShareOpen(true);

@@ -29,6 +29,7 @@ export interface ChallengeCardData {
   tradingDays: number;
   accountSize: string;
   currency?: string;
+  status?: "passed" | "failed" | "in-progress";
 }
 
 export interface StreakCardData {
@@ -159,20 +160,27 @@ function AchievementBody({ data, userName }: { data: AchievementCardData; userNa
   );
 }
 
+const STATUS_STYLES: Record<string, { bg: string; border: string; dot: string; label: string }> = {
+  passed: { bg: "rgba(0,217,163,0.1)", border: "rgba(0,217,163,0.3)", dot: "#00D9A3", label: "Challenge Passed" },
+  failed: { bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.3)", dot: "#f87171", label: "Challenge Failed" },
+  "in-progress": { bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.3)", dot: "#fbbf24", label: "In Progress" },
+};
+
 function ChallengeBody({ data, userName }: { data: ChallengeCardData; userName?: string }) {
   const sym = data.currency === "EUR" ? "€" : data.currency === "GBP" ? "£" : "$";
   const acctNum = parseInt(data.accountSize.replace(/[^\d]/g, "")) || 0;
+  const st = STATUS_STYLES[data.status || "passed"];
 
   return (
     <div style={{ display: "flex", flexDirection: "column" as const, flex: 1 }}>
       <div style={{
         display: "inline-flex", alignItems: "center", gap: 10,
-        background: "rgba(0,217,163,0.1)", border: "1px solid rgba(0,217,163,0.3)",
+        background: st.bg, border: `1px solid ${st.border}`,
         borderRadius: 100, padding: "8px 20px", marginBottom: 28, alignSelf: "flex-start",
       }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00D9A3" }} />
-        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: "#00D9A3", textTransform: "uppercase" as const }}>
-          challenge passed
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: st.dot }} />
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: st.dot, textTransform: "uppercase" as const }}>
+          {st.label}
         </span>
       </div>
 
