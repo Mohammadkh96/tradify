@@ -1670,6 +1670,79 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Not For You If Section */}
+      <section className="py-24 border-b border-border" data-testid="section-not-for-you">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 rounded-full px-4 py-1.5 mb-6">
+              <X size={12} className="text-rose-400" />
+              <span className="text-xs font-black uppercase tracking-widest text-rose-400">Honest disclaimer</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
+              Tradify is <span className="text-rose-400">Not For You</span> If...
+            </h2>
+            <p className="text-muted-foreground text-sm max-w-xl mx-auto">
+              We'd rather lose a signup than have the wrong person frustrated. These aren't warnings — they're filters.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
+            {[
+              {
+                headline: "You trade without a defined strategy",
+                body: "Tradify enforces your rules. If you don't have rules yet, enforcement has nothing to work with. Build your edge first — then come back.",
+              },
+              {
+                headline: "You plan to 'add discipline later'",
+                body: "Discipline that starts after the losses is damage control, not development. Tradify is for traders building the habit before they need it.",
+              },
+              {
+                headline: "You want to override your rules mid-session",
+                body: "The platform is designed to hold you accountable, not negotiate with you. If you're looking for a system that bends, this isn't it.",
+              },
+              {
+                headline: "You trade on impulse and consider it intuition",
+                body: "There's a difference between pattern recognition and gut-driven gambling. Tradify exists to help you tell them apart — only you can decide which one you're doing.",
+              },
+              {
+                headline: "You want a journal that just logs entries",
+                body: "Tradify is not a logging tool. It's a behavioral system. If you want somewhere to write 'bought EURUSD, closed +20 pips', a spreadsheet will do.",
+              },
+              {
+                headline: "You believe the problem is always the market",
+                body: "Markets are uncertain. Your process doesn't have to be. If you're not open to looking at your own behavior, no platform will move the needle for you.",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="flex gap-4 p-5 bg-card border border-border rounded-2xl hover:border-rose-500/30 transition-colors"
+                data-testid={`not-for-you-item-${i}`}
+              >
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                    <X size={10} className="text-rose-400" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground mb-1">{item.headline}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{item.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-8 text-center">
+            <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-4">
+              <CheckCircle2 size={12} className="text-emerald-500" />
+              <span className="text-xs font-black uppercase tracking-widest text-emerald-500">But it is for you if...</span>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              You have a trading approach you believe in — and you know the gap between your strategy and your results is <em className="text-foreground not-italic font-semibold">your own behavior</em>. You're ready to track it, face it, and fix it.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section */}
       <section className="py-24 border-b border-border" data-testid="section-faq">
         <div className="max-w-3xl mx-auto px-6">

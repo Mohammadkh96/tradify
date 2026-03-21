@@ -38,8 +38,11 @@ import {
   Wifi,
   WifiOff,
   Monitor,
+  Share2,
 } from "lucide-react";
 import type { PropFirmChallenge, PropFirmDailyStat } from "@shared/schema";
+import { MilestoneShareModal } from "@/components/MilestoneShareModal";
+import type { ChallengeCardData } from "@/components/MilestoneShareCard";
 
 type ViewState = "list" | "create" | "detail";
 
@@ -407,6 +410,8 @@ export default function PropFirmTracker() {
   const [view, setView] = useState<ViewState>("list");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<string>("");
+  const [challengeShareOpen, setChallengeShareOpen] = useState(false);
+  const [challengeShareData, setChallengeShareData] = useState<ChallengeCardData | null>(null);
 
   const [formData, setFormData] = useState({
     firmName: "",
@@ -439,6 +444,10 @@ export default function PropFirmTracker() {
 
   const { data: challenges, isLoading: isLoadingList } = useQuery<PropFirmChallenge[]>({
     queryKey: ["/api/prop-firm/challenges"],
+  });
+
+  const { data: currentUser } = useQuery<{ fullName?: string }>({
+    queryKey: ["/api/user"],
   });
 
   const { data: detailData, isLoading: isLoadingDetail } = useQuery<ChallengeDetail>({
@@ -1231,6 +1240,7 @@ export default function PropFirmTracker() {
     const fc = (v: number | string | null | undefined) => formatCurrency(v, curr);
 
     return (
+      <>
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4 flex-wrap">
@@ -1270,16 +1280,39 @@ export default function PropFirmTracker() {
           {challenge.status === "active" && (
             <div className="flex gap-2 flex-wrap">
               {progress.passEligible ? (
-                <Button
-                  data-testid="button-pass-challenge"
-                  variant="outline"
-                  className="border-emerald-500/30 text-emerald-400"
-                  onClick={() => updateStatusMutation.mutate({ id: challenge.id, status: "passed" })}
-                  disabled={updateStatusMutation.isPending}
-                >
-                  <Award size={16} className="text-emerald-400" />
-                  Eligible - Pass Challenge
-                </Button>
+                <>
+                  <Button
+                    data-testid="button-pass-challenge"
+                    variant="outline"
+                    className="border-emerald-500/30 text-emerald-400"
+                    onClick={() => updateStatusMutation.mutate({ id: challenge.id, status: "passed" })}
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <Award size={16} className="text-emerald-400" />
+                    Eligible - Pass Challenge
+                  </Button>
+                  <Button
+                    data-testid="button-share-challenge"
+                    variant="outline"
+                    className="border-emerald-500/30 text-emerald-400 gap-2"
+                    onClick={() => {
+                      const cardData: ChallengeCardData = {
+                        challengeName: challenge.challengeName,
+                        firmName: challenge.firmName,
+                        profitPercent: progress.profitProgress,
+                        drawdownUsedPercent: progress.dailyDDUsedPercent,
+                        tradingDays: progress.uniqueTradingDays,
+                        accountSize: challenge.accountSize,
+                        currency: challenge.currency || "USD",
+                      };
+                      setChallengeShareData(cardData);
+                      setChallengeShareOpen(true);
+                    }}
+                  >
+                    <Share2 size={14} />
+                    Share Result
+                  </Button>
+                </>
               ) : (
                 <Button
                   data-testid="button-pass-challenge"
@@ -2002,6 +2035,19 @@ export default function PropFirmTracker() {
           </Card>
         )}
       </div>
+
+      {challengeShareData && (
+        <MilestoneShareModal
+          open={challengeShareOpen}
+          onOpenChange={setChallengeShareOpen}
+          variant="challenge"
+          title="Share Your Result"
+          subtitle={`${challengeShareData.firmName} · ${challengeShareData.challengeName}`}
+          userName={currentUser?.fullName}
+          data={challengeShareData}
+        />
+      )}
+      </>
     );
   }
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -27,8 +28,11 @@ import {
   Lock,
   Sparkles,
   Star,
+  Share2,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { MilestoneShareModal } from "@/components/MilestoneShareModal";
+import type { AchievementCardData, StreakCardData, MilestoneCardVariant } from "@/components/MilestoneShareCard";
 
 const ICON_MAP: Record<string, any> = {
   footprints: Footprints,
@@ -117,12 +121,52 @@ interface AchievementsResponse {
   };
 }
 
+interface ShareState {
+  open: boolean;
+  variant: MilestoneCardVariant;
+  title: string;
+  subtitle?: string;
+  data: AchievementCardData | StreakCardData | null;
+}
+
+const LS_SHARED_KEY = "tradify_shared_milestones";
+
+function getSharedMilestones(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_SHARED_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function markMilestoneShown(key: string) {
+  try {
+    const set = getSharedMilestones();
+    set.add(key);
+    localStorage.setItem(LS_SHARED_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
 export default function Achievements() {
   const { toast } = useToast();
+
+  const [shareState, setShareState] = useState<ShareState>({
+    open: false,
+    variant: "achievement",
+    title: "",
+    data: null,
+  });
 
   const { data, isLoading } = useQuery<AchievementsResponse>({
     queryKey: ["/api/achievements"],
   });
+
+  const { data: user } = useQuery<{ fullName?: string }>({
+    queryKey: ["/api/user"],
+  });
+
+  const userName = user?.fullName || undefined;
 
   const checkMutation = useMutation({
     mutationFn: async () => {
@@ -136,6 +180,34 @@ export default function Achievements() {
           title: "Achievements Unlocked!",
           description: `You unlocked ${result.newlyUnlocked.length} new achievement${result.newlyUnlocked.length > 1 ? "s" : ""}!`,
         });
+        const shared = getSharedMilestones();
+        const firstNew = result.newlyUnlocked[0] as string;
+        if (!shared.has(`ach_${firstNew}`)) {
+          const currentData = data;
+          if (currentData) {
+            const achDef = currentData.achievements.find((a) => a.key === firstNew);
+            if (achDef) {
+              const cardData: AchievementCardData = {
+                achievementName: achDef.name,
+                achievementDescription: achDef.description,
+                tier: achDef.tier as any,
+                xpEarned: achDef.xpReward,
+                totalXp: (currentData.totalXp || 0) + achDef.xpReward,
+                levelName: currentData.level?.name || "Beginner",
+                levelNumber: currentData.level?.level || 1,
+                complianceStreak: currentData.streaks?.compliance?.currentStreak,
+              };
+              markMilestoneShown(`ach_${firstNew}`);
+              setShareState({
+                open: true,
+                variant: "achievement",
+                title: "Achievement Unlocked",
+                subtitle: "Share your progress with the trading community",
+                data: cardData,
+              });
+            }
+          }
+        }
       } else {
         toast({
           title: "Achievements Checked",
@@ -144,6 +216,46 @@ export default function Achievements() {
       }
     },
   });
+
+  function openAchievementShare(achievement: AchievementData) {
+    if (!data) return;
+    const cardData: AchievementCardData = {
+      achievementName: achievement.name,
+      achievementDescription: achievement.description,
+      tier: achievement.tier as any,
+      xpEarned: achievement.xpReward,
+      totalXp: data.totalXp || 0,
+      levelName: data.level?.name || "Beginner",
+      levelNumber: data.level?.level || 1,
+      complianceStreak: data.streaks?.compliance?.currentStreak,
+    };
+    setShareState({
+      open: true,
+      variant: "achievement",
+      title: "Share Achievement",
+      subtitle: achievement.name,
+      data: cardData,
+    });
+  }
+
+  function openStreakShare(type: "journaling" | "trading" | "compliance", streak: StreakInfo) {
+    if (!data) return;
+    const cardData: StreakCardData = {
+      streakType: type,
+      currentStreak: streak.currentStreak,
+      longestStreak: streak.longestStreak,
+      levelName: data.level?.name || "Beginner",
+      levelNumber: data.level?.level || 1,
+      totalXp: data.totalXp || 0,
+    };
+    setShareState({
+      open: true,
+      variant: "streak",
+      title: "Share Streak",
+      subtitle: `${streak.currentStreak}-day streak`,
+      data: cardData,
+    });
+  }
 
   if (isLoading) {
     return (
@@ -241,28 +353,40 @@ export default function Achievements() {
                 className="bg-card border border-border rounded-xl p-5"
                 data-testid={`streak-card-${type}`}
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    current > 0 ? "bg-orange-500/10" : "bg-muted"
-                  )}>
-                    {current > 0 ? (
-                      <Flame className="w-5 h-5 text-orange-500" />
-                    ) : (
-                      <Icon className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-                      {labels[type]}
-                    </p>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-black text-foreground" data-testid={`streak-count-${type}`}>
-                        {current}
-                      </span>
-                      <span className="text-sm text-muted-foreground">days</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center",
+                      current > 0 ? "bg-orange-500/10" : "bg-muted"
+                    )}>
+                      {current > 0 ? (
+                        <Flame className="w-5 h-5 text-orange-500" />
+                      ) : (
+                        <Icon className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                        {labels[type]}
+                      </p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black text-foreground" data-testid={`streak-count-${type}`}>
+                          {current}
+                        </span>
+                        <span className="text-sm text-muted-foreground">days</span>
+                      </div>
                     </div>
                   </div>
+                  {current >= 7 && (
+                    <button
+                      onClick={() => openStreakShare(type, streak)}
+                      className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-500/60 hover:text-emerald-500 transition-colors"
+                      title="Share this streak"
+                      data-testid={`button-share-streak-${type}`}
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Best: {longest} days
@@ -358,7 +482,15 @@ export default function Achievements() {
                       </div>
 
                       {isUnlocked && (
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 right-2 flex items-center gap-1">
+                          <button
+                            onClick={() => openAchievementShare(achievement)}
+                            className="p-1 rounded-md hover:bg-emerald-500/10 text-emerald-500/50 hover:text-emerald-500 transition-colors"
+                            title="Share this achievement"
+                            data-testid={`button-share-achievement-${achievement.key}`}
+                          >
+                            <Share2 className="w-3 h-3" />
+                          </button>
                           <div className={cn(
                             "text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-gradient-to-r",
                             tierColor
@@ -375,6 +507,18 @@ export default function Achievements() {
           );
         })}
       </div>
+
+      {shareState.data && (
+        <MilestoneShareModal
+          open={shareState.open}
+          onOpenChange={(open) => setShareState((s) => ({ ...s, open }))}
+          variant={shareState.variant}
+          title={shareState.title}
+          subtitle={shareState.subtitle}
+          userName={userName}
+          data={shareState.data}
+        />
+      )}
     </div>
   );
 }
