@@ -189,40 +189,49 @@ export default function Achievements() {
     const currentUnlocked = new Set(
       data.achievements.filter((a) => a.unlocked).map((a) => a.key)
     );
+    const shown = getShownMilestones();
+    const isInitialLoad = prevUnlockedKeysRef.current.size === 0;
+    let triggered = false;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
 
-    if (prevUnlockedKeysRef.current.size > 0) {
-      const shown = getShownMilestones();
-      let triggered = false;
-      currentUnlocked.forEach((key) => {
-        if (!prevUnlockedKeysRef.current.has(key) && !triggered) {
-          const lsKey = `ach_${key}`;
-          if (!shown.has(lsKey)) {
-            const achDef = data.achievements.find((a) => a.key === key);
-            if (achDef) {
-              const cardData: AchievementCardData = {
-                achievementName: achDef.name,
-                achievementDescription: achDef.description,
-                tier: parseTier(achDef.tier),
-                xpEarned: achDef.xpReward,
-                totalXp: (data.totalXp || 0) + achDef.xpReward,
-                levelName: data.level?.name || "Beginner",
-                levelNumber: data.level?.level || 1,
-                complianceStreak: data.streaks?.compliance?.currentStreak,
-              };
-              markMilestoneShown(lsKey);
-              setShareState({
-                open: true,
-                variant: "achievement",
-                title: "Achievement Unlocked",
-                subtitle: "Share your progress with the trading community",
-                data: cardData,
-              });
-              triggered = true;
-            }
-          }
-        }
-      });
-    }
+    currentUnlocked.forEach((key) => {
+      if (triggered) return;
+      const isNew = isInitialLoad ? false : !prevUnlockedKeysRef.current.has(key);
+      const achDef = data.achievements.find((a) => a.key === key);
+
+      const isRecent = achDef?.unlockedAt
+        ? now - new Date(achDef.unlockedAt).getTime() < oneDayMs
+        : false;
+
+      const shouldPop = isNew || (isInitialLoad && isRecent);
+      if (!shouldPop) return;
+
+      const lsKey = `ach_${key}`;
+      if (shown.has(lsKey)) return;
+
+      if (achDef) {
+        const cardData: AchievementCardData = {
+          achievementName: achDef.name,
+          achievementDescription: achDef.description,
+          tier: parseTier(achDef.tier),
+          xpEarned: achDef.xpReward,
+          totalXp: (data.totalXp || 0) + achDef.xpReward,
+          levelName: data.level?.name || "Beginner",
+          levelNumber: data.level?.level || 1,
+          complianceStreak: data.streaks?.compliance?.currentStreak,
+        };
+        markMilestoneShown(lsKey);
+        setShareState({
+          open: true,
+          variant: "achievement",
+          title: "Achievement Unlocked",
+          subtitle: "Share your progress with the trading community",
+          data: cardData,
+        });
+        triggered = true;
+      }
+    });
 
     prevUnlockedKeysRef.current = currentUnlocked;
   }, [data]);

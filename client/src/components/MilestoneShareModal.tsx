@@ -24,16 +24,16 @@ export function MilestoneShareModal({
   userName,
   data,
 }: MilestoneShareModalProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const captureRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleDownload = useCallback(async () => {
-    if (!cardRef.current || downloading) return;
+    if (!captureRef.current || downloading) return;
     setDownloading(true);
     try {
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(cardRef.current, {
+      const canvas = await html2canvas(captureRef.current, {
         scale: 1,
         backgroundColor: "#0A0F1E",
         useCORS: true,
@@ -87,6 +87,7 @@ export function MilestoneShareModal({
         <div
           className="flex justify-center mb-5 overflow-hidden rounded-xl"
           style={{ height: PREVIEW_SIZE + 2 }}
+          aria-hidden="true"
         >
           <div
             style={{
@@ -94,17 +95,36 @@ export function MilestoneShareModal({
               transformOrigin: "top left",
               width: CARD_SIZE,
               height: CARD_SIZE,
-              borderRadius: 0,
               flexShrink: 0,
+              pointerEvents: "none",
             }}
           >
             <MilestoneShareCard
-              ref={cardRef}
               variant={variant}
               userName={userName}
               data={data}
             />
           </div>
+        </div>
+
+        <div
+          style={{
+            position: "fixed",
+            left: "-9999px",
+            top: "-9999px",
+            width: CARD_SIZE,
+            height: CARD_SIZE,
+            pointerEvents: "none",
+            zIndex: -1,
+          }}
+          aria-hidden="true"
+        >
+          <MilestoneShareCard
+            ref={captureRef}
+            variant={variant}
+            userName={userName}
+            data={data}
+          />
         </div>
 
         <div className="flex gap-3">
