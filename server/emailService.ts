@@ -340,22 +340,30 @@ async function sendSubscriptionCanceledEmail(email: string, userName: string, pl
 }
 
 async function sendContactFormNotification(fromEmail: string, fromName: string, subject: string, message: string): Promise<boolean> {
-  const html = `
-    <!DOCTYPE html><html><head><meta charset="utf-8"><style>
-      body { font-family: Arial, sans-serif; background-color: #0a0a0a; color: #e5e5e5; padding: 20px; }
-      .container { max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 8px; padding: 24px; border: 1px solid #262626; }
-      h1 { color: #00D9A3; margin-top: 0; }
-      .info-row { padding: 12px 0; border-bottom: 1px solid #262626; }
-      .label { color: #a3a3a3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-      .value { color: #ffffff; font-size: 16px; margin-top: 4px; }
-    </style></head><body>
-      <div class="container">
-        <h1>Contact Form Submission</h1>
-        <div class="info-row"><div class="label">From</div><div class="value">${fromName} (${fromEmail})</div></div>
-        <div class="info-row"><div class="label">Subject</div><div class="value">${subject}</div></div>
-        <div class="info-row"><div class="label">Message</div><div class="value">${message}</div></div>
+  const content = `
+    <h1 style="margin: 0 0 20px 0; font-size: 22px; font-weight: bold; color: #ffffff; font-family: Arial, sans-serif;">&#128235; New Contact Form Submission</h1>
+    <div style="background-color: #131A2B; border: 1px solid #1F2937; border-radius: 8px; padding: 24px; margin-bottom: 16px;">
+      <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #1F2937;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">FROM</p>
+        <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">${fromName} &lt;${fromEmail}&gt;</p>
       </div>
-    </body></html>`;
+      <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #1F2937;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">SUBJECT</p>
+        <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">${subject}</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 8px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">MESSAGE</p>
+        <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #D1D5DB; white-space: pre-wrap; font-family: Arial, sans-serif;">${message}</p>
+      </div>
+    </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 16px 0 0 0;">
+      <tr>
+        <td style="background-color: #00D9A3; border-radius: 6px;">
+          <a href="mailto:${fromEmail}" style="display: inline-block; padding: 12px 24px; font-size: 15px; font-weight: bold; color: #000000; text-decoration: none; font-family: Arial, sans-serif;">Reply to ${fromName} &#8594;</a>
+        </td>
+      </tr>
+    </table>`;
+  const html = wrapEmailBody(content, 'Contact Form Submission', 'Contact Form Submission');
   return sendEmail(SUPPORT_EMAIL, `[Contact Form] ${subject}`, html);
 }
 
@@ -419,68 +427,42 @@ async function sendAdminSignupNotification(
     minute: '2-digit',
     timeZoneName: 'short'
   });
-  
-  const foundingBadge = isFoundingMember 
-    ? '<span style="background-color: #f59e0b; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold;">FOUNDING MEMBER</span>' 
-    : '';
-  
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0a; color: #e5e5e5; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 8px; padding: 24px; border: 1px solid #262626; }
-        h1 { color: #22c55e; margin-top: 0; }
-        .info-row { padding: 12px 0; border-bottom: 1px solid #262626; }
-        .label { color: #a3a3a3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .value { color: #ffffff; font-size: 16px; margin-top: 4px; }
-        .footer { margin-top: 24px; font-size: 12px; color: #737373; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1>New User Signup ${foundingBadge}</h1>
-        <p style="color: #a3a3a3;">A new user has registered on ${APP_NAME}.</p>
-        
-        <div class="info-row">
-          <div class="label">Full Name</div>
-          <div class="value">${fullName}</div>
-        </div>
-        
-        <div class="info-row">
-          <div class="label">Email</div>
-          <div class="value">${userEmail}</div>
-        </div>
-        
-        <div class="info-row">
-          <div class="label">Country</div>
-          <div class="value">${country}</div>
-        </div>
-        
-        <div class="info-row">
-          <div class="label">Signup Time</div>
-          <div class="value">${formattedDate}</div>
-        </div>
-        
-        <div class="info-row">
-          <div class="label">Status</div>
-          <div class="value">${isFoundingMember ? 'Founding Member (Early Access)' : 'Standard Registration'}</div>
-        </div>
-        
-        <div class="footer">
-          <p>This is an automated notification from ${APP_NAME}.</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
 
-  const subject = isFoundingMember 
-    ? `[Founding Member] New Signup: ${fullName}` 
+  const foundingBadge = isFoundingMember
+    ? ' <span style="background-color: #F59E0B; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; font-family: Arial, sans-serif;">FOUNDING MEMBER</span>'
+    : '';
+
+  const content = `
+    <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: bold; color: #ffffff; font-family: Arial, sans-serif;">&#128100; New User Signup${foundingBadge}</h1>
+    <p style="margin: 0 0 24px 0; font-size: 14px; color: #9CA3AF; font-family: Arial, sans-serif;">A new user has registered on ${APP_NAME}.</p>
+    <div style="background-color: #131A2B; border: 1px solid #1F2937; border-radius: 8px; padding: 24px;">
+      <div style="padding-bottom: 14px; border-bottom: 1px solid #1F2937; margin-bottom: 14px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">FULL NAME</p>
+        <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">${fullName}</p>
+      </div>
+      <div style="padding-bottom: 14px; border-bottom: 1px solid #1F2937; margin-bottom: 14px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">EMAIL</p>
+        <p style="margin: 0; font-size: 16px; color: #00D9A3; font-family: Arial, sans-serif;">${userEmail}</p>
+      </div>
+      <div style="padding-bottom: 14px; border-bottom: 1px solid #1F2937; margin-bottom: 14px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">COUNTRY</p>
+        <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">${country}</p>
+      </div>
+      <div style="padding-bottom: 14px; border-bottom: 1px solid #1F2937; margin-bottom: 14px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">SIGNUP TIME</p>
+        <p style="margin: 0; font-size: 15px; color: #D1D5DB; font-family: Arial, sans-serif;">${formattedDate}</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">STATUS</p>
+        <p style="margin: 0; font-size: 16px; color: ${isFoundingMember ? '#F59E0B' : '#D1D5DB'}; font-weight: ${isFoundingMember ? 'bold' : 'normal'}; font-family: Arial, sans-serif;">${isFoundingMember ? 'Founding Member (Early Access)' : 'Standard Registration'}</p>
+      </div>
+    </div>`;
+
+  const subject = isFoundingMember
+    ? `[Founding Member] New Signup: ${fullName}`
     : `New User Signup: ${fullName}`;
 
+  const html = wrapEmailBody(content, subject, `New signup: ${fullName}`);
   return sendEmail(ADMIN_EMAIL, subject, html);
 }
 
