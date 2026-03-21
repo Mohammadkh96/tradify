@@ -3,55 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Contact Form Submission</title>
+  <title>New Contact Form Submission — {{app_name}}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0b; color: #e4e4e7;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f3f4f6;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse;">
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="margin: 0 auto; background-color: #0A0F1E; border-radius: 12px; overflow: hidden;">
+
           <!-- Header -->
           <tr>
-            <td style="text-align: center; padding-bottom: 30px;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #22c55e;">{{app_name}}</h1>
-              <p style="margin: 8px 0 0; font-size: 14px; color: #f59e0b;">New Contact Form Submission</p>
+            <td style="background-color: #131A2B; padding: 28px 40px 24px 40px; border-bottom: 3px solid #00D9A3;">
+              <div style="font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; font-family: Arial, sans-serif;">{{app_name}}</div>
+              <div style="font-size: 11px; color: #00D9A3; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 600; margin-top: 6px; font-family: Arial, sans-serif;">ADMIN NOTIFICATION</div>
             </td>
           </tr>
-          
-          <!-- Main Content -->
+
+          <!-- Body -->
           <tr>
-            <td style="background-color: #18181b; border-radius: 12px; padding: 40px;">
-              <div style="margin-bottom: 24px;">
-                <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: #71717a;">From</p>
-                <p style="margin: 0; font-size: 16px; color: #fafafa;">{{from_name}} &lt;{{from_email}}&gt;</p>
+            <td style="padding: 40px;">
+              <h1 style="margin: 0 0 24px 0; font-size: 22px; font-weight: bold; color: #ffffff; font-family: Arial, sans-serif;">&#128235; New Contact Form Submission</h1>
+
+              <!-- From -->
+              <div style="margin-bottom: 16px;">
+                <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">FROM</p>
+                <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">{{from_name}} &lt;{{from_email}}&gt;</p>
               </div>
-              
+
+              <!-- Subject -->
               <div style="margin-bottom: 24px;">
-                <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: #71717a;">Subject</p>
-                <p style="margin: 0; font-size: 16px; color: #fafafa;">{{subject}}</p>
+                <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">SUBJECT</p>
+                <p style="margin: 0; font-size: 16px; color: #ffffff; font-family: Arial, sans-serif;">{{subject}}</p>
               </div>
-              
-              <div style="border-top: 1px solid #27272a; padding-top: 24px;">
-                <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: #71717a;">Message</p>
-                <div style="background-color: #27272a; border-radius: 8px; padding: 20px; margin-top: 8px;">
-                  <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #e4e4e7; white-space: pre-wrap;">{{message}}</p>
+
+              <!-- Message -->
+              <div style="border-top: 1px solid #1F2937; padding-top: 24px; margin-top: 8px;">
+                <p style="margin: 0 0 12px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px; font-family: Arial, sans-serif;">MESSAGE</p>
+                <div style="background-color: #131A2B; border-radius: 8px; padding: 20px; border: 1px solid #1F2937;">
+                  <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #D1D5DB; white-space: pre-wrap; font-family: Arial, sans-serif;">{{message}}</p>
                 </div>
               </div>
-              
-              <div style="margin-top: 24px;">
-                <a href="mailto:{{from_email}}" style="display: inline-block; background-color: #22c55e; color: #000; font-weight: 600; text-decoration: none; padding: 12px 24px; border-radius: 8px;">Reply to {{from_name}}</a>
-              </div>
+
+              <!-- CTA -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0 0 0;">
+                <tr>
+                  <td style="background-color: #00D9A3; border-radius: 6px;">
+                    <a href="mailto:{{from_email}}" style="display: inline-block; padding: 14px 28px; font-size: 15px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: 0.3px; font-family: Arial, sans-serif;">Reply to {{from_name}} &#8594;</a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          
+
           <!-- Footer -->
           <tr>
-            <td style="text-align: center; padding-top: 30px;">
-              <p style="margin: 0; font-size: 12px; color: #52525b;">
-                This message was sent via the {{app_name}} contact form.
-              </p>
+            <td style="background-color: #131A2B; padding: 28px 40px; border-top: 1px solid #1F2937;">
+              <p style="margin: 0; font-size: 11px; color: #4B5563; font-family: Arial, sans-serif;">This message was sent via the {{app_name}} contact form. Admin notification only.</p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>

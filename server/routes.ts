@@ -837,8 +837,9 @@ ${blogPosts.map(p => `  <url>
         storage.getUserRole(userId).then(user => {
           if (user) {
             emailService.sendSubscriptionActivatedEmail(userId, user.fullName || "Trader", "Pro");
+            emailService.cancelActiveTrack(userId, 'free_user').catch(() => {});
+            emailService.cancelActiveTrack(userId, 'free_ongoing').catch(() => {});
             emailService.queueProToEliteSequence(userId).catch(e => console.error('[DRIP] queueProToElite paypal order:', e));
-            emailService.queueInsightsNewsletterSequence(userId).catch(e => console.error('[DRIP] queueInsights paypal order:', e));
           }
         }).catch(err => console.error('Failed to send subscription email:', err));
       }

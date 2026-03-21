@@ -3,56 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subscription Canceled</title>
+  <title>Subscription Canceled — {{app_name}}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0b; color: #e4e4e7;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f3f4f6;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse;">
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="margin: 0 auto; background-color: #0A0F1E; border-radius: 12px; overflow: hidden;">
+
           <!-- Header -->
           <tr>
-            <td style="text-align: center; padding-bottom: 30px;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #22c55e;">{{app_name}}</h1>
+            <td style="background-color: #131A2B; padding: 28px 40px 24px 40px; border-bottom: 3px solid #00D9A3;">
+              <div style="font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; font-family: Arial, sans-serif;">{{app_name}}</div>
+              <div style="font-size: 11px; color: #00D9A3; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 600; margin-top: 6px; font-family: Arial, sans-serif;">YOUR RULES. ENFORCED.</div>
             </td>
           </tr>
-          
-          <!-- Main Content -->
+
+          <!-- Body -->
           <tr>
-            <td style="background-color: #18181b; border-radius: 12px; padding: 40px;">
-              <h2 style="margin: 0 0 20px; font-size: 24px; color: #fafafa;">Subscription Canceled</h2>
-              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #a1a1aa;">
-                Hi {{user_name}},
-              </p>
-              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #a1a1aa;">
-                Your {{plan_name}} subscription has been canceled. You'll continue to have access to {{plan_name}} features until the end of your current billing period.
-              </p>
-              
-              <div style="background-color: #27272a; border-radius: 8px; padding: 20px; margin: 24px 0;">
-                <p style="margin: 0; font-size: 14px; color: #a1a1aa;">
-                  After your billing period ends, your account will be switched to the Free plan. Your data will be preserved, but some features may become unavailable.
-                </p>
+            <td style="padding: 40px;">
+              <h1 style="margin: 0 0 20px 0; font-size: 26px; font-weight: bold; color: #ffffff; font-family: Arial, sans-serif;">Subscription Canceled</h1>
+              <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7; font-family: Arial, sans-serif;">Hi {{user_name}}, your {{plan_name}} subscription has been canceled as requested.</p>
+
+              <!-- Info box -->
+              <div style="background-color: #131A2B; border-left: 3px solid #00D9A3; padding: 20px 24px; margin: 24px 0; border-radius: 0 6px 6px 0;">
+                <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold; color: #ffffff; font-family: Arial, sans-serif;">&#128197; What happens next</p>
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #D1D5DB; line-height: 1.6; font-family: Arial, sans-serif;">&#10003; <strong style="color: #ffffff;">You still have access</strong> — your {{plan_name}} features stay active until your billing period ends.</p>
+                <p style="margin: 0; font-size: 14px; color: #9CA3AF; line-height: 1.6; font-family: Arial, sans-serif;">After that, your account switches to Free. All your data is preserved.</p>
               </div>
-              
-              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #a1a1aa;">
-                Changed your mind? You can resubscribe anytime from your profile settings.
-              </p>
-              
-              <a href="{{app_url}}/profile" style="display: inline-block; background-color: #27272a; color: #fafafa; font-weight: 600; text-decoration: none; padding: 14px 28px; border-radius: 8px; border: 1px solid #3f3f46;">Manage Subscription</a>
+
+              <!-- CTA -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0;">
+                <tr>
+                  <td style="background-color: #00D9A3; border-radius: 6px;">
+                    <a href="{{app_url}}/pricing" style="display: inline-block; padding: 14px 28px; font-size: 15px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: 0.3px; font-family: Arial, sans-serif;">Reactivate Subscription &#8594;</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0; font-size: 14px; color: #6B7280; line-height: 1.6; font-family: Arial, sans-serif;">Questions? <a href="mailto:{{support_email}}" style="color: #00D9A3; text-decoration: none;">{{support_email}}</a></p>
             </td>
           </tr>
-          
+
           <!-- Footer -->
           <tr>
-            <td style="text-align: center; padding-top: 30px;">
-              <p style="margin: 0; font-size: 13px; color: #71717a;">
-                Questions? Contact <a href="mailto:{{support_email}}" style="color: #22c55e; text-decoration: none;">{{support_email}}</a>
-              </p>
-              <p style="margin: 12px 0 0; font-size: 12px; color: #52525b;">
-                &copy; {{current_year}} {{app_name}}. All rights reserved.
-              </p>
+            <td style="background-color: #131A2B; padding: 28px 40px; border-top: 1px solid #1F2937;">
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280; font-family: Arial, sans-serif;">&copy; {{current_year}} {{app_name}}. All rights reserved. | Trading Discipline Platform</p>
+              <p style="margin: 0; font-size: 11px; color: #4B5563; font-family: Arial, sans-serif;">You received this because you canceled your {{app_name}} subscription.</p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>
