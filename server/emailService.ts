@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { and, eq, lte } from "drizzle-orm";
+import { and, count, eq, lte } from "drizzle-orm";
 import { openai } from "./replit_integrations/audio/index";
 
 // Use process.cwd() for path resolution (works in both ESM and CJS)
@@ -604,6 +604,16 @@ Write the subject line first as "SUBJECT: [subject]", then the HTML body.`;
   }
 }
 
+interface BraveNewsResult {
+  title?: string;
+  url?: string;
+  description?: string;
+}
+
+interface BraveNewsResponse {
+  results?: BraveNewsResult[];
+}
+
 async function fetchMarketNews(): Promise<string[]> {
   const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
   if (!BRAVE_API_KEY) {
@@ -624,8 +634,8 @@ async function fetchMarketNews(): Promise<string[]> {
         headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY },
       });
       if (!resp.ok) continue;
-      const data = await resp.json() as any;
-      const results = data?.results || [];
+      const data: BraveNewsResponse = await resp.json();
+      const results = data?.results ?? [];
       for (const r of results.slice(0, 3)) {
         if (r?.title) headlines.push(r.title);
       }
@@ -635,6 +645,18 @@ async function fetchMarketNews(): Promise<string[]> {
   } catch (err) {
     console.error('[DRIP] fetchMarketNews error:', err);
     return [];
+  }
+}
+
+async function getUserRuleCount(userId: string): Promise<number> {
+  try {
+    const [result] = await db.select({ total: count() })
+      .from(schema.strategyRules)
+      .innerJoin(schema.strategies, eq(schema.strategyRules.strategyId, schema.strategies.id))
+      .where(eq(schema.strategies.userId, userId));
+    return result?.total ?? 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -1057,6 +1079,7 @@ async function queueEliteRetentionSequence(userId: string): Promise<void> {
   try {
     await cancelActiveTrack(userId, 'elite_retention');
     await cancelActiveTrack(userId, 'pro_to_elite');
+    await cancelActiveTrack(userId, 'insights_newsletter');
     const [existing] = await db.select({ id: schema.emailSequences.id })
       .from(schema.emailSequences)
       .where(and(
@@ -1268,7 +1291,8 @@ async function processDripSequences(): Promise<void> {
           const topic = topics[seq.currentStep % topics.length];
           const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
           const hasMt5 = mt5Check.length > 0;
-          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount: 0, daysSinceSignup, email: seq.userId };
+          const ruleCount = await getUserRuleCount(seq.userId);
+          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
           const aiResult = await generateAIEmail('free_ongoing', userData, { topic, step: seq.currentStep });
           if (aiResult) {
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
@@ -1303,8 +1327,9 @@ async function processDripSequences(): Promise<void> {
           const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
           const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
           const hasMt5 = mt5Check.length > 0;
+          const ruleCount = await getUserRuleCount(seq.userId);
           const topic = topics[seq.currentStep] || topics[topics.length - 1];
-          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount: 0, daysSinceSignup, email: seq.userId };
+          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
           const aiResult = await generateAIEmail('pro_to_elite', userData, { topic, step: seq.currentStep });
           if (aiResult) {
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
@@ -1339,8 +1364,9 @@ async function processDripSequences(): Promise<void> {
           const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
           const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
           const hasMt5 = mt5Check.length > 0;
+          const ruleCount = await getUserRuleCount(seq.userId);
           const topic = topics[seq.currentStep] || topics[topics.length - 1];
-          const userData: AIEmailUserData = { name: userName, tier: 'ELITE', hasMt5, ruleCount: 0, daysSinceSignup, email: seq.userId };
+          const userData: AIEmailUserData = { name: userName, tier: 'ELITE', hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
           const aiResult = await generateAIEmail('elite_retention', userData, { topic, step: seq.currentStep, isElite: true });
           if (aiResult) {
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
@@ -1370,8 +1396,9 @@ async function processDripSequences(): Promise<void> {
           const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
           const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
           const hasMt5 = mt5Check.length > 0;
+          const ruleCount = await getUserRuleCount(seq.userId);
           const newsHeadlines = await fetchMarketNews();
-          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount: 0, daysSinceSignup, email: seq.userId };
+          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
           const aiResult = await generateAIEmail('insights_newsletter', userData, {
             topic: 'Market insights and prop firm trading discipline',
             newsHeadlines,

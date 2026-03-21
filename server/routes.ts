@@ -3979,6 +3979,10 @@ End with: "Review your charts for current market structure."`;
         details: { timestamp: new Date() }
       });
 
+      emailService.cancelActiveTrack(userId, 'free_user').catch(() => {});
+      emailService.cancelActiveTrack(userId, 'free_ongoing').catch(() => {});
+      emailService.queueProToEliteSequence(userId).catch(e => console.error('[DRIP] queueProToElite grant-pro:', e));
+
       res.json({ success: true, message: "Pro access granted to founding member" });
     } catch (error) {
       console.error("Error granting Pro access:", error);
@@ -4139,6 +4143,7 @@ End with: "Review your charts for current market structure."`;
       
       // If subscriptionTier is being updated, use the dedicated storage method
       if (updates.subscriptionTier) {
+        const newTier: string = updates.subscriptionTier.toUpperCase();
         await storage.updateUserSubscription(targetUserId, updates.subscriptionTier);
         
         // Audit log
@@ -4148,6 +4153,15 @@ End with: "Review your charts for current market structure."`;
           targetUserId,
           details: { updates }
         });
+
+        emailService.cancelActiveTrack(targetUserId, 'free_user').catch(() => {});
+        emailService.cancelActiveTrack(targetUserId, 'free_ongoing').catch(() => {});
+        emailService.cancelActiveTrack(targetUserId, 'pro_to_elite').catch(() => {});
+        if (newTier === 'ELITE') {
+          emailService.queueEliteRetentionSequence(targetUserId).catch(e => console.error('[DRIP] admin update-user elite:', e));
+        } else if (newTier === 'PRO') {
+          emailService.queueProToEliteSequence(targetUserId).catch(e => console.error('[DRIP] admin update-user pro:', e));
+        }
         
         delete updates.subscriptionTier; // Remove from updates object to avoid duplicate update below
       }
