@@ -95,6 +95,12 @@ async function initializeApp() {
     log(`serving on port ${port}`);
   });
 
+  // Backfill email sequences for existing users (Pro/Elite → insights newsletter, completed free_user → free_ongoing)
+  setTimeout(async () => {
+    log("Running email sequence backfill...", "drip");
+    await emailService.backfillEmailSequences();
+  }, 90 * 1000);
+
   // Start email drip sequence background job (runs every 30 minutes)
   const DRIP_INTERVAL_MS = 30 * 60 * 1000;
   setTimeout(async () => {

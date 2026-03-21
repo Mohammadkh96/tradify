@@ -4,6 +4,7 @@ import path from 'path';
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { and, eq, lte } from "drizzle-orm";
+import { openai } from "./replit_integrations/audio/index";
 
 // Use process.cwd() for path resolution (works in both ESM and CJS)
 const EMAIL_TEMPLATES_DIR = path.join(process.cwd(), 'server', 'emails');
@@ -121,14 +122,15 @@ async function sendEmail(
 function getEmailHeader(): string {
   return `
           <tr>
-            <td style="background-color: #131A2B; padding: 32px 40px; border-bottom: 2px solid #00D9A3;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <td style="background-color: #131A2B; padding: 28px 40px 24px 40px; border-bottom: 3px solid #00D9A3;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>
-                  <td style="padding-right: 12px; vertical-align: middle;">
-                    <img src="${APP_URL}/logo-email.png" alt="TradifyApp" width="40" height="40" style="display: block; border-radius: 10px;" />
-                  </td>
                   <td>
-                    <div style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; line-height: 1;">TRADIFYAPP</div>
+                    <div style="font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; line-height: 1; font-family: Arial, sans-serif;">TRADIFYAPP</div>
+                    <div style="font-size: 11px; color: #00D9A3; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 600; margin-top: 6px; font-family: Arial, sans-serif;">YOUR RULES. ENFORCED.</div>
+                  </td>
+                  <td style="text-align: right; vertical-align: top;">
+                    <div style="display: inline-block; background-color: #00D9A3; width: 8px; height: 8px; border-radius: 50%;"></div>
                   </td>
                 </tr>
               </table>
@@ -139,10 +141,10 @@ function getEmailHeader(): string {
 function getEmailFooter(): string {
   return `
           <tr>
-            <td style="background-color: #131A2B; padding: 32px 40px; border-top: 1px solid #1F2937;">
-              <p style="margin: 0 0 16px 0; font-size: 14px; color: #9CA3AF; line-height: 1.6;">This email was sent by Tradifyapp.com</p>
-              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">&copy; ${new Date().getFullYear()} TradifyApp. All rights reserved.</p>
-              <p style="margin: 0; font-size: 12px; color: #6B7280;">Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}" style="color: #00D9A3; text-decoration: none;">${SUPPORT_EMAIL}</a></p>
+            <td style="background-color: #131A2B; padding: 28px 40px; border-top: 1px solid #1F2937;">
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">&copy; ${new Date().getFullYear()} TradifyApp. All rights reserved. | Trading Discipline Platform</p>
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">Questions? <a href="mailto:${SUPPORT_EMAIL}" style="color: #00D9A3; text-decoration: none;">${SUPPORT_EMAIL}</a></p>
+              <p style="margin: 0; font-size: 11px; color: #4B5563;">You received this because you have a TradifyApp account. Reply STOP to unsubscribe from marketing emails.</p>
             </td>
           </tr>`;
 }
@@ -509,6 +511,133 @@ function dripFooterNote(isLead: boolean): string {
   return `<p style="margin: 24px 0 0 0; font-size: 12px; color: #6B7280; border-top: 1px solid #1F2937; padding-top: 16px;">${reason} Reply STOP to unsubscribe.</p>`;
 }
 
+// ==================== AI EMAIL GENERATION ====================
+
+const PRODUCT_REFERENCE = `
+TradifyApp — Trading Discipline Platform. Tagline: "Your Rules. Enforced."
+NOT a journal. NOT a trade log. An enforcement layer.
+
+FREE plan: MT5 auto-sync via connector EA (read-only, installs in 3 min), trade history (30-day), basic analytics, psychology tracking, CSV import, risk calculators, 3 education lessons, basic rule validation.
+
+PRO plan ($29/month): Everything in Free + unlimited trade history, advanced analytics (win rate by session/day/instrument/setup), unlimited rule engine, multi-account MT5 tracking, full 19-lesson education hub, monthly AI self-review report, Prop Firm Challenge Tracker (FTMO / MyFundedFX / The Funded Trader / custom), AI instrument analysis, priority support.
+
+ELITE plan ($59/month): Everything in Pro + behavioral risk flags, session analytics deep-dive, AI challenge risk warnings, strategy deviation analysis, monthly AI review reports with coaching recommendations.
+
+MT5 connector: A .pyw file the user runs locally. Completely read-only — never touches broker credentials or places trades. Syncs every 60 seconds.
+`;
+
+interface AIEmailUserData {
+  name: string;
+  tier: string;
+  hasMt5: boolean;
+  ruleCount: number;
+  daysSinceSignup: number;
+  email: string;
+}
+
+async function generateAIEmail(
+  type: string,
+  userData: AIEmailUserData,
+  context?: { topic?: string; newsHeadlines?: string[]; step?: number; isElite?: boolean }
+): Promise<{ subject: string; body: string } | null> {
+  try {
+    const { name, tier, hasMt5, ruleCount, daysSinceSignup } = userData;
+    const topic = context?.topic || type;
+    const headlines = context?.newsHeadlines?.slice(0, 5) || [];
+    const isElite = context?.isElite || tier.toUpperCase() === 'ELITE';
+
+    const headlinesSection = headlines.length > 0
+      ? `\nRecent market headlines for context:\n${headlines.map(h => `- ${h}`).join('\n')}\n`
+      : '';
+
+    const eliteInsightInstruction = isElite
+      ? `\nSince this user is on Elite, include an exclusive "Elite Insight" section after the main content — a short, data-driven tip that only applies to elite-level analysis or behavioral risk. Use the HTML callout box style shown below:\n<div style="background-color: #1a0a2e; border: 1px solid #7c3aed; border-radius: 8px; padding: 20px; margin: 24px 0;"><p style="margin: 0 0 8px 0; font-size: 11px; color: #7c3aed; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold;">&#9889; Elite Insight</p><p style="margin: 0; font-size: 15px; color: #D1D5DB; line-height: 1.7;">[elite insight content]</p></div>`
+      : '';
+
+    const systemPrompt = `You are the voice of TradifyApp — a trading discipline platform for serious traders. Your brand voice is: direct, no-fluff, disciplined. You write short, impactful emails that respect the reader's intelligence.
+
+${PRODUCT_REFERENCE}
+
+Rules:
+- Write in plain English. No corporate buzzwords.
+- Use emojis in headings and list items (📊 📈 ⚡ 🎯 🧠 ✅ etc)
+- ALL feature mentions must be accurate per the product reference above
+- Do NOT use phrases like "built by a trader, for traders" or call it a "journal"
+- Return only the HTML email body content — no outer wrapper, no DOCTYPE, no <html>/<body> tags
+- Use inline styles. Dark theme: bg #0A0F1E, text #D1D5DB, headings #ffffff, accent #00D9A3
+- Include one emerald CTA button using this exact HTML pattern (replace URL and label):
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0;"><tr><td style="background-color: #00D9A3; border-radius: 6px;"><a href="${APP_URL}/dashboard" style="display: inline-block; padding: 14px 28px; font-size: 15px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: 0.3px;">[CTA LABEL] →</a></td></tr></table>
+- Section callout boxes use: <div style="background-color: #131A2B; border-left: 3px solid #00D9A3; padding: 20px; margin: 20px 0; border-radius: 0 6px 6px 0;">content</div>
+- First line of subject: return as "SUBJECT: [subject here]" on its own line at the very top, then the HTML body below`;
+
+    const userContext = `User: ${name} | Tier: ${tier} | MT5 connected: ${hasMt5} | Rules created: ${ruleCount} | Days since signup: ${daysSinceSignup}`;
+
+    const userPrompt = `Write a ${type} email.
+Topic: ${topic}
+${userContext}
+${headlinesSection}${eliteInsightInstruction}
+
+Write the subject line first as "SUBJECT: [subject]", then the HTML body.`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 1200,
+      temperature: 0.7,
+    });
+
+    const raw = response.choices[0]?.message?.content || '';
+    const lines = raw.split('\n');
+    const subjectLine = lines.find(l => l.startsWith('SUBJECT:'));
+    const subject = subjectLine ? subjectLine.replace('SUBJECT:', '').trim() : `Your TradifyApp update — ${topic}`;
+    const bodyStart = lines.findIndex(l => l.startsWith('SUBJECT:'));
+    const body = lines.slice(bodyStart + 1).join('\n').trim();
+
+    if (!body) return null;
+    return { subject, body };
+  } catch (err) {
+    console.error('[AI EMAIL] generateAIEmail error:', err);
+    return null;
+  }
+}
+
+async function fetchMarketNews(): Promise<string[]> {
+  const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
+  if (!BRAVE_API_KEY) {
+    console.log('[DRIP] No BRAVE_API_KEY configured, skipping news fetch');
+    return [];
+  }
+
+  try {
+    const queries = [
+      'prop firm trading news 2025',
+      'forex discipline trading psychology',
+    ];
+    const headlines: string[] = [];
+
+    for (const q of queries) {
+      const url = `https://api.search.brave.com/res/v1/news/search?q=${encodeURIComponent(q)}&count=5&freshness=pw`;
+      const resp = await fetch(url, {
+        headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY },
+      });
+      if (!resp.ok) continue;
+      const data = await resp.json() as any;
+      const results = data?.results || [];
+      for (const r of results.slice(0, 3)) {
+        if (r?.title) headlines.push(r.title);
+      }
+    }
+
+    return headlines.slice(0, 6);
+  } catch (err) {
+    console.error('[DRIP] fetchMarketNews error:', err);
+    return [];
+  }
+}
+
 function buildLeadEmail(step: number, email: string): { subject: string; html: string } | null {
   const appUrl = APP_URL;
   const checklistUrl = `${appUrl}/checklist`;
@@ -862,6 +991,145 @@ async function queueFreeUserSequence(userId: string): Promise<void> {
 const FREE_USER_INTERVALS_HOURS = [24, 48, 5 * 24, 8 * 24, 14 * 24];
 const FREE_USER_TOTAL_STEPS = 5;
 const LEAD_TOTAL_STEPS = 7;
+const FREE_ONGOING_TOTAL_STEPS = 12;
+const FREE_ONGOING_INTERVAL_DAYS = 30;
+const PRO_TO_ELITE_INTERVALS_DAYS = [1, 2, 4, 5, 6, 6, 4, 2];
+const PRO_TO_ELITE_TOTAL_STEPS = 8;
+const ELITE_RETENTION_INTERVALS_DAYS = [1, 1, 3, 2, 3, 4];
+const ELITE_RETENTION_TOTAL_STEPS = 6;
+const INSIGHTS_INTERVAL_DAYS = 14;
+const INSIGHTS_TOTAL_STEPS = 12;
+
+async function cancelActiveTrack(userId: string, track: string): Promise<void> {
+  try {
+    await db.update(schema.emailSequences)
+      .set({ completed: true })
+      .where(and(
+        eq(schema.emailSequences.userId, userId),
+        eq(schema.emailSequences.track, track),
+        eq(schema.emailSequences.completed, false),
+      ));
+  } catch (err) {
+    console.error(`[DRIP] cancelActiveTrack(${userId}, ${track}) error:`, err);
+  }
+}
+
+async function queueFreeOngoingSequence(userId: string): Promise<void> {
+  try {
+    const [existing] = await db.select({ id: schema.emailSequences.id })
+      .from(schema.emailSequences)
+      .where(and(
+        eq(schema.emailSequences.userId, userId),
+        eq(schema.emailSequences.track, 'free_ongoing'),
+        eq(schema.emailSequences.completed, false),
+      ))
+      .limit(1);
+    if (existing) return;
+    const sendAt = new Date(Date.now() + FREE_ONGOING_INTERVAL_DAYS * 24 * 60 * 60 * 1000);
+    await db.insert(schema.emailSequences).values({ userId, track: 'free_ongoing', currentStep: 0, nextSendAt: sendAt, completed: false });
+    console.log(`[DRIP] Queued free_ongoing for ${userId}`);
+  } catch (err) {
+    console.error('[DRIP] queueFreeOngoingSequence error:', err);
+  }
+}
+
+async function queueProToEliteSequence(userId: string): Promise<void> {
+  try {
+    await cancelActiveTrack(userId, 'pro_to_elite');
+    const [existing] = await db.select({ id: schema.emailSequences.id })
+      .from(schema.emailSequences)
+      .where(and(
+        eq(schema.emailSequences.userId, userId),
+        eq(schema.emailSequences.track, 'pro_to_elite'),
+        eq(schema.emailSequences.completed, false),
+      ))
+      .limit(1);
+    if (existing) return;
+    const sendAt = new Date(Date.now() + PRO_TO_ELITE_INTERVALS_DAYS[0] * 24 * 60 * 60 * 1000);
+    await db.insert(schema.emailSequences).values({ userId, track: 'pro_to_elite', currentStep: 0, nextSendAt: sendAt, completed: false });
+    console.log(`[DRIP] Queued pro_to_elite for ${userId}`);
+  } catch (err) {
+    console.error('[DRIP] queueProToEliteSequence error:', err);
+  }
+}
+
+async function queueEliteRetentionSequence(userId: string): Promise<void> {
+  try {
+    await cancelActiveTrack(userId, 'elite_retention');
+    await cancelActiveTrack(userId, 'pro_to_elite');
+    const [existing] = await db.select({ id: schema.emailSequences.id })
+      .from(schema.emailSequences)
+      .where(and(
+        eq(schema.emailSequences.userId, userId),
+        eq(schema.emailSequences.track, 'elite_retention'),
+        eq(schema.emailSequences.completed, false),
+      ))
+      .limit(1);
+    if (existing) return;
+    const sendAt = new Date(Date.now() + ELITE_RETENTION_INTERVALS_DAYS[0] * 24 * 60 * 60 * 1000);
+    await db.insert(schema.emailSequences).values({ userId, track: 'elite_retention', currentStep: 0, nextSendAt: sendAt, completed: false });
+    console.log(`[DRIP] Queued elite_retention for ${userId}`);
+  } catch (err) {
+    console.error('[DRIP] queueEliteRetentionSequence error:', err);
+  }
+}
+
+async function queueInsightsNewsletterSequence(userId: string): Promise<void> {
+  try {
+    const [existing] = await db.select({ id: schema.emailSequences.id })
+      .from(schema.emailSequences)
+      .where(and(
+        eq(schema.emailSequences.userId, userId),
+        eq(schema.emailSequences.track, 'insights_newsletter'),
+        eq(schema.emailSequences.completed, false),
+      ))
+      .limit(1);
+    if (existing) return;
+    const sendAt = new Date(Date.now() + INSIGHTS_INTERVAL_DAYS * 24 * 60 * 60 * 1000);
+    await db.insert(schema.emailSequences).values({ userId, track: 'insights_newsletter', currentStep: 0, nextSendAt: sendAt, completed: false });
+    console.log(`[DRIP] Queued insights_newsletter for ${userId}`);
+  } catch (err) {
+    console.error('[DRIP] queueInsightsNewsletterSequence error:', err);
+  }
+}
+
+async function backfillEmailSequences(): Promise<void> {
+  try {
+    const allUsers = await db.select({
+      userId: schema.userRole.userId,
+      subscriptionTier: schema.userRole.subscriptionTier,
+      subscriptionStatus: schema.userRole.subscriptionStatus,
+      createdAt: schema.userRole.createdAt,
+    }).from(schema.userRole).where(eq(schema.userRole.role, 'USER'));
+
+    for (const user of allUsers) {
+      const tier = user.subscriptionTier?.toUpperCase() || 'FREE';
+      const isActive = !user.subscriptionStatus || user.subscriptionStatus === 'ACTIVE' || user.subscriptionStatus === 'active' || user.subscriptionStatus === 'cancelled';
+
+      if ((tier === 'PRO' || tier === 'ELITE') && isActive) {
+        await queueInsightsNewsletterSequence(user.userId);
+      }
+
+      if (tier === 'FREE') {
+        const [hasFreeOngoing] = await db.select({ id: schema.emailSequences.id })
+          .from(schema.emailSequences)
+          .where(and(eq(schema.emailSequences.userId, user.userId), eq(schema.emailSequences.track, 'free_ongoing')))
+          .limit(1);
+        const [completedFreeUser] = await db.select({ id: schema.emailSequences.id })
+          .from(schema.emailSequences)
+          .where(and(eq(schema.emailSequences.userId, user.userId), eq(schema.emailSequences.track, 'free_user'), eq(schema.emailSequences.completed, true)))
+          .limit(1);
+        if (completedFreeUser && !hasFreeOngoing) {
+          await queueFreeOngoingSequence(user.userId);
+        }
+      }
+    }
+
+    console.log('[DRIP] Backfill complete');
+  } catch (err) {
+    console.error('[DRIP] backfillEmailSequences error:', err);
+  }
+}
 
 async function processDripSequences(): Promise<void> {
   try {
@@ -961,11 +1229,165 @@ async function processDripSequences(): Promise<void> {
           const nextSendAt = new Date(Date.now() + nextIntervalHours * 60 * 60 * 1000);
 
           await db.update(schema.emailSequences)
-            .set({
-              currentStep: nextStep,
-              nextSendAt,
-              completed: isLastStep,
-            })
+            .set({ currentStep: nextStep, nextSendAt, completed: isLastStep })
+            .where(eq(schema.emailSequences.id, seq.id));
+
+          if (isLastStep && seq.userId) {
+            queueFreeOngoingSequence(seq.userId).catch(e => console.error('[DRIP] queueFreeOngoing after free_user:', e));
+          }
+
+        } else if (seq.track === 'free_ongoing') {
+          if (!seq.userId) {
+            await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id));
+            continue;
+          }
+          const [user] = await db.select({ userId: schema.userRole.userId, subscriptionTier: schema.userRole.subscriptionTier, fullName: schema.userRole.fullName, createdAt: schema.userRole.createdAt })
+            .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
+          if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const tier = user.subscriptionTier?.toUpperCase() || 'FREE';
+          if (tier === 'PRO' || tier === 'ELITE') {
+            await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id));
+            continue;
+          }
+          const topics = [
+            'Trading psychology and the discipline loop',
+            'MT5 setup guide and getting your connector running',
+            'Rule engine: how to create rules that actually enforce your plan',
+            'Analytics deep-dive: win rate by session and day of week',
+            'Prop firm challenge tracker and staying inside drawdown',
+            'Education hub: 3 lessons every disciplined trader should know',
+            'Session analysis: trading the right time of day',
+            'Revenge trading: how to identify and stop it',
+            'Risk management: position sizing and the 1% rule',
+            'Common trading mistakes and how TradifyApp catches them',
+            'Consistency metrics: what the data says about your best days',
+            'Why upgrading to Pro changes how you see your trading data',
+          ];
+          const userName = user.fullName || seq.userId.split('@')[0];
+          const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          const topic = topics[seq.currentStep % topics.length];
+          const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
+          const hasMt5 = mt5Check.length > 0;
+          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount: 0, daysSinceSignup, email: seq.userId };
+          const aiResult = await generateAIEmail('free_ongoing', userData, { topic, step: seq.currentStep });
+          if (aiResult) {
+            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
+            const sent = await sendEmail(seq.userId, aiResult.subject, html);
+            console.log(`[DRIP] free_ongoing step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          }
+          const nextStep = seq.currentStep + 1;
+          const willCycle = nextStep >= FREE_ONGOING_TOTAL_STEPS;
+          const nextSendAt = new Date(Date.now() + FREE_ONGOING_INTERVAL_DAYS * 24 * 60 * 60 * 1000);
+          await db.update(schema.emailSequences)
+            .set({ currentStep: willCycle ? 0 : nextStep, nextSendAt, completed: false })
+            .where(eq(schema.emailSequences.id, seq.id));
+
+        } else if (seq.track === 'pro_to_elite') {
+          if (!seq.userId) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const [user] = await db.select({ userId: schema.userRole.userId, subscriptionTier: schema.userRole.subscriptionTier, fullName: schema.userRole.fullName, createdAt: schema.userRole.createdAt })
+            .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
+          if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const tier = user.subscriptionTier?.toUpperCase() || 'FREE';
+          if (tier === 'ELITE') { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const topics = [
+            'Welcome to Pro — what to use first',
+            'Advanced analytics: your win rate by session, day, and setup',
+            'Unlimited rule engine — building a complete trading plan',
+            'Multi-account MT5 tracking — managing multiple challenges',
+            'Prop Firm Challenge Tracker with FTMO and MyFundedFX',
+            'AI instrument analysis and what it tells you',
+            'Full 19-lesson education hub — structured trading knowledge',
+            'Why Elite is the next step: behavioral risk and AI coaching',
+          ];
+          const userName = user.fullName || seq.userId.split('@')[0];
+          const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
+          const hasMt5 = mt5Check.length > 0;
+          const topic = topics[seq.currentStep] || topics[topics.length - 1];
+          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount: 0, daysSinceSignup, email: seq.userId };
+          const aiResult = await generateAIEmail('pro_to_elite', userData, { topic, step: seq.currentStep });
+          if (aiResult) {
+            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
+            const sent = await sendEmail(seq.userId, aiResult.subject, html);
+            console.log(`[DRIP] pro_to_elite step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          }
+          const nextStep = seq.currentStep + 1;
+          const isLastStep = nextStep >= PRO_TO_ELITE_TOTAL_STEPS;
+          const intervalDays = PRO_TO_ELITE_INTERVALS_DAYS[nextStep] ?? 3;
+          const nextSendAt = new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1000);
+          await db.update(schema.emailSequences)
+            .set({ currentStep: nextStep, nextSendAt, completed: isLastStep })
+            .where(eq(schema.emailSequences.id, seq.id));
+          if (isLastStep) {
+            queueInsightsNewsletterSequence(seq.userId).catch(e => console.error('[DRIP] queueInsights after pro_to_elite:', e));
+          }
+
+        } else if (seq.track === 'elite_retention') {
+          if (!seq.userId) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const [user] = await db.select({ userId: schema.userRole.userId, subscriptionTier: schema.userRole.subscriptionTier, fullName: schema.userRole.fullName, createdAt: schema.userRole.createdAt })
+            .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
+          if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const topics = [
+            'Welcome to Elite — your full platform overview',
+            'Behavioral risk flags: what TradifyApp watches for',
+            'Session analytics deep-dive: your edge by time and session',
+            'AI challenge risk warnings: staying inside prop firm limits',
+            'Strategy deviation analysis: when you drift from your plan',
+            'Monthly AI review reports with personalized coaching',
+          ];
+          const userName = user.fullName || seq.userId.split('@')[0];
+          const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
+          const hasMt5 = mt5Check.length > 0;
+          const topic = topics[seq.currentStep] || topics[topics.length - 1];
+          const userData: AIEmailUserData = { name: userName, tier: 'ELITE', hasMt5, ruleCount: 0, daysSinceSignup, email: seq.userId };
+          const aiResult = await generateAIEmail('elite_retention', userData, { topic, step: seq.currentStep, isElite: true });
+          if (aiResult) {
+            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
+            const sent = await sendEmail(seq.userId, aiResult.subject, html);
+            console.log(`[DRIP] elite_retention step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          }
+          const nextStep = seq.currentStep + 1;
+          const isLastStep = nextStep >= ELITE_RETENTION_TOTAL_STEPS;
+          const intervalDays = ELITE_RETENTION_INTERVALS_DAYS[nextStep] ?? 7;
+          const nextSendAt = new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1000);
+          await db.update(schema.emailSequences)
+            .set({ currentStep: nextStep, nextSendAt, completed: isLastStep })
+            .where(eq(schema.emailSequences.id, seq.id));
+          if (isLastStep) {
+            queueInsightsNewsletterSequence(seq.userId).catch(e => console.error('[DRIP] queueInsights after elite_retention:', e));
+          }
+
+        } else if (seq.track === 'insights_newsletter') {
+          if (!seq.userId) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const [user] = await db.select({ userId: schema.userRole.userId, subscriptionTier: schema.userRole.subscriptionTier, fullName: schema.userRole.fullName, createdAt: schema.userRole.createdAt })
+            .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
+          if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const tier = user.subscriptionTier?.toUpperCase() || 'FREE';
+          if (tier === 'FREE') { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const isElite = tier === 'ELITE';
+          const userName = user.fullName || seq.userId.split('@')[0];
+          const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
+          const hasMt5 = mt5Check.length > 0;
+          const newsHeadlines = await fetchMarketNews();
+          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount: 0, daysSinceSignup, email: seq.userId };
+          const aiResult = await generateAIEmail('insights_newsletter', userData, {
+            topic: 'Market insights and prop firm trading discipline',
+            newsHeadlines,
+            step: seq.currentStep,
+            isElite,
+          });
+          if (aiResult) {
+            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
+            const sent = await sendEmail(seq.userId, aiResult.subject, html);
+            console.log(`[DRIP] insights_newsletter step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          }
+          const nextStep = seq.currentStep + 1;
+          const willCycle = nextStep >= INSIGHTS_TOTAL_STEPS;
+          const nextSendAt = new Date(Date.now() + INSIGHTS_INTERVAL_DAYS * 24 * 60 * 60 * 1000);
+          await db.update(schema.emailSequences)
+            .set({ currentStep: willCycle ? 0 : nextStep, nextSendAt, completed: false })
             .where(eq(schema.emailSequences.id, seq.id));
         }
       } catch (seqErr) {
@@ -992,5 +1414,11 @@ export const emailService = {
   isEmailConfigured,
   queueLeadSequence,
   queueFreeUserSequence,
+  queueFreeOngoingSequence,
+  queueProToEliteSequence,
+  queueEliteRetentionSequence,
+  queueInsightsNewsletterSequence,
+  cancelActiveTrack,
   processDripSequences,
+  backfillEmailSequences,
 };

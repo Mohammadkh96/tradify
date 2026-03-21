@@ -367,6 +367,12 @@ export class PayPalService {
         
         const userName = userId.split('@')[0];
         await emailService.sendSubscriptionActivatedEmail(userId, userName, determinedTier);
+        if (determinedTier === 'ELITE') {
+          emailService.queueEliteRetentionSequence(userId).catch(e => console.error('[DRIP] queueEliteRetention:', e));
+        } else {
+          emailService.queueProToEliteSequence(userId).catch(e => console.error('[DRIP] queueProToElite:', e));
+        }
+        emailService.queueInsightsNewsletterSequence(userId).catch(e => console.error('[DRIP] queueInsights:', e));
         console.log(`Subscription activated for ${userId}, tier: ${determinedTier}, period: ${determinedPeriod}, email sent`);
         
         return true;
@@ -410,6 +416,12 @@ export class PayPalService {
       
       const userName = customId.split('@')[0];
       await emailService.sendSubscriptionActivatedEmail(customId, userName, tier);
+      if (tier === 'ELITE') {
+        emailService.queueEliteRetentionSequence(customId).catch(e => console.error('[DRIP] queueEliteRetention webhook:', e));
+      } else {
+        emailService.queueProToEliteSequence(customId).catch(e => console.error('[DRIP] queueProToElite webhook:', e));
+      }
+      emailService.queueInsightsNewsletterSequence(customId).catch(e => console.error('[DRIP] queueInsights webhook:', e));
     }
   }
 

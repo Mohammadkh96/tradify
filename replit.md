@@ -45,7 +45,16 @@ Preferred communication style: Simple, everyday language.
 ### Feature Specifications
 - **MT5 Bridge:** Supports multi-account connectivity, aggregating trade history across all accounts for analytics endpoints.
 - **Plan System:** Centralized configuration in `shared/plans.ts` with feature gating and tier-specific trade history retention.
-- **Email System:** Nodemailer with Google Workspace SMTP for various notifications and account management, including rate limiting. Includes a 7-email lead nurture drip (Track 1: `lead_7day`) and a 5-email free-user activation drip (Track 2: `free_user`) with 30-min background job in `server/index.ts`. Sequences stored in `email_sequences` table. Queue functions: `emailService.queueLeadSequence()`, `emailService.queueFreeUserSequence()`.
+- **Email System:** Nodemailer with Google Workspace SMTP. Base template redesigned: dark header (`#131A2B`), emerald bottom border, "TRADIFYAPP / YOUR RULES. ENFORCED." tagline, dark card body, emerald CTA buttons. HTML templates in `server/emails/` updated (welcome.html fixed: no more "Rule-Based Trading Journal"). 6 email lifecycle tracks stored in `email_sequences` table:
+  - `lead_7day` — 7-email lead nurture drip for checklist/calculator leads
+  - `free_user` — 5-email activation drip (days 1–14); auto-queues `free_ongoing` on completion
+  - `free_ongoing` — 12-step monthly AI-generated drip for Free users; cycles indefinitely
+  - `pro_to_elite` — 8-step AI drip (30-day) on Pro upgrade; transitions to `insights_newsletter`
+  - `elite_retention` — 6-step AI onboarding (14-day) on Elite upgrade; transitions to `insights_newsletter`
+  - `insights_newsletter` — AI-generated market insights every 14 days for Pro+Elite; Brave Search for live headlines (fallback: OpenAI only); cycles at step 12
+  - Queue functions: `queueLeadSequence`, `queueFreeUserSequence`, `queueFreeOngoingSequence`, `queueProToEliteSequence`, `queueEliteRetentionSequence`, `queueInsightsNewsletterSequence`
+  - Startup backfill: `backfillEmailSequences()` runs 90s after server start to enroll existing Pro/Elite users in `insights_newsletter` and free users with completed `free_user` in `free_ongoing`
+  - Brave Search: optional `BRAVE_API_KEY` env var for live news headlines in insights newsletter
 - **Email Verification:** Mandatory for new users (except Admin/Owner) with a 24-hour token expiry and resend options.
 - **Admin Panel:** User management (creation, plan changes, deactivation, deletion, founding member status) with audit logging, accessible only by OWNER/ADMIN roles.
 - **Cookie Consent System:** GDPR-compliant banner with customizable preferences for Analytics (Google Analytics) and Marketing (Facebook Pixel), stored in localStorage.
