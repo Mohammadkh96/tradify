@@ -2,6 +2,7 @@ import { useRef, useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Link2, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import MilestoneShareCard, { MilestoneShareCardProps } from "./MilestoneShareCard";
 
 interface MilestoneShareModalProps extends MilestoneShareCardProps {
@@ -27,6 +28,7 @@ export function MilestoneShareModal({
   const captureRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   const handleDownload = useCallback(async () => {
     if (!captureRef.current || downloading) return;
@@ -46,10 +48,15 @@ export function MilestoneShareModal({
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch {
+      toast({
+        title: "Download failed",
+        description: "Could not generate the image. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setDownloading(false);
     }
-  }, [variant, downloading]);
+  }, [variant, downloading, toast]);
 
   const handleCopyLink = useCallback(async () => {
     const utmUrl = `https://tradifyapp.com?utm_source=share&utm_medium=social&utm_campaign=milestone_${variant}`;
@@ -58,16 +65,24 @@ export function MilestoneShareModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      const input = document.createElement("input");
-      input.value = utmUrl;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      try {
+        const input = document.createElement("input");
+        input.value = utmUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      } catch {
+        toast({
+          title: "Copy failed",
+          description: "Could not copy the link. Please copy it manually.",
+          variant: "destructive",
+        });
+      }
     }
-  }, [variant]);
+  }, [variant, toast]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
