@@ -1294,7 +1294,7 @@ async function processDripSequences(): Promise<void> {
             .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
           if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
           const tier = user.subscriptionTier?.toUpperCase() || 'FREE';
-          if (tier === 'ELITE') { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          if (tier !== 'PRO') { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
           const topics = [
             'Welcome to Pro — what to use first',
             'Advanced analytics: your win rate by session, day, and setup',
@@ -1334,6 +1334,8 @@ async function processDripSequences(): Promise<void> {
           const [user] = await db.select({ userId: schema.userRole.userId, subscriptionTier: schema.userRole.subscriptionTier, fullName: schema.userRole.fullName, createdAt: schema.userRole.createdAt })
             .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
           if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const eliteTier = user.subscriptionTier?.toUpperCase() || 'FREE';
+          if (eliteTier !== 'ELITE') { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
           const topics = [
             'Welcome to Elite — your full platform overview',
             'Behavioral risk flags: what TradifyApp watches for',

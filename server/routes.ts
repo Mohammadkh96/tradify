@@ -4157,6 +4157,8 @@ End with: "Review your charts for current market structure."`;
         emailService.cancelActiveTrack(targetUserId, 'free_user').catch(() => {});
         emailService.cancelActiveTrack(targetUserId, 'free_ongoing').catch(() => {});
         emailService.cancelActiveTrack(targetUserId, 'pro_to_elite').catch(() => {});
+        emailService.cancelActiveTrack(targetUserId, 'elite_retention').catch(() => {});
+        emailService.cancelActiveTrack(targetUserId, 'insights_newsletter').catch(() => {});
         if (newTier === 'ELITE') {
           emailService.queueEliteRetentionSequence(targetUserId).catch(e => console.error('[DRIP] admin update-user elite:', e));
         } else if (newTier === 'PRO') {
