@@ -185,18 +185,20 @@ export default function Achievements() {
 
   useEffect(() => {
     if (!data) return;
+    const shown = getShownMilestones();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const LAST_STREAK_PREFIX = "tradify_last_streak_";
 
     const currentUnlocked = new Set(
       data.achievements.filter((a) => a.unlocked).map((a) => a.key)
     );
-    const shown = getShownMilestones();
     const isInitialLoad = prevUnlockedKeysRef.current.size === 0;
-    let triggered = false;
-    const oneDayMs = 24 * 60 * 60 * 1000;
-    const now = Date.now();
+
+    let pendingState: typeof shareState | null = null;
 
     currentUnlocked.forEach((key) => {
-      if (triggered) return;
+      if (pendingState) return;
       const isNew = isInitialLoad ? false : !prevUnlockedKeysRef.current.has(key);
       const achDef = data.achievements.find((a) => a.key === key);
 
@@ -204,82 +206,74 @@ export default function Achievements() {
         ? now - new Date(achDef.unlockedAt).getTime() < oneDayMs
         : false;
 
-      const shouldPop = isNew || (isInitialLoad && isRecent);
-      if (!shouldPop) return;
+      if (!isNew && !(isInitialLoad && isRecent)) return;
 
       const lsKey = `ach_${key}`;
-      if (shown.has(lsKey)) return;
+      if (shown.has(lsKey) || !achDef) return;
 
-      if (achDef) {
-        const cardData: AchievementCardData = {
-          achievementName: achDef.name,
-          achievementDescription: achDef.description,
-          tier: parseTier(achDef.tier),
-          xpEarned: achDef.xpReward,
-          totalXp: data.totalXp || 0,
-          levelName: data.level?.name || "Beginner",
-          levelNumber: data.level?.level || 1,
-          complianceStreak: data.streaks?.compliance?.currentStreak,
-        };
-        markMilestoneShown(lsKey);
-        setShareState({
-          open: true,
-          variant: "achievement",
-          title: "Achievement Unlocked",
-          subtitle: "Share your progress with the trading community",
-          data: cardData,
-        });
-        triggered = true;
-      }
+      const cardData: AchievementCardData = {
+        achievementName: achDef.name,
+        achievementDescription: achDef.description,
+        tier: parseTier(achDef.tier),
+        xpEarned: achDef.xpReward,
+        totalXp: data.totalXp || 0,
+        levelName: data.level?.name || "Beginner",
+        levelNumber: data.level?.level || 1,
+        complianceStreak: data.streaks?.compliance?.currentStreak,
+      };
+      markMilestoneShown(lsKey);
+      pendingState = {
+        open: true,
+        variant: "achievement",
+        title: "Achievement Unlocked",
+        subtitle: "Share your progress with the trading community",
+        data: cardData,
+      };
     });
 
     prevUnlockedKeysRef.current = currentUnlocked;
-  }, [data]);
 
-  useEffect(() => {
-    if (!data) return;
-    const shown = getShownMilestones();
-    const LAST_STREAK_PREFIX = "tradify_last_streak_";
+    if (!pendingState) {
+      const streakTypes = ["journaling", "trading", "compliance"] as const;
+      outer: for (const type of streakTypes) {
+        const streak = data.streaks?.[type];
+        if (!streak) continue;
+        const current = streak.currentStreak;
 
-    const streakTypes = ["journaling", "trading", "compliance"] as const;
-    for (const type of streakTypes) {
-      const streak = data.streaks?.[type];
-      if (!streak) continue;
-      const current = streak.currentStreak;
+        const lastSeenRaw = localStorage.getItem(`${LAST_STREAK_PREFIX}${type}`);
+        const lastSeen = lastSeenRaw !== null ? parseInt(lastSeenRaw, 10) : -1;
+        localStorage.setItem(`${LAST_STREAK_PREFIX}${type}`, String(current));
 
-      const lastSeenRaw = localStorage.getItem(`${LAST_STREAK_PREFIX}${type}`);
-      const lastSeen = lastSeenRaw !== null ? parseInt(lastSeenRaw, 10) : -1;
+        for (const threshold of STREAK_MILESTONES) {
+          if (!(lastSeen < threshold && current >= threshold)) continue;
+          const key = `streak_${type}_${threshold}`;
+          if (shown.has(key)) continue;
 
-      localStorage.setItem(`${LAST_STREAK_PREFIX}${type}`, String(current));
-
-      for (const threshold of STREAK_MILESTONES) {
-        const crossed = lastSeen < threshold && current >= threshold;
-        if (!crossed) continue;
-
-        const key = `streak_${type}_${threshold}`;
-        if (shown.has(key)) continue;
-
-        markMilestoneShown(key);
-        const { complianceRate, accountHealth } = computeStreakMeta(data, type);
-        const cardData: StreakCardData = {
-          streakType: type,
-          currentStreak: current,
-          longestStreak: streak.longestStreak,
-          levelName: data.level?.name || "Beginner",
-          levelNumber: data.level?.level || 1,
-          totalXp: data.totalXp || 0,
-          complianceRate,
-          accountHealth,
-        };
-        setShareState({
-          open: true,
-          variant: "streak",
-          title: `${threshold}-Day Streak!`,
-          subtitle: `${type.charAt(0).toUpperCase() + type.slice(1)} — ${current} consecutive days`,
-          data: cardData,
-        });
-        return;
+          markMilestoneShown(key);
+          const { complianceRate, accountHealth } = computeStreakMeta(data, type);
+          pendingState = {
+            open: true,
+            variant: "streak",
+            title: `${threshold}-Day Streak!`,
+            subtitle: `${type.charAt(0).toUpperCase() + type.slice(1)} — ${current} consecutive days`,
+            data: {
+              streakType: type,
+              currentStreak: current,
+              longestStreak: streak.longestStreak,
+              levelName: data.level?.name || "Beginner",
+              levelNumber: data.level?.level || 1,
+              totalXp: data.totalXp || 0,
+              complianceRate,
+              accountHealth,
+            } as StreakCardData,
+          };
+          break outer;
+        }
       }
+    }
+
+    if (pendingState) {
+      setShareState(pendingState);
     }
   }, [data]);
 

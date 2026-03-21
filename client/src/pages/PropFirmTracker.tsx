@@ -1390,6 +1390,33 @@ export default function PropFirmTracker() {
           )}
         </div>
 
+        {(challenge.status === "passed" || challenge.status === "failed") && (
+          <div className="flex gap-2 flex-wrap mb-4">
+            <Button
+              data-testid="button-share-challenge-result"
+              variant="outline"
+              className="border-emerald-500/30 text-emerald-400 gap-2"
+              onClick={() => {
+                const cardData: ChallengeCardData = {
+                  challengeName: challenge.challengeName,
+                  firmName: challenge.firmName,
+                  profitPercent: progress.profitProgress,
+                  drawdownUsedPercent: progress.dailyDDUsedPercent,
+                  tradingDays: progress.uniqueTradingDays,
+                  accountSize: challenge.accountSize,
+                  currency: challenge.currency || "USD",
+                  status: challenge.status as "passed" | "failed",
+                };
+                setChallengeShareData(cardData);
+                setChallengeShareOpen(true);
+              }}
+            >
+              <Share2 size={14} />
+              Share Result
+            </Button>
+          </div>
+        )}
+
         {challenge.status === "active" && (
           <div
             data-testid="banner-challenge-health"
