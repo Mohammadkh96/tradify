@@ -239,6 +239,7 @@ export default function Achievements() {
   useEffect(() => {
     if (!data) return;
     const shown = getShownMilestones();
+    const LAST_STREAK_PREFIX = "tradify_last_streak_";
 
     const streakTypes = ["journaling", "trading", "compliance"] as const;
     for (const type of streakTypes) {
@@ -246,32 +247,38 @@ export default function Achievements() {
       if (!streak) continue;
       const current = streak.currentStreak;
 
+      const lastSeenRaw = localStorage.getItem(`${LAST_STREAK_PREFIX}${type}`);
+      const lastSeen = lastSeenRaw !== null ? parseInt(lastSeenRaw, 10) : -1;
+
+      localStorage.setItem(`${LAST_STREAK_PREFIX}${type}`, String(current));
+
       for (const threshold of STREAK_MILESTONES) {
-        if (current >= threshold) {
-          const key = `streak_${type}_${threshold}`;
-          if (!shown.has(key)) {
-            markMilestoneShown(key);
-            const { complianceRate, accountHealth } = computeStreakMeta(data, type);
-            const cardData: StreakCardData = {
-              streakType: type,
-              currentStreak: current,
-              longestStreak: streak.longestStreak,
-              levelName: data.level?.name || "Beginner",
-              levelNumber: data.level?.level || 1,
-              totalXp: data.totalXp || 0,
-              complianceRate,
-              accountHealth,
-            };
-            setShareState({
-              open: true,
-              variant: "streak",
-              title: `${threshold}-Day Streak!`,
-              subtitle: `${type.charAt(0).toUpperCase() + type.slice(1)} — ${current} consecutive days`,
-              data: cardData,
-            });
-            return;
-          }
-        }
+        const crossed = lastSeen < threshold && current >= threshold;
+        if (!crossed) continue;
+
+        const key = `streak_${type}_${threshold}`;
+        if (shown.has(key)) continue;
+
+        markMilestoneShown(key);
+        const { complianceRate, accountHealth } = computeStreakMeta(data, type);
+        const cardData: StreakCardData = {
+          streakType: type,
+          currentStreak: current,
+          longestStreak: streak.longestStreak,
+          levelName: data.level?.name || "Beginner",
+          levelNumber: data.level?.level || 1,
+          totalXp: data.totalXp || 0,
+          complianceRate,
+          accountHealth,
+        };
+        setShareState({
+          open: true,
+          variant: "streak",
+          title: `${threshold}-Day Streak!`,
+          subtitle: `${type.charAt(0).toUpperCase() + type.slice(1)} — ${current} consecutive days`,
+          data: cardData,
+        });
+        return;
       }
     }
   }, [data]);

@@ -113,6 +113,11 @@ function StatBox({ label, value, accent }: { label: string; value: string; accen
   );
 }
 
+function identityLabel(userName: string | undefined, action: string): string {
+  if (userName) return `${action} ${userName}`;
+  return `${action} Trader#anon`;
+}
+
 function AchievementBody({ data, userName }: { data: AchievementCardData; userName?: string }) {
   const accentColor = TIER_ACCENT[data.tier];
   return (
@@ -147,11 +152,9 @@ function AchievementBody({ data, userName }: { data: AchievementCardData; userNa
         )}
       </div>
 
-      {userName && (
-        <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
-          Earned by {userName}
-        </div>
-      )}
+      <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
+        {identityLabel(userName, "Earned by")}
+      </div>
     </div>
   );
 }
@@ -189,11 +192,9 @@ function ChallengeBody({ data, userName }: { data: ChallengeCardData; userName?:
         <StatBox label="Account" value={`${sym}${acctNum.toLocaleString()}`} />
       </div>
 
-      {userName && (
-        <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
-          Achieved by {userName}
-        </div>
-      )}
+      <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
+        {identityLabel(userName, "Achieved by")}
+      </div>
     </div>
   );
 }
@@ -255,11 +256,9 @@ function StreakBody({ data, userName }: { data: StreakCardData; userName?: strin
         )}
       </div>
 
-      {userName && (
-        <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
-          Tracked by {userName}
-        </div>
-      )}
+      <div style={{ marginTop: 40, fontSize: 15, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
+        {identityLabel(userName, "Tracked by")}
+      </div>
     </div>
   );
 }
