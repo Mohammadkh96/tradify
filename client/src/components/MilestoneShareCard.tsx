@@ -192,7 +192,7 @@ function ChallengeBody({ data, userName }: { data: ChallengeCardData; userName?:
       </div>
 
       <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-        <StatBox label="Profit" value={`+${data.profitPercent.toFixed(2)}%`} accent />
+        <StatBox label="Profit" value={`${data.profitPercent >= 0 ? "+" : ""}${data.profitPercent.toFixed(2)}%`} accent />
         <StatBox label="DD Used" value={`${data.drawdownUsedPercent.toFixed(1)}%`} />
       </div>
       <div style={{ display: "flex", gap: 16 }}>
