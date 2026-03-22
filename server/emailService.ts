@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { and, count, eq, lte } from "drizzle-orm";
+import { and, count, eq, lte, ne } from "drizzle-orm";
 import { openai } from "./replit_integrations/audio/index";
 
 // Use process.cwd() for path resolution (works in both ESM and CJS)
@@ -1119,11 +1119,36 @@ async function backfillEmailSequences(): Promise<void> {
       subscriptionTier: schema.userRole.subscriptionTier,
       subscriptionStatus: schema.userRole.subscriptionStatus,
       createdAt: schema.userRole.createdAt,
-    }).from(schema.userRole).where(eq(schema.userRole.role, 'USER'));
+    }).from(schema.userRole).where(
+      and(
+        ne(schema.userRole.role, 'OWNER'),
+        ne(schema.userRole.role, 'ADMIN')
+      )
+    );
 
     for (const user of allUsers) {
       const tier = user.subscriptionTier?.toUpperCase() || 'FREE';
       const isActive = !user.subscriptionStatus || user.subscriptionStatus === 'ACTIVE' || user.subscriptionStatus === 'active' || user.subscriptionStatus === 'cancelled';
+
+      if (tier === 'ELITE' && isActive) {
+        const [hasEliteRetention] = await db.select({ id: schema.emailSequences.id })
+          .from(schema.emailSequences)
+          .where(and(eq(schema.emailSequences.userId, user.userId), eq(schema.emailSequences.track, 'elite_retention'), eq(schema.emailSequences.completed, false)))
+          .limit(1);
+        if (!hasEliteRetention) {
+          await queueEliteRetentionSequence(user.userId);
+        }
+      }
+
+      if (tier === 'PRO' && isActive) {
+        const [hasProToElite] = await db.select({ id: schema.emailSequences.id })
+          .from(schema.emailSequences)
+          .where(and(eq(schema.emailSequences.userId, user.userId), eq(schema.emailSequences.track, 'pro_to_elite'), eq(schema.emailSequences.completed, false)))
+          .limit(1);
+        if (!hasProToElite) {
+          await queueProToEliteSequence(user.userId);
+        }
+      }
 
       if ((tier === 'PRO' || tier === 'ELITE') && isActive) {
         await queueInsightsNewsletterSequence(user.userId);
