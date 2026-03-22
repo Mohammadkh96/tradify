@@ -30,42 +30,42 @@ interface PageMeta {
 
 const STATIC_PAGES: Record<string, PageMeta> = {
   "/": {
-    title: "TradifyApp – Trading Discipline Platform for Prop Traders",
-    description: "80% of traders fail prop firm challenges because they break their own rules. TradifyApp enforces discipline, auto-syncs MT5 trades, and tracks drawdown live. Free plan available.",
+    title: "TradifyApp - Trading Discipline Platform | Enforce Your Rules, Pass Prop Challenges",
+    description: "80% of traders fail prop challenges because they break their own rules. TradifyApp enforces your trading rules, tracks drawdown in real time, and stops revenge trading before it starts. Free plan available.",
     canonical: `${BASE_URL}/`,
   },
   "/features": {
-    title: "Features – Rule Enforcement, MT5 Sync & Prop Firm Tracker | TradifyApp",
-    description: "Explore TradifyApp's features: automated MT5 trade sync, real-time rule validation, prop firm challenge tracking, AI behavioral insights, and strategy compliance scoring.",
+    title: "Features - Trade Visualization & Analytics | TradifyApp",
+    description: "Explore TradifyApp features: live MT5 sync, equity curves, performance analytics, behavioral insights, and strategy validation for disciplined trading.",
     canonical: `${BASE_URL}/features`,
   },
   "/pricing": {
-    title: "Pricing – Free, Pro & Elite Plans | TradifyApp",
-    description: "TradifyApp offers a free plan with core trading discipline tools. Upgrade to Pro ($29/mo) for the prop firm tracker and AI analysis, or Elite ($59/mo) for full behavioral intelligence.",
+    title: "Pricing - Free, Pro & Elite Plans | TradifyApp",
+    description: "Choose your TradifyApp plan. Free MT5 sync, Pro analytics at $29/mo, or Elite with AI insights at $59/mo. Founding members get 30% off forever.",
     canonical: `${BASE_URL}/pricing`,
   },
   "/how-it-works": {
-    title: "How TradifyApp Works – Connect MT5, Enforce Rules, Track Challenges",
-    description: "Connect your MT5 account, define your trading rules, and let TradifyApp auto-sync every trade, flag rule violations, and track your prop firm challenge in real time.",
+    title: "How It Works - Simple MT5 Integration | TradifyApp",
+    description: "Learn how TradifyApp works: connect your MT5, sync trades automatically, build strategies, and track your trading performance in 3 simple steps.",
     canonical: `${BASE_URL}/how-it-works`,
   },
   "/about": {
-    title: "About TradifyApp – Our Mission & Story",
-    description: "TradifyApp exists to solve the discipline crisis in trading. Learn about our mission to help traders enforce their own rules and pass prop firm challenges consistently.",
+    title: "About TradifyApp - Trading Discipline Platform",
+    description: "TradifyApp is a discipline enforcement platform for serious traders. Auto-sync MT5 trades, validate rules before every entry, and track prop firm challenges in real time. No signals, no predictions — just discipline.",
     canonical: `${BASE_URL}/about`,
   },
   "/blog": {
-    title: "Trading Insights & Guides | TradifyApp Blog",
-    description: "Read in-depth guides on trading discipline, prop firm challenge strategy, MT5 analytics, and behavioral risk management from the TradifyApp team.",
+    title: "Blog - Trading Insights & Strategy Tips | TradifyApp",
+    description: "Trading insights, strategy tips, and platform updates from TradifyApp. Learn disciplined trading with expert articles on prop firm challenges, MT5 analytics, and risk management.",
     canonical: `${BASE_URL}/blog`,
   },
   "/resources": {
-    title: "Trading Resources & Educational Content | TradifyApp",
-    description: "Free trading resources, discipline guides, risk calculators, and educational content to help you pass prop firm challenges and trade consistently.",
+    title: "Resources - Trading Education & Tools | TradifyApp",
+    description: "Access TradifyApp trading resources: risk calculators, educational content, strategy guides, and professional tools to improve your trading discipline.",
     canonical: `${BASE_URL}/resources`,
   },
   "/demo": {
-    title: "See TradifyApp in Action – Step-by-Step Demo",
+    title: "See TradifyApp in Action - Step-by-Step Demo",
     description: "A visual walkthrough of how TradifyApp works: connect MT5, define rules, auto-sync trades, track your prop firm challenge, and get AI discipline insights.",
     canonical: `${BASE_URL}/demo`,
   },
@@ -75,44 +75,43 @@ const STATIC_PAGES: Record<string, PageMeta> = {
     canonical: `${BASE_URL}/checklist`,
   },
   "/trading-journal": {
-    title: "Trading Journal Software with MT5 Auto-Sync | TradifyApp",
-    description: "Stop manually logging trades. TradifyApp auto-syncs every MT5 trade to your journal with full P&L, behavioral notes, and strategy compliance tracking.",
+    title: "Best MT5 Trading Journal Software - Auto-Sync & Rule Validation | TradifyApp",
+    description: "The #1 MT5 trading journal that auto-syncs every trade, validates entries against your rules, and tracks performance with AI analytics. Free plan available. No manual logging.",
     canonical: `${BASE_URL}/trading-journal`,
   },
   "/prop-firm-tracker": {
-    title: "Prop Firm Challenge Tracker – Real-Time Risk Monitoring | TradifyApp",
-    description: "Track your FTMO, MFF, or custom prop firm challenge in real time. Monitor drawdown, profit target progress, and consistency rules — all synced from your MT5 account.",
+    title: "Prop Firm Challenge Tracker - Track Drawdowns & Profit Targets in Real Time | TradifyApp",
+    description: "Never fail a prop firm challenge again. TradifyApp tracks your drawdown limits, profit targets, consistency scores, and days remaining in real time. Supports FTMO, MFF, TFT & custom configs.",
     canonical: `${BASE_URL}/prop-firm-tracker`,
   },
   "/mt5-trading-analytics": {
-    title: "MT5 Trading Analytics & Performance Insights | TradifyApp",
-    description: "Connect your MetaTrader 5 account and get deep analytics: equity curve, win rate, profit factor, session performance, and AI behavioral risk detection.",
+    title: "MT5 Trading Analytics & Performance Tracker - AI-Powered Insights | TradifyApp",
+    description: "Track your MT5 trading performance with AI-powered analytics. Equity curves, win rate by instrument, session analysis, drawdown tracking, and behavioral insights. Auto-syncs from MetaTrader 5.",
     canonical: `${BASE_URL}/mt5-trading-analytics`,
   },
   "/terms": {
     title: "Terms of Service | TradifyApp",
-    description: "Read the TradifyApp Terms of Service governing your use of the platform.",
+    description: "Read TradifyApp's Terms of Service. Understand your rights and responsibilities when using our trading journal and MT5 sync platform.",
     canonical: `${BASE_URL}/terms`,
   },
   "/privacy": {
     title: "Privacy Policy | TradifyApp",
-    description: "Read TradifyApp's Privacy Policy to understand how we handle your data.",
+    description: "TradifyApp's Privacy Policy explains how we collect, use, and protect your trading data and personal information. GDPR compliant.",
     canonical: `${BASE_URL}/privacy`,
   },
   "/risk-disclaimer": {
     title: "Risk Disclaimer | TradifyApp",
-    description: "Important risk disclosure for users of TradifyApp's trading discipline platform.",
+    description: "Important risk disclosure for TradifyApp users. Trading forex and CFDs involves substantial risk. Read our full risk disclaimer before trading.",
     canonical: `${BASE_URL}/risk-disclaimer`,
   },
   "/cookie-policy": {
     title: "Cookie Policy | TradifyApp",
-    description: "Read TradifyApp's Cookie Policy to understand how we use cookies.",
+    description: "Learn how TradifyApp uses cookies. Manage your preferences for analytics and marketing cookies. GDPR compliant cookie consent.",
     canonical: `${BASE_URL}/cookie-policy`,
   },
-  // Auth pages — noindex
-  "/login": { title: "Login | TradifyApp", description: "Log in to TradifyApp.", canonical: `${BASE_URL}/login`, noindex: true },
-  "/signup": { title: "Sign Up | TradifyApp", description: "Create your TradifyApp account.", canonical: `${BASE_URL}/signup`, noindex: true },
-  "/early-access": { title: "Early Access | TradifyApp", description: "Join TradifyApp's early access program.", canonical: `${BASE_URL}/early-access`, noindex: true },
+  "/login": { title: "Login | TradifyApp", description: "Log in to your TradifyApp account to access your trading journal and analytics.", canonical: `${BASE_URL}/login`, noindex: true },
+  "/signup": { title: "Sign Up | TradifyApp", description: "Create your free TradifyApp account. Start tracking your MT5 trades and enforcing discipline today.", canonical: `${BASE_URL}/signup`, noindex: true },
+  "/early-access": { title: "Early Access | TradifyApp", description: "Join TradifyApp's early access program and be among the first to use the trading discipline platform.", canonical: `${BASE_URL}/early-access`, noindex: true },
 };
 
 function buildBotHtml(meta: PageMeta, ogType = "website"): string {

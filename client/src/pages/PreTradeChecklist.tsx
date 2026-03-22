@@ -64,8 +64,9 @@ export default function PreTradeChecklist() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Free Pre-Trade Checklist | TradifyApp"
-        description="The TradifyApp-specific pre-trade discipline checklist. HTF bias confirmation, prop firm drawdown checks, position sizing, psychology audit, and behavioral trigger review — all enforced automatically inside TradifyApp."
+        title="Free Pre-Trade Checklist for Disciplined Traders | TradifyApp"
+        description="Download the free pre-trade checklist used by disciplined traders. Covers HTF bias, entry validation, risk management, and psychology checks. Print and use before every trade."
+        canonical="https://tradifyapp.com/checklist"
       />
 
       <div className="max-w-3xl mx-auto px-6 py-12 print:py-4 print:px-2">

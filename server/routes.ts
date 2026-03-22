@@ -224,20 +224,50 @@ export async function registerRoutes(
     next();
   });
 
-  // SEO: robots.txt
+  // SEO: robots.txt — serve the static file from client/public
   app.get("/robots.txt", (_req, res) => {
-    res.type("text/plain").send(`User-agent: *
+    res.type("text/plain").send(`# TradifyApp - Trading Discipline Platform
+# https://tradifyapp.com
+
+User-agent: *
+
+# Allow public pages
 Allow: /
-Disallow: /admin/
-Disallow: /api/
+Allow: /pricing
+Allow: /features
+Allow: /how-it-works
+Allow: /resources
+Allow: /about
+Allow: /blog
+Allow: /blog/
+Allow: /trading-journal
+Allow: /prop-firm-tracker
+Allow: /mt5-trading-analytics
+Allow: /checklist
+Allow: /cookie-policy
+Allow: /privacy
+Allow: /terms
+Allow: /risk-disclaimer
+
+# Disallow authenticated/private pages
 Disallow: /dashboard
 Disallow: /journal
 Disallow: /strategies
+Disallow: /strategies/
+Disallow: /analytics
+Disallow: /mt5-bridge
+Disallow: /knowledge-base
+Disallow: /calculator
 Disallow: /profile
 Disallow: /checkout
-Disallow: /mt5-bridge
+Disallow: /traders-hub
+Disallow: /achievements
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
 Disallow: /login
 Disallow: /signup
+Disallow: /early-access
 
 Sitemap: https://tradifyapp.com/sitemap.xml`);
   });
@@ -259,6 +289,7 @@ Sitemap: https://tradifyapp.com/sitemap.xml`);
         { url: "/prop-firm-tracker", priority: "0.9", changefreq: "weekly", lastmod: today },
         { url: "/mt5-trading-analytics", priority: "0.9", changefreq: "weekly", lastmod: today },
         { url: "/about", priority: "0.8", changefreq: "monthly", lastmod: today },
+        { url: "/checklist", priority: "0.7", changefreq: "monthly", lastmod: today },
         { url: "/blog", priority: "0.8", changefreq: "daily", lastmod: today },
         { url: "/resources", priority: "0.7", changefreq: "monthly", lastmod: today },
         { url: "/early-access", priority: "0.8", changefreq: "weekly", lastmod: today },

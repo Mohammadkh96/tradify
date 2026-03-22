@@ -49,8 +49,8 @@ export default function Blog() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO
-        title="Blog - Trading Insights & Strategy Tips"
-        description="Trading insights, strategy tips, and platform updates from TradifyApp. Learn disciplined trading with our expert articles."
+        title="Blog - Trading Insights & Strategy Tips | TradifyApp"
+        description="Trading insights, strategy tips, and platform updates from TradifyApp. Learn disciplined trading with expert articles on prop firm challenges, MT5 analytics, and risk management."
         canonical="https://tradifyapp.com/blog"
       />
       <PublicNavbar />

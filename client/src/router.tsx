@@ -136,8 +136,8 @@ function FeaturesPage() {
   return (
     <div className="min-h-screen bg-background pt-20">
       <SEO 
-        title="Features - Trade Visualization & Analytics | Tradify"
-        description="Explore Tradify's features: live MT5 sync, equity curves, performance analytics, behavioral insights, and strategy validation for disciplined trading."
+        title="Features - Trade Visualization & Analytics | TradifyApp"
+        description="Explore TradifyApp features: live MT5 sync, equity curves, performance analytics, behavioral insights, and strategy validation for disciplined trading."
         canonical="https://tradifyapp.com/features"
         breadcrumbs={[
           { name: "Home", url: "https://tradifyapp.com" },
@@ -246,8 +246,8 @@ function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-background pt-20">
       <SEO 
-        title="How It Works - Simple MT5 Integration | Tradify"
-        description="Learn how Tradify works: connect your MT5, sync trades automatically, build strategies, and track your trading performance in 3 simple steps."
+        title="How It Works - Simple MT5 Integration | TradifyApp"
+        description="Learn how TradifyApp works: connect your MT5, sync trades automatically, build strategies, and track your trading performance in 3 simple steps."
         canonical="https://tradifyapp.com/how-it-works"
         breadcrumbs={[
           { name: "Home", url: "https://tradifyapp.com" },
@@ -376,8 +376,8 @@ function ResourcesPage() {
   return (
     <div className="min-h-screen bg-background pt-20">
       <SEO 
-        title="Resources - Trading Education & Tools | Tradify"
-        description="Access Tradify's trading resources: risk calculators, educational content, strategy guides, and professional tools to improve your trading discipline."
+        title="Resources - Trading Education & Tools | TradifyApp"
+        description="Access TradifyApp trading resources: risk calculators, educational content, strategy guides, and professional tools to improve your trading discipline."
         canonical="https://tradifyapp.com/resources"
         breadcrumbs={[
           { name: "Home", url: "https://tradifyapp.com" },

@@ -19,6 +19,7 @@ Allow: /blog/
 Allow: /trading-journal
 Allow: /prop-firm-tracker
 Allow: /mt5-trading-analytics
+Allow: /checklist
 Allow: /cookie-policy
 Allow: /privacy
 Allow: /terms
