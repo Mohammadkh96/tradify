@@ -1145,9 +1145,37 @@ ${blogPosts.map(p => `  <url>
         return res.status(403).json({ message: "Cannot delete the Owner account" });
       }
 
+      await db.delete(schema.emailSequences).where(eq(schema.emailSequences.userId, targetUserId));
+      await db.delete(schema.tradeJournal).where(eq(schema.tradeJournal.userId, targetUserId));
+      await db.delete(schema.mt5History).where(eq(schema.mt5History.userId, targetUserId));
+      await db.delete(schema.mt5Data).where(eq(schema.mt5Data.userId, targetUserId));
+      await db.delete(schema.mt5Accounts).where(eq(schema.mt5Accounts.userId, targetUserId));
+      await db.delete(schema.dailyEquitySnapshots).where(eq(schema.dailyEquitySnapshots.userId, targetUserId));
+      await db.delete(schema.aiPerformanceInsights).where(eq(schema.aiPerformanceInsights.userId, targetUserId));
+      await db.delete(schema.aiInsightLogs).where(eq(schema.aiInsightLogs.userId, targetUserId));
+      await db.delete(schema.hubComments).where(eq(schema.hubComments.userId, targetUserId));
+      await db.delete(schema.hubReports).where(eq(schema.hubReports.userId, targetUserId));
+      await db.delete(schema.hubPosts).where(eq(schema.hubPosts.userId, targetUserId));
+      await db.delete(schema.tradeRuleEvaluations).where(eq(schema.tradeRuleEvaluations.userId, targetUserId));
+      await db.delete(schema.strategyRules).where(eq(schema.strategyRules.userId, targetUserId));
+      await db.delete(schema.strategies).where(eq(schema.strategies.userId, targetUserId));
+      await db.delete(schema.tradeComplianceResults).where(eq(schema.tradeComplianceResults.userId, targetUserId));
+      await db.delete(schema.instrumentAnalyses).where(eq(schema.instrumentAnalyses.userId, targetUserId));
+      await db.delete(schema.lessonProgress).where(eq(schema.lessonProgress.userId, targetUserId));
+      await db.delete(schema.lessonBookmarks).where(eq(schema.lessonBookmarks.userId, targetUserId));
+      await db.delete(schema.quizResults).where(eq(schema.quizResults.userId, targetUserId));
+      await db.delete(schema.propFirmChallenges).where(eq(schema.propFirmChallenges.userId, targetUserId));
+      await db.delete(schema.propFirmDailyStats).where(eq(schema.propFirmDailyStats.userId, targetUserId));
+      await db.delete(schema.userAchievements).where(eq(schema.userAchievements.userId, targetUserId));
+      await db.delete(schema.userStreaks).where(eq(schema.userStreaks.userId, targetUserId));
+      await db.delete(schema.creatorProfiles).where(eq(schema.creatorProfiles.userId, targetUserId));
+      await db.delete(schema.creatorApplications).where(eq(schema.creatorApplications.userId, targetUserId));
+      await db.delete(schema.foundingMemberSuggestions).where(eq(schema.foundingMemberSuggestions.userId, targetUserId));
+      await db.delete(schema.signalProviderProfile).where(eq(schema.signalProviderProfile.userId, targetUserId));
+      await db.delete(schema.signalReceiver).where(eq(schema.signalReceiver.userId, targetUserId));
+      await db.delete(schema.aiUsageLogs).where(eq(schema.aiUsageLogs.userId, targetUserId));
       await db.delete(schema.userRole).where(eq(schema.userRole.userId, targetUserId));
 
-      // Audit log for deletion
       await db.insert(schema.adminAuditLog).values({
         adminId: req.session.userId!,
         actionType: "DELETE_USER",
@@ -1155,6 +1183,7 @@ ${blogPosts.map(p => `  <url>
         details: { timestamp: new Date() }
       });
 
+      console.log(`[ADMIN] Fully deleted user ${targetUserId} and all related data`);
       res.status(200).json({ success: true });
     } catch (error) {
       console.error("Delete user error:", error);
