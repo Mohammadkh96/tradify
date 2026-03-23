@@ -188,9 +188,9 @@ export default function Landing() {
         <div
           className={`fixed top-0 left-0 right-0 h-9 z-[60] flex items-center justify-center px-10 text-center ${
             founderCount.remaining <= 50
-              ? "bg-red-600/97 border-b border-red-400/30"
-              : "bg-amber-500/97 border-b border-amber-400/30"
-          } backdrop-blur-md`}
+              ? "bg-red-600 border-b border-red-400/30"
+              : "bg-amber-500 border-b border-amber-400/30"
+          }`}
           data-testid="banner-top-announcement"
         >
           <div className="flex items-center gap-2">
