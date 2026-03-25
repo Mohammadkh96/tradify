@@ -72,11 +72,31 @@ function replaceTemplatePlaceholders(template: string, data: Record<string, stri
   return result;
 }
 
+async function getUnsubscribeUrl(userId: string): Promise<string> {
+  try {
+    const [user] = await db.select({ unsubscribeToken: schema.userRole.unsubscribeToken })
+      .from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
+    if (user?.unsubscribeToken) {
+      return `${APP_URL}/api/unsubscribe?token=${user.unsubscribeToken}`;
+    }
+  } catch {}
+  return "";
+}
+
+async function isUserUnsubscribed(userId: string): Promise<boolean> {
+  try {
+    const [user] = await db.select({ emailUnsubscribed: schema.userRole.emailUnsubscribed })
+      .from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
+    return user?.emailUnsubscribed === true;
+  } catch { return false; }
+}
+
 async function sendEmail(
   to: string,
   subject: string,
   html: string,
-  retryOnce = true
+  retryOnce = true,
+  extraHeaders?: Record<string, string>
 ): Promise<boolean> {
   if (!SMTP_USER || !SMTP_APP_PASSWORD) {
     console.warn('[EMAIL] SMTP credentials not configured. Email not sent.');
@@ -90,6 +110,7 @@ async function sendEmail(
       to,
       subject,
       html,
+      headers: extraHeaders,
     });
     logEmail({ to, subject, success: true, timestamp: new Date() });
     
@@ -138,18 +159,21 @@ function getEmailHeader(): string {
           </tr>`;
 }
 
-function getEmailFooter(): string {
+function getEmailFooter(unsubscribeUrl?: string): string {
+  const unsubLine = unsubscribeUrl
+    ? `<a href="${unsubscribeUrl}" style="color: #4B5563; text-decoration: underline;">Unsubscribe</a> from marketing emails.`
+    : `You received this because you have a TradifyApp account.`;
   return `
           <tr>
             <td style="background-color: #131A2B; padding: 28px 40px; border-top: 1px solid #1F2937;">
               <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">&copy; ${new Date().getFullYear()} TradifyApp. All rights reserved. | Trading Discipline Platform</p>
               <p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">Questions? <a href="mailto:${SUPPORT_EMAIL}" style="color: #00D9A3; text-decoration: none;">${SUPPORT_EMAIL}</a></p>
-              <p style="margin: 0; font-size: 11px; color: #4B5563;">You received this because you have a TradifyApp account. Reply STOP to unsubscribe from marketing emails.</p>
+              <p style="margin: 0; font-size: 11px; color: #4B5563;">${unsubLine}</p>
             </td>
           </tr>`;
 }
 
-function wrapEmailBody(content: string, title: string, preheader: string): string {
+function wrapEmailBody(content: string, title: string, preheader: string, unsubscribeUrl?: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -171,7 +195,7 @@ function wrapEmailBody(content: string, title: string, preheader: string): strin
               ${content}
             </td>
           </tr>
-          ${getEmailFooter()}
+          ${getEmailFooter(unsubscribeUrl)}
         </table>
       </td>
     </tr>
@@ -499,11 +523,14 @@ function dripCta(label: string, url: string): string {
   </table>`;
 }
 
-function dripFooterNote(isLead: boolean): string {
+function dripFooterNote(isLead: boolean, unsubscribeUrl?: string): string {
   const reason = isLead
     ? 'You received this because you downloaded a TradifyApp resource.'
     : 'You received this because you signed up for a free TradifyApp account.';
-  return `<p style="margin: 24px 0 0 0; font-size: 12px; color: #6B7280; border-top: 1px solid #1F2937; padding-top: 16px;">${reason} Reply STOP to unsubscribe.</p>`;
+  const unsubLink = unsubscribeUrl
+    ? ` <a href="${unsubscribeUrl}" style="color: #6B7280; text-decoration: underline;">Unsubscribe</a>`
+    : '';
+  return `<p style="margin: 24px 0 0 0; font-size: 12px; color: #6B7280; border-top: 1px solid #1F2937; padding-top: 16px;">${reason}${unsubLink}</p>`;
 }
 
 // ==================== AI EMAIL GENERATION ====================
@@ -656,7 +683,7 @@ async function getUserRuleCount(userId: string): Promise<number> {
   }
 }
 
-function buildLeadEmail(step: number, email: string): { subject: string; html: string } | null {
+function buildLeadEmail(step: number, email: string, unsubscribeUrl?: string): { subject: string; html: string } | null {
   const appUrl = APP_URL;
   const checklistUrl = `${appUrl}/checklist`;
   const signupUrl = `${appUrl}/signup`;
@@ -672,7 +699,7 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Over the next 6 days I'll send you short, direct emails on the psychology and mechanics of trading discipline — the stuff most trading courses skip entirely.</p>
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Tomorrow: why trying harder is the worst thing you can do as a trader.</p>
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
-        ${dripFooterNote(true)}`,
+        ${dripFooterNote(true, unsubscribeUrl)}`,
     },
     {
       subject: "You don't have a discipline problem",
@@ -687,7 +714,7 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
         ${dripCta('See How It Works →', signupUrl)}
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Tomorrow: the drawdown math that most prop traders get wrong — and how one bad day erases a month of work.</p>
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
-        ${dripFooterNote(true)}`,
+        ${dripFooterNote(true, unsubscribeUrl)}`,
     },
     {
       subject: 'The prop firm math most traders get wrong',
@@ -704,7 +731,7 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">TradifyApp syncs your MT5 account in real time and shows your prop firm's exact breach thresholds against your live balance.</p>
         ${dripCta('Track Your Drawdown Free →', signupUrl)}
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
-        ${dripFooterNote(true)}`,
+        ${dripFooterNote(true, unsubscribeUrl)}`,
     },
     {
       subject: 'The revenge trade spiral (step by step)',
@@ -726,7 +753,7 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
         </div>
         ${dripCta('Set Your Rules. Let TradifyApp Enforce Them →', signupUrl)}
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
-        ${dripFooterNote(true)}`,
+        ${dripFooterNote(true, unsubscribeUrl)}`,
     },
     {
       subject: "The 2% rule isn't enough under pressure",
@@ -742,7 +769,7 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
         </div>
         ${dripCta('Lock in Your Position Rules →', signupUrl)}
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
-        ${dripFooterNote(true)}`,
+        ${dripFooterNote(true, unsubscribeUrl)}`,
     },
     {
       subject: 'What elite traders do differently',
@@ -761,7 +788,7 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Takes 2 minutes. Compounds over months.</p>
         ${dripCta('Start Your Accountability Practice →', signupUrl)}
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
-        ${dripFooterNote(true)}`,
+        ${dripFooterNote(true, unsubscribeUrl)}`,
     },
     {
       subject: 'Everything in these emails, automated in one place',
@@ -798,7 +825,7 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">It's free to start. No card required. Connect your MT5 account in under 3 minutes.</p>
         ${dripCta('Start Free — Your Rules. Enforced. →', signupUrl)}
         <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp automates everything in this email. Start free — no card required → <a href="${signupUrl}" style="color: #00D9A3;">${appUrl}</a></p>
-        ${dripFooterNote(true)}`,
+        ${dripFooterNote(true, unsubscribeUrl)}`,
     },
   ];
 
@@ -814,7 +841,8 @@ function buildLeadEmail(step: number, email: string): { subject: string; html: s
 async function buildFreeUserEmail(
   step: number,
   userId: string,
-  userName: string
+  userName: string,
+  unsubscribeUrl?: string
 ): Promise<{ subject: string; html: string } | null> {
   const appUrl = APP_URL;
   const upgradeUrl = `${appUrl}/pricing`;
@@ -843,7 +871,7 @@ async function buildFreeUserEmail(
             </ol>
             ${dripCta('Open Your Dashboard →', dashboardUrl)}
             <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Tomorrow I'll show you what you can't see on the free plan — and whether it's worth upgrading.</p>
-            ${dripFooterNote(false)}`,
+            ${dripFooterNote(false, unsubscribeUrl)}`,
         }
       : {
           subject: "You're missing the best part of TradifyApp",
@@ -860,7 +888,7 @@ async function buildFreeUserEmail(
             </ol>
             ${dripCta('Connect MT5 Now →', mt5GuideUrl)}
             <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If you hit any issues, reply to this email and I'll help you get set up.</p>
-            ${dripFooterNote(false)}`,
+            ${dripFooterNote(false, unsubscribeUrl)}`,
         },
     {
       subject: "What you can't see on the free plan",
@@ -892,7 +920,7 @@ async function buildFreeUserEmail(
         </table>
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Pro is $29/month. Most traders say the multi-account tracking alone is worth it.</p>
         ${dripCta('Upgrade to Pro →', upgradeUrl)}
-        ${dripFooterNote(false)}`,
+        ${dripFooterNote(false, unsubscribeUrl)}`,
     },
     {
       subject: 'Founding Member offer — 30% off Pro, forever',
@@ -908,7 +936,7 @@ async function buildFreeUserEmail(
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">This offer is limited to early adopters and closes when we move out of early access. Once it's gone, Pro returns to $29/month — and there's no retroactive discount.</p>
         ${dripCta('Claim Founding Member Rate →', upgradeUrl)}
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If you have questions before upgrading, reply to this email — I'll answer directly.</p>
-        ${dripFooterNote(false)}`,
+        ${dripFooterNote(false, unsubscribeUrl)}`,
     },
     {
       subject: 'Last chance on the founding offer',
@@ -920,7 +948,7 @@ async function buildFreeUserEmail(
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If you've been thinking about it — now is the time. Spots are limited and some are already taken.</p>
         ${dripCta('Upgrade Now — $20/mo Forever →', upgradeUrl)}
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">After this email I won't mention the offer again. Whatever you decide, the free plan stays free.</p>
-        ${dripFooterNote(false)}`,
+        ${dripFooterNote(false, unsubscribeUrl)}`,
     },
     {
       subject: "Still here? Here's a quick win for today",
@@ -935,7 +963,7 @@ async function buildFreeUserEmail(
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If you find the session where you consistently lose — stop trading it. That single decision often improves monthly P&L by more than any strategy change.</p>
         ${dripCta('Check Your Session Analytics →', dashboardUrl)}
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">As always, the platform is here whenever you're ready to go deeper.</p>
-        ${dripFooterNote(false)}`,
+        ${dripFooterNote(false, unsubscribeUrl)}`,
     },
   ];
 
@@ -1112,8 +1140,29 @@ async function queueInsightsNewsletterSequence(userId: string): Promise<void> {
   }
 }
 
+async function backfillUnsubscribeTokens(): Promise<void> {
+  try {
+    const { isNull } = await import("drizzle-orm");
+    const usersWithoutToken = await db.select({ userId: schema.userRole.userId })
+      .from(schema.userRole)
+      .where(isNull(schema.userRole.unsubscribeToken));
+    if (usersWithoutToken.length > 0) {
+      const crypto = await import("crypto");
+      for (const user of usersWithoutToken) {
+        await db.update(schema.userRole)
+          .set({ unsubscribeToken: crypto.randomUUID() })
+          .where(eq(schema.userRole.userId, user.userId));
+      }
+      console.log(`[UNSUB] Backfilled unsubscribe tokens for ${usersWithoutToken.length} users`);
+    }
+  } catch (err) {
+    console.error('[UNSUB] backfillUnsubscribeTokens error:', err);
+  }
+}
+
 async function backfillEmailSequences(): Promise<void> {
   try {
+    await backfillUnsubscribeTokens();
     const allUsers = await db.select({
       userId: schema.userRole.userId,
       subscriptionTier: schema.userRole.subscriptionTier,
@@ -1190,6 +1239,14 @@ async function processDripSequences(): Promise<void> {
 
     for (const seq of dueSequences) {
       try {
+        if (seq.userId && await isUserUnsubscribed(seq.userId)) {
+          await db.update(schema.emailSequences)
+            .set({ completed: true })
+            .where(eq(schema.emailSequences.id, seq.id));
+          console.log(`[DRIP] Skipping sequence ${seq.id} for unsubscribed user ${seq.userId}`);
+          continue;
+        }
+
         if (seq.track === 'lead_7day') {
           if (!seq.email) {
             await db.update(schema.emailSequences)
@@ -1198,7 +1255,8 @@ async function processDripSequences(): Promise<void> {
             continue;
           }
 
-          const emailData = buildLeadEmail(seq.currentStep, seq.email);
+          const leadUnsubUrl = seq.userId ? await getUnsubscribeUrl(seq.userId) : "";
+          const emailData = buildLeadEmail(seq.currentStep, seq.email, leadUnsubUrl);
           if (!emailData) {
             await db.update(schema.emailSequences)
               .set({ completed: true })
@@ -1206,7 +1264,9 @@ async function processDripSequences(): Promise<void> {
             continue;
           }
 
-          const sent = await sendEmail(seq.email, emailData.subject, emailData.html);
+          const leadHeaders: Record<string, string> = {};
+          if (leadUnsubUrl) leadHeaders['List-Unsubscribe'] = `<${leadUnsubUrl}>`;
+          const sent = await sendEmail(seq.email, emailData.subject, emailData.html, true, Object.keys(leadHeaders).length ? leadHeaders : undefined);
           console.log(`[DRIP] Lead step ${seq.currentStep} → ${seq.email}: ${sent ? 'sent' : 'failed'}`);
 
           const nextStep = seq.currentStep + 1;
@@ -1254,7 +1314,8 @@ async function processDripSequences(): Promise<void> {
           }
 
           const userName = user.fullName || seq.userId.split('@')[0];
-          const emailData = await buildFreeUserEmail(seq.currentStep, seq.userId, userName);
+          const unsubUrl = await getUnsubscribeUrl(seq.userId);
+          const emailData = await buildFreeUserEmail(seq.currentStep, seq.userId, userName, unsubUrl);
 
           if (!emailData) {
             await db.update(schema.emailSequences)
@@ -1263,7 +1324,9 @@ async function processDripSequences(): Promise<void> {
             continue;
           }
 
-          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html);
+          const headers: Record<string, string> = {};
+          if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
           console.log(`[DRIP] Free user step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
 
           const nextStep = seq.currentStep + 1;
@@ -1316,8 +1379,11 @@ async function processDripSequences(): Promise<void> {
           const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
           const aiResult = await generateAIEmail('free_ongoing', userData, { topic, step: seq.currentStep });
           if (aiResult) {
-            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
-            const sent = await sendEmail(seq.userId, aiResult.subject, html);
+            const unsubUrl = await getUnsubscribeUrl(seq.userId);
+            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
+            const headers: Record<string, string> = {};
+            if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
             console.log(`[DRIP] free_ongoing step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           }
           const nextStep = seq.currentStep + 1;
@@ -1353,8 +1419,11 @@ async function processDripSequences(): Promise<void> {
           const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
           const aiResult = await generateAIEmail('pro_to_elite', userData, { topic, step: seq.currentStep });
           if (aiResult) {
-            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
-            const sent = await sendEmail(seq.userId, aiResult.subject, html);
+            const unsubUrl = await getUnsubscribeUrl(seq.userId);
+            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
+            const headers: Record<string, string> = {};
+            if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
             console.log(`[DRIP] pro_to_elite step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           }
           const nextStep = seq.currentStep + 1;
@@ -1392,8 +1461,11 @@ async function processDripSequences(): Promise<void> {
           const userData: AIEmailUserData = { name: userName, tier: 'ELITE', hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
           const aiResult = await generateAIEmail('elite_retention', userData, { topic, step: seq.currentStep, isElite: true });
           if (aiResult) {
-            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
-            const sent = await sendEmail(seq.userId, aiResult.subject, html);
+            const unsubUrl = await getUnsubscribeUrl(seq.userId);
+            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
+            const headers: Record<string, string> = {};
+            if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
             console.log(`[DRIP] elite_retention step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           }
           const nextStep = seq.currentStep + 1;
@@ -1429,8 +1501,11 @@ async function processDripSequences(): Promise<void> {
             isElite,
           });
           if (aiResult) {
-            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject);
-            const sent = await sendEmail(seq.userId, aiResult.subject, html);
+            const unsubUrl = await getUnsubscribeUrl(seq.userId);
+            const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
+            const headers: Record<string, string> = {};
+            if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
             console.log(`[DRIP] insights_newsletter step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           }
           const nextStep = seq.currentStep + 1;

@@ -243,6 +243,79 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
   );
 }
 
+function EmailPreferencesCard() {
+  const { toast } = useToast();
+  const { data: prefs, isLoading } = useQuery<{ marketingEmails: boolean }>({
+    queryKey: ["/api/email-preferences"],
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      await apiRequest("POST", "/api/email-preferences", { marketingEmails: enabled });
+    },
+    onSuccess: (_data, enabled) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/email-preferences"] });
+      toast({
+        title: enabled ? "Marketing Emails Enabled" : "Marketing Emails Disabled",
+        description: enabled
+          ? "You will receive trading insights and product updates."
+          : "You will no longer receive marketing emails. Account-related emails will still be sent.",
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update preferences.", variant: "destructive" });
+    },
+  });
+
+  return (
+    <Card className="bg-card border-border shadow-2xl overflow-hidden">
+      <CardHeader className="border-b border-border bg-muted/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-500/10 rounded-lg">
+            <Send size={20} className="text-emerald-500" />
+          </div>
+          <div>
+            <CardTitle className="text-foreground uppercase italic tracking-tight font-black">Email Preferences</CardTitle>
+            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Manage communications</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-4">
+        <div className="flex items-center justify-between" data-testid="toggle-marketing-emails">
+          <div>
+            <h4 className="text-sm font-black text-foreground uppercase tracking-tight">Marketing Emails</h4>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Trading insights, product updates, and tips</p>
+          </div>
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <Button
+              variant={prefs?.marketingEmails ? "default" : "outline"}
+              size="sm"
+              onClick={() => toggleMutation.mutate(!prefs?.marketingEmails)}
+              disabled={toggleMutation.isPending}
+              className={prefs?.marketingEmails
+                ? "bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black uppercase text-[10px] tracking-widest"
+                : "border-border text-muted-foreground font-black uppercase text-[10px] tracking-widest"
+              }
+              data-testid="button-toggle-marketing-emails"
+            >
+              {toggleMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : prefs?.marketingEmails ? "Enabled" : "Disabled"}
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-black text-foreground uppercase tracking-tight">Account Emails</h4>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Password resets, billing, and security alerts</p>
+          </div>
+          <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-emerald-500/30 text-emerald-500">Always On</Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ReferralCard() {
   const { toast } = useToast();
   const { data: referralStats, isLoading } = useQuery<{
@@ -595,6 +668,8 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
+          <EmailPreferencesCard />
 
           <Card className="bg-card border-destructive/20 shadow-2xl">
             <CardHeader className="border-b border-border bg-destructive/5">

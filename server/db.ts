@@ -60,6 +60,8 @@ export async function ensureSchemaColumns() {
       ALTER TABLE mt5_history ADD COLUMN IF NOT EXISTS mistake_category TEXT;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS utm_source TEXT;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS email_unsubscribed BOOLEAN DEFAULT false;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS unsubscribe_token TEXT;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source TEXT;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
     `);

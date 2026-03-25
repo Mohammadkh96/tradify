@@ -53,8 +53,9 @@ Preferred communication style: Simple, everyday language.
   - `elite_retention` — 6-step AI onboarding (14-day) on Elite upgrade; transitions to `insights_newsletter`
   - `insights_newsletter` — AI-generated market insights every 14 days for Pro+Elite; Brave Search for live headlines (fallback: OpenAI only); cycles at step 12
   - Queue functions: `queueLeadSequence`, `queueFreeUserSequence`, `queueFreeOngoingSequence`, `queueProToEliteSequence`, `queueEliteRetentionSequence`, `queueInsightsNewsletterSequence`
-  - Startup backfill: `backfillEmailSequences()` runs 90s after server start to enroll existing Pro/Elite users in `insights_newsletter` and free users with completed `free_user` in `free_ongoing`
+  - Startup backfill: `backfillEmailSequences()` runs 90s after server start to enroll existing Pro/Elite users in `insights_newsletter` and free users with completed `free_user` in `free_ongoing`. Also backfills `unsubscribe_token` for users missing one.
   - Brave Search: optional `BRAVE_API_KEY` env var for live news headlines in insights newsletter
+  - **Unsubscribe System:** One-click unsubscribe via `GET /api/unsubscribe?token=<token>` (server-rendered branded page). Re-subscribe via `POST /api/resubscribe`. Dashboard email preferences toggle at `GET/POST /api/email-preferences`. All marketing emails include `List-Unsubscribe` header and clickable unsubscribe link in footer. `emailUnsubscribed` and `unsubscribeToken` columns on `user_role`. Drip processor skips unsubscribed users. Resubscribe re-queues tier-appropriate sequences. Profile page has `EmailPreferencesCard` with marketing email toggle.
 - **Email Verification:** Mandatory for new users (except Admin/Owner) with a 24-hour token expiry and resend options.
 - **Admin Panel:** User management (creation, plan changes, deactivation, deletion, founding member status) with audit logging, accessible only by OWNER/ADMIN roles.
 - **Cookie Consent System:** GDPR-compliant banner with customizable preferences for Analytics (Google Analytics) and Marketing (Facebook Pixel), stored in localStorage.

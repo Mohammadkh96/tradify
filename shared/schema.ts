@@ -134,6 +134,8 @@ export const userRole = pgTable("user_role", {
   referredBy: text("referred_by"),
   utmSource: text("utm_source"),
   utmCampaign: text("utm_campaign"),
+  emailUnsubscribed: boolean("email_unsubscribed").default(false),
+  unsubscribeToken: text("unsubscribe_token"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

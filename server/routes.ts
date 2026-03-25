@@ -207,6 +207,32 @@ const requireAdmin = async (req: Request, res: Response, next: NextFunction) => 
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import { paypalService } from "./paypalService";
 
+function unsubscribePage(message: string, success: boolean, resubToken?: string): string {
+  const BASE_URL = process.env.BASE_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "https://tradifyapp.com");
+  const resubButton = resubToken && success
+    ? `<form method="POST" action="${BASE_URL}/api/resubscribe" style="margin-top:24px;">
+        <input type="hidden" name="token" value="${resubToken}" />
+        <button type="submit" style="background:#1F2937;color:#9CA3AF;border:1px solid #374151;padding:10px 24px;border-radius:6px;cursor:pointer;font-size:13px;font-family:Arial,sans-serif;">Changed your mind? Re-subscribe</button>
+      </form>`
+    : resubToken && !success
+    ? `<p style="margin-top:16px;font-size:13px;color:#6B7280;">You are not receiving marketing emails.</p>`
+    : "";
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Email Preferences — TradifyApp</title></head>
+<body style="margin:0;padding:0;background:#0A0F1E;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;">
+<div style="max-width:480px;margin:40px auto;padding:48px 40px;background:#131A2B;border-radius:16px;border:1px solid #1F2937;text-align:center;">
+  <div style="font-size:22px;font-weight:900;color:#ffffff;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">TRADIFYAPP</div>
+  <div style="font-size:11px;color:#00D9A3;letter-spacing:2.5px;text-transform:uppercase;font-weight:600;margin-bottom:32px;">YOUR RULES. ENFORCED.</div>
+  <div style="width:48px;height:48px;margin:0 auto 24px;background:${success ? "#00D9A3" : "#EF4444"};border-radius:50%;display:flex;align-items:center;justify-content:center;">
+    <span style="font-size:24px;color:#fff;">${success ? "✓" : "✕"}</span>
+  </div>
+  <p style="font-size:16px;color:#E5E7EB;line-height:1.6;margin:0 0 8px;">${message}</p>
+  <p style="font-size:13px;color:#6B7280;margin-top:16px;">You will continue to receive important account-related emails (password resets, billing updates).</p>
+  ${resubButton}
+  <a href="${BASE_URL}" style="display:inline-block;margin-top:24px;font-size:13px;color:#00D9A3;text-decoration:none;">← Back to TradifyApp</a>
+</div>
+</body></html>`;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -522,6 +548,8 @@ ${blogPosts.map(p => `  <url>
         referralCode = crypto.randomBytes(4).toString("hex");
       }
 
+      const unsubscribeToken = crypto.randomUUID();
+
       const { ref } = req.body;
       let referredBy: string | null = null;
       if (ref && typeof ref === "string" && ref.length <= 16) {
@@ -550,6 +578,7 @@ ${blogPosts.map(p => `  <url>
         referredBy,
         utmSource: utm_source || null,
         utmCampaign: utm_campaign || null,
+        unsubscribeToken,
       }).returning();
 
       // If early access signup exists, update it to link to the user (don't block registration)
@@ -640,6 +669,123 @@ ${blogPosts.map(p => `  <url>
     } catch (error) {
       console.error("Email verification error:", error);
       res.redirect("/login?verification_error=failed");
+    }
+  });
+
+  app.get("/api/unsubscribe", async (req, res) => {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== "string") {
+        return res.status(400).send(unsubscribePage("Invalid unsubscribe link.", false));
+      }
+      const [user] = await db.select({ userId: schema.userRole.userId, fullName: schema.userRole.fullName, emailUnsubscribed: schema.userRole.emailUnsubscribed })
+        .from(schema.userRole).where(eq(schema.userRole.unsubscribeToken, token)).limit(1);
+      if (!user) {
+        return res.status(404).send(unsubscribePage("This unsubscribe link is not valid.", false));
+      }
+      if (user.emailUnsubscribed) {
+        return res.send(unsubscribePage("You are already unsubscribed from marketing emails.", false, token));
+      }
+      await db.update(schema.userRole)
+        .set({ emailUnsubscribed: true })
+        .where(eq(schema.userRole.unsubscribeToken, token));
+      await db.update(schema.emailSequences)
+        .set({ completed: true })
+        .where(eq(schema.emailSequences.userId, user.userId));
+      console.log(`[UNSUB] User ${user.userId} unsubscribed from marketing emails`);
+      res.send(unsubscribePage("You have been successfully unsubscribed from marketing emails.", true, token));
+    } catch (error) {
+      console.error("Unsubscribe error:", error);
+      res.status(500).send(unsubscribePage("Something went wrong. Please try again.", false));
+    }
+  });
+
+  app.post("/api/resubscribe", async (req, res) => {
+    try {
+      const { token } = req.body;
+      if (!token || typeof token !== "string") {
+        const isFormPost = req.headers['content-type']?.includes('urlencoded');
+        return isFormPost ? res.status(400).send(unsubscribePage("Invalid link.", false)) : res.status(400).json({ message: "Invalid token" });
+      }
+      const [user] = await db.select({ userId: schema.userRole.userId })
+        .from(schema.userRole).where(eq(schema.userRole.unsubscribeToken, token)).limit(1);
+      if (!user) {
+        const isFormPost = req.headers['content-type']?.includes('urlencoded');
+        return isFormPost ? res.status(404).send(unsubscribePage("Invalid link.", false)) : res.status(404).json({ message: "Invalid token" });
+      }
+      await db.update(schema.userRole)
+        .set({ emailUnsubscribed: false })
+        .where(eq(schema.userRole.unsubscribeToken, token));
+      const [fullUser] = await db.select({ subscriptionTier: schema.userRole.subscriptionTier })
+        .from(schema.userRole).where(eq(schema.userRole.userId, user.userId)).limit(1);
+      const tier = fullUser?.subscriptionTier?.toUpperCase() || 'FREE';
+      if (tier === 'ELITE') {
+        emailService.queueEliteRetentionSequence(user.userId).catch(() => {});
+        emailService.queueInsightsNewsletterSequence(user.userId).catch(() => {});
+      } else if (tier === 'PRO') {
+        emailService.queueProToEliteSequence(user.userId).catch(() => {});
+        emailService.queueInsightsNewsletterSequence(user.userId).catch(() => {});
+      } else {
+        emailService.queueFreeOngoingSequence(user.userId).catch(() => {});
+      }
+      console.log(`[UNSUB] User ${user.userId} re-subscribed to marketing emails, re-queued ${tier} sequences`);
+      const isFormPost = req.headers['content-type']?.includes('urlencoded');
+      if (isFormPost) {
+        return res.send(unsubscribePage("You have been re-subscribed to marketing emails.", true, token));
+      }
+      res.json({ message: "You have been re-subscribed to marketing emails." });
+    } catch (error) {
+      console.error("Resubscribe error:", error);
+      const isFormPost = req.headers['content-type']?.includes('urlencoded');
+      if (isFormPost) return res.status(500).send(unsubscribePage("Something went wrong.", false));
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  });
+
+  app.post("/api/email-preferences", async (req, res) => {
+    if (!req.session?.userId) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const { marketingEmails } = req.body;
+      if (typeof marketingEmails !== "boolean") {
+        return res.status(400).json({ message: "Invalid value" });
+      }
+      await db.update(schema.userRole)
+        .set({ emailUnsubscribed: !marketingEmails })
+        .where(eq(schema.userRole.userId, req.session.userId));
+      if (!marketingEmails) {
+        await db.update(schema.emailSequences)
+          .set({ completed: true })
+          .where(eq(schema.emailSequences.userId, req.session.userId));
+      } else {
+        const [u] = await db.select({ subscriptionTier: schema.userRole.subscriptionTier })
+          .from(schema.userRole).where(eq(schema.userRole.userId, req.session.userId)).limit(1);
+        const t = u?.subscriptionTier?.toUpperCase() || 'FREE';
+        if (t === 'ELITE') {
+          emailService.queueEliteRetentionSequence(req.session.userId).catch(() => {});
+          emailService.queueInsightsNewsletterSequence(req.session.userId).catch(() => {});
+        } else if (t === 'PRO') {
+          emailService.queueProToEliteSequence(req.session.userId).catch(() => {});
+          emailService.queueInsightsNewsletterSequence(req.session.userId).catch(() => {});
+        } else {
+          emailService.queueFreeOngoingSequence(req.session.userId).catch(() => {});
+        }
+      }
+      res.json({ message: marketingEmails ? "Marketing emails enabled" : "Marketing emails disabled" });
+    } catch (error) {
+      console.error("Email preferences error:", error);
+      res.status(500).json({ message: "Failed to update preferences" });
+    }
+  });
+
+  app.get("/api/email-preferences", async (req, res) => {
+    if (!req.session?.userId) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const [user] = await db.select({ emailUnsubscribed: schema.userRole.emailUnsubscribed })
+        .from(schema.userRole).where(eq(schema.userRole.userId, req.session.userId)).limit(1);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      res.json({ marketingEmails: !user.emailUnsubscribed });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get preferences" });
     }
   });
 
