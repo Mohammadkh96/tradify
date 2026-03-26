@@ -66,8 +66,20 @@ export async function ensureSchemaColumns() {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
     `);
 
-    // Retroactive founding-member backfill was a one-time operation — removed after completion.
-    
+    // Create sent_emails table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sent_emails (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT,
+        recipient TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        template_name TEXT,
+        success BOOLEAN DEFAULT true,
+        error_message TEXT,
+        sent_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     // Create early access signups table if not exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS early_access_signups (
