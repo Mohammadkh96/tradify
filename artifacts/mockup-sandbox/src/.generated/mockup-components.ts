@@ -9,5 +9,6 @@ export const modules: ModuleMap = {
   "./components/mockups/ads/IdentityReel.tsx": () => import("../components/mockups/ads/IdentityReel.tsx"),
   "./components/mockups/ads/PainCarousel.tsx": () => import("../components/mockups/ads/PainCarousel.tsx"),
   "./components/mockups/ads/PainPost.tsx": () => import("../components/mockups/ads/PainPost.tsx"),
-  "./components/mockups/ads/PainReel.tsx": () => import("../components/mockups/ads/PainReel.tsx")
+  "./components/mockups/ads/PainReel.tsx": () => import("../components/mockups/ads/PainReel.tsx"),
+  "./components/mockups/reports/CompetitiveAnalysis.tsx": () => import("../components/mockups/reports/CompetitiveAnalysis.tsx")
 };

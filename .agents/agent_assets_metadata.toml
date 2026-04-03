@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "8lNA7TAFkBgzDyLkpzy4W"
+uri = "file://tradify-competitive-analysis.pdf"
+type = "pdf"
+title = "Tradify Competitive Analysis Report — April 2026"
