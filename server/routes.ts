@@ -292,7 +292,6 @@ Disallow: /admin
 Disallow: /admin/
 Disallow: /api/
 Disallow: /login
-Disallow: /signup
 Disallow: /early-access
 
 Sitemap: https://tradifyapp.com/sitemap.xml`);
