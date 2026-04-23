@@ -4149,9 +4149,12 @@ End with: "Review your charts for current market structure."`;
       const paid = parseInt(paidRes.rows[0].count);
       const totalPaid = parseInt(totalPaidRes.rows[0].count);
 
+      // Page views come from Google Analytics — not stored in the DB.
+      // We represent this stage as null to signal it's tracked externally.
       res.json({
         days,
         funnel: [
+          { stage: "Page Views", count: null, dropPct: null, externalNote: "Tracked via Google Analytics" },
           { stage: "Leads", count: leads, dropPct: null },
           { stage: "Signups", count: signups, dropPct: leads > 0 ? +(((leads - signups) / leads) * 100).toFixed(1) : null },
           { stage: "Activated", count: activated, dropPct: signups > 0 ? +(((signups - activated) / signups) * 100).toFixed(1) : null },
@@ -4272,41 +4275,69 @@ End with: "Review your charts for current market structure."`;
     }
   });
 
-  // Lead magnet performance
-  app.get("/api/admin/analytics/lead-magnets", requireAdmin, async (_req, res) => {
+  // Lead magnet performance (accepts ?days= to scope downloads to the period)
+  app.get("/api/admin/analytics/lead-magnets", requireAdmin, async (req, res) => {
     try {
-      const [checklistRes, calcRes, checklistConvRes, calcConvRes] = await Promise.all([
-        pool.query(`SELECT COUNT(*) AS count FROM leads WHERE source = 'checklist'`),
-        pool.query(`SELECT COUNT(*) AS count FROM leads WHERE source = 'calculator'`),
+      const days = parseInt(req.query.days as string) || 30;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+      const [checklistRes, calcRes, checklistRegRes, calcRegRes, checklistPaidRes, calcPaidRes] = await Promise.all([
+        pool.query(`SELECT COUNT(*) AS count FROM leads WHERE source = 'checklist' AND created_at >= $1`, [since]),
+        pool.query(`SELECT COUNT(*) AS count FROM leads WHERE source = 'calculator' AND created_at >= $1`, [since]),
         pool.query(
           `SELECT COUNT(DISTINCT l.email) AS count
            FROM leads l
            INNER JOIN user_role ur ON LOWER(ur.user_id) = LOWER(l.email)
-           WHERE l.source = 'checklist'`
+           WHERE l.source = 'checklist' AND l.created_at >= $1`,
+          [since]
         ),
         pool.query(
           `SELECT COUNT(DISTINCT l.email) AS count
            FROM leads l
            INNER JOIN user_role ur ON LOWER(ur.user_id) = LOWER(l.email)
-           WHERE l.source = 'calculator'`
+           WHERE l.source = 'calculator' AND l.created_at >= $1`,
+          [since]
+        ),
+        pool.query(
+          `SELECT COUNT(DISTINCT l.email) AS count
+           FROM leads l
+           INNER JOIN user_role ur ON LOWER(ur.user_id) = LOWER(l.email)
+           WHERE l.source = 'checklist' AND l.created_at >= $1
+             AND ur.subscription_tier IN ('PRO','ELITE')`,
+          [since]
+        ),
+        pool.query(
+          `SELECT COUNT(DISTINCT l.email) AS count
+           FROM leads l
+           INNER JOIN user_role ur ON LOWER(ur.user_id) = LOWER(l.email)
+           WHERE l.source = 'calculator' AND l.created_at >= $1
+             AND ur.subscription_tier IN ('PRO','ELITE')`,
+          [since]
         ),
       ]);
 
       const checklistTotal = parseInt(checklistRes.rows[0].count);
       const calcTotal = parseInt(calcRes.rows[0].count);
-      const checklistConverted = parseInt(checklistConvRes.rows[0].count);
-      const calcConverted = parseInt(calcConvRes.rows[0].count);
+      const checklistRegistered = parseInt(checklistRegRes.rows[0].count);
+      const calcRegistered = parseInt(calcRegRes.rows[0].count);
+      const checklistPaid = parseInt(checklistPaidRes.rows[0].count);
+      const calcPaid = parseInt(calcPaidRes.rows[0].count);
 
       res.json({
+        days,
         checklist: {
           total: checklistTotal,
-          converted: checklistConverted,
-          convRate: checklistTotal > 0 ? +((checklistConverted / checklistTotal) * 100).toFixed(1) : 0,
+          registered: checklistRegistered,
+          paid: checklistPaid,
+          regRate: checklistTotal > 0 ? +((checklistRegistered / checklistTotal) * 100).toFixed(1) : 0,
+          paidRate: checklistTotal > 0 ? +((checklistPaid / checklistTotal) * 100).toFixed(1) : 0,
         },
         calculator: {
           total: calcTotal,
-          converted: calcConverted,
-          convRate: calcTotal > 0 ? +((calcConverted / calcTotal) * 100).toFixed(1) : 0,
+          registered: calcRegistered,
+          paid: calcPaid,
+          regRate: calcTotal > 0 ? +((calcRegistered / calcTotal) * 100).toFixed(1) : 0,
+          paidRate: calcTotal > 0 ? +((calcPaid / calcTotal) * 100).toFixed(1) : 0,
         },
       });
     } catch (error) {
@@ -4315,13 +4346,14 @@ End with: "Review your charts for current market structure."`;
     }
   });
 
-  // Subscription metrics
-  app.get("/api/admin/analytics/subscriptions", requireAdmin, async (_req, res) => {
+  // Subscription metrics (accepts ?days= for new-paid scoping)
+  app.get("/api/admin/analytics/subscriptions", requireAdmin, async (req, res) => {
     try {
+      const days = parseInt(req.query.days as string) || 30;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-      const [totalsRes, newWeekRes, newMonthRes] = await Promise.all([
+      const [totalsRes, newPeriodRes, newWeekRes, churnedRes] = await Promise.all([
         pool.query(
           `SELECT subscription_tier, COUNT(*) AS count
            FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
@@ -4332,37 +4364,49 @@ End with: "Review your charts for current market structure."`;
            FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
              AND created_at >= $1
            GROUP BY subscription_tier`,
-          [weekAgo]
+          [since]
         ),
         pool.query(
           `SELECT subscription_tier, COUNT(*) AS count
            FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
              AND created_at >= $1
            GROUP BY subscription_tier`,
-          [monthAgo]
+          [weekAgo]
+        ),
+        // Churned: formerly paid users (have stripe or paypal subscription ID) now on FREE tier
+        pool.query(
+          `SELECT COUNT(*) AS count FROM user_role
+           WHERE role = 'TRADER'
+             AND subscription_tier = 'FREE'
+             AND (stripe_subscription_id IS NOT NULL OR paypal_subscription_id IS NOT NULL)
+             AND updated_at >= $1`,
+          [since]
         ),
       ]);
 
-      const getPlanCount = (rows: any[], tier: string) =>
+      const getPlanCount = (rows: { subscription_tier: string; count: string }[], tier: string) =>
         parseInt(rows.find(r => r.subscription_tier === tier)?.count || "0");
 
       const proTotal = getPlanCount(totalsRes.rows, "PRO");
       const eliteTotal = getPlanCount(totalsRes.rows, "ELITE");
+      const proNewPeriod = getPlanCount(newPeriodRes.rows, "PRO");
+      const eliteNewPeriod = getPlanCount(newPeriodRes.rows, "ELITE");
       const proNewWeek = getPlanCount(newWeekRes.rows, "PRO");
       const eliteNewWeek = getPlanCount(newWeekRes.rows, "ELITE");
-      const proNewMonth = getPlanCount(newMonthRes.rows, "PRO");
-      const eliteNewMonth = getPlanCount(newMonthRes.rows, "ELITE");
+      const churned = parseInt(churnedRes.rows[0].count);
 
       const PRO_PRICE = 19;
       const ELITE_PRICE = 39;
       const mrrEstimate = proTotal * PRO_PRICE + eliteTotal * ELITE_PRICE;
 
       res.json({
-        pro: { total: proTotal, newThisWeek: proNewWeek, newThisMonth: proNewMonth },
-        elite: { total: eliteTotal, newThisWeek: eliteNewWeek, newThisMonth: eliteNewMonth },
+        days,
+        pro: { total: proTotal, newThisPeriod: proNewPeriod, newThisWeek: proNewWeek },
+        elite: { total: eliteTotal, newThisPeriod: eliteNewPeriod, newThisWeek: eliteNewWeek },
         totalPaid: proTotal + eliteTotal,
+        newPaidThisPeriod: proNewPeriod + eliteNewPeriod,
         newPaidThisWeek: proNewWeek + eliteNewWeek,
-        newPaidThisMonth: proNewMonth + eliteNewMonth,
+        churnedThisPeriod: churned,
         mrrEstimate,
       });
     } catch (error) {

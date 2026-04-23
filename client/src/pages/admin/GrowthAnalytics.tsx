@@ -5,11 +5,10 @@ import {
 } from "recharts";
 import {
   TrendingUp, Users, Target, Zap, DollarSign, ArrowDown, BarChart2,
-  FileDown, Calculator, RefreshCw, ChevronDown,
+  FileDown, Calculator, ExternalLink, TrendingDown,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,12 +17,80 @@ import { cn } from "@/lib/utils";
 
 type DateRange = "7" | "30" | "90";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface FunnelStage {
+  stage: string;
+  count: number | null;
+  dropPct: number | null;
+  externalNote?: string;
+}
+
+interface FunnelData {
+  days: number;
+  funnel: FunnelStage[];
+  totalPaidAllTime: number;
+}
+
+interface TrendPoint {
+  date: string;
+  signups: number;
+  leads: number;
+  paid: number;
+}
+
+interface DailyTrendData {
+  days: number;
+  trend: TrendPoint[];
+}
+
+interface SourceRow {
+  source: string;
+  campaign: string;
+  leads: number;
+  signups: number;
+  paid: number;
+  convRate: number;
+}
+
+interface SourcesData {
+  days: number;
+  sources: SourceRow[];
+}
+
+interface MagnetStat {
+  total: number;
+  registered: number;
+  paid: number;
+  regRate: number;
+  paidRate: number;
+}
+
+interface LeadMagnetsData {
+  days: number;
+  checklist: MagnetStat;
+  calculator: MagnetStat;
+}
+
+interface SubscriptionsData {
+  days: number;
+  pro: { total: number; newThisPeriod: number; newThisWeek: number };
+  elite: { total: number; newThisPeriod: number; newThisWeek: number };
+  totalPaid: number;
+  newPaidThisPeriod: number;
+  newPaidThisWeek: number;
+  churnedThisPeriod: number;
+  mrrEstimate: number;
+}
+
+// ── Small components ──────────────────────────────────────────────────────────
+
 function StatCard({ label, value, sub, color = "text-foreground", icon: Icon }: {
   label: string;
   value: string | number;
   sub?: string;
   color?: string;
-  icon: any;
+  icon: React.ElementType;
 }) {
   return (
     <Card className="bg-card border-border">
@@ -34,7 +101,7 @@ function StatCard({ label, value, sub, color = "text-foreground", icon: Icon }: 
             <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">{label}</div>
             {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
           </div>
-          <div className={cn("h-10 w-10 rounded-md flex items-center justify-center", "bg-emerald-500/10")}>
+          <div className="h-10 w-10 rounded-md flex items-center justify-center bg-emerald-500/10">
             <Icon size={20} className="text-emerald-500" />
           </div>
         </div>
@@ -52,8 +119,10 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+// ── Funnel card ───────────────────────────────────────────────────────────────
+
 function FunnelCard({ days }: { days: string }) {
-  const { data, isLoading } = useQuery<any>({
+  const { data, isLoading } = useQuery<FunnelData>({
     queryKey: ["/api/admin/analytics/funnel", days],
     queryFn: async () => {
       const res = await fetch(`/api/admin/analytics/funnel?days=${days}`);
@@ -62,53 +131,83 @@ function FunnelCard({ days }: { days: string }) {
     },
   });
 
-  const maxCount = data?.funnel?.reduce((m: number, s: any) => Math.max(m, s.count), 0) || 1;
+  const numberedStages = data?.funnel?.filter(s => s.count !== null) ?? [];
+  const maxCount = numberedStages.reduce((m, s) => Math.max(m, s.count ?? 0), 1) || 1;
+
+  const stageColors: string[] = ["text-sky-400", "text-blue-400", "text-purple-400", "text-amber-400", "text-emerald-500"];
+  const barColors: string[] = ["bg-sky-500/30", "bg-blue-500/30", "bg-purple-500/30", "bg-amber-500/30", "bg-emerald-500/30"];
 
   return (
     <Card className="bg-card border-border" data-testid="card-funnel">
       <CardHeader>
         <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
           <Target size={16} className="text-emerald-500" /> Conversion Funnel
+          <span className="ml-auto text-[10px] text-muted-foreground font-normal normal-case tracking-normal">Last {days} days</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+            {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-14 w-full" />)}
           </div>
-        ) : !data?.funnel?.some((s: any) => s.count > 0) ? (
-          <EmptyState message="No funnel data yet — start driving traffic to your landing page." />
+        ) : !data?.funnel ? (
+          <EmptyState message="No funnel data yet." />
         ) : (
           <div className="space-y-3">
-            {data.funnel.map((stage: any, i: number) => {
-              const pct = maxCount > 0 ? (stage.count / maxCount) * 100 : 0;
-              const stageColors = ["text-blue-400", "text-purple-400", "text-amber-400", "text-emerald-500"];
-              const barColors = ["bg-blue-500/30", "bg-purple-500/30", "bg-amber-500/30", "bg-emerald-500/30"];
+            {data.funnel.map((stage, i) => {
+              const isExternal = stage.count === null;
+              const pct = isExternal ? 0 : ((stage.count ?? 0) / maxCount) * 100;
+
               return (
-                <div key={stage.stage} data-testid={`funnel-stage-${stage.stage.toLowerCase()}`}>
+                <div key={stage.stage} data-testid={`funnel-stage-${stage.stage.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className={cn("text-[10px] font-black uppercase tracking-widest w-20", stageColors[i])}>
+                      <span className={cn("text-[10px] font-black uppercase tracking-widest w-24", stageColors[i])}>
                         {stage.stage}
                       </span>
-                      <span className="text-lg font-black text-foreground">{stage.count.toLocaleString()}</span>
+                      {isExternal ? (
+                        <a
+                          href="https://analytics.google.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[10px] text-sky-400 hover:text-sky-300 transition-colors font-bold"
+                        >
+                          <ExternalLink size={10} /> GA
+                        </a>
+                      ) : (
+                        <span className="text-lg font-black text-foreground">
+                          {(stage.count ?? 0).toLocaleString()}
+                        </span>
+                      )}
                     </div>
-                    {stage.dropPct !== null && stage.dropPct > 0 && (
-                      <Badge variant="outline" className="text-[9px] border-rose-500/30 text-rose-400 font-bold">
-                        <ArrowDown size={8} className="mr-1" /> {stage.dropPct}% drop
-                      </Badge>
-                    )}
-                    {stage.dropPct === 0 && i > 0 && (
-                      <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-400 font-bold">
-                        100% pass
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {!isExternal && stage.dropPct !== null && stage.dropPct > 0 && (
+                        <Badge variant="outline" className="text-[9px] border-rose-500/30 text-rose-400 font-bold">
+                          <ArrowDown size={8} className="mr-0.5" /> {stage.dropPct}%
+                        </Badge>
+                      )}
+                      {!isExternal && stage.dropPct === 0 && i > 0 && (
+                        <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-400 font-bold">
+                          100% pass
+                        </Badge>
+                      )}
+                      {isExternal && stage.externalNote && (
+                        <span className="text-[10px] text-muted-foreground italic">{stage.externalNote}</span>
+                      )}
+                    </div>
                   </div>
                   <div className="h-3 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={cn("h-full rounded-full transition-all", barColors[i])}
-                      style={{ width: `${pct}%` }}
-                    />
+                    {!isExternal && (
+                      <div
+                        className={cn("h-full rounded-full transition-all", barColors[i])}
+                        style={{ width: `${pct}%` }}
+                      />
+                    )}
+                    {isExternal && (
+                      <div className="h-full rounded-full bg-sky-500/15 w-full flex items-center pl-2">
+                        <span className="text-[9px] text-sky-400/60 font-mono">external</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -120,8 +219,10 @@ function FunnelCard({ days }: { days: string }) {
   );
 }
 
+// ── Daily trend card ──────────────────────────────────────────────────────────
+
 function DailyTrendCard({ days }: { days: string }) {
-  const { data, isLoading } = useQuery<any>({
+  const { data, isLoading } = useQuery<DailyTrendData>({
     queryKey: ["/api/admin/analytics/daily-trend", days],
     queryFn: async () => {
       const res = await fetch(`/api/admin/analytics/daily-trend?days=${days}`);
@@ -130,10 +231,10 @@ function DailyTrendCard({ days }: { days: string }) {
     },
   });
 
-  const trend = data?.trend || [];
-  const hasData = trend.some((d: any) => d.signups > 0 || d.leads > 0 || d.paid > 0);
+  const trend = data?.trend ?? [];
+  const hasData = trend.some(d => d.signups > 0 || d.leads > 0 || d.paid > 0);
 
-  const formatted = trend.map((d: any) => ({
+  const formatted = trend.map(d => ({
     ...d,
     label: format(new Date(d.date + "T12:00:00"), "MMM d"),
   }));
@@ -143,13 +244,14 @@ function DailyTrendCard({ days }: { days: string }) {
       <CardHeader>
         <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
           <TrendingUp size={16} className="text-emerald-500" /> Daily Trend
+          <span className="ml-auto text-[10px] text-muted-foreground font-normal normal-case tracking-normal">Last {days} days</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <Skeleton className="h-48 w-full" />
         ) : !hasData ? (
-          <EmptyState message="No daily data yet — traffic and signups will appear here once they start coming in." />
+          <EmptyState message="No daily data yet — signups and leads will appear here once traffic starts coming in." />
         ) : (
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={formatted} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -186,10 +288,12 @@ function DailyTrendCard({ days }: { days: string }) {
   );
 }
 
+// ── Sources card ──────────────────────────────────────────────────────────────
+
 function SourcesCard({ days }: { days: string }) {
   const [sortBy, setSortBy] = useState<"signups" | "leads" | "paid">("signups");
 
-  const { data, isLoading } = useQuery<any>({
+  const { data, isLoading } = useQuery<SourcesData>({
     queryKey: ["/api/admin/analytics/sources", days],
     queryFn: async () => {
       const res = await fetch(`/api/admin/analytics/sources?days=${days}`);
@@ -198,7 +302,9 @@ function SourcesCard({ days }: { days: string }) {
     },
   });
 
-  const sources: any[] = [...(data?.sources || [])].sort((a, b) => b[sortBy] - a[sortBy]);
+  const sources = [...(data?.sources ?? [])].sort((a, b) => b[sortBy] - a[sortBy]);
+  const bestConvRate = sources.reduce((m, s) => Math.max(m, s.convRate), 0);
+  const worstConvRate = sources.length > 1 ? sources.reduce((m, s) => Math.min(m, s.convRate), Infinity) : -1;
 
   return (
     <Card className="bg-card border-border" data-testid="card-sources">
@@ -206,7 +312,7 @@ function SourcesCard({ days }: { days: string }) {
         <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
           <Zap size={16} className="text-emerald-500" /> Traffic Sources
         </CardTitle>
-        <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+        <Select value={sortBy} onValueChange={(v: "signups" | "leads" | "paid") => setSortBy(v)}>
           <SelectTrigger className="h-7 w-28 text-xs" data-testid="select-sort-sources">
             <SelectValue />
           </SelectTrigger>
@@ -238,28 +344,46 @@ function SourcesCard({ days }: { days: string }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sources.map((s: any, i) => (
-                  <TableRow key={`${s.source}-${s.campaign}-${i}`} className="border-border hover:bg-muted/30"
-                    data-testid={`row-source-${s.source}`}>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-emerald-500/30 text-emerald-400">
-                        {s.source}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs font-mono">{s.campaign || "—"}</TableCell>
-                    <TableCell className="text-right font-bold text-foreground text-sm">{s.leads}</TableCell>
-                    <TableCell className="text-right font-bold text-foreground text-sm">{s.signups}</TableCell>
-                    <TableCell className="text-right font-bold text-amber-400 text-sm">{s.paid}</TableCell>
-                    <TableCell className="text-right">
-                      <span className={cn(
-                        "text-xs font-black",
-                        s.convRate >= 10 ? "text-emerald-500" : s.convRate >= 3 ? "text-amber-400" : "text-muted-foreground"
-                      )}>
-                        {s.convRate}%
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {sources.map((s, i) => {
+                  const isBest = s.convRate === bestConvRate && bestConvRate > 0 && sources.length > 1;
+                  const isWorst = s.convRate === worstConvRate && worstConvRate >= 0 && sources.length > 1 && worstConvRate !== bestConvRate;
+                  return (
+                    <TableRow
+                      key={`${s.source}-${s.campaign}-${i}`}
+                      className={cn(
+                        "border-border",
+                        isBest ? "bg-emerald-500/5 hover:bg-emerald-500/10" : "hover:bg-muted/30"
+                      )}
+                      data-testid={`row-source-${s.source}`}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-emerald-500/30 text-emerald-400">
+                            {s.source}
+                          </Badge>
+                          {isBest && (
+                            <Badge className="text-[8px] bg-emerald-500/20 text-emerald-400 border-0 font-black">BEST</Badge>
+                          )}
+                          {isWorst && (
+                            <Badge className="text-[8px] bg-rose-500/10 text-rose-400 border-0 font-black">LOW</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs font-mono">{s.campaign || "—"}</TableCell>
+                      <TableCell className="text-right font-bold text-foreground text-sm">{s.leads}</TableCell>
+                      <TableCell className="text-right font-bold text-foreground text-sm">{s.signups}</TableCell>
+                      <TableCell className="text-right font-bold text-amber-400 text-sm">{s.paid}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={cn(
+                          "text-xs font-black",
+                          isBest ? "text-emerald-500" : isWorst ? "text-rose-400" : s.convRate >= 3 ? "text-amber-400" : "text-muted-foreground"
+                        )}>
+                          {s.convRate}%
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -269,33 +393,21 @@ function SourcesCard({ days }: { days: string }) {
   );
 }
 
-function LeadMagnetsCard() {
-  const { data, isLoading } = useQuery<any>({
-    queryKey: ["/api/admin/analytics/lead-magnets"],
+// ── Lead magnets card ─────────────────────────────────────────────────────────
+
+function LeadMagnetsCard({ days }: { days: string }) {
+  const { data, isLoading } = useQuery<LeadMagnetsData>({
+    queryKey: ["/api/admin/analytics/lead-magnets", days],
     queryFn: async () => {
-      const res = await fetch("/api/admin/analytics/lead-magnets");
+      const res = await fetch(`/api/admin/analytics/lead-magnets?days=${days}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
   });
 
-  const magnets = [
-    {
-      icon: FileDown,
-      label: "Discipline Checklist",
-      key: "checklist",
-      color: "text-blue-400",
-      bg: "bg-blue-500/10",
-      data: data?.checklist,
-    },
-    {
-      icon: Calculator,
-      label: "Risk Calculator",
-      key: "calculator",
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
-      data: data?.calculator,
-    },
+  const magnets: { icon: React.ElementType; label: string; key: "checklist" | "calculator"; color: string; bg: string }[] = [
+    { icon: FileDown, label: "Discipline Checklist", key: "checklist", color: "text-blue-400", bg: "bg-blue-500/10" },
+    { icon: Calculator, label: "Risk Calculator", key: "calculator", color: "text-purple-400", bg: "bg-purple-500/10" },
   ];
 
   return (
@@ -303,48 +415,58 @@ function LeadMagnetsCard() {
       <CardHeader>
         <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
           <FileDown size={16} className="text-emerald-500" /> Lead Magnet Performance
+          <span className="ml-auto text-[10px] text-muted-foreground font-normal normal-case tracking-normal">Last {days} days</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
           </div>
-        ) : !data?.checklist && !data?.calculator ? (
+        ) : !data ? (
           <EmptyState message="No lead magnet submissions yet." />
         ) : (
           <div className="space-y-4">
-            {magnets.map(({ icon: Icon, label, key, color, bg, data: d }) => (
-              <div key={key} className="p-4 bg-muted/30 rounded-lg border border-border" data-testid={`magnet-${key}`}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={cn("h-8 w-8 rounded-md flex items-center justify-center", bg)}>
-                    <Icon size={16} className={color} />
+            {magnets.map(({ icon: Icon, label, key, color, bg }) => {
+              const d = data[key];
+              return (
+                <div key={key} className="p-4 bg-muted/30 rounded-lg border border-border" data-testid={`magnet-${key}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={cn("h-8 w-8 rounded-md flex items-center justify-center", bg)}>
+                      <Icon size={16} className={color} />
+                    </div>
+                    <span className="font-bold text-sm text-foreground">{label}</span>
                   </div>
-                  <span className="font-bold text-sm text-foreground">{label}</span>
-                </div>
-                {!d || d.total === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">No submissions yet.</p>
-                ) : (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center">
-                      <div className="text-xl font-black text-foreground">{d.total}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Downloads</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-black text-emerald-500">{d.converted}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Registered</div>
-                    </div>
-                    <div className="text-center">
-                      <div className={cn("text-xl font-black", d.convRate >= 10 ? "text-emerald-500" : "text-amber-400")}>
-                        {d.convRate}%
+                  {!d || d.total === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">No submissions in this period.</p>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="text-center">
+                        <div className="text-xl font-black text-foreground">{d.total}</div>
+                        <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Downloads</div>
                       </div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Conv. Rate</div>
+                      <div className="text-center">
+                        <div className="text-xl font-black text-sky-400">{d.registered}</div>
+                        <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Registered</div>
+                        <div className="text-[9px] text-sky-400/60">{d.regRate}%</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-black text-emerald-500">{d.paid}</div>
+                        <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Paid</div>
+                        <div className="text-[9px] text-emerald-500/60">{d.paidRate}%</div>
+                      </div>
+                      <div className="text-center">
+                        <div className={cn("text-xl font-black", d.paidRate >= 5 ? "text-emerald-500" : "text-amber-400")}>
+                          {d.paidRate}%
+                        </div>
+                        <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Paid Rate</div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>
@@ -352,11 +474,13 @@ function LeadMagnetsCard() {
   );
 }
 
-function SubscriptionsCard() {
-  const { data, isLoading } = useQuery<any>({
-    queryKey: ["/api/admin/analytics/subscriptions"],
+// ── Subscriptions card ────────────────────────────────────────────────────────
+
+function SubscriptionsCard({ days }: { days: string }) {
+  const { data, isLoading } = useQuery<SubscriptionsData>({
+    queryKey: ["/api/admin/analytics/subscriptions", days],
     queryFn: async () => {
-      const res = await fetch("/api/admin/analytics/subscriptions");
+      const res = await fetch(`/api/admin/analytics/subscriptions?days=${days}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -367,6 +491,7 @@ function SubscriptionsCard() {
       <CardHeader>
         <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
           <DollarSign size={16} className="text-emerald-500" /> Subscription Metrics
+          <span className="ml-auto text-[10px] text-muted-foreground font-normal normal-case tracking-normal">Last {days} days</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -382,18 +507,28 @@ function SubscriptionsCard() {
               <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-pro-total">
                 <div className="text-2xl font-black text-emerald-500">{data.pro?.total ?? 0}</div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Pro Users</div>
+                <div className="text-[10px] text-muted-foreground">+{data.pro?.newThisPeriod ?? 0} this period</div>
               </div>
               <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-elite-total">
                 <div className="text-2xl font-black text-amber-400">{data.elite?.total ?? 0}</div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Elite Users</div>
+                <div className="text-[10px] text-muted-foreground">+{data.elite?.newThisPeriod ?? 0} this period</div>
               </div>
-              <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-paid-week">
-                <div className="text-2xl font-black text-foreground">{data.newPaidThisWeek ?? 0}</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">New Paid (7d)</div>
+              <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-new-paid">
+                <div className="text-2xl font-black text-foreground">{data.newPaidThisPeriod ?? 0}</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">New Paid ({days}d)</div>
               </div>
-              <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-paid-month">
-                <div className="text-2xl font-black text-foreground">{data.newPaidThisMonth ?? 0}</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">New Paid (30d)</div>
+              <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-churned">
+                <div className={cn("text-2xl font-black", (data.churnedThisPeriod ?? 0) > 0 ? "text-rose-400" : "text-foreground")}>
+                  {data.churnedThisPeriod ?? 0}
+                </div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Churned ({days}d)</div>
+                {(data.churnedThisPeriod ?? 0) > 0 && (
+                  <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                    <TrendingDown size={10} className="text-rose-400" />
+                    <span className="text-[9px] text-rose-400">Review retention</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-lg text-center" data-testid="stat-mrr">
@@ -408,10 +543,12 @@ function SubscriptionsCard() {
   );
 }
 
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function GrowthAnalytics() {
   const [days, setDays] = useState<DateRange>("30");
 
-  const { data: funnelData } = useQuery<any>({
+  const { data: funnelData } = useQuery<FunnelData>({
     queryKey: ["/api/admin/analytics/funnel", days],
     queryFn: async () => {
       const res = await fetch(`/api/admin/analytics/funnel?days=${days}`);
@@ -420,19 +557,19 @@ export default function GrowthAnalytics() {
     },
   });
 
-  const { data: subsData } = useQuery<any>({
-    queryKey: ["/api/admin/analytics/subscriptions"],
+  const { data: subsData } = useQuery<SubscriptionsData>({
+    queryKey: ["/api/admin/analytics/subscriptions", days],
     queryFn: async () => {
-      const res = await fetch("/api/admin/analytics/subscriptions");
+      const res = await fetch(`/api/admin/analytics/subscriptions?days=${days}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
   });
 
-  const totalLeads = funnelData?.funnel?.[0]?.count ?? 0;
-  const totalSignups = funnelData?.funnel?.[1]?.count ?? 0;
-  const overallConv = totalSignups > 0 && subsData?.totalPaid > 0
-    ? ((subsData.totalPaid / totalSignups) * 100).toFixed(1)
+  const totalLeads = funnelData?.funnel?.find(s => s.stage === "Leads")?.count ?? 0;
+  const totalSignups = funnelData?.funnel?.find(s => s.stage === "Signups")?.count ?? 0;
+  const overallConv = (totalSignups ?? 0) > 0 && (subsData?.totalPaid ?? 0) > 0
+    ? (((subsData?.totalPaid ?? 0) / (totalSignups ?? 1)) * 100).toFixed(1)
     : "0";
 
   return (
@@ -446,31 +583,29 @@ export default function GrowthAnalytics() {
             Funnel · Sources · Signups · Revenue
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={days} onValueChange={(v: DateRange) => setDays(v)}>
-            <SelectTrigger className="h-9 w-32 text-xs" data-testid="select-date-range">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={days} onValueChange={(v: DateRange) => setDays(v)}>
+          <SelectTrigger className="h-9 w-36 text-xs" data-testid="select-date-range">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7">Last 7 days</SelectItem>
+            <SelectItem value="30">Last 30 days</SelectItem>
+            <SelectItem value="90">Last 90 days</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Top KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label={`Leads (${days}d)`}
-          value={totalLeads}
+          value={totalLeads ?? 0}
           icon={Users}
           color="text-blue-400"
         />
         <StatCard
           label={`Signups (${days}d)`}
-          value={totalSignups}
+          value={totalSignups ?? 0}
           icon={Users}
           color="text-purple-400"
         />
@@ -501,8 +636,8 @@ export default function GrowthAnalytics() {
 
       {/* Lead Magnets + Subscriptions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LeadMagnetsCard />
-        <SubscriptionsCard />
+        <LeadMagnetsCard days={days} />
+        <SubscriptionsCard days={days} />
       </div>
     </div>
   );
