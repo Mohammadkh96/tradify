@@ -573,8 +573,10 @@ export default function GrowthAnalytics() {
 
   const totalLeads = funnelData?.funnel?.find(s => s.stage === "Leads")?.count ?? 0;
   const totalSignups = funnelData?.funnel?.find(s => s.stage === "Signups")?.count ?? 0;
-  const overallConv = (totalSignups ?? 0) > 0 && (subsData?.totalPaid ?? 0) > 0
-    ? (((subsData?.totalPaid ?? 0) / (totalSignups ?? 1)) * 100).toFixed(1)
+  // Use funnel's date-range-scoped paid count (via updated_at) so numerator and denominator match the same window
+  const periodPaid = funnelData?.funnel?.find(s => s.stage === "Paid")?.count ?? 0;
+  const overallConv = (totalSignups ?? 0) > 0
+    ? (((periodPaid ?? 0) / (totalSignups === 0 ? 1 : totalSignups)) * 100).toFixed(1)
     : "0";
 
   return (

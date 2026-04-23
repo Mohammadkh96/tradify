@@ -4219,7 +4219,13 @@ End with: "Review your charts for current market structure."`;
         dayMap[d].paid = parseInt(r.count);
       }
 
-      const trend = Object.values(dayMap).sort((a, b) => a.date.localeCompare(b.date));
+      // Zero-fill every calendar day in the selected range so the chart has continuous coverage
+      const allDates: string[] = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        allDates.push(d.toISOString().slice(0, 10));
+      }
+      const trend = allDates.map(date => dayMap[date] ?? { date, signups: 0, leads: 0, paid: 0 });
       res.json({ days, trend });
     } catch (error) {
       console.error("Analytics daily trend error:", error);
