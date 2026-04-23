@@ -73,13 +73,12 @@ interface LeadMagnetsData {
 }
 
 interface SubscriptionsData {
-  days: number;
-  pro: { total: number; newThisPeriod: number; newThisWeek: number };
-  elite: { total: number; newThisPeriod: number; newThisWeek: number };
+  pro: { total: number; newThisWeek: number; newThisMonth: number };
+  elite: { total: number; newThisWeek: number; newThisMonth: number };
   totalPaid: number;
-  newPaidThisPeriod: number;
   newPaidThisWeek: number;
-  churnedThisPeriod: number;
+  newPaidThisMonth: number;
+  churnedThisMonth: number;
   mrrEstimate: number;
 }
 
@@ -475,12 +474,14 @@ function LeadMagnetsCard({ days }: { days: string }) {
 }
 
 // ── Subscriptions card ────────────────────────────────────────────────────────
+// Uses fixed 7-day and 30-day windows — not date-range-selector driven —
+// so "New Paid This Week", "New Paid This Month", and "Churned This Month" are stable business metrics.
 
-function SubscriptionsCard({ days }: { days: string }) {
+function SubscriptionsCard() {
   const { data, isLoading } = useQuery<SubscriptionsData>({
-    queryKey: ["/api/admin/analytics/subscriptions", days],
+    queryKey: ["/api/admin/analytics/subscriptions"],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/analytics/subscriptions?days=${days}`);
+      const res = await fetch(`/api/admin/analytics/subscriptions`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -491,7 +492,7 @@ function SubscriptionsCard({ days }: { days: string }) {
       <CardHeader>
         <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
           <DollarSign size={16} className="text-emerald-500" /> Subscription Metrics
-          <span className="ml-auto text-[10px] text-muted-foreground font-normal normal-case tracking-normal">Last {days} days</span>
+          <span className="ml-auto text-[10px] text-muted-foreground font-normal normal-case tracking-normal">Fixed windows</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -507,23 +508,27 @@ function SubscriptionsCard({ days }: { days: string }) {
               <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-pro-total">
                 <div className="text-2xl font-black text-emerald-500">{data.pro?.total ?? 0}</div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Pro Users</div>
-                <div className="text-[10px] text-muted-foreground">+{data.pro?.newThisPeriod ?? 0} this period</div>
+                <div className="text-[10px] text-muted-foreground">+{data.pro?.newThisWeek ?? 0} this week</div>
               </div>
               <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-elite-total">
                 <div className="text-2xl font-black text-amber-400">{data.elite?.total ?? 0}</div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Elite Users</div>
-                <div className="text-[10px] text-muted-foreground">+{data.elite?.newThisPeriod ?? 0} this period</div>
+                <div className="text-[10px] text-muted-foreground">+{data.elite?.newThisWeek ?? 0} this week</div>
               </div>
-              <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-new-paid">
-                <div className="text-2xl font-black text-foreground">{data.newPaidThisPeriod ?? 0}</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">New Paid ({days}d)</div>
+              <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-new-paid-week">
+                <div className="text-2xl font-black text-foreground">{data.newPaidThisWeek ?? 0}</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">New Paid (7d)</div>
               </div>
-              <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-churned">
-                <div className={cn("text-2xl font-black", (data.churnedThisPeriod ?? 0) > 0 ? "text-rose-400" : "text-foreground")}>
-                  {data.churnedThisPeriod ?? 0}
+              <div className="p-3 bg-muted rounded-md text-center" data-testid="stat-new-paid-month">
+                <div className="text-2xl font-black text-foreground">{data.newPaidThisMonth ?? 0}</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">New Paid (30d)</div>
+              </div>
+              <div className="p-3 bg-muted rounded-md text-center col-span-2" data-testid="stat-churned">
+                <div className={cn("text-2xl font-black", (data.churnedThisMonth ?? 0) > 0 ? "text-rose-400" : "text-foreground")}>
+                  {data.churnedThisMonth ?? 0}
                 </div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Churned ({days}d)</div>
-                {(data.churnedThisPeriod ?? 0) > 0 && (
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Churned This Month</div>
+                {(data.churnedThisMonth ?? 0) > 0 && (
                   <div className="flex items-center justify-center gap-0.5 mt-0.5">
                     <TrendingDown size={10} className="text-rose-400" />
                     <span className="text-[9px] text-rose-400">Review retention</span>
@@ -558,9 +563,9 @@ export default function GrowthAnalytics() {
   });
 
   const { data: subsData } = useQuery<SubscriptionsData>({
-    queryKey: ["/api/admin/analytics/subscriptions", days],
+    queryKey: ["/api/admin/analytics/subscriptions"],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/analytics/subscriptions?days=${days}`);
+      const res = await fetch(`/api/admin/analytics/subscriptions`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -637,7 +642,7 @@ export default function GrowthAnalytics() {
       {/* Lead Magnets + Subscriptions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <LeadMagnetsCard days={days} />
-        <SubscriptionsCard days={days} />
+        <SubscriptionsCard />
       </div>
     </div>
   );

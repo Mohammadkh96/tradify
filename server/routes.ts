@@ -4132,9 +4132,10 @@ End with: "Review your charts for current market structure."`;
              )`,
           [since]
         ),
+        // Use updated_at for paid stage — approximates actual conversion/upgrade time
         pool.query(
           `SELECT COUNT(*) AS count FROM user_role
-           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE') AND created_at >= $1`,
+           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE') AND updated_at >= $1`,
           [since]
         ),
         pool.query(
@@ -4173,45 +4174,47 @@ End with: "Review your charts for current market structure."`;
     try {
       const days = parseInt(req.query.days as string) || 30;
 
+      // Cast DATE columns to text so node-postgres returns plain strings (avoids .toISOString() issues).
+      // Use updated_at for paid trend — approximates when a user actually converted/upgraded.
       const [signupsRes, leadsRes, paidRes] = await Promise.all([
         pool.query(
-          `SELECT DATE(created_at) AS day, COUNT(*) AS count
+          `SELECT DATE(created_at)::text AS day, COUNT(*) AS count
            FROM user_role
            WHERE role = 'TRADER' AND created_at >= NOW() - INTERVAL '1 day' * $1
            GROUP BY DATE(created_at) ORDER BY DATE(created_at)`,
           [days]
         ),
         pool.query(
-          `SELECT DATE(created_at) AS day, COUNT(*) AS count
+          `SELECT DATE(created_at)::text AS day, COUNT(*) AS count
            FROM leads
            WHERE created_at >= NOW() - INTERVAL '1 day' * $1
            GROUP BY DATE(created_at) ORDER BY DATE(created_at)`,
           [days]
         ),
         pool.query(
-          `SELECT DATE(created_at) AS day, COUNT(*) AS count
+          `SELECT DATE(updated_at)::text AS day, COUNT(*) AS count
            FROM user_role
            WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
-             AND created_at >= NOW() - INTERVAL '1 day' * $1
-           GROUP BY DATE(created_at) ORDER BY DATE(created_at)`,
+             AND updated_at >= NOW() - INTERVAL '1 day' * $1
+           GROUP BY DATE(updated_at) ORDER BY DATE(updated_at)`,
           [days]
         ),
       ]);
 
-      // Merge into a single array keyed by date
+      // Merge into a single array keyed by date (day is already a string from the ::text cast)
       const dayMap: Record<string, { date: string; signups: number; leads: number; paid: number }> = {};
       for (const r of signupsRes.rows) {
-        const d = r.day.toISOString().slice(0, 10);
+        const d = String(r.day).slice(0, 10);
         if (!dayMap[d]) dayMap[d] = { date: d, signups: 0, leads: 0, paid: 0 };
         dayMap[d].signups = parseInt(r.count);
       }
       for (const r of leadsRes.rows) {
-        const d = r.day.toISOString().slice(0, 10);
+        const d = String(r.day).slice(0, 10);
         if (!dayMap[d]) dayMap[d] = { date: d, signups: 0, leads: 0, paid: 0 };
         dayMap[d].leads = parseInt(r.count);
       }
       for (const r of paidRes.rows) {
-        const d = r.day.toISOString().slice(0, 10);
+        const d = String(r.day).slice(0, 10);
         if (!dayMap[d]) dayMap[d] = { date: d, signups: 0, leads: 0, paid: 0 };
         dayMap[d].paid = parseInt(r.count);
       }
@@ -4346,41 +4349,44 @@ End with: "Review your charts for current market structure."`;
     }
   });
 
-  // Subscription metrics (accepts ?days= for new-paid scoping)
-  app.get("/api/admin/analytics/subscriptions", requireAdmin, async (req, res) => {
+  // Subscription metrics — returns fixed weekly/monthly windows (not date-range selector driven)
+  // These are explicit business metrics: new paid this week, new paid this month, churned this month.
+  // Use updated_at as conversion timestamp proxy (best we have without a subscription_events table).
+  app.get("/api/admin/analytics/subscriptions", requireAdmin, async (_req, res) => {
     try {
-      const days = parseInt(req.query.days as string) || 30;
-      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-      const [totalsRes, newPeriodRes, newWeekRes, churnedRes] = await Promise.all([
+      const [totalsRes, newWeekRes, newMonthRes, churnedMonthRes] = await Promise.all([
         pool.query(
           `SELECT subscription_tier, COUNT(*) AS count
            FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
            GROUP BY subscription_tier`
         ),
+        // new paid this week — use updated_at as proxy for conversion time
         pool.query(
           `SELECT subscription_tier, COUNT(*) AS count
            FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
-             AND created_at >= $1
-           GROUP BY subscription_tier`,
-          [since]
-        ),
-        pool.query(
-          `SELECT subscription_tier, COUNT(*) AS count
-           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
-             AND created_at >= $1
+             AND updated_at >= $1
            GROUP BY subscription_tier`,
           [weekAgo]
         ),
-        // Churned: formerly paid users (have stripe or paypal subscription ID) now on FREE tier
+        // new paid this month
+        pool.query(
+          `SELECT subscription_tier, COUNT(*) AS count
+           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+             AND updated_at >= $1
+           GROUP BY subscription_tier`,
+          [monthAgo]
+        ),
+        // churned this month: formerly paid (have payment provider ID) now on FREE tier, downgraded within 30d
         pool.query(
           `SELECT COUNT(*) AS count FROM user_role
            WHERE role = 'TRADER'
              AND subscription_tier = 'FREE'
              AND (stripe_subscription_id IS NOT NULL OR paypal_subscription_id IS NOT NULL)
              AND updated_at >= $1`,
-          [since]
+          [monthAgo]
         ),
       ]);
 
@@ -4389,24 +4395,23 @@ End with: "Review your charts for current market structure."`;
 
       const proTotal = getPlanCount(totalsRes.rows, "PRO");
       const eliteTotal = getPlanCount(totalsRes.rows, "ELITE");
-      const proNewPeriod = getPlanCount(newPeriodRes.rows, "PRO");
-      const eliteNewPeriod = getPlanCount(newPeriodRes.rows, "ELITE");
       const proNewWeek = getPlanCount(newWeekRes.rows, "PRO");
       const eliteNewWeek = getPlanCount(newWeekRes.rows, "ELITE");
-      const churned = parseInt(churnedRes.rows[0].count);
+      const proNewMonth = getPlanCount(newMonthRes.rows, "PRO");
+      const eliteNewMonth = getPlanCount(newMonthRes.rows, "ELITE");
+      const churnedMonth = parseInt(churnedMonthRes.rows[0].count);
 
       const PRO_PRICE = 19;
       const ELITE_PRICE = 39;
       const mrrEstimate = proTotal * PRO_PRICE + eliteTotal * ELITE_PRICE;
 
       res.json({
-        days,
-        pro: { total: proTotal, newThisPeriod: proNewPeriod, newThisWeek: proNewWeek },
-        elite: { total: eliteTotal, newThisPeriod: eliteNewPeriod, newThisWeek: eliteNewWeek },
+        pro: { total: proTotal, newThisWeek: proNewWeek, newThisMonth: proNewMonth },
+        elite: { total: eliteTotal, newThisWeek: eliteNewWeek, newThisMonth: eliteNewMonth },
         totalPaid: proTotal + eliteTotal,
-        newPaidThisPeriod: proNewPeriod + eliteNewPeriod,
         newPaidThisWeek: proNewWeek + eliteNewWeek,
-        churnedThisPeriod: churned,
+        newPaidThisMonth: proNewMonth + eliteNewMonth,
+        churnedThisMonth: churnedMonth,
         mrrEstimate,
       });
     } catch (error) {
