@@ -2,8 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { ensureSchemaColumns } from "./db";
+import { ensureSchemaColumns, pool } from "./db";
 import { emailService } from "./emailService";
+import bcrypt from "bcryptjs";
 
 
 const app = express();
@@ -65,9 +66,39 @@ app.use((req, res, next) => {
 
 const isProd = process.env.NODE_ENV === "production" || process.env.APP_ENV === "production";
 
+// Seed the owner/admin account in production if it doesn't exist yet.
+// Reads ADMIN_EMAIL and ADMIN_PASSWORD from environment variables.
+async function ensureAdminAccount() {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) return;
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT user_id FROM user_role WHERE role = 'OWNER' LIMIT 1`
+    );
+    if (rows.length > 0) return; // owner already exists
+
+    const hashed = await bcrypt.hash(adminPassword, 10);
+    await pool.query(
+      `INSERT INTO user_role
+         (user_id, role, password, email_verified, subscription_tier, full_name, terms_accepted, risk_acknowledged, created_at, updated_at)
+       VALUES ($1, 'OWNER', $2, true, 'PRO', 'Admin', true, true, NOW(), NOW())
+       ON CONFLICT (user_id) DO NOTHING`,
+      [adminEmail.toLowerCase(), hashed]
+    );
+    log(`Admin account seeded for ${adminEmail}`, "seed");
+  } catch (err) {
+    log(`Admin seed failed: ${err}`, "seed");
+  }
+}
+
 async function initializeApp() {
   // Ensure database schema is up to date before starting
   await ensureSchemaColumns();
+
+  // Create owner account in production if none exists
+  await ensureAdminAccount();
   
   await registerRoutes(httpServer, app);
 
