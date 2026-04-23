@@ -30,6 +30,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import MarketingDashboard from "@/pages/admin/MarketingDashboard";
 import MarketingBrandSettings from "@/pages/admin/MarketingBrandSettings";
+import GrowthAnalytics from "@/pages/admin/GrowthAnalytics";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Terms from "@/pages/Terms";
@@ -527,6 +528,7 @@ function AppRoutes() {
       <Route path="/admin/marketing/content-library" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/marketing/brand-settings" element={<AdminRoute><MarketingBrandSettings /></AdminRoute>} />
       <Route path="/admin/marketing/funnel" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/analytics" element={<AdminRoute><GrowthAnalytics /></AdminRoute>} />
       
       {/* 404 */}
       <Route path="*" element={<NotFound />} />

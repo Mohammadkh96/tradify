@@ -4104,6 +4104,275 @@ End with: "Review your charts for current market structure."`;
     }
   });
 
+  // ── Growth Analytics endpoints ────────────────────────────────────────────
+
+  // Conversion funnel: leads → signups → activated → paid
+  app.get("/api/admin/analytics/funnel", requireAdmin, async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+      const [leadsRes, signupsRes, activatedRes, paidRes, totalPaidRes] = await Promise.all([
+        pool.query(
+          `SELECT COUNT(DISTINCT email) AS count FROM leads WHERE created_at >= $1`,
+          [since]
+        ),
+        pool.query(
+          `SELECT COUNT(*) AS count FROM user_role WHERE role = 'TRADER' AND created_at >= $1`,
+          [since]
+        ),
+        pool.query(
+          `SELECT COUNT(DISTINCT ur.user_id) AS count
+           FROM user_role ur
+           WHERE ur.role = 'TRADER' AND ur.created_at >= $1
+             AND (
+               EXISTS (SELECT 1 FROM mt5_data md WHERE md.user_id = ur.user_id)
+               OR EXISTS (SELECT 1 FROM mt5_history mh WHERE mh.user_id = ur.user_id)
+               OR EXISTS (SELECT 1 FROM trade_journal tj WHERE tj.user_id = ur.user_id)
+             )`,
+          [since]
+        ),
+        pool.query(
+          `SELECT COUNT(*) AS count FROM user_role
+           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE') AND created_at >= $1`,
+          [since]
+        ),
+        pool.query(
+          `SELECT COUNT(*) AS count FROM user_role
+           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')`
+        ),
+      ]);
+
+      const leads = parseInt(leadsRes.rows[0].count);
+      const signups = parseInt(signupsRes.rows[0].count);
+      const activated = parseInt(activatedRes.rows[0].count);
+      const paid = parseInt(paidRes.rows[0].count);
+      const totalPaid = parseInt(totalPaidRes.rows[0].count);
+
+      res.json({
+        days,
+        funnel: [
+          { stage: "Leads", count: leads, dropPct: null },
+          { stage: "Signups", count: signups, dropPct: leads > 0 ? +(((leads - signups) / leads) * 100).toFixed(1) : null },
+          { stage: "Activated", count: activated, dropPct: signups > 0 ? +(((signups - activated) / signups) * 100).toFixed(1) : null },
+          { stage: "Paid", count: paid, dropPct: activated > 0 ? +(((activated - paid) / activated) * 100).toFixed(1) : null },
+        ],
+        totalPaidAllTime: totalPaid,
+      });
+    } catch (error) {
+      console.error("Analytics funnel error:", error);
+      res.status(500).json({ message: "Failed to fetch funnel data" });
+    }
+  });
+
+  // Daily trend: signups + leads + paid conversions per day
+  app.get("/api/admin/analytics/daily-trend", requireAdmin, async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+
+      const [signupsRes, leadsRes, paidRes] = await Promise.all([
+        pool.query(
+          `SELECT DATE(created_at) AS day, COUNT(*) AS count
+           FROM user_role
+           WHERE role = 'TRADER' AND created_at >= NOW() - INTERVAL '1 day' * $1
+           GROUP BY DATE(created_at) ORDER BY DATE(created_at)`,
+          [days]
+        ),
+        pool.query(
+          `SELECT DATE(created_at) AS day, COUNT(*) AS count
+           FROM leads
+           WHERE created_at >= NOW() - INTERVAL '1 day' * $1
+           GROUP BY DATE(created_at) ORDER BY DATE(created_at)`,
+          [days]
+        ),
+        pool.query(
+          `SELECT DATE(created_at) AS day, COUNT(*) AS count
+           FROM user_role
+           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+             AND created_at >= NOW() - INTERVAL '1 day' * $1
+           GROUP BY DATE(created_at) ORDER BY DATE(created_at)`,
+          [days]
+        ),
+      ]);
+
+      // Merge into a single array keyed by date
+      const dayMap: Record<string, { date: string; signups: number; leads: number; paid: number }> = {};
+      for (const r of signupsRes.rows) {
+        const d = r.day.toISOString().slice(0, 10);
+        if (!dayMap[d]) dayMap[d] = { date: d, signups: 0, leads: 0, paid: 0 };
+        dayMap[d].signups = parseInt(r.count);
+      }
+      for (const r of leadsRes.rows) {
+        const d = r.day.toISOString().slice(0, 10);
+        if (!dayMap[d]) dayMap[d] = { date: d, signups: 0, leads: 0, paid: 0 };
+        dayMap[d].leads = parseInt(r.count);
+      }
+      for (const r of paidRes.rows) {
+        const d = r.day.toISOString().slice(0, 10);
+        if (!dayMap[d]) dayMap[d] = { date: d, signups: 0, leads: 0, paid: 0 };
+        dayMap[d].paid = parseInt(r.count);
+      }
+
+      const trend = Object.values(dayMap).sort((a, b) => a.date.localeCompare(b.date));
+      res.json({ days, trend });
+    } catch (error) {
+      console.error("Analytics daily trend error:", error);
+      res.status(500).json({ message: "Failed to fetch trend data" });
+    }
+  });
+
+  // Traffic source breakdown: UTM source/campaign → leads, signups, paid
+  app.get("/api/admin/analytics/sources", requireAdmin, async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+      const [leadSources, signupSources] = await Promise.all([
+        pool.query(
+          `SELECT COALESCE(utm_source,'direct') AS source, COALESCE(utm_campaign,'') AS campaign, COUNT(*) AS leads
+           FROM leads WHERE created_at >= $1
+           GROUP BY COALESCE(utm_source,'direct'), COALESCE(utm_campaign,'')`,
+          [since]
+        ),
+        pool.query(
+          `SELECT COALESCE(utm_source,'direct') AS source, COALESCE(utm_campaign,'') AS campaign,
+                  COUNT(*) AS signups,
+                  SUM(CASE WHEN subscription_tier IN ('PRO','ELITE') THEN 1 ELSE 0 END) AS paid
+           FROM user_role WHERE role = 'TRADER' AND created_at >= $1
+           GROUP BY COALESCE(utm_source,'direct'), COALESCE(utm_campaign,'')`,
+          [since]
+        ),
+      ]);
+
+      // Merge by source+campaign key
+      const map: Record<string, { source: string; campaign: string; leads: number; signups: number; paid: number }> = {};
+      for (const r of leadSources.rows) {
+        const k = `${r.source}||${r.campaign}`;
+        if (!map[k]) map[k] = { source: r.source, campaign: r.campaign, leads: 0, signups: 0, paid: 0 };
+        map[k].leads = parseInt(r.leads);
+      }
+      for (const r of signupSources.rows) {
+        const k = `${r.source}||${r.campaign}`;
+        if (!map[k]) map[k] = { source: r.source, campaign: r.campaign, leads: 0, signups: 0, paid: 0 };
+        map[k].signups = parseInt(r.signups);
+        map[k].paid = parseInt(r.paid);
+      }
+
+      const sources = Object.values(map)
+        .map(s => ({
+          ...s,
+          convRate: s.signups > 0 ? +((s.paid / s.signups) * 100).toFixed(1) : 0,
+        }))
+        .sort((a, b) => b.signups - a.signups);
+
+      res.json({ days, sources });
+    } catch (error) {
+      console.error("Analytics sources error:", error);
+      res.status(500).json({ message: "Failed to fetch source data" });
+    }
+  });
+
+  // Lead magnet performance
+  app.get("/api/admin/analytics/lead-magnets", requireAdmin, async (_req, res) => {
+    try {
+      const [checklistRes, calcRes, checklistConvRes, calcConvRes] = await Promise.all([
+        pool.query(`SELECT COUNT(*) AS count FROM leads WHERE source = 'checklist'`),
+        pool.query(`SELECT COUNT(*) AS count FROM leads WHERE source = 'calculator'`),
+        pool.query(
+          `SELECT COUNT(DISTINCT l.email) AS count
+           FROM leads l
+           INNER JOIN user_role ur ON LOWER(ur.user_id) = LOWER(l.email)
+           WHERE l.source = 'checklist'`
+        ),
+        pool.query(
+          `SELECT COUNT(DISTINCT l.email) AS count
+           FROM leads l
+           INNER JOIN user_role ur ON LOWER(ur.user_id) = LOWER(l.email)
+           WHERE l.source = 'calculator'`
+        ),
+      ]);
+
+      const checklistTotal = parseInt(checklistRes.rows[0].count);
+      const calcTotal = parseInt(calcRes.rows[0].count);
+      const checklistConverted = parseInt(checklistConvRes.rows[0].count);
+      const calcConverted = parseInt(calcConvRes.rows[0].count);
+
+      res.json({
+        checklist: {
+          total: checklistTotal,
+          converted: checklistConverted,
+          convRate: checklistTotal > 0 ? +((checklistConverted / checklistTotal) * 100).toFixed(1) : 0,
+        },
+        calculator: {
+          total: calcTotal,
+          converted: calcConverted,
+          convRate: calcTotal > 0 ? +((calcConverted / calcTotal) * 100).toFixed(1) : 0,
+        },
+      });
+    } catch (error) {
+      console.error("Analytics lead magnets error:", error);
+      res.status(500).json({ message: "Failed to fetch lead magnet data" });
+    }
+  });
+
+  // Subscription metrics
+  app.get("/api/admin/analytics/subscriptions", requireAdmin, async (_req, res) => {
+    try {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      const [totalsRes, newWeekRes, newMonthRes] = await Promise.all([
+        pool.query(
+          `SELECT subscription_tier, COUNT(*) AS count
+           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+           GROUP BY subscription_tier`
+        ),
+        pool.query(
+          `SELECT subscription_tier, COUNT(*) AS count
+           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+             AND created_at >= $1
+           GROUP BY subscription_tier`,
+          [weekAgo]
+        ),
+        pool.query(
+          `SELECT subscription_tier, COUNT(*) AS count
+           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+             AND created_at >= $1
+           GROUP BY subscription_tier`,
+          [monthAgo]
+        ),
+      ]);
+
+      const getPlanCount = (rows: any[], tier: string) =>
+        parseInt(rows.find(r => r.subscription_tier === tier)?.count || "0");
+
+      const proTotal = getPlanCount(totalsRes.rows, "PRO");
+      const eliteTotal = getPlanCount(totalsRes.rows, "ELITE");
+      const proNewWeek = getPlanCount(newWeekRes.rows, "PRO");
+      const eliteNewWeek = getPlanCount(newWeekRes.rows, "ELITE");
+      const proNewMonth = getPlanCount(newMonthRes.rows, "PRO");
+      const eliteNewMonth = getPlanCount(newMonthRes.rows, "ELITE");
+
+      const PRO_PRICE = 19;
+      const ELITE_PRICE = 39;
+      const mrrEstimate = proTotal * PRO_PRICE + eliteTotal * ELITE_PRICE;
+
+      res.json({
+        pro: { total: proTotal, newThisWeek: proNewWeek, newThisMonth: proNewMonth },
+        elite: { total: eliteTotal, newThisWeek: eliteNewWeek, newThisMonth: eliteNewMonth },
+        totalPaid: proTotal + eliteTotal,
+        newPaidThisWeek: proNewWeek + eliteNewWeek,
+        newPaidThisMonth: proNewMonth + eliteNewMonth,
+        mrrEstimate,
+      });
+    } catch (error) {
+      console.error("Analytics subscriptions error:", error);
+      res.status(500).json({ message: "Failed to fetch subscription data" });
+    }
+  });
+
+  // ── End Growth Analytics ──────────────────────────────────────────────────
+
   // Get all early access signups for admin
   app.get("/api/admin/early-access", requireAdmin, async (req, res) => {
     try {
