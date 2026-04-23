@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradifyApp — Website Enhancement Roadmap</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0e1318;
+    --border: #1a2330;
+    --accent: #00e5a0;
+    --accent2: #ff6b35;
+    --accent3: #4d9fff;
+    --warn: #ffc23e;
+    --text: #e8edf2;
+    --muted: #6b7a8d;
+    --critical: #ff4560;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+  .header .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 8vw, 72px);
+    letter-spacing: 2px;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+  .header p {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* SCORE CARD */
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 48px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .score-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--critical), var(--warn), var(--accent));
+  }
+  .score-item { text-align: center; }
+  .score-item .score-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .score-item .score-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    line-height: 1;
+  }
+  .score-item .score-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .col-red { color: var(--critical); }
+  .col-orange { color: var(--accent2); }
+  .col-yellow { color: var(--warn); }
+  .col-green { color: var(--accent); }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* PHASE BLOCK */
+  .phase {
+    margin-bottom: 40px;
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .phase-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .badge-red { background: rgba(255,69,96,0.15); color: var(--critical); border: 1px solid rgba(255,69,96,0.3); }
+  .badge-orange { background: rgba(255,107,53,0.15); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+  .badge-yellow { background: rgba(255,194,62,0.15); color: var(--warn); border: 1px solid rgba(255,194,62,0.3); }
+  .badge-green { background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.25); }
+  .badge-blue { background: rgba(77,159,255,0.1); color: var(--accent3); border: 1px solid rgba(77,159,255,0.25); }
+
+  .phase-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--text);
+    flex: 1;
+  }
+  .phase-timeline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .phase-toggle {
+    font-size: 18px;
+    color: var(--muted);
+    transition: transform 0.3s;
+    flex-shrink: 0;
+  }
+  .phase-toggle.open { transform: rotate(180deg); }
+
+  .phase-body {
+    display: grid;
+    gap: 12px;
+    overflow: hidden;
+    transition: all 0.4s ease;
+  }
+  .phase-body.collapsed {
+    display: none;
+  }
+
+  /* STEP CARD */
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: start;
+    transition: border-color 0.2s;
+  }
+  .step:hover { border-color: rgba(0,229,160,0.2); }
+
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    padding-top: 2px;
+    min-width: 28px;
+  }
+  .step-content { min-width: 0; }
+  .step-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .step-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .step-desc code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(0,229,160,0.07);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .step-impact {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 70px;
+  }
+  .impact-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .impact-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  /* TAGS */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+  }
+  .tag-seo { background: rgba(77,159,255,0.1); color: var(--accent3); }
+  .tag-ux { background: rgba(255,107,53,0.1); color: var(--accent2); }
+  .tag-conv { background: rgba(0,229,160,0.1); color: var(--accent); }
+  .tag-tech { background: rgba(255,194,62,0.1); color: var(--warn); }
+  .tag-biz { background: rgba(255,69,96,0.1); color: var(--critical); }
+
+  /* CRITICAL ALERT */
+  .alert {
+    background: rgba(255,69,96,0.06);
+    border: 1px solid rgba(255,69,96,0.25);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 32px;
+    display: flex;
+    gap: 14px;
+    align-items: start;
+  }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .alert-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--critical);
+    margin-bottom: 4px;
+  }
+  .alert-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* FOOTER SUMMARY */
+  .summary {
+    background: linear-gradient(135deg, rgba(0,229,160,0.06), rgba(77,159,255,0.04));
+    border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 16px;
+    padding: 32px;
+    margin-top: 48px;
+    text-align: center;
+  }
+  .summary h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .summary p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 580px;
+    margin: 0 auto;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    background: var(--border);
+    border-radius: 100px;
+    height: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 1s ease;
+  }
+
+  @media (max-width: 600px) {
+    .score-card { grid-template-columns: 1fr 1fr; gap: 16px; }
+    .step { grid-template-columns: auto 1fr; }
+    .step-impact { display: none; }
+    .phase-timeline { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <span class="eyebrow">// TRADIFYAPP.COM — GROWTH AUDIT</span>
+    <h1>Website Enhancement Roadmap</h1>
+    <p>A prioritized, phase-by-phase plan to take TradifyApp from a discipline tool to a market-defining platform.</p>
+  </div>
+
+  <!-- CURRENT STATE SCORES -->
+  <div class="section-title">Current State Diagnosis</div>
+
+  <div class="alert">
+    <div class="alert-icon">🚨</div>
+    <div>
+      <div class="alert-title">CRITICAL: JavaScript-Only Rendering Detected</div>
+      <div class="alert-text">Google's crawler fetches your site and receives almost no readable content — just a title tag and a Facebook pixel. This means your features, value proposition, and CTAs are <strong style="color:#fff">invisible to search engines</strong>. This is your single highest-priority fix before any marketing spend.</div>
+    </div>
+  </div>
+
+  <div class="score-card">
+    <div class="score-item">
+      <span class="score-label">SEO Health</span>
+      <div class="score-val col-red">18<span style="font-size:16px">/100</span></div>
+      <div class="score-sub">JS rendering blocks crawl</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:18%; background:var(--critical);"></div></div>
+    </div>
+    <div class="score-item">
+      <span class="score-label">Conversion</span>
+      <div class="score-val col-orange">35<span style="font-size:16px">/100</span></div>
+      <div class="score-sub">CTA clarity & social proof</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:35%; background:var(--accent2);"></div></div>
+    </div>
+    <div class="score-item">
+      <span class="score-label">Positioning</span>
+      <div class="score-val col-yellow">60<span style="font-size:16px">/100</span></div>
+      <div class="score-sub">Good hook, weak depth</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:60%; background:var(--warn);"></div></div>
+    </div>
+    <div class="score-item">
+      <span class="score-label">B2B Readiness</span>
+      <div class="score-val col-red">5<span style="font-size:16px">/100</span></div>
+      <div class="score-sub">No enterprise layer</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:5%; background:var(--critical);"></div></div>
+    </div>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="phase">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-badge badge-red">PHASE 1</span>
+      <span class="phase-title">Critical Technical Fixes</span>
+      <span class="phase-timeline">Week 1–2</span>
+      <span class="phase-toggle open">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-title">Fix Server-Side Rendering (SSR) — MOST URGENT</div>
+          <div class="step-desc">Your site renders only in JavaScript. Google sees an empty page. You need SSR or Static Site Generation (SSG). If using React: migrate to <code>Next.js</code>. If on WordPress/Webflow, this may already be fixed. Every day this isn't fixed = zero organic growth from SEO.</div>
+          <div class="tags"><span class="tag tag-seo">SEO</span><span class="tag tag-tech">TECH</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-red">10x</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-title">Add Unique Meta Titles & Descriptions Per Page</div>
+          <div class="step-desc">Right now every page has the same generic meta. Each page needs a unique, keyword-rich title. Example — Pricing page: <code>"TradifyApp Pricing | Free & Pro Plans for Prop Traders"</code>. Features page: <code>"MT5 Auto-Sync & Live Drawdown Tracking | TradifyApp"</code>.</div>
+          <div class="tags"><span class="tag tag-seo">SEO</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-title">Submit XML Sitemap to Google Search Console</div>
+          <div class="step-desc">Verify ownership of <code>tradifyapp.com</code> in Google Search Console (if not done), submit your sitemap, and request indexing of all key pages: <code>/</code>, <code>/features</code>, <code>/pricing</code>, <code>/signup</code>, <code>/resources</code>. Monitor coverage errors weekly.</div>
+          <div class="tags"><span class="tag tag-seo">SEO</span><span class="tag tag-tech">TECH</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-title">Add OG Tags for Social Sharing</div>
+          <div class="step-desc">When anyone shares your link on Twitter/X, LinkedIn, or Discord, it should show a branded image card. Add <code>og:title</code>, <code>og:description</code>, <code>og:image</code> (1200×630px branded graphic), and <code>twitter:card</code> to your HTML head. Right now it likely shows a blank or broken preview.</div>
+          <div class="tags"><span class="tag tag-seo">SEO</span><span class="tag tag-ux">UX</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-yellow">Med</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <div class="step-title">Fix Page Load Speed</div>
+          <div class="step-desc">Run your site through <code>pagespeed.web.dev</code>. Common JS-heavy site issues: uncompressed images, no lazy loading, blocking scripts. Target: LCP under 2.5s, FID under 100ms. Google uses Core Web Vitals as a ranking signal and users bounce after 3 seconds.</div>
+          <div class="tags"><span class="tag tag-tech">TECH</span><span class="tag tag-seo">SEO</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-yellow">Med</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div class="phase">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-badge badge-orange">PHASE 2</span>
+      <span class="phase-title">Homepage Conversion Overhaul</span>
+      <span class="phase-timeline">Week 2–4</span>
+      <span class="phase-toggle open">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="step">
+        <div class="step-num">06</div>
+        <div class="step-content">
+          <div class="step-title">Rewrite the Hero Section — Lead with the Outcome, Not the Feature</div>
+          <div class="step-desc">Your current headline talks about what the app does. Change it to what the trader gets. Example: <strong style="color:#fff">"Stop Failing Prop Challenges. Start Trading with Rules That Actually Stick."</strong> — Then subtitle: "TradifyApp enforces your trading rules automatically. MT5 auto-sync. Live drawdown alerts. Revenge trading prevention." This is the highest-leverage copywriting change you can make.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span><span class="tag tag-ux">UX</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-red">High+</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">07</div>
+        <div class="step-content">
+          <div class="step-title">Add a Social Proof Bar Below the Hero</div>
+          <div class="step-desc">After your headline, before anything else, show: "Trusted by 2,400+ prop traders" (or your real number) + 3–5 star reviews with names/photos + logos of prop firms your users trade with (FTMO, MyFundedFX, Apex, etc.). If you don't have enough reviews yet — get 10 this week by emailing your free users. Social proof is the #1 trust signal on a SaaS landing page.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-red">High+</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">08</div>
+        <div class="step-content">
+          <div class="step-title">Add a Live Demo Video or Animated GIF in the Hero</div>
+          <div class="step-desc">The fastest way to explain a trading tool is to show it working. Add a 60–90 second screen recording of: (1) a rule being set, (2) a trade being blocked, (3) drawdown being tracked. Place this video next to or below your headline. Loom or Tella.tv are free recording tools. This single addition typically lifts trial signups by 25–40%.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span><span class="tag tag-ux">UX</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-red">High+</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">09</div>
+        <div class="step-content">
+          <div class="step-title">Build a "Pain-Driven" Feature Section</div>
+          <div class="step-desc">Don't just list features — pair each feature with the pain it removes. Structure: <strong style="color:#fff">"The Problem → The Solution"</strong>. Example: "You break your daily loss rule under pressure → TradifyApp locks your account automatically when the limit is hit." Do this for 4–5 core features. Pain-first framing converts 2–3x better than feature-first.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span><span class="tag tag-ux">UX</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">10</div>
+        <div class="step-content">
+          <div class="step-title">Add a "How It Works" Section (3 Steps, Max)</div>
+          <div class="step-desc">Visitors need to visualize using the product in 10 seconds. Three steps only: <strong style="color:#fff">(1) Connect your MT5</strong> → (2) Set your trading rules → (3) Trade with automatic enforcement. Use icons + a short sentence each. Put this between the features section and pricing. Eliminates the #1 objection: "I don't understand how it works."</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span><span class="tag tag-ux">UX</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">11</div>
+        <div class="step-content">
+          <div class="step-title">Redesign the Pricing Page with an Anchor Strategy</div>
+          <div class="step-desc">Use 3 tiers with the middle one "recommended": <strong style="color:#fff">Free → Pro (~$19/mo) → Power (~$39/mo)</strong>. Make Power feel like a deal vs. Pro. Add a feature comparison table. Most importantly — add the annual vs. monthly toggle (annual pricing creates commitment). And show a "Most Popular" badge on the middle tier. This framing alone can double Pro conversions.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span><span class="tag tag-biz">BIZ</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PHASE 3 -->
+  <div class="phase">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-badge badge-yellow">PHASE 3</span>
+      <span class="phase-title">SEO Content & Organic Growth Engine</span>
+      <span class="phase-timeline">Month 2–3</span>
+      <span class="phase-toggle open">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="step">
+        <div class="step-num">12</div>
+        <div class="step-content">
+          <div class="step-title">Build 8–10 Keyword-Targeted Landing Pages</div>
+          <div class="step-desc">Create dedicated pages for high-intent searches. Top targets: <code>"MT5 trading journal"</code>, <code>"prop challenge tracker"</code>, <code>"forex drawdown monitor"</code>, <code>"FTMO discipline tool"</code>, <code>"revenge trading prevention"</code>, <code>"prop firm rules enforcement"</code>. Each page = 800–1200 words, unique content, clear CTA. These pages will drive 80% of your organic traffic.</div>
+          <div class="tags"><span class="tag tag-seo">SEO</span><span class="tag tag-conv">CONV</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-red">10x</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">13</div>
+        <div class="step-content">
+          <div class="step-title">Launch a Blog Targeting Prop Trader Problems</div>
+          <div class="step-desc">Publish 2 articles per week targeting real search queries. Top article ideas: <strong style="color:#fff">"Why 80% of Traders Fail FTMO (And How to Fix It)"</strong>, "How to Calculate Drawdown on MT5", "The 7 Rules Every Funded Trader Breaks", "Best Trading Journals for Prop Traders 2026". Each article ends with a CTA to try TradifyApp free. This is your long-term traffic compound machine.</div>
+          <div class="tags"><span class="tag tag-seo">SEO</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">14</div>
+        <div class="step-content">
+          <div class="step-title">Add Structured Schema Markup</div>
+          <div class="step-desc">Add <code>SoftwareApplication</code> schema JSON-LD to your homepage and <code>FAQPage</code> schema to your features page. This gets your star ratings, price range, and FAQs showing directly in Google search results — taking up more screen real estate and improving click-through rate by 20–30%.</div>
+          <div class="tags"><span class="tag tag-seo">SEO</span><span class="tag tag-tech">TECH</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-yellow">Med</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">15</div>
+        <div class="step-content">
+          <div class="step-title">Solve the "Tradeify vs TradifyApp" Brand Confusion</div>
+          <div class="step-desc">Tradeify.co (a large funded prop firm) currently dominates searches near your brand name. You need to: (1) ensure your Google listing says "TradifyApp" clearly not "Tradify", (2) get listed on G2, Capterra, and Product Hunt under "TradifyApp", (3) use your full name "TradifyApp" consistently everywhere — never just "Tradify". This is critical for paid search efficiency too.</div>
+          <div class="tags"><span class="tag tag-seo">SEO</span><span class="tag tag-biz">BIZ</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PHASE 4 -->
+  <div class="phase">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-badge badge-green">PHASE 4</span>
+      <span class="phase-title">Conversion & Retention Mechanics</span>
+      <span class="phase-timeline">Month 2–4</span>
+      <span class="phase-toggle open">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="step">
+        <div class="step-num">16</div>
+        <div class="step-content">
+          <div class="step-title">Build an Onboarding Email Sequence (7-Day)</div>
+          <div class="step-desc">The biggest churn driver for SaaS is users who sign up and never activate. Build a 7-email sequence: Day 0 (Welcome + connect MT5 tutorial), Day 1 (Set your first rule), Day 3 (See your first discipline report), Day 5 (Case study: trader who passed FTMO using TradifyApp), Day 7 (Upgrade prompt). Use Mailchimp or ConvertKit. Activation email sequences reduce 30-day churn by 40–60%.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span><span class="tag tag-biz">BIZ</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-red">High+</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">17</div>
+        <div class="step-content">
+          <div class="step-title">Add an Exit-Intent Popup with Lead Magnet</div>
+          <div class="step-desc">When a visitor is about to leave, show a popup offering a free resource: <strong style="color:#fff">"Download: The 10 Rules Every Funded Trader Must Follow"</strong> — PDF, 1 page, in exchange for their email. This captures 5–15% of bouncing visitors. These leads can be nurtured via email into paid users. Build in Tally, Mailchimp, or ConvertKit with a simple integration.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">18</div>
+        <div class="step-content">
+          <div class="step-title">Add a "Prop Firm Compatibility" Section</div>
+          <div class="step-desc">Create a visual grid or table showing: "Works with FTMO ✓ / MyFundedFX ✓ / Apex ✓ / The5ers ✓ / True Forex Funds ✓" etc. Prop firm names are high-intent search terms (millions of monthly searches). This section helps your page rank for "[prop firm name] + trading tool" queries AND immediately answers "does this work with my firm?" — a top visitor objection.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span><span class="tag tag-seo">SEO</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">19</div>
+        <div class="step-content">
+          <div class="step-title">Add Intercom or Crisp Live Chat</div>
+          <div class="step-desc">Add a free live chat widget (Crisp is free, Intercom has a free tier). Configure it with 3 automated messages: one on the homepage after 30 seconds ("Need help setting up your first rule?"), one on pricing after 20 seconds ("Questions about which plan is right for you?"), one on the signup page ("Any issues connecting your MT5?"). Live chat on SaaS sites lifts conversion by 20% on average.</div>
+          <div class="tags"><span class="tag tag-conv">CONV</span><span class="tag tag-ux">UX</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-yellow">Med</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PHASE 5 -->
+  <div class="phase">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-badge badge-blue">PHASE 5</span>
+      <span class="phase-title">B2B Layer — The Unicorn Unlock</span>
+      <span class="phase-timeline">Month 4–6</span>
+      <span class="phase-toggle open">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="step">
+        <div class="step-num">20</div>
+        <div class="step-content">
+          <div class="step-title">Add a "For Prop Firms" Page</div>
+          <div class="step-desc">Build a dedicated landing page selling TradifyApp as a white-label discipline tool to prop firms. Headline: <strong style="color:#fff">"Reduce Trader Failure Rates. Increase Account Longevity. License TradifyApp for Your Funded Traders."</strong> — Show ROI: "If your average trader lasts 2.3 months before a breach, we help extend that to 4.1 months." Add a "Book a Demo" CTA. One prop firm deal = more revenue than 500 retail subscriptions.</div>
+          <div class="tags"><span class="tag tag-biz">BIZ</span><span class="tag tag-conv">CONV</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-red">100x</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">21</div>
+        <div class="step-content">
+          <div class="step-title">Add an API / Integration Page</div>
+          <div class="step-desc">Publish a page showing your API or webhook capabilities (even if basic today). This signals to brokers and prop firms that TradifyApp is "enterprise-ready." Include: API docs link, MT5 integration guide, and a "Contact for Custom Integration" form. Technical credibility unlocks B2B conversations that never happen when a product looks retail-only.</div>
+          <div class="tags"><span class="tag tag-biz">BIZ</span><span class="tag tag-tech">TECH</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-accent3" style="color:var(--accent3)">Big</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">22</div>
+        <div class="step-content">
+          <div class="step-title">Launch an Affiliate / Partner Program Page</div>
+          <div class="step-desc">Add a <code>/partners</code> page offering 30–40% recurring commission to trading educators, YouTube channels, and Discord communities that send users to TradifyApp. The prop trading niche has thousands of micro-influencers with 5K–50K audiences who promote tools. Affiliate programs cost nothing until revenue is generated — and can be your fastest growth channel at zero upfront cost.</div>
+          <div class="tags"><span class="tag tag-biz">BIZ</span><span class="tag tag-conv">CONV</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-red">High+</span></div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">23</div>
+        <div class="step-content">
+          <div class="step-title">Get Listed on Product Hunt, G2, and Capterra</div>
+          <div class="step-desc">TradifyApp has zero presence on the major SaaS discovery platforms. A Product Hunt launch (on a Tuesday–Thursday) with 200+ upvotes puts you in front of 500K+ tech-savvy users overnight. G2 and Capterra listings drive B2B search traffic — people searching "trading discipline software" or "MT5 journal" will find you. These are free and should be done this month.</div>
+          <div class="tags"><span class="tag tag-biz">BIZ</span><span class="tag tag-seo">SEO</span></div>
+        </div>
+        <div class="step-impact"><span class="impact-label">Impact</span><span class="impact-val col-orange">High</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary">
+    <h2>The 30-Day Priority Stack</h2>
+    <p>
+      <strong style="color:var(--critical)">Week 1:</strong> Fix SSR rendering + submit sitemap + fix meta tags — zero traffic improvement is possible until this is done.<br><br>
+      <strong style="color:var(--accent2)">Week 2:</strong> Rewrite homepage hero copy + add social proof bar + add product demo video.<br><br>
+      <strong style="color:var(--warn)">Week 3:</strong> Redesign pricing page + add "How It Works" + launch exit-intent lead magnet.<br><br>
+      <strong style="color:var(--accent)">Week 4:</strong> Launch B2B "For Prop Firms" page + apply to Product Hunt + set up affiliate page.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function togglePhase(header) {
+    const body = header.nextElementSibling;
+    const toggle = header.querySelector('.phase-toggle');
+    body.classList.toggle('collapsed');
+    toggle.classList.toggle('open');
+  }
+</script>
+</body>
+</html>
