@@ -80,11 +80,11 @@ async function ensureAdminAccount() {
     if (rows.length > 0) return; // owner already exists
 
     const hashed = await bcrypt.hash(adminPassword, 10);
+    // No ON CONFLICT needed — we already confirmed no OWNER exists above
     await pool.query(
       `INSERT INTO user_role
          (user_id, role, password, email_verified, subscription_tier, full_name, terms_accepted, risk_acknowledged, created_at, updated_at)
-       VALUES ($1, 'OWNER', $2, true, 'PRO', 'Admin', true, true, NOW(), NOW())
-       ON CONFLICT (user_id) DO NOTHING`,
+       VALUES ($1, 'OWNER', $2, true, 'PRO', 'Admin', true, true, NOW(), NOW())`,
       [adminEmail.toLowerCase(), hashed]
     );
     log(`Admin account seeded for ${adminEmail}`, "seed");
