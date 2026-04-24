@@ -1,9 +1,11 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, CreditCard, Shield, LogOut, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, Library, Palette, DollarSign, ChevronDown, Calendar, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Shield, LogOut, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, Library, Palette, DollarSign, ChevronDown, Calendar, TrendingUp, Database } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
 import { useState } from "react";
+
+const isProduction = import.meta.env.PROD;
 
 const adminNavItems = [
   { href: "/admin/overview", label: "Overview", icon: LayoutDashboard },
@@ -73,6 +75,18 @@ export function AdminSidebar() {
           </div>
         </div>
       </SidebarHeader>
+      <div
+        data-testid="status-env-banner"
+        className={cn(
+          "mx-4 mt-3 mb-1 rounded-lg px-3 py-2 flex items-center gap-2 text-xs font-bold tracking-wide",
+          isProduction
+            ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+            : "bg-amber-500/10 border border-amber-500/30 text-amber-400"
+        )}
+      >
+        <Database size={12} className="shrink-0" />
+        {isProduction ? "PRODUCTION DATABASE" : "DEV DATABASE — test data only"}
+      </div>
       <SidebarContent className="p-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-slate-500 uppercase text-[10px] font-bold tracking-widest mb-2">Operations</SidebarGroupLabel>
