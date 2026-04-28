@@ -74,20 +74,37 @@ async function ensureAdminAccount() {
   if (!adminEmail || !adminPassword) return;
 
   try {
-    const { rows } = await pool.query(
-      `SELECT user_id FROM user_role WHERE role = 'OWNER' LIMIT 1`
-    );
-    if (rows.length > 0) return; // owner already exists
-
+    const emailLower = adminEmail.toLowerCase();
     const hashed = await bcrypt.hash(adminPassword, 10);
-    // No ON CONFLICT needed — we already confirmed no OWNER exists above
-    await pool.query(
-      `INSERT INTO user_role
-         (user_id, role, password, email_verified, subscription_tier, full_name, terms_accepted, risk_acknowledged, created_at, updated_at)
-       VALUES ($1, 'OWNER', $2, true, 'PRO', 'Admin', true, true, NOW(), NOW())`,
-      [adminEmail.toLowerCase(), hashed]
+
+    const { rows } = await pool.query(
+      `SELECT user_id, password FROM user_role WHERE LOWER(user_id) = $1 LIMIT 1`,
+      [emailLower]
     );
-    log(`Admin account seeded for ${adminEmail}`, "seed");
+
+    if (rows.length === 0) {
+      await pool.query(
+        `INSERT INTO user_role
+           (user_id, role, password, email_verified, subscription_tier, full_name, terms_accepted, risk_acknowledged, created_at, updated_at)
+         VALUES ($1, 'OWNER', $2, true, 'PRO', 'Admin', true, true, NOW(), NOW())`,
+        [emailLower, hashed]
+      );
+      log(`Admin account seeded for ${adminEmail}`, "seed");
+      return;
+    }
+
+    // Admin exists — make sure password matches the env var (source of truth)
+    const currentHash: string = rows[0].password || "";
+    const matches = currentHash ? await bcrypt.compare(adminPassword, currentHash) : false;
+    if (!matches) {
+      await pool.query(
+        `UPDATE user_role
+            SET password = $1, role = 'OWNER', email_verified = true, updated_at = NOW()
+          WHERE LOWER(user_id) = $2`,
+        [hashed, emailLower]
+      );
+      log(`Admin password synced from ADMIN_PASSWORD for ${adminEmail}`, "seed");
+    }
   } catch (err) {
     log(`Admin seed failed: ${err}`, "seed");
   }
