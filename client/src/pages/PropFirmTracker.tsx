@@ -43,6 +43,9 @@ import {
 import type { PropFirmChallenge, PropFirmDailyStat } from "@shared/schema";
 import { MilestoneShareModal } from "@/components/MilestoneShareModal";
 import type { ChallengeCardData } from "@/components/MilestoneShareCard";
+import { useSampleMode } from "@/hooks/useSampleMode";
+import { SampleDataBanner } from "@/components/SampleDataBanner";
+import { getSamplePropFirm } from "@/lib/sampleData";
 
 type ViewState = "list" | "create" | "detail";
 
@@ -2110,8 +2113,16 @@ export default function PropFirmTracker() {
     );
   }
 
+  const sampleMode = useSampleMode();
+  const showSampleChallenge =
+    sampleMode.active && (!challenges || challenges.length === 0);
+  const sampleChallenge = showSampleChallenge ? getSamplePropFirm() : null;
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {sampleMode.active && (
+        <SampleDataBanner surface="this prop firm tracker" />
+      )}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-black text-2xl tracking-tighter uppercase italic">Prop Firm Tracker</h1>
@@ -2126,7 +2137,65 @@ export default function PropFirmTracker() {
         </Button>
       </div>
 
-      {isLoadingList ? (
+      {showSampleChallenge && sampleChallenge ? (
+        <Card
+          className="border-emerald-500/30 bg-emerald-500/5"
+          data-testid="card-sample-challenge"
+        >
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  {sampleChallenge.firmName}
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                  >
+                    Sample
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  {sampleChallenge.challengeName} · {sampleChallenge.phase}
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="text-[10px]">
+                ${parseFloat(sampleChallenge.accountSize).toLocaleString()}{" "}
+                account
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Profit Target</span>
+                <span>62% reached</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500"
+                  style={{ width: "62%" }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Daily Drawdown Used</span>
+                <span>34%</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500"
+                  style={{ width: "34%" }}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Once you connect MT5 and create a real challenge, this card will
+              be replaced by your live progress.
+            </p>
+          </CardContent>
+        </Card>
+      ) : isLoadingList ? (
         <div className="flex items-center justify-center min-h-[200px]">
           <Loader2 className="animate-spin text-emerald-500" size={32} />
         </div>

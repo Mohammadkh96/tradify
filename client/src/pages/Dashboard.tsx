@@ -1,5 +1,17 @@
 import { useTrades } from "@/hooks/use-trades";
 import { usePlan } from "@/hooks/usePlan";
+import { useSampleMode } from "@/hooks/useSampleMode";
+import {
+  getSampleTrades,
+  getSampleEquityCurve,
+  getSampleMt5Status,
+  getSampleTodayStats,
+  SAMPLE_ACCOUNT_NUMBER,
+  SAMPLE_ACCOUNT_NAME,
+  SAMPLE_BROKER,
+  SAMPLE_SERVER,
+} from "@/lib/sampleData";
+import { SampleDataBanner } from "@/components/SampleDataBanner";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { StatCard } from "@/components/StatCard";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
@@ -200,7 +212,7 @@ export default function Dashboard() {
   const dashConfig = useDashboardConfig();
   
   const { toast } = useToast();
-  const { data: trades, isLoading } = useTrades();
+  const { data: realTrades, isLoading } = useTrades();
   const { data: user } = useQuery<any>({ 
     queryKey: ["/api/user"],
     staleTime: 0,
@@ -208,7 +220,7 @@ export default function Dashboard() {
   
   const userId = user?.userId;
   
-  const { data: mt5, refetch: refetchStatus } = useQuery<any>({
+  const { data: realMt5, refetch: refetchStatus } = useQuery<any>({
     queryKey: [`/api/mt5/status/${userId}`],
     refetchInterval: 5000,
     enabled: !!userId,
@@ -216,15 +228,36 @@ export default function Dashboard() {
   });
 
   // MT5 Accounts for multi-account support
-  const { data: mt5Accounts } = useQuery<MT5Account[]>({
+  const { data: realMt5Accounts } = useQuery<MT5Account[]>({
     queryKey: ['/api/mt5/accounts', userId],
     enabled: !!userId,
   });
 
-  const { data: activeAccount } = useQuery<MT5Account | null>({
+  const { data: realActiveAccount } = useQuery<MT5Account | null>({
     queryKey: ['/api/mt5/accounts', userId, 'active'],
     enabled: !!userId,
   });
+
+  // Sample mode kicks in when the user has no real trades and no live MT5
+  // connection. We swap in deterministic demo data so the dashboard is alive.
+  const sampleMode = useSampleMode();
+  const trades = sampleMode.active ? (getSampleTrades() as any) : realTrades;
+  const mt5 = sampleMode.active
+    ? { ...getSampleMt5Status(), status: "CONNECTED" }
+    : realMt5;
+  const sampleAccount: MT5Account = {
+    id: -1,
+    userId: userId || "",
+    accountNumber: SAMPLE_ACCOUNT_NUMBER,
+    accountName: SAMPLE_ACCOUNT_NAME,
+    broker: SAMPLE_BROKER,
+    server: SAMPLE_SERVER,
+    currency: "USD",
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  };
+  const mt5Accounts = sampleMode.active ? [sampleAccount] : realMt5Accounts;
+  const activeAccount = sampleMode.active ? sampleAccount : realActiveAccount;
 
   const switchAccountMutation = useMutation({
     mutationFn: async (accountNumber: string) => {
@@ -281,7 +314,7 @@ export default function Dashboard() {
   });
 
   // Equity curve from cumulative trade P&L (SINGLE SOURCE OF TRUTH)
-  const { data: equityCurveResponse } = useQuery<{ trades: any[], todayStats: { pl: number, count: number } }>({
+  const { data: realEquityCurveResponse } = useQuery<{ trades: any[], todayStats: { pl: number, count: number } }>({
     queryKey: [`/api/equity-curve/${userId}`],
     queryFn: async () => {
       const tzOffset = new Date().getTimezoneOffset() * -1;
@@ -292,11 +325,15 @@ export default function Dashboard() {
       return data;
     },
     staleTime: 0,
-    enabled: !!userId,
+    enabled: !!userId && !sampleMode.active,
     refetchInterval: 30000,
   });
-  const equityCurveData = equityCurveResponse?.trades;
-  const todayStats = equityCurveResponse?.todayStats;
+  const equityCurveData = sampleMode.active
+    ? getSampleEquityCurve()
+    : realEquityCurveResponse?.trades;
+  const todayStats = sampleMode.active
+    ? getSampleTodayStats()
+    : realEquityCurveResponse?.todayStats;
 
   const { isPaid: isPro, isElite, canAccess } = usePlan();
 
@@ -532,6 +569,7 @@ export default function Dashboard() {
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
+        {sampleMode.active && <SampleDataBanner />}
         <header className="mb-8 space-y-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -654,7 +692,7 @@ export default function Dashboard() {
               </Popover>
             </div>
             
-            {mt5Accounts && mt5Accounts.length >= 1 && (
+            {mt5Accounts && mt5Accounts.length >= 1 && !sampleMode.active && (
               <div className="flex items-center gap-2">
                 <Select
                   value={activeAccount?.accountNumber || mt5Accounts[0]?.accountNumber || ""}

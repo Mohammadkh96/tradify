@@ -3,6 +3,7 @@ import { Navigation, MobileNav } from "./Navigation";
 import { FloatingCalculator } from "./FloatingCalculator";
 import { ThemeToggle } from "./ThemeToggle";
 import { OnboardingTour } from "./OnboardingTour";
+import { FirstSyncMoment } from "./FirstSyncMoment";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       </main>
       <FloatingCalculator />
       <OnboardingTour />
+      <FirstSyncMoment />
     </div>
   );
 }
