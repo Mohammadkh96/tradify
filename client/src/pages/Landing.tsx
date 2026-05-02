@@ -1599,7 +1599,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-16 border-t border-border" data-testid="section-footer">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             <div>
               <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">{t("landing.footerProduct")}</h4>
               <div className="space-y-3">
@@ -1617,6 +1617,15 @@ export default function Landing() {
                 <Link to="/prop-firm-tracker" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-prop-firm-tracker">{t("landing.footerPropFirmTracker")}</Link>
                 <Link to="/mt5-trading-analytics" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-mt5-analytics">{t("landing.footerMT5Analytics")}</Link>
                 <Link to="/blog" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-blog">{t("landing.footerBlog")}</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">Free Tools</h4>
+              <div className="space-y-3">
+                <Link to="/free-tools" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-free-tools">All Free Tools</Link>
+                <Link to="/calculator" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-calculator">Risk Calculator</Link>
+                <Link to="/checklist" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-checklist">Pre-Trade Checklist</Link>
+                <Link to="/prop-firms" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-prop-firms">Prop Firm Trackers</Link>
               </div>
             </div>
             <div>

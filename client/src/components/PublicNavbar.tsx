@@ -18,7 +18,8 @@ export function PublicNavbar({ topOffset = 0 }: PublicNavbarProps) {
   const navItems = [
     { title: t("nav.features"), href: "/features" },
     { title: t("nav.pricing"), href: "/pricing" },
-    { title: t("nav.demo"), href: "/demo" },
+    { title: "Free Tools", href: "/free-tools" },
+    { title: "Prop Firms", href: "/prop-firms" },
     { title: t("nav.howItWorks"), href: "/how-it-works" },
     { title: t("nav.blog"), href: "/blog" },
   ];

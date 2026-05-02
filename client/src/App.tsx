@@ -380,9 +380,6 @@ function Router() {
       <Route path="/knowledge-base">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <KnowledgeBase />}
       </Route>
-      <Route path="/calculator">
-        <Redirect to="/dashboard" />
-      </Route>
       <Route path="/mt5-bridge">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <MT5Bridge />}
       </Route>

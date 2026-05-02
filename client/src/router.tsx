@@ -46,9 +46,24 @@ import SEOPropFirmTracker from "@/pages/SEOPropFirmTracker";
 import SEOMT5Analytics from "@/pages/SEOMT5Analytics";
 import ResetPassword from "@/pages/ResetPassword";
 import PreTradeChecklist from "@/pages/PreTradeChecklist";
+import RiskCalculator from "@/pages/RiskCalculator";
 import Demo from "@/pages/Demo";
+import FreeTools from "@/pages/FreeTools";
+import PropFirmsIndex from "@/pages/PropFirmsIndex";
+import PropFirmDetail from "@/pages/PropFirmDetail";
 import { LanguageHydrator } from "@/components/LanguageHydrator";
 import { useQuery } from "@tanstack/react-query";
+
+function PublicCalculatorPage() {
+  return (
+    <div className="min-h-screen bg-background">
+      <PublicNavbar />
+      <div className="pt-20">
+        <RiskCalculator />
+      </div>
+    </div>
+  );
+}
 
 function HybridRoute({ children }: { children: React.ReactNode }) {
   const { data: userRole, isLoading } = useQuery<any>({
@@ -474,6 +489,11 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/early-access" element={<EarlyAccess />} />
       <Route path="/checklist" element={<PreTradeChecklist />} />
+      <Route path="/pre-trade-checklist" element={<PreTradeChecklist />} />
+      <Route path="/calculator" element={<PublicCalculatorPage />} />
+      <Route path="/free-tools" element={<FreeTools />} />
+      <Route path="/prop-firms" element={<PropFirmsIndex />} />
+      <Route path="/prop-firms/:slug" element={<PropFirmDetail />} />
       <Route path="/demo" element={<Demo />} />
       <Route path="/pricing" element={<HybridRoute><Pricing /></HybridRoute>} />
       <Route path="/terms" element={<Terms />} />
