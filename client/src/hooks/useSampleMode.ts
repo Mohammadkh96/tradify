@@ -31,12 +31,46 @@ export function dismissSampleMode() {
   } catch {}
 }
 
+/**
+ * Re-enable sample mode by clearing the dismissal flag. The custom event
+ * makes every consumer of `useSampleMode` re-evaluate immediately so the
+ * dashboard refreshes without a full page reload.
+ */
+export function enableSampleMode() {
+  try {
+    localStorage.removeItem(LS_KEY);
+  } catch {}
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(DISMISS_EVENT));
+    }
+  } catch {}
+}
+
 export function isSampleModeDismissed() {
   try {
     return localStorage.getItem(LS_KEY) === "1";
   } catch {
     return false;
   }
+}
+
+/**
+ * Public hook for components that need to read & flip the dismissal flag
+ * (e.g. a Settings toggle). Returns the current dismissed state plus a
+ * setter that writes/removes the localStorage key and notifies all other
+ * sample-mode consumers via the same custom event used internally.
+ */
+export function useSampleModeDismissed(): [boolean, (dismissed: boolean) => void] {
+  const dismissed = useDismissedFlag();
+  const setDismissed = (next: boolean) => {
+    if (next) {
+      dismissSampleMode();
+    } else {
+      enableSampleMode();
+    }
+  };
+  return [dismissed, setDismissed];
 }
 
 /**

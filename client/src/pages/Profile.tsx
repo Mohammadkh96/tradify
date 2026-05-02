@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Users, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown, Lock, Eye, EyeOff, MessageSquare, Sparkles, Send, Languages } from "lucide-react";
+import { User, Users, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown, Lock, Eye, EyeOff, MessageSquare, Sparkles, Send, Languages, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SUPPORTED_LANGUAGES } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { usePlan } from "@/hooks/usePlan";
+import { useSampleModeDismissed } from "@/hooks/useSampleMode";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { UserRole } from "@shared/schema";
 import { PLAN_CONFIGS, getFounderPrice } from "@shared/plans";
@@ -241,6 +244,73 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
             </div>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SampleDataCard() {
+  const [dismissed, setDismissed] = useSampleModeDismissed();
+  const { toast } = useToast();
+  const enabled = !dismissed;
+
+  const handleToggle = (next: boolean) => {
+    setDismissed(!next);
+    toast({
+      title: next ? "Sample Data Enabled" : "Sample Data Hidden",
+      description: next
+        ? "Your dashboard now shows a 60-day demo dataset."
+        : "Sample data is hidden. Connect MT5 to see your real trades.",
+    });
+  };
+
+  return (
+    <Card className="bg-card border-border shadow-2xl overflow-hidden" data-testid="card-sample-data">
+      <CardHeader className="border-b border-border bg-muted/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-500/10 rounded-lg">
+            <Sparkles size={20} className="text-emerald-500" />
+          </div>
+          <div>
+            <CardTitle className="text-foreground uppercase italic tracking-tight font-black">Sample Data</CardTitle>
+            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Demo dataset for empty dashboards</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-black text-foreground uppercase tracking-tight">Show Sample Data</h4>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="What is sample mode?"
+                    data-testid="tooltip-trigger-sample-data"
+                  >
+                    <Info size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  Sample mode populates your dashboard, prop firm tracker, and journal with a deterministic 60-day demo dataset whenever you have no real trades and MT5 isn't connected. Useful for screenshots, demos, or previewing the populated experience.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">
+              {enabled
+                ? "Demo data is shown when you have no real trades"
+                : "Sample data is hidden until you re-enable it"}
+            </p>
+          </div>
+          <Switch
+            checked={enabled}
+            onCheckedChange={handleToggle}
+            aria-label="Toggle sample data"
+            data-testid="switch-sample-data"
+          />
+        </div>
       </CardContent>
     </Card>
   );
@@ -735,6 +805,8 @@ export default function Profile() {
           </Card>
 
           <EmailPreferencesCard />
+
+          <SampleDataCard />
 
           <AlertSettingsCard />
 
