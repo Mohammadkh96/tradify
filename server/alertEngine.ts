@@ -234,7 +234,7 @@ async function getPrefs(userId: string): Promise<ResolvedPrefs> {
   return { userId, ...DEFAULT_PREFS };
 }
 
-async function isAlertSuppressed(userId: string, dedupeKey: string): Promise<boolean> {
+export async function isAlertSuppressed(userId: string, dedupeKey: string): Promise<boolean> {
   try {
     const now = new Date();
     const [existing] = await db.select()

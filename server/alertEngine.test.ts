@@ -1,4 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const mockOrderBy = vi.fn();
+const mockWhere = vi.fn(() => ({ orderBy: mockOrderBy }));
+const mockFrom = vi.fn(() => ({ where: mockWhere }));
+const mockSelect = vi.fn(() => ({ from: mockFrom }));
+
+vi.mock("./db", () => ({
+  db: { select: (...args: any[]) => mockSelect(...args) },
+  pool: {},
+}));
+vi.mock("./emailService", () => ({ sendRiskAlertEmail: vi.fn() }));
+vi.mock("./notificationBus", () => ({ notificationBus: { publish: vi.fn() } }));
+
 import {
   computeDailyDD,
   computeMaxDD,
@@ -7,6 +20,7 @@ import {
   classifyOvertrading,
   isStrategyDeviation,
   isAlertWithinCooldown,
+  isAlertSuppressed,
   type RevengeTrade,
 } from "./alertEngine";
 
@@ -177,6 +191,55 @@ describe("isStrategyDeviation", () => {
   });
   it("empty known set treats every non-empty symbol as deviation", () => {
     expect(isStrategyDeviation("EURUSD", [])).toBe(true);
+  });
+});
+
+describe("isAlertSuppressed (dedupe + cooldown DB path)", () => {
+  beforeEach(() => {
+    mockOrderBy.mockReset();
+    mockWhere.mockClear();
+    mockFrom.mockClear();
+    mockSelect.mockClear();
+  });
+
+  it("does NOT suppress when no prior alert exists for the dedupeKey", async () => {
+    mockOrderBy.mockReturnValueOnce({ limit: () => Promise.resolve([]) });
+    const suppressed = await isAlertSuppressed("user-1", "daily_dd_warn_chal_2026-05-02");
+    expect(suppressed).toBe(false);
+  });
+
+  it("SUPPRESSES when an existing alert with same dedupeKey is still in cooldown", async () => {
+    const future = new Date(Date.now() + 30 * 60_000);
+    mockOrderBy.mockReturnValueOnce({
+      limit: () => Promise.resolve([{ id: "n1", cooldownUntil: future }]),
+    });
+    const suppressed = await isAlertSuppressed("user-1", "daily_dd_warn_chal_2026-05-02");
+    expect(suppressed).toBe(true);
+  });
+
+  it("does NOT suppress once the prior alert's cooldown has expired", async () => {
+    const past = new Date(Date.now() - 60_000);
+    mockOrderBy.mockReturnValueOnce({
+      limit: () => Promise.resolve([{ id: "n1", cooldownUntil: past }]),
+    });
+    const suppressed = await isAlertSuppressed("user-1", "daily_dd_warn_chal_2026-05-02");
+    expect(suppressed).toBe(false);
+  });
+
+  it("does NOT suppress when prior alert has no cooldownUntil set", async () => {
+    mockOrderBy.mockReturnValueOnce({
+      limit: () => Promise.resolve([{ id: "n1", cooldownUntil: null }]),
+    });
+    const suppressed = await isAlertSuppressed("user-1", "daily_dd_warn_chal_2026-05-02");
+    expect(suppressed).toBe(false);
+  });
+
+  it("fails open (not suppressed) when the DB lookup throws", async () => {
+    mockOrderBy.mockReturnValueOnce({
+      limit: () => Promise.reject(new Error("db down")),
+    });
+    const suppressed = await isAlertSuppressed("user-1", "any-key");
+    expect(suppressed).toBe(false);
   });
 });
 
