@@ -10,6 +10,7 @@ import {
   SAMPLE_SERVER,
 } from "@/lib/sampleData";
 import { SampleDataBanner } from "@/components/SampleDataBanner";
+import { MyCoachBanner } from "@/components/MyCoachBanner";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { StatCard } from "@/components/StatCard";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
@@ -568,6 +569,7 @@ export default function Dashboard() {
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
         {sampleMode.active && <SampleDataBanner />}
+        <MyCoachBanner />
         <header className="mb-8 space-y-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>

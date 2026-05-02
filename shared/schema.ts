@@ -144,6 +144,35 @@ export const userRole = pgTable("user_role", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ── Coach ↔ Student relationships (COACH tier feature) ──────────────────────
+export const coachStudent = pgTable("coach_student", {
+  id: serial("id").primaryKey(),
+  coachId: text("coach_id").notNull(),
+  studentId: text("student_id").notNull(),
+  status: text("status").notNull().default("invited"), // invited | active | declined | removed
+  inviteToken: text("invite_token"),
+  invitedAt: timestamp("invited_at").defaultNow(),
+  acceptedAt: timestamp("accepted_at"),
+  removedAt: timestamp("removed_at"),
+});
+
+export const coachFeedback = pgTable("coach_feedback", {
+  id: serial("id").primaryKey(),
+  coachId: text("coach_id").notNull(),
+  studentId: text("student_id").notNull(),
+  tradeId: integer("trade_id"), // nullable: null for general feedback
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCoachStudentSchema = createInsertSchema(coachStudent).omit({ id: true, invitedAt: true, acceptedAt: true, removedAt: true });
+export type CoachStudent = typeof coachStudent.$inferSelect;
+export type InsertCoachStudent = z.infer<typeof insertCoachStudentSchema>;
+
+export const insertCoachFeedbackSchema = createInsertSchema(coachFeedback).omit({ id: true, createdAt: true });
+export type CoachFeedback = typeof coachFeedback.$inferSelect;
+export type InsertCoachFeedback = z.infer<typeof insertCoachFeedbackSchema>;
+
 export const signalProviderProfile = pgTable("signal_provider_profile", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),

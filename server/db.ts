@@ -70,6 +70,33 @@ export async function ensureSchemaColumns() {
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS admin_tags TEXT[] DEFAULT '{}';
     `);
 
+    // Create coach ↔ student tables if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS coach_student (
+        id SERIAL PRIMARY KEY,
+        coach_id TEXT NOT NULL,
+        student_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'invited',
+        invite_token TEXT,
+        invited_at TIMESTAMP DEFAULT NOW(),
+        accepted_at TIMESTAMP,
+        removed_at TIMESTAMP,
+        UNIQUE(coach_id, student_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_coach_student_coach ON coach_student(coach_id);
+      CREATE INDEX IF NOT EXISTS idx_coach_student_student ON coach_student(student_id);
+
+      CREATE TABLE IF NOT EXISTS coach_feedback (
+        id SERIAL PRIMARY KEY,
+        coach_id TEXT NOT NULL,
+        student_id TEXT NOT NULL,
+        trade_id INTEGER,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_coach_feedback_student ON coach_feedback(student_id);
+    `);
+
     // Create sent_emails table if not exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sent_emails (

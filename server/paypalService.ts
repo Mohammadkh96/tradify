@@ -1,19 +1,21 @@
 import { storage } from './storage';
 import { emailService } from './emailService';
 
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_PRO_ANNUAL_PLAN_ID, PAYPAL_ELITE_ANNUAL_PLAN_ID, PAYPAL_FM_PRO_PLAN_ID, PAYPAL_FM_ELITE_PLAN_ID, PAYPAL_FM_PRO_ANNUAL_PLAN_ID, PAYPAL_FM_ELITE_ANNUAL_PLAN_ID, PAYPAL_MODE } = process.env;
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_PRO_ANNUAL_PLAN_ID, PAYPAL_ELITE_ANNUAL_PLAN_ID, PAYPAL_FM_PRO_PLAN_ID, PAYPAL_FM_ELITE_PLAN_ID, PAYPAL_FM_PRO_ANNUAL_PLAN_ID, PAYPAL_FM_ELITE_ANNUAL_PLAN_ID, PAYPAL_COACH_PLAN_ID, PAYPAL_COACH_ANNUAL_PLAN_ID, PAYPAL_MODE } = process.env;
 const PAYPAL_BASE_URL = PAYPAL_MODE === 'live'
   ? 'https://api-m.paypal.com' 
   : 'https://api-m.sandbox.paypal.com';
 
-export type PlanTier = 'PRO' | 'ELITE';
+export type PlanTier = 'PRO' | 'ELITE' | 'COACH';
 export type BillingPeriod = 'monthly' | 'annual';
 
 const cachedPlanIds: Record<string, string | null> = {
   PRO_monthly: PAYPAL_PLAN_ID || null,
   ELITE_monthly: PAYPAL_ELITE_PLAN_ID || null,
+  COACH_monthly: PAYPAL_COACH_PLAN_ID || null,
   PRO_annual: PAYPAL_PRO_ANNUAL_PLAN_ID || null,
   ELITE_annual: PAYPAL_ELITE_ANNUAL_PLAN_ID || null,
+  COACH_annual: PAYPAL_COACH_ANNUAL_PLAN_ID || null,
 };
 
 const foundingMemberPlanIds: Record<string, string | null> = {
@@ -26,8 +28,10 @@ const foundingMemberPlanIds: Record<string, string | null> = {
 const ALL_PLAN_IDS = new Set([
   PAYPAL_PLAN_ID,
   PAYPAL_ELITE_PLAN_ID,
+  PAYPAL_COACH_PLAN_ID,
   PAYPAL_PRO_ANNUAL_PLAN_ID,
   PAYPAL_ELITE_ANNUAL_PLAN_ID,
+  PAYPAL_COACH_ANNUAL_PLAN_ID,
   PAYPAL_FM_PRO_PLAN_ID,
   PAYPAL_FM_ELITE_PLAN_ID,
   PAYPAL_FM_PRO_ANNUAL_PLAN_ID,
@@ -35,6 +39,8 @@ const ALL_PLAN_IDS = new Set([
 ].filter(Boolean));
 
 function getPlanKeyFromId(planId: string): { tier: PlanTier; period: BillingPeriod } | null {
+  if (planId === cachedPlanIds.COACH_annual || planId === PAYPAL_COACH_ANNUAL_PLAN_ID) return { tier: 'COACH', period: 'annual' };
+  if (planId === cachedPlanIds.COACH_monthly || planId === PAYPAL_COACH_PLAN_ID) return { tier: 'COACH', period: 'monthly' };
   if (planId === cachedPlanIds.ELITE_annual || planId === PAYPAL_ELITE_ANNUAL_PLAN_ID || planId === PAYPAL_FM_ELITE_ANNUAL_PLAN_ID) return { tier: 'ELITE', period: 'annual' };
   if (planId === cachedPlanIds.PRO_annual || planId === PAYPAL_PRO_ANNUAL_PLAN_ID || planId === PAYPAL_FM_PRO_ANNUAL_PLAN_ID) return { tier: 'PRO', period: 'annual' };
   if (planId === cachedPlanIds.ELITE_monthly || planId === PAYPAL_ELITE_PLAN_ID || planId === PAYPAL_FM_ELITE_PLAN_ID) return { tier: 'ELITE', period: 'monthly' };
@@ -45,6 +51,7 @@ function getPlanKeyFromId(planId: string): { tier: PlanTier; period: BillingPeri
 const PLAN_PRICES: Record<PlanTier, string> = {
   PRO: '29.00',
   ELITE: '59.00',
+  COACH: '99.00',
 };
 
 export class PayPalService {

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { NoIndexSEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2, Crown, Star, Sparkles } from "lucide-react";
+import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2, Crown, Star, Sparkles, GraduationCap } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
 import { useEffect, useState } from "react";
@@ -12,9 +12,10 @@ import { PLAN_CONFIGS, type PlanTier, type BillingPeriod } from "@shared/plans";
 import { trackFBEvent } from "@/lib/fbpixel";
 import { useTranslation } from "react-i18next";
 
-const PLAN_ICONS: Record<'PRO' | 'ELITE', any> = {
+const PLAN_ICONS: Record<'PRO' | 'ELITE' | 'COACH', any> = {
   PRO: Star,
   ELITE: Crown,
+  COACH: GraduationCap,
 };
 
 export default function Checkout() {
@@ -26,7 +27,7 @@ export default function Checkout() {
   const params = new URLSearchParams(window.location.search);
   const urlPlan = params.get('plan')?.toUpperCase();
   const urlPeriod = params.get('period') as BillingPeriod | null;
-  const selectedTier: 'PRO' | 'ELITE' = urlPlan === 'ELITE' ? 'ELITE' : 'PRO';
+  const selectedTier: 'PRO' | 'ELITE' | 'COACH' = urlPlan === 'COACH' ? 'COACH' : urlPlan === 'ELITE' ? 'ELITE' : 'PRO';
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(urlPeriod === 'annual' ? 'annual' : 'monthly');
   const planConfig = PLAN_CONFIGS[selectedTier];
   const PlanIcon = PLAN_ICONS[selectedTier];
@@ -54,9 +55,9 @@ export default function Checkout() {
           const res = await apiRequest("POST", "/api/paypal/subscription/activate", { subscriptionId, tier });
           const result = await res.json();
           
-          const tierName = tier === 'ELITE' ? t('tierElite') : t('tierPro');
+          const tierName = tier === 'COACH' ? 'Coach' : tier === 'ELITE' ? t('tierElite') : t('tierPro');
           if (result.success) {
-            const purchaseValue = tier === 'ELITE' ? 59.00 : 29.00;
+            const purchaseValue = tier === 'COACH' ? 99.00 : tier === 'ELITE' ? 59.00 : 29.00;
             trackFBEvent('Purchase', { value: purchaseValue, currency: 'USD' });
             toast({
               title: t('toastActivated'),
@@ -114,8 +115,10 @@ export default function Checkout() {
   const subscription = user?.subscriptionTier?.toUpperCase() || "FREE";
   const isPro = subscription === "PRO";
   const isElite = subscription === "ELITE";
-  const isPaid = isPro || isElite;
+  const isCoachUser = subscription === "COACH";
+  const isPaid = isPro || isElite || isCoachUser;
   const isElitePlan = selectedTier === 'ELITE';
+  const isCoachPlan = selectedTier === 'COACH';
   const isAnnual = billingPeriod === 'annual';
   
   const isFoundingMember = user?.foundingMember === true;
@@ -134,7 +137,8 @@ export default function Checkout() {
     : displayPrice;
   
   const isUpgradingToElite = isPro && !isElite && isElitePlan;
-  const showPayPalButton = !isPaid || isUpgradingToElite;
+  const isUpgradingToCoach = (isPro || isElite) && !isCoachUser && isCoachPlan;
+  const showPayPalButton = !isPaid || isUpgradingToElite || isUpgradingToCoach;
 
   return (
     <div className="flex-1 bg-background text-foreground min-h-screen p-6 lg:p-10">

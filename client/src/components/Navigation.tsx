@@ -20,7 +20,8 @@ import {
   Sparkles,
   Trophy,
   Award,
-  Flame
+  Flame,
+  GraduationCap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +38,7 @@ export function Navigation() {
   const { toast } = useToast();
   const [strategiesExpanded, setStrategiesExpanded] = useState(() => location.pathname.startsWith("/strategies"));
 
+  const { tier: currentTier, isPaid: currentIsPaid, isCoach } = usePlan();
   const navItems = [
     { href: "/dashboard", label: t("sidebar.dashboard"), testId: "dashboard", icon: LayoutDashboard },
     { href: "/journal", label: t("sidebar.journal"), testId: "journal", icon: HistoryIcon },
@@ -45,6 +47,7 @@ export function Navigation() {
     { href: "/traders-hub", label: t("sidebar.tradersHub"), testId: "traders-hub", icon: Users },
     { href: "/knowledge-base", label: t("sidebar.education"), testId: "education", icon: BookOpen },
     { href: "/achievements", label: t("sidebar.achievements"), testId: "achievements", icon: Award },
+    ...(isCoach ? [{ href: "/coach", label: "Coach", testId: "coach", icon: GraduationCap }] : []),
     { href: "/pricing", label: t("sidebar.plans"), testId: "plans", icon: CreditCard },
     { href: "/profile", label: t("sidebar.profile"), testId: "profile", icon: User },
   ];
@@ -76,7 +79,8 @@ export function Navigation() {
   });
 
   const isConnected = mt5?.status === "CONNECTED";
-  const { tier, isPaid } = usePlan();
+  const tier = currentTier;
+  const isPaid = currentIsPaid;
 
   const { data: streakData } = useQuery<any>({
     queryKey: ["/api/achievements/streaks"],

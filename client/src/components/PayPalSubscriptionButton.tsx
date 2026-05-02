@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Crown, Star } from "lucide-react";
+import { Loader2, Crown, Star, GraduationCap } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BillingPeriod } from "@shared/plans";
 
-type PlanTier = 'PRO' | 'ELITE';
+type PlanTier = 'PRO' | 'ELITE' | 'COACH';
 
 interface PayPalSubscriptionButtonProps {
   tier?: PlanTier;
@@ -43,13 +43,15 @@ export default function PayPalSubscriptionButton({ tier = 'PRO', period = 'month
   };
 
   const isElite = tier === 'ELITE';
-  const PlanIcon = isElite ? Crown : Star;
-  const tierName = isElite ? 'Elite' : 'Pro';
+  const isCoach = tier === 'COACH';
+  const PlanIcon = isCoach ? GraduationCap : isElite ? Crown : Star;
+  const tierName = isCoach ? 'Coach' : isElite ? 'Elite' : 'Pro';
   const isAnnual = period === 'annual';
   
   const prices = {
     PRO: { monthly: 29, annual: 290, annualMonthly: 24 },
     ELITE: { monthly: 59, annual: 590, annualMonthly: 49 },
+    COACH: { monthly: 99, annual: 990, annualMonthly: 82 },
   };
   
   const priceDisplay = isAnnual 
@@ -61,9 +63,7 @@ export default function PayPalSubscriptionButton({ tier = 'PRO', period = 'month
       onClick={handleSubscribe}
       disabled={isLoading}
       className={`w-full h-12 text-white font-black uppercase tracking-widest text-xs shadow-lg ${
-        isElite 
-          ? 'bg-amber-500' 
-          : 'bg-[#0070ba]'
+        isCoach ? 'bg-violet-500 hover:bg-violet-600' : isElite ? 'bg-amber-500' : 'bg-[#0070ba]'
       }`}
       data-testid="button-paypal-subscribe"
     >

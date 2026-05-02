@@ -803,7 +803,7 @@ ${blogPosts.map(p => `  <url>
       const [fullUser] = await db.select({ subscriptionTier: schema.userRole.subscriptionTier })
         .from(schema.userRole).where(eq(schema.userRole.userId, user.userId)).limit(1);
       const tier = fullUser?.subscriptionTier?.toUpperCase() || 'FREE';
-      if (tier === 'ELITE') {
+      if (tier === 'ELITE' || tier === 'COACH') {
         emailService.queueEliteRetentionSequence(user.userId).catch(() => {});
         emailService.queueInsightsNewsletterSequence(user.userId).catch(() => {});
       } else if (tier === 'PRO') {
@@ -844,7 +844,7 @@ ${blogPosts.map(p => `  <url>
         const [u] = await db.select({ subscriptionTier: schema.userRole.subscriptionTier })
           .from(schema.userRole).where(eq(schema.userRole.userId, req.session.userId)).limit(1);
         const t = u?.subscriptionTier?.toUpperCase() || 'FREE';
-        if (t === 'ELITE') {
+        if (t === 'ELITE' || t === 'COACH') {
           emailService.queueEliteRetentionSequence(req.session.userId).catch(() => {});
           emailService.queueInsightsNewsletterSequence(req.session.userId).catch(() => {});
         } else if (t === 'PRO') {
@@ -1173,7 +1173,8 @@ ${blogPosts.map(p => `  <url>
     try {
       const userId = req.session.userId!;
       const { tier = 'PRO', period = 'monthly' } = req.body;
-      const validTier = tier === 'ELITE' ? 'ELITE' : 'PRO';
+      const upper = String(tier).toUpperCase();
+      const validTier: 'PRO' | 'ELITE' | 'COACH' = upper === 'COACH' ? 'COACH' : upper === 'ELITE' ? 'ELITE' : 'PRO';
       const validPeriod = period === 'annual' ? 'annual' : 'monthly';
       
       const user = await storage.getUserRole(userId);
@@ -4316,7 +4317,7 @@ End with: "Review your charts for current market structure."`;
     const tradeCountResult = await pool.query(`SELECT user_id, COUNT(*) as count FROM trade_journal GROUP BY user_id`);
     const tradeCounts = new Map((tradeCountResult.rows as any[]).map(r => [r.user_id, parseInt(r.count)]));
 
-    const TIER_PRICE: Record<string, number> = { FREE: 0, PRO: 29, ELITE: 99 };
+    const TIER_PRICE: Record<string, number> = { FREE: 0, PRO: 29, ELITE: 59, COACH: 99 };
     const now = Date.now();
     const DAY = 24 * 60 * 60 * 1000;
 
@@ -4326,7 +4327,7 @@ End with: "Review your charts for current market structure."`;
       const ageDays = Math.floor((now - createdAt) / DAY);
       const inactiveDays = Math.floor((now - lastLogin) / DAY);
       const tier = u.subscriptionTier || "FREE";
-      const isPaid = tier === "PRO" || tier === "ELITE";
+      const isPaid = tier === "PRO" || tier === "ELITE" || tier === "COACH";
       const isCancelled = u.subscriptionStatus === "cancelled" || u.subscriptionStatus === "canceled";
 
       // Lifecycle stage
@@ -5092,8 +5093,8 @@ End with: "Review your charts for current market structure."`;
         emailService.cancelActiveTrack(targetUserId, 'pro_to_elite').catch(() => {});
         emailService.cancelActiveTrack(targetUserId, 'elite_retention').catch(() => {});
         emailService.cancelActiveTrack(targetUserId, 'insights_newsletter').catch(() => {});
-        if (newTier === 'ELITE') {
-          emailService.queueEliteRetentionSequence(targetUserId).catch(e => console.error('[DRIP] admin update-user elite:', e));
+        if (newTier === 'ELITE' || newTier === 'COACH') {
+          emailService.queueEliteRetentionSequence(targetUserId).catch(e => console.error('[DRIP] admin update-user elite/coach:', e));
         } else if (newTier === 'PRO') {
           emailService.queueProToEliteSequence(targetUserId).catch(e => console.error('[DRIP] admin update-user pro:', e));
         }
@@ -8873,6 +8874,254 @@ Guidelines:
     } catch (err) {
       console.error("[AlertVolume] error:", err);
       res.status(500).json({ message: "Failed to load alert volume" });
+    }
+  });
+
+  // ─────────────────────── COACH TIER ENDPOINTS ───────────────────────
+  const requireCoach = async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    const u = await storage.getUserRole(req.session.userId);
+    const tier = (u?.subscriptionTier || "FREE").toUpperCase();
+    if (tier !== "COACH") return res.status(403).json({ message: "Coach tier required", requiredTier: "COACH" });
+    (req as any).user = u;
+    next();
+  };
+
+  // Coach: list my students (active + invited)
+  app.get("/api/coach/students", requireCoach, async (req: Request, res: Response) => {
+    try {
+      const coachId = req.session.userId!;
+      const r = await pool.query(
+        `SELECT cs.*, ur.email AS student_email, ur.username AS student_username, ur.subscription_tier AS student_tier
+         FROM coach_student cs
+         LEFT JOIN user_role ur ON ur.user_id = cs.student_id
+         WHERE cs.coach_id = $1 AND cs.status IN ('invited','active')
+         ORDER BY cs.invited_at DESC`,
+        [coachId]
+      );
+      res.json(r.rows.map((row: any) => ({
+        id: row.id,
+        studentId: row.student_id,
+        studentEmail: row.student_email,
+        studentUsername: row.student_username,
+        studentTier: row.student_tier,
+        status: row.status,
+        invitedAt: row.invited_at,
+        acceptedAt: row.accepted_at,
+      })));
+    } catch (err) {
+      console.error("[Coach] list students error:", err);
+      res.status(500).json({ message: "Failed to list students" });
+    }
+  });
+
+  // Coach: invite a student by email
+  app.post("/api/coach/invite", requireCoach, async (req: Request, res: Response) => {
+    try {
+      const coachId = req.session.userId!;
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        return res.status(400).json({ message: "Valid student email required" });
+      }
+      // limit check (max 25 active+invited)
+      const cnt = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM coach_student WHERE coach_id = $1 AND status IN ('invited','active')`,
+        [coachId]
+      );
+      if ((cnt.rows[0]?.n || 0) >= 25) {
+        return res.status(400).json({ message: "Student limit reached (25)" });
+      }
+      // student must be a registered user
+      const studentRow = await pool.query(
+        `SELECT user_id, email FROM user_role WHERE LOWER(email) = $1 LIMIT 1`,
+        [email]
+      );
+      if (!studentRow.rows.length) {
+        return res.status(404).json({ message: "No TradifyApp account with that email. Ask them to sign up first." });
+      }
+      const studentId = studentRow.rows[0].user_id;
+      if (studentId === coachId) {
+        return res.status(400).json({ message: "Cannot invite yourself" });
+      }
+      // upsert invite
+      const existing = await pool.query(
+        `SELECT id, status FROM coach_student WHERE coach_id = $1 AND student_id = $2 LIMIT 1`,
+        [coachId, studentId]
+      );
+      if (existing.rows.length) {
+        const cur = existing.rows[0];
+        if (cur.status === "active" || cur.status === "invited") {
+          return res.status(400).json({ message: `Student already ${cur.status}` });
+        }
+        await pool.query(
+          `UPDATE coach_student SET status = 'invited', invited_at = NOW(), accepted_at = NULL, removed_at = NULL WHERE id = $1`,
+          [cur.id]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO coach_student (coach_id, student_id, status) VALUES ($1, $2, 'invited')`,
+          [coachId, studentId]
+        );
+      }
+      res.json({ ok: true, studentId });
+    } catch (err) {
+      console.error("[Coach] invite error:", err);
+      res.status(500).json({ message: "Failed to invite student" });
+    }
+  });
+
+  // Coach: remove a student
+  app.delete("/api/coach/students/:studentId", requireCoach, async (req: Request, res: Response) => {
+    try {
+      const coachId = req.session.userId!;
+      const { studentId } = req.params;
+      await pool.query(
+        `UPDATE coach_student SET status = 'removed', removed_at = NOW() WHERE coach_id = $1 AND student_id = $2`,
+        [coachId, studentId]
+      );
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[Coach] remove student error:", err);
+      res.status(500).json({ message: "Failed to remove student" });
+    }
+  });
+
+  // Coach: read a student's trades (read-only)
+  app.get("/api/coach/students/:studentId/trades", requireCoach, async (req: Request, res: Response) => {
+    try {
+      const coachId = req.session.userId!;
+      const { studentId } = req.params;
+      const link = await pool.query(
+        `SELECT 1 FROM coach_student WHERE coach_id = $1 AND student_id = $2 AND status = 'active' LIMIT 1`,
+        [coachId, studentId]
+      );
+      if (!link.rows.length) return res.status(403).json({ message: "Not your active student" });
+      const r = await pool.query(
+        `SELECT id, pair, direction, timeframe, entry_price, stop_loss, take_profit, outcome, profit_loss, notes, created_at
+         FROM trade_journal WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100`,
+        [studentId]
+      );
+      res.json(r.rows);
+    } catch (err) {
+      console.error("[Coach] student trades error:", err);
+      res.status(500).json({ message: "Failed to load student trades" });
+    }
+  });
+
+  // Coach: list feedback for a student
+  app.get("/api/coach/students/:studentId/feedback", requireCoach, async (req: Request, res: Response) => {
+    try {
+      const coachId = req.session.userId!;
+      const { studentId } = req.params;
+      const link = await pool.query(
+        `SELECT 1 FROM coach_student WHERE coach_id = $1 AND student_id = $2 AND status = 'active' LIMIT 1`,
+        [coachId, studentId]
+      );
+      if (!link.rows.length) return res.status(403).json({ message: "Not your active student" });
+      const r = await pool.query(
+        `SELECT id, trade_id, content, created_at FROM coach_feedback
+         WHERE coach_id = $1 AND student_id = $2 ORDER BY created_at DESC LIMIT 200`,
+        [coachId, studentId]
+      );
+      res.json(r.rows);
+    } catch (err) {
+      console.error("[Coach] feedback list error:", err);
+      res.status(500).json({ message: "Failed to load feedback" });
+    }
+  });
+
+  // Coach: post feedback
+  app.post("/api/coach/feedback", requireCoach, async (req: Request, res: Response) => {
+    try {
+      const coachId = req.session.userId!;
+      const studentId = String(req.body?.studentId || "");
+      const tradeId = req.body?.tradeId ? Number(req.body.tradeId) : null;
+      const content = String(req.body?.content || "").trim();
+      if (!studentId || !content) return res.status(400).json({ message: "studentId and content required" });
+      if (content.length > 4000) return res.status(400).json({ message: "Feedback too long (max 4000 chars)" });
+      const link = await pool.query(
+        `SELECT 1 FROM coach_student WHERE coach_id = $1 AND student_id = $2 AND status = 'active' LIMIT 1`,
+        [coachId, studentId]
+      );
+      if (!link.rows.length) return res.status(403).json({ message: "Not your active student" });
+      const r = await pool.query(
+        `INSERT INTO coach_feedback (coach_id, student_id, trade_id, content) VALUES ($1, $2, $3, $4) RETURNING *`,
+        [coachId, studentId, tradeId, content]
+      );
+      res.json(r.rows[0]);
+    } catch (err) {
+      console.error("[Coach] post feedback error:", err);
+      res.status(500).json({ message: "Failed to post feedback" });
+    }
+  });
+
+  // Student: get my coach + pending invites + recent feedback
+  app.get("/api/student/coach", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const studentId = req.session.userId!;
+      const links = await pool.query(
+        `SELECT cs.id, cs.status, cs.invited_at, cs.accepted_at, cs.coach_id,
+                ur.email AS coach_email, ur.username AS coach_username
+         FROM coach_student cs
+         LEFT JOIN user_role ur ON ur.user_id = cs.coach_id
+         WHERE cs.student_id = $1 AND cs.status IN ('invited','active')
+         ORDER BY cs.invited_at DESC`,
+        [studentId]
+      );
+      const activeCoach = links.rows.find((r: any) => r.status === "active") || null;
+      let recentFeedback: any[] = [];
+      if (activeCoach) {
+        const f = await pool.query(
+          `SELECT id, trade_id, content, created_at FROM coach_feedback
+           WHERE coach_id = $1 AND student_id = $2 ORDER BY created_at DESC LIMIT 20`,
+          [activeCoach.coach_id, studentId]
+        );
+        recentFeedback = f.rows;
+      }
+      res.json({
+        invites: links.rows.filter((r: any) => r.status === "invited"),
+        activeCoach,
+        recentFeedback,
+      });
+    } catch (err) {
+      console.error("[Student] coach error:", err);
+      res.status(500).json({ message: "Failed to load coach info" });
+    }
+  });
+
+  // Student: respond to a coach invite
+  app.post("/api/student/coach-invite/:id/respond", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const studentId = req.session.userId!;
+      const id = Number(req.params.id);
+      const action = String(req.body?.action || "");
+      if (!["accept", "decline"].includes(action)) return res.status(400).json({ message: "action must be accept|decline" });
+      const r = await pool.query(
+        `SELECT id, coach_id FROM coach_student WHERE id = $1 AND student_id = $2 AND status = 'invited' LIMIT 1`,
+        [id, studentId]
+      );
+      if (!r.rows.length) return res.status(404).json({ message: "Invite not found" });
+      if (action === "accept") {
+        // ensure student doesn't already have an active coach
+        const active = await pool.query(
+          `SELECT 1 FROM coach_student WHERE student_id = $1 AND status = 'active' LIMIT 1`,
+          [studentId]
+        );
+        if (active.rows.length) return res.status(400).json({ message: "You already have an active coach. Decline or remove the existing one first." });
+        await pool.query(
+          `UPDATE coach_student SET status = 'active', accepted_at = NOW() WHERE id = $1`,
+          [id]
+        );
+      } else {
+        await pool.query(
+          `UPDATE coach_student SET status = 'declined' WHERE id = $1`,
+          [id]
+        );
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[Student] respond error:", err);
+      res.status(500).json({ message: "Failed to respond" });
     }
   });
 

@@ -1,4 +1,4 @@
-import { ShieldCheck, Check, X, ArrowRight, ExternalLink, Crown, Zap, Star, Sparkles } from "lucide-react";
+import { ShieldCheck, Check, X, ArrowRight, ExternalLink, Crown, Zap, Star, Sparkles, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ export default function Pricing() {
 
   const proConfig = PLAN_CONFIGS.PRO;
   const eliteConfig = PLAN_CONFIGS.ELITE;
+  const coachConfig = PLAN_CONFIGS.COACH;
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
 
   const { data: user } = useQuery<UserRole>({
@@ -64,6 +65,8 @@ export default function Pricing() {
 
   const proDisplayPrice = isAnnual ? proAnnualMonthly : proMonthlyPrice;
   const eliteDisplayPrice = isAnnual ? eliteAnnualMonthly : eliteMonthlyPrice;
+  const coachDisplayPrice = isAnnual ? coachConfig.pricing.annualMonthly : coachConfig.pricing.monthly;
+  const isCoachUser = tier === "COACH";
   const proOriginalMonthly = proConfig.pricing.monthly;
   const eliteOriginalMonthly = eliteConfig.pricing.monthly;
 
@@ -171,7 +174,7 @@ export default function Pricing() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
           {/* Free Plan */}
           <Card className="bg-card border-border shadow-2xl relative overflow-hidden group">
             <CardContent className="p-6">
@@ -325,7 +328,7 @@ export default function Pricing() {
                 ))}
               </div>
 
-              {isElite ? (
+              {tier === "ELITE" ? (
                 <Button 
                   onClick={handleManageSubscription}
                   className="w-full h-12 bg-amber-500 text-white font-black uppercase tracking-[0.15em] text-xs"
@@ -333,6 +336,10 @@ export default function Pricing() {
                 >
                   {t("pricing.manageSubscription")}
                   <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              ) : isCoachUser ? (
+                <Button variant="outline" className="w-full h-12 font-bold uppercase tracking-widest text-xs border-border" disabled data-testid="button-downgrade-elite">
+                  {t("pricing.downgrade")}
                 </Button>
               ) : (
                 <Button 
@@ -342,6 +349,61 @@ export default function Pricing() {
                 >
                   {t("pricing.upgradeToElite")}
                   <Crown className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Coach Plan */}
+          <Card className="bg-gradient-to-b from-violet-500/10 to-card border-violet-500/30 shadow-2xl relative overflow-hidden group" data-testid="card-coach-plan">
+            <div className="absolute top-0 right-0 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest rounded-bl-lg">
+              For Mentors
+            </div>
+            <CardContent className="p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <GraduationCap size={20} className="text-violet-500" />
+                  <h3 className="text-lg font-bold text-violet-500 uppercase tracking-widest">{coachConfig.name}</h3>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-foreground">${coachDisplayPrice}</span>
+                  <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">{t("pricing.perMonth")}</span>
+                </div>
+                {isAnnual && (
+                  <p className="text-violet-500 text-xs font-bold mt-1">
+                    ${coachConfig.pricing.annual}{t("pricing.yearSuffix")} — {t("pricing.saveSuffix")} ${coachConfig.pricing.annualSavings}{t("pricing.yearSuffix")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-2">{coachConfig.description}</p>
+              </div>
+
+              <div className="space-y-3 mb-8">
+                <div className="text-[10px] font-black text-violet-500/70 uppercase tracking-widest mb-2">Everything in Elite, plus</div>
+                {coachConfig.displayFeatures.slice(1).map((f, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Check size={14} className="text-violet-500 flex-shrink-0" />
+                    <span className="text-sm text-foreground font-medium">{f}</span>
+                  </div>
+                ))}
+              </div>
+
+              {isCoachUser ? (
+                <Button 
+                  onClick={handleManageSubscription}
+                  className="w-full h-12 bg-violet-500 hover:bg-violet-600 text-white font-black uppercase tracking-[0.15em] text-xs"
+                  data-testid="button-manage-coach"
+                >
+                  {t("pricing.manageSubscription")}
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full h-12 bg-violet-500 hover:bg-violet-600 text-white font-black uppercase tracking-[0.15em] text-xs"
+                  data-testid="button-upgrade-coach"
+                  onClick={() => window.location.href = `/checkout?plan=COACH&period=${billingPeriod}`}
+                >
+                  Become a Coach
+                  <GraduationCap className="ml-2 h-4 w-4" />
                 </Button>
               )}
             </CardContent>

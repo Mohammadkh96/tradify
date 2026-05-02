@@ -1,4 +1,4 @@
-export type PlanTier = "FREE" | "PRO" | "ELITE";
+export type PlanTier = "FREE" | "PRO" | "ELITE" | "COACH";
 
 export interface PlanFeatures {
   maxStrategies: number;
@@ -18,6 +18,9 @@ export interface PlanFeatures {
   fullEducationAccess: boolean;
   propFirmTracker: boolean;
   propFirmAiWarnings: boolean;
+  coachDashboard: boolean;
+  maxStudents: number;
+  studentFeedback: boolean;
 }
 
 export type BillingPeriod = "monthly" | "annual";
@@ -60,6 +63,9 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     fullEducationAccess: false,
     propFirmTracker: false,
     propFirmAiWarnings: false,
+    coachDashboard: false,
+    maxStudents: 0,
+    studentFeedback: false,
   },
   PRO: {
     maxStrategies: -1,
@@ -79,6 +85,9 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     fullEducationAccess: true,
     propFirmTracker: true,
     propFirmAiWarnings: false,
+    coachDashboard: false,
+    maxStudents: 0,
+    studentFeedback: false,
   },
   ELITE: {
     maxStrategies: -1,
@@ -98,6 +107,31 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     fullEducationAccess: true,
     propFirmTracker: true,
     propFirmAiWarnings: true,
+    coachDashboard: false,
+    maxStudents: 0,
+    studentFeedback: false,
+  },
+  COACH: {
+    maxStrategies: -1,
+    historyDays: -1,
+    aiAnalysis: true,
+    sessionAnalytics: true,
+    timePatternAnalysis: true,
+    behavioralRiskFlags: true,
+    strategyDeviationAnalysis: true,
+    monthlyAIReview: true,
+    pdfReports: true,
+    csvExport: true,
+    prioritySupport: true,
+    eliteBadge: true,
+    advancedEquityCurve: true,
+    performanceIntelligence: true,
+    fullEducationAccess: true,
+    propFirmTracker: true,
+    propFirmAiWarnings: true,
+    coachDashboard: true,
+    maxStudents: 25,
+    studentFeedback: true,
   },
 };
 
@@ -193,6 +227,25 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       "Priority Support",
       "Elite Member Badge",
     ],
+    excludedFeatures: ["Coach Dashboard", "Up to 25 Linked Students", "Per-Trade Feedback"],
+  },
+  COACH: {
+    id: "COACH",
+    name: "Coach",
+    price: 99,
+    pricing: { monthly: 99, annual: 990, annualMonthly: 82, annualSavings: 198 },
+    billingPeriod: "month",
+    description: "Mentor up to 25 students with full Elite access",
+    features: PLAN_FEATURES.COACH,
+    displayFeatures: [
+      "Everything in Elite",
+      "Coach Dashboard",
+      "Up to 25 Linked Students",
+      "Read-only access to student trade journals",
+      "Per-trade written feedback",
+      "Coach badge on profile",
+      "Priority onboarding for your students",
+    ],
     excludedFeatures: [],
   },
 };
@@ -240,16 +293,22 @@ export function getHistoryDays(tier: string | null | undefined): number {
 
 export function isPaidTier(tier: string | null | undefined): boolean {
   const normalizedTier = tier?.toUpperCase();
-  return normalizedTier === "PRO" || normalizedTier === "ELITE";
+  return normalizedTier === "PRO" || normalizedTier === "ELITE" || normalizedTier === "COACH";
 }
 
 export function isEliteTier(tier: string | null | undefined): boolean {
-  return tier?.toUpperCase() === "ELITE";
+  const t = tier?.toUpperCase();
+  return t === "ELITE" || t === "COACH";
+}
+
+export function isCoachTier(tier: string | null | undefined): boolean {
+  return tier?.toUpperCase() === "COACH";
 }
 
 export function getUpgradeTarget(tier: string | null | undefined): PlanTier | null {
   const normalizedTier = tier?.toUpperCase();
-  if (normalizedTier === "ELITE") return null;
+  if (normalizedTier === "COACH") return null;
+  if (normalizedTier === "ELITE") return "COACH";
   if (normalizedTier === "PRO") return "ELITE";
   return "PRO";
 }
@@ -322,5 +381,17 @@ export const FEATURE_DESCRIPTIONS: Record<keyof PlanFeatures, { name: string; de
   propFirmAiWarnings: {
     name: "AI Challenge Warnings",
     description: "AI-powered warnings when approaching challenge rule violations during trade logging",
+  },
+  coachDashboard: {
+    name: "Coach Dashboard",
+    description: "Manage your linked students, view their trade journals, and send feedback",
+  },
+  maxStudents: {
+    name: "Linked Students",
+    description: "Maximum number of students you can mentor at the same time",
+  },
+  studentFeedback: {
+    name: "Per-Trade Feedback",
+    description: "Leave written feedback on individual student trades",
   },
 };
