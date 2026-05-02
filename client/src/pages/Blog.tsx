@@ -7,6 +7,7 @@ import { PublicNavbar } from "@/components/PublicNavbar";
 import { SEO } from "@/components/SEO";
 import { CookieSettingsButton } from "@/components/CookieConsent";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "react-i18next";
 
 interface BlogPost {
   id: number;
@@ -26,16 +27,19 @@ interface BlogPost {
 }
 
 export default function Blog() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const { t } = useTranslation("common");
+  const tp = (k: string) => t(`publicPages.${k}`);
+  const ALL_KEY = "All";
+  const [selectedCategory, setSelectedCategory] = useState<string>(ALL_KEY);
 
   const { data: categories = [] } = useQuery<string[]>({
     queryKey: ["/api/blog/categories"],
   });
 
   const { data: posts = [], isLoading } = useQuery<BlogPost[]>({
-    queryKey: ["/api/blog", selectedCategory !== "All" ? selectedCategory : undefined],
+    queryKey: ["/api/blog", selectedCategory !== ALL_KEY ? selectedCategory : undefined],
     queryFn: async () => {
-      const url = selectedCategory !== "All" 
+      const url = selectedCategory !== ALL_KEY 
         ? `/api/blog?category=${encodeURIComponent(selectedCategory)}`
         : "/api/blog";
       const res = await fetch(url);
@@ -44,13 +48,13 @@ export default function Blog() {
     },
   });
 
-  const allCategories = ["All", ...categories];
+  const allCategories = [ALL_KEY, ...categories];
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO
-        title="Blog - Trading Insights & Strategy Tips | TradifyApp"
-        description="Trading insights, strategy tips, and platform updates from TradifyApp. Learn disciplined trading with expert articles on prop firm challenges, MT5 analytics, and risk management."
+        title={tp("blogSeoTitle")}
+        description={tp("blogSeoDesc")}
         canonical="https://tradifyapp.com/blog"
       />
       <PublicNavbar />
@@ -62,13 +66,13 @@ export default function Blog() {
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-8">
             <BookOpen size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Insights & Updates</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{tp("blogBadge")}</span>
           </div>
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]" data-testid="text-blog-title">
-            TRADIFY <span className="text-emerald-500">BLOG</span>
+            {tp("blogTitlePart1")} <span className="text-emerald-500">{tp("blogTitlePart2")}</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto" data-testid="text-blog-subtitle">
-            Trading insights, strategy tips, and platform updates
+            {tp("blogSubtitle")}
           </p>
         </div>
       </section>
@@ -86,7 +90,7 @@ export default function Blog() {
               }`}
               data-testid={`button-category-${cat.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              {cat}
+              {cat === ALL_KEY ? t("common.all") : cat}
             </button>
           ))}
         </div>
@@ -113,8 +117,8 @@ export default function Blog() {
             <div className="h-16 w-16 rounded-2xl bg-muted border border-border flex items-center justify-center mx-auto mb-6">
               <BookOpen className="text-emerald-500" size={28} />
             </div>
-            <h3 className="text-xl font-bold text-foreground uppercase tracking-widest mb-3">No articles yet</h3>
-            <p className="text-muted-foreground">Check back soon!</p>
+            <h3 className="text-xl font-bold text-foreground uppercase tracking-widest mb-3">{tp("blogEmptyTitle")}</h3>
+            <p className="text-muted-foreground">{tp("blogEmptyDesc")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid="grid-blog-posts">
@@ -152,7 +156,7 @@ export default function Blog() {
                           : new Date(post.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                       </span>
                       <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1 group-hover:gap-2 transition-all" data-testid={`link-read-more-${post.id}`}>
-                        Read More <ArrowRight size={12} />
+                        {tp("blogReadMore")} <ArrowRight size={12} />
                       </span>
                     </div>
                   </div>
@@ -165,14 +169,14 @@ export default function Blog() {
 
       <footer className="py-12 border-t border-border text-center">
         <div className="flex justify-center flex-wrap gap-6 mb-4">
-          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-terms">Terms</Link>
-          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-privacy">Privacy</Link>
-          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-risk">Risk Disclaimer</Link>
-          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-cookie">Cookie Policy</Link>
+          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-terms">{t("footer.terms")}</Link>
+          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-privacy">{t("footer.privacy")}</Link>
+          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-risk">{t("footer.riskDisclaimer")}</Link>
+          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-cookie">{t("footer.cookies")}</Link>
           <CookieSettingsButton />
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
+          {t("footer.copyright", { year: 2026 })}
         </p>
       </footer>
     </div>

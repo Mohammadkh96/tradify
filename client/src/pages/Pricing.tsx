@@ -150,7 +150,7 @@ export default function Pricing() {
               }`}
               data-testid="button-billing-monthly"
             >
-              Monthly
+              {t("pricing.monthly")}
             </button>
             <button
               onClick={() => setBillingPeriod("annual")}
@@ -161,11 +161,11 @@ export default function Pricing() {
               }`}
               data-testid="button-billing-annual"
             >
-              Annual
+              {t("pricing.annual")}
               <span className={`absolute -top-2.5 -right-2 text-[8px] font-black px-1.5 py-0.5 rounded-full ${
                 isAnnual ? "bg-amber-500 text-white" : "bg-emerald-500/20 text-emerald-500"
               }`}>
-                SAVE
+                {t("pricing.save")}
               </span>
             </button>
           </div>
@@ -178,11 +178,11 @@ export default function Pricing() {
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap size={20} className="text-muted-foreground" />
-                  <h3 className="text-lg font-bold text-muted-foreground uppercase tracking-widest">Free</h3>
+                  <h3 className="text-lg font-bold text-muted-foreground uppercase tracking-widest">{t("pricing.freePlanLabel")}</h3>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-black text-foreground">$0</span>
-                  <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Forever</span>
+                  <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">{t("pricing.perForever")}</span>
                 </div>
               </div>
 
@@ -201,7 +201,7 @@ export default function Pricing() {
                 disabled
                 data-testid="button-current-free"
               >
-                {tier === "FREE" ? "Current Plan" : "Downgrade"}
+                {tier === "FREE" ? t("pricing.currentPlan") : t("pricing.downgrade")}
               </Button>
             </CardContent>
           </Card>
@@ -209,13 +209,13 @@ export default function Pricing() {
           {/* Pro Plan */}
           <Card className="bg-card border-emerald-500/30 shadow-2xl relative overflow-hidden group scale-[1.02]">
             <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest rounded-bl-lg">
-              Popular
+              {t("pricing.popularBadge")}
             </div>
             <CardContent className="p-6">
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <Star size={20} className="text-emerald-500" />
-                  <h3 className="text-lg font-bold text-emerald-500 uppercase tracking-widest">Pro</h3>
+                  <h3 className="text-lg font-bold text-emerald-500 uppercase tracking-widest">{t("pricing.proPlanLabel")}</h3>
                 </div>
                 <div className="flex items-baseline gap-1">
                   {isFoundingMember ? (
@@ -226,22 +226,22 @@ export default function Pricing() {
                   ) : (
                     <span className="text-4xl font-black text-foreground">${proDisplayPrice}</span>
                   )}
-                  <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
+                  <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">{t("pricing.perMonth")}</span>
                 </div>
                 {isAnnual && (
                   <p className="text-emerald-500 text-xs font-bold mt-1">
-                    ${isFoundingMember ? proAnnualPrice : proConfig.pricing.annual}/yr — Save ${isFoundingMember ? Math.round(proConfig.pricing.annualSavings * (1 - discountRate)) : proConfig.pricing.annualSavings}/yr
+                    ${isFoundingMember ? proAnnualPrice : proConfig.pricing.annual}{t("pricing.yearSuffix")} — {t("pricing.saveSuffix")} ${isFoundingMember ? Math.round(proConfig.pricing.annualSavings * (1 - discountRate)) : proConfig.pricing.annualSavings}{t("pricing.yearSuffix")}
                   </p>
                 )}
                 {isFoundingMember && (
                   <Badge className="mt-2 bg-amber-500/20 text-amber-500 border-amber-500/30 text-[9px] uppercase tracking-widest">
-                    <Crown size={10} className="mr-1" /> Founder Discount
+                    <Crown size={10} className="mr-1" /> {t("pricing.founderDiscount")}
                   </Badge>
                 )}
               </div>
 
               <div className="space-y-3 mb-8">
-                <div className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest mb-2">Everything in Free, plus:</div>
+                <div className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest mb-2">{t("pricing.everythingInFree")}</div>
                 {features.filter(f => f.pro && !f.free).map((f, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <Check size={14} className="text-emerald-500 flex-shrink-0" />
@@ -256,7 +256,7 @@ export default function Pricing() {
                   className="w-full h-12 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs"
                   data-testid="button-manage-pro"
                 >
-                  Manage Subscription
+                  {t("pricing.manageSubscription")}
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               ) : isElite ? (
@@ -266,7 +266,7 @@ export default function Pricing() {
                   disabled
                   data-testid="button-downgrade-pro"
                 >
-                  Downgrade
+                  {t("pricing.downgrade")}
                 </Button>
               ) : (
                 <Button 
@@ -274,7 +274,7 @@ export default function Pricing() {
                   data-testid="button-upgrade-pro"
                   onClick={() => window.location.href = `/checkout?plan=PRO&period=${billingPeriod}`}
                 >
-                  Upgrade to Pro
+                  {t("pricing.upgradeToPro")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               )}
@@ -284,13 +284,13 @@ export default function Pricing() {
           {/* Elite Plan */}
           <Card className="bg-gradient-to-b from-amber-500/10 to-card border-amber-500/30 shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest rounded-bl-lg">
-              Elite
+              {t("pricing.eliteBadge")}
             </div>
             <CardContent className="p-6">
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <Crown size={20} className="text-amber-500" />
-                  <h3 className="text-lg font-bold text-amber-500 uppercase tracking-widest">Elite</h3>
+                  <h3 className="text-lg font-bold text-amber-500 uppercase tracking-widest">{t("pricing.elitePlanLabel")}</h3>
                 </div>
                 <div className="flex items-baseline gap-1">
                   {isFoundingMember ? (
@@ -301,22 +301,22 @@ export default function Pricing() {
                   ) : (
                     <span className="text-4xl font-black text-foreground">${eliteDisplayPrice}</span>
                   )}
-                  <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
+                  <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">{t("pricing.perMonth")}</span>
                 </div>
                 {isAnnual && (
                   <p className="text-amber-500 text-xs font-bold mt-1">
-                    ${isFoundingMember ? eliteAnnualPrice : eliteConfig.pricing.annual}/yr — Save ${isFoundingMember ? Math.round(eliteConfig.pricing.annualSavings * (1 - discountRate)) : eliteConfig.pricing.annualSavings}/yr
+                    ${isFoundingMember ? eliteAnnualPrice : eliteConfig.pricing.annual}{t("pricing.yearSuffix")} — {t("pricing.saveSuffix")} ${isFoundingMember ? Math.round(eliteConfig.pricing.annualSavings * (1 - discountRate)) : eliteConfig.pricing.annualSavings}{t("pricing.yearSuffix")}
                   </p>
                 )}
                 {isFoundingMember && (
                   <Badge className="mt-2 bg-amber-500/20 text-amber-500 border-amber-500/30 text-[9px] uppercase tracking-widest">
-                    <Crown size={10} className="mr-1" /> Founder Discount
+                    <Crown size={10} className="mr-1" /> {t("pricing.founderDiscount")}
                   </Badge>
                 )}
               </div>
 
               <div className="space-y-3 mb-8">
-                <div className="text-[10px] font-black text-amber-500/50 uppercase tracking-widest mb-2">Everything in Pro, plus:</div>
+                <div className="text-[10px] font-black text-amber-500/50 uppercase tracking-widest mb-2">{t("pricing.everythingInPro")}</div>
                 {features.filter(f => f.elite && !f.pro).map((f, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <Check size={14} className="text-amber-500 flex-shrink-0" />
@@ -331,7 +331,7 @@ export default function Pricing() {
                   className="w-full h-12 bg-amber-500 text-white font-black uppercase tracking-[0.15em] text-xs"
                   data-testid="button-manage-elite"
                 >
-                  Manage Subscription
+                  {t("pricing.manageSubscription")}
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
@@ -340,7 +340,7 @@ export default function Pricing() {
                   data-testid="button-upgrade-elite"
                   onClick={() => window.location.href = `/checkout?plan=ELITE&period=${billingPeriod}`}
                 >
-                  Upgrade to Elite
+                  {t("pricing.upgradeToElite")}
                   <Crown className="ml-2 h-4 w-4" />
                 </Button>
               )}
@@ -350,15 +350,15 @@ export default function Pricing() {
 
         {/* Comparison Section */}
         <div className="mb-20">
-          <h2 className="text-2xl font-bold text-foreground text-center mb-10 uppercase tracking-widest">Full Comparison</h2>
+          <h2 className="text-2xl font-bold text-foreground text-center mb-10 uppercase tracking-widest">{t("pricing.fullComparison")}</h2>
           <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-2xl">
             <table className="w-full text-left min-w-[500px]">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
-                  <th className="p-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Feature</th>
-                  <th className="p-4 text-xs font-black text-muted-foreground uppercase tracking-widest text-center">Free</th>
-                  <th className="p-4 text-xs font-black text-emerald-500 uppercase tracking-widest text-center">Pro</th>
-                  <th className="p-4 text-xs font-black text-amber-500 uppercase tracking-widest text-center">Elite</th>
+                  <th className="p-4 text-xs font-black text-muted-foreground uppercase tracking-widest">{t("pricing.compareFeatures")}</th>
+                  <th className="p-4 text-xs font-black text-muted-foreground uppercase tracking-widest text-center">{t("pricing.freePlanLabel")}</th>
+                  <th className="p-4 text-xs font-black text-emerald-500 uppercase tracking-widest text-center">{t("pricing.proPlanLabel")}</th>
+                  <th className="p-4 text-xs font-black text-amber-500 uppercase tracking-widest text-center">{t("pricing.elitePlanLabel")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
@@ -388,9 +388,9 @@ export default function Pricing() {
         {/* Trust Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
           {[
-            { title: "No Credentials Needed", desc: "We never access your broker login. MT5 runs locally via terminal sync." },
-            { title: "Cancel Anytime", desc: "No long-term contracts. Pause or downgrade whenever you choose." },
-            { title: "Data Transparency", desc: "Your data belongs to you. Export your history at any time with Pro." }
+            { title: t("pricing.trustNoCreds"), desc: t("pricing.trustNoCredsDesc") },
+            { title: t("pricing.trustCancel"), desc: t("pricing.trustCancelDesc") },
+            { title: t("pricing.trustData"), desc: t("pricing.trustDataDesc") },
           ].map((item, i) => (
             <div key={i} className="bg-card border border-border p-6 rounded-2xl text-center">
               <ShieldCheck size={24} className="text-emerald-500 mx-auto mb-4" />
@@ -401,14 +401,14 @@ export default function Pricing() {
         </div>
 
         <div className="text-center pb-20">
-          <h3 className="text-2xl font-bold text-foreground mb-6">Ready to upgrade your trading edge?</h3>
+          <h3 className="text-2xl font-bold text-foreground mb-6">{t("pricing.ctaTitle")}</h3>
           {isPaid ? (
             <Button 
               onClick={handleManageSubscription}
               className="h-14 px-10 bg-emerald-500 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-emerald-500/20"
               data-testid="button-manage-account"
             >
-              Manage Your Account
+              {t("pricing.manageAccount")}
               <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           ) : (
@@ -417,7 +417,7 @@ export default function Pricing() {
               data-testid="button-start-pro-trial"
               onClick={() => window.location.href = `/checkout?plan=PRO&period=${billingPeriod}`}
             >
-              Start Your Pro Journey
+              {t("pricing.ctaButton")}
             </Button>
           )}
         </div>

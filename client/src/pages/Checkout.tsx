@@ -2,16 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { NoIndexSEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2, Crown, Star, Sparkles } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { usePlan } from "@/hooks/usePlan";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { PLAN_CONFIGS, type PlanTier, type BillingPeriod } from "@shared/plans";
 import { trackFBEvent } from "@/lib/fbpixel";
+import { useTranslation } from "react-i18next";
 
 const PLAN_ICONS: Record<'PRO' | 'ELITE', any> = {
   PRO: Star,
@@ -19,6 +18,7 @@ const PLAN_ICONS: Record<'PRO' | 'ELITE', any> = {
 };
 
 export default function Checkout() {
+  const { t } = useTranslation("common", { keyPrefix: "checkout" });
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useQuery<any>({ queryKey: ["/api/user"] });
   const [isActivating, setIsActivating] = useState(false);
@@ -54,26 +54,26 @@ export default function Checkout() {
           const res = await apiRequest("POST", "/api/paypal/subscription/activate", { subscriptionId, tier });
           const result = await res.json();
           
-          const tierName = tier === 'ELITE' ? 'Elite' : 'Pro';
+          const tierName = tier === 'ELITE' ? t('tierElite') : t('tierPro');
           if (result.success) {
             const purchaseValue = tier === 'ELITE' ? 59.00 : 29.00;
             trackFBEvent('Purchase', { value: purchaseValue, currency: 'USD' });
             toast({
-              title: "Subscription Activated!",
-              description: `Welcome to TradifyApp ${tierName}! Your subscription is now active.`,
+              title: t('toastActivated'),
+              description: t('toastActivatedDesc', { tier: tierName }),
             });
           } else {
             toast({
-              title: "Subscription Pending",
-              description: "Your subscription is being processed. It may take a moment to activate.",
+              title: t('toastPending'),
+              description: t('toastPendingDesc'),
             });
           }
           queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         } catch (error) {
           console.error("Activation error:", error);
           toast({
-            title: "Subscription Processing",
-            description: "Your subscription is being set up. Please refresh in a moment.",
+            title: t('toastProcessing'),
+            description: t('toastProcessingDescAlt'),
           });
           queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         } finally {
@@ -82,8 +82,8 @@ export default function Checkout() {
         window.history.replaceState({}, '', '/checkout');
       } else if (subscriptionStatus === 'success' && !subscriptionId) {
         toast({
-          title: "Subscription Processing",
-          description: "Your subscription is being processed. Please wait a moment.",
+          title: t('toastProcessing'),
+          description: t('toastProcessingDesc'),
         });
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         window.history.replaceState({}, '', '/checkout');
@@ -92,8 +92,8 @@ export default function Checkout() {
         sessionStorage.removeItem('pending_paypal_tier');
         sessionStorage.removeItem('pending_paypal_period');
         toast({
-          title: "Subscription Cancelled",
-          description: "You cancelled the subscription process.",
+          title: t('toastCancelled'),
+          description: t('toastCancelledDesc'),
           variant: "destructive",
         });
         window.history.replaceState({}, '', '/checkout');
@@ -101,7 +101,7 @@ export default function Checkout() {
     };
     
     activateSubscription();
-  }, [toast, isActivating]);
+  }, [toast, isActivating, t]);
 
   if (isUserLoading) {
     return (
@@ -138,18 +138,18 @@ export default function Checkout() {
 
   return (
     <div className="flex-1 bg-background text-foreground min-h-screen p-6 lg:p-10">
-      <NoIndexSEO title="Billing & Subscription | TradifyApp" />
+      <NoIndexSEO title={t('seoTitle')} />
       <div className="max-w-4xl mx-auto space-y-8">
         <header>
           <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase italic mb-2">
-            Billing & <span className={isElitePlan ? "text-amber-500" : "text-emerald-500"}>Subscription</span>
+            {t('headerTitle')} <span className={isElitePlan ? "text-amber-500" : "text-emerald-500"}>{t('headerHighlight')}</span>
           </h1>
-          <p className="text-muted-foreground font-medium">Manage your payment methods and subscription status.</p>
+          <p className="text-muted-foreground font-medium">{t('headerSubtitle')}</p>
           {isFoundingMember && (
             <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
               <Crown size={16} className="text-amber-500" />
               <span className="text-amber-500 font-bold text-sm uppercase tracking-widest">
-                Founding Member: 30% Lifetime Discount Applied
+                {t('founderBadge')}
               </span>
               <Sparkles size={14} className="text-amber-500" />
             </div>
@@ -160,23 +160,23 @@ export default function Checkout() {
           {/* Current Status */}
           <Card className="bg-card border-border shadow-2xl overflow-hidden">
             <CardHeader className="bg-muted/30 border-b border-border">
-              <CardTitle className="text-lg font-black text-foreground uppercase tracking-widest">Current Plan</CardTitle>
-              <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">Your subscription tier and cycle.</CardDescription>
+              <CardTitle className="text-lg font-black text-foreground uppercase tracking-widest">{t('currentPlan')}</CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">{t('currentPlanDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
                 <div>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Plan</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{t('labelPlan')}</p>
                   <p className={`text-xl font-black uppercase tracking-tight italic ${isElite ? 'text-amber-500' : isPro ? 'text-emerald-500' : 'text-foreground'}`}>
                     {subscription}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Status</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{t('labelStatus')}</p>
                   <p className={`text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
                     isElite ? "bg-amber-500/10 text-amber-500" : isPro ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
                   }`}>
-                    {isPaid ? "Active" : "INACTIVE"}
+                    {isPaid ? t('statusActive') : t('statusInactive')}
                   </p>
                 </div>
               </div>
@@ -187,13 +187,10 @@ export default function Checkout() {
                     <ShieldCheck className={`w-5 h-5 mt-0.5 ${isElite ? 'text-amber-500' : 'text-emerald-500'}`} />
                     <div>
                       <p className="text-sm font-black text-foreground uppercase tracking-tight">
-                        {isElite ? 'Elite' : 'Pro'} Features Enabled
+                        {isElite ? t('eliteFeaturesEnabled') : t('proFeaturesEnabled')}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1 font-bold leading-tight">
-                        {isElite 
-                          ? 'You have full access to all features including priority support and advanced analytics.'
-                          : 'You have full access to performance intelligence, unlimited journal history, and priority MT5 sync.'
-                        }
+                        {isElite ? t('eliteFeaturesDesc') : t('proFeaturesDesc')}
                       </p>
                     </div>
                   </div>
@@ -208,12 +205,12 @@ export default function Checkout() {
                   }`}
                   data-testid="button-manage-subscription"
                 >
-                  Manage Subscription in Profile
+                  {t('btnManageSubscription')}
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
                 <p className="text-[10px] text-muted-foreground text-center font-black uppercase tracking-widest opacity-50">
-                  Upgrade to unlock institutional tools.
+                  {t('upgradeUnlock')}
                 </p>
               )}
             </CardContent>
@@ -227,23 +224,23 @@ export default function Checkout() {
               <div className="flex items-center gap-2">
                 <PlanIcon className={isElitePlan ? "w-5 h-5 text-amber-500" : "w-5 h-5 text-emerald-500"} />
                 <CardTitle className={isElitePlan ? "text-lg font-black uppercase tracking-widest text-amber-500" : "text-lg font-black uppercase tracking-widest text-emerald-500"}>
-                  {showPayPalButton ? (isUpgradingToElite ? "Upgrade to Elite" : `Upgrade to ${planConfig.name}`) : "Subscription Details"}
+                  {showPayPalButton ? (isUpgradingToElite ? t('upgradeToElite') : t('upgradeTo', { name: planConfig.name })) : t('subscriptionDetails')}
                 </CardTitle>
               </div>
               <CardDescription className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
                 {showPayPalButton ? (
                   isFoundingMember ? (
                     <span className="flex items-center gap-2">
-                      <span className="text-amber-500">${displayPrice}/{isAnnual ? 'mo (billed annually)' : 'month'}</span>
+                      <span className="text-amber-500">{t('founderPriceMo', { price: displayPrice, period: isAnnual ? t('perMoBilledAnnual') : t('perMonth') })}</span>
                       <span className="line-through text-muted-foreground/50">${originalPrice}</span>
-                      <span className="text-amber-500">Founder Discount</span>
+                      <span className="text-amber-500">{t('founderDiscount')}</span>
                     </span>
                   ) : (
                     isAnnual 
-                      ? `$${displayPrice}/mo billed as $${totalPrice}/year — Cancel anytime.`
-                      : `$${planConfig.price}/month — Cancel anytime.`
+                      ? t('annualPriceLine', { price: displayPrice, total: totalPrice })
+                      : t('monthlyPriceLine', { price: planConfig.price })
                   )
-                ) : "Current provider info."}
+                ) : t('currentProvider')}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
@@ -260,7 +257,7 @@ export default function Checkout() {
                       }`}
                       data-testid="button-checkout-monthly"
                     >
-                      Monthly
+                      {t('billingMonthly')}
                     </button>
                     <button
                       onClick={() => setBillingPeriod("annual")}
@@ -271,19 +268,25 @@ export default function Checkout() {
                       }`}
                       data-testid="button-checkout-annual"
                     >
-                      Annual
-                      <span className="ml-1 text-[8px] opacity-80">Save {Math.round((1 - planConfig.pricing.annual / (planConfig.pricing.monthly * 12)) * 100)}%</span>
+                      {t('billingAnnual')}
+                      <span className="ml-1 text-[8px] opacity-80">{t('savePercent', { percent: Math.round((1 - planConfig.pricing.annual / (planConfig.pricing.monthly * 12)) * 100) })}</span>
                     </button>
                   </div>
 
                   {isAnnual && (
                     <div className={`text-center p-3 rounded-lg border ${isElitePlan ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
                       <p className={`text-xs font-bold ${isElitePlan ? 'text-amber-500' : 'text-emerald-500'}`}>
-                        {isFoundingMember ? (
-                          <>Billed as ${Math.round(planConfig.pricing.annual * (1 - discountRate))}/year (${Math.round(planConfig.pricing.annualMonthly * (1 - discountRate))}/mo) — You save ${Math.round((planConfig.pricing.monthly * 12 - planConfig.pricing.annual) * (1 - discountRate))}/yr</>
-                        ) : (
-                          <>Billed as ${planConfig.pricing.annual}/year (${planConfig.pricing.annualMonthly}/mo) — You save ${planConfig.pricing.annualSavings}/yr</>
-                        )}
+                        {isFoundingMember
+                          ? t('billedAnnualFounder', {
+                              annual: Math.round(planConfig.pricing.annual * (1 - discountRate)),
+                              monthly: Math.round(planConfig.pricing.annualMonthly * (1 - discountRate)),
+                              savings: Math.round((planConfig.pricing.monthly * 12 - planConfig.pricing.annual) * (1 - discountRate)),
+                            })
+                          : t('billedAnnual', {
+                              annual: planConfig.pricing.annual,
+                              monthly: planConfig.pricing.annualMonthly,
+                              savings: planConfig.pricing.annualSavings,
+                            })}
                       </p>
                     </div>
                   )}
@@ -291,8 +294,8 @@ export default function Checkout() {
                   <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
                     <SiPaypal className="text-[#0070ba] w-6 h-6" />
                     <div>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Payment Method</p>
-                      <p className="text-sm font-black text-foreground uppercase tracking-tight">PayPal Subscription</p>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{t('labelPaymentMethod')}</p>
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight">{t('paypalSubscription')}</p>
                     </div>
                   </div>
 
@@ -307,7 +310,7 @@ export default function Checkout() {
                         className={selectedTier === 'PRO' ? 'bg-emerald-500' : ''}
                         data-testid="button-select-pro"
                       >
-                        <Star className="w-3 h-3 mr-1" /> Pro
+                        <Star className="w-3 h-3 mr-1" /> {t('tierPro')}
                       </Button>
                       <Button
                         variant={selectedTier === 'ELITE' ? 'default' : 'outline'}
@@ -316,14 +319,14 @@ export default function Checkout() {
                         className={selectedTier === 'ELITE' ? 'bg-amber-500' : ''}
                         data-testid="button-select-elite"
                       >
-                        <Crown className="w-3 h-3 mr-1" /> Elite
+                        <Crown className="w-3 h-3 mr-1" /> {t('tierElite')}
                       </Button>
                     </div>
                   )}
 
                   <div className="flex items-start gap-2 text-[9px] text-muted-foreground font-black uppercase tracking-widest bg-muted/30 p-3 rounded-lg border border-border/50 italic">
                     <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
-                    <span>{isAnnual ? 'Billed annually. Cancel anytime via Profile.' : 'Recurring monthly billing. Cancel anytime via Profile.'}</span>
+                    <span>{isAnnual ? t('billedAnnualNote') : t('billedMonthlyNote')}</span>
                   </div>
                 </div>
               ) : (
@@ -331,15 +334,15 @@ export default function Checkout() {
                   <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
                     <SiPaypal className="text-[#0070ba] w-6 h-6" />
                     <div>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Provider</p>
-                      <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">PayPal</p>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{t('labelProvider')}</p>
+                      <p className="text-sm font-black text-foreground uppercase tracking-tight font-mono">{t('providerPayPal')}</p>
                     </div>
                   </div>
                   <div className={`flex items-center gap-2 p-3 rounded-lg border ${
                     isElite ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20'
                   }`}>
                     <CheckCircle2 className={`w-4 h-4 ${isElite ? 'text-amber-500' : 'text-emerald-500'}`} />
-                    <span className={`text-xs font-bold ${isElite ? 'text-amber-500' : 'text-emerald-500'}`}>Subscription Active</span>
+                    <span className={`text-xs font-bold ${isElite ? 'text-amber-500' : 'text-emerald-500'}`}>{t('subscriptionActive')}</span>
                   </div>
                   
                   {isPro && !isElite && (
@@ -349,12 +352,12 @@ export default function Checkout() {
                       data-testid="button-upgrade-to-elite-checkout"
                     >
                       <Crown className="w-4 h-4 mr-2" />
-                      Upgrade to Elite
+                      {t('upgradeToElite')}
                     </Button>
                   )}
                   
                   <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-relaxed text-center opacity-50 italic">
-                    Manage your subscription in Profile.
+                    {t('manageInProfile')}
                   </p>
                 </div>
               )}

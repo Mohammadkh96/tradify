@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, CheckCircle2, AlertCircle, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { NoIndexSEO } from "@/components/SEO";
+import { useTranslation } from "react-i18next";
 
 export default function ResetPassword() {
+  const { t } = useTranslation("common", { keyPrefix: "publicPages" });
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,12 +30,12 @@ export default function ResetPassword() {
     setError("");
 
     if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("resetMinLengthError"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("resetMismatchError"));
       return;
     }
 
@@ -48,19 +50,19 @@ export default function ResetPassword() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Failed to reset password.");
+        setError(data.message || t("resetFailedDefault"));
         return;
       }
 
       setIsSuccess(true);
       toast({
-        title: "Password Reset",
-        description: "Your password has been reset successfully.",
+        title: t("resetToastTitle"),
+        description: t("resetToastDesc"),
       });
 
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError(t("resetGenericError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -74,15 +76,15 @@ export default function ResetPassword() {
             <AlertCircle className="text-red-500" size={32} />
           </div>
           <h1 className="text-2xl font-black text-foreground uppercase tracking-tight mb-3" data-testid="text-invalid-link">
-            Invalid Reset Link
+            {t("resetInvalidTitle")}
           </h1>
           <p className="text-muted-foreground mb-8" data-testid="text-invalid-description">
-            This password reset link is missing or invalid. Please request a new one.
+            {t("resetInvalidDesc")}
           </p>
           <Link to="/login">
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase tracking-wider" data-testid="button-back-to-login">
               <ArrowLeft size={16} className="mr-2" />
-              Back to Login
+              {t("resetBackToLogin")}
             </Button>
           </Link>
         </div>
@@ -98,14 +100,14 @@ export default function ResetPassword() {
             <CheckCircle2 className="text-emerald-500" size={32} />
           </div>
           <h1 className="text-2xl font-black text-foreground uppercase tracking-tight mb-3" data-testid="text-success-heading">
-            Password Reset <span className="text-emerald-500">Complete</span>
+            {t("resetSuccessTitle1")} <span className="text-emerald-500">{t("resetSuccessTitle2")}</span>
           </h1>
           <p className="text-muted-foreground mb-8" data-testid="text-success-description">
-            Your password has been updated. Redirecting you to login...
+            {t("resetSuccessDesc")}
           </p>
           <Link to="/login">
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase tracking-wider" data-testid="button-go-to-login">
-              Go to Login
+              {t("resetGoToLogin")}
             </Button>
           </Link>
         </div>
@@ -115,24 +117,24 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <NoIndexSEO title="Reset Password | TradifyApp" />
+      <NoIndexSEO title={t("resetSeoTitle")} />
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
             <Lock className="text-emerald-500" size={32} />
           </div>
           <h1 className="text-2xl font-black text-foreground uppercase tracking-tight mb-2" data-testid="text-reset-heading">
-            Reset Your <span className="text-emerald-500">Password</span>
+            {t("resetHeading1")} <span className="text-emerald-500">{t("resetHeading2")}</span>
           </h1>
           <p className="text-sm text-muted-foreground" data-testid="text-reset-description">
-            Enter your new password below.
+            {t("resetSubheading")}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="newPassword" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              New Password
+              {t("resetNewPasswordLabel")}
             </Label>
             <div className="relative">
               <Input
@@ -140,7 +142,7 @@ export default function ResetPassword() {
                 type={showPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Minimum 8 characters"
+                placeholder={t("resetNewPlaceholder")}
                 className="bg-muted/50 border-border pr-10"
                 data-testid="input-new-password"
               />
@@ -157,7 +159,7 @@ export default function ResetPassword() {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Confirm Password
+              {t("resetConfirmLabel")}
             </Label>
             <div className="relative">
               <Input
@@ -165,7 +167,7 @@ export default function ResetPassword() {
                 type={showConfirm ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter your password"
+                placeholder={t("resetConfirmPlaceholder")}
                 className="bg-muted/50 border-border pr-10"
                 data-testid="input-confirm-password"
               />
@@ -181,11 +183,11 @@ export default function ResetPassword() {
           </div>
 
           {newPassword.length > 0 && newPassword.length < 8 && (
-            <p className="text-xs text-amber-500" data-testid="text-password-hint">Password must be at least 8 characters.</p>
+            <p className="text-xs text-amber-500" data-testid="text-password-hint">{t("resetMinLengthError")}</p>
           )}
 
           {confirmPassword.length > 0 && newPassword !== confirmPassword && (
-            <p className="text-xs text-red-500" data-testid="text-mismatch">Passwords do not match.</p>
+            <p className="text-xs text-red-500" data-testid="text-mismatch">{t("resetMismatchError")}</p>
           )}
 
           {error && (
@@ -201,13 +203,13 @@ export default function ResetPassword() {
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase tracking-wider h-11"
             data-testid="button-reset-password"
           >
-            {isSubmitting ? "Resetting..." : "Reset Password"}
+            {isSubmitting ? t("resetButtonResetting") : t("resetButtonReset")}
           </Button>
 
           <div className="text-center">
             <Link to="/login" className="text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-back-to-login">
               <ArrowLeft size={12} className="inline mr-1" />
-              Back to Login
+              {t("resetBackToLogin")}
             </Link>
           </div>
         </form>

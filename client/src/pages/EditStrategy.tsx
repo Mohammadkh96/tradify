@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -47,18 +48,19 @@ interface Strategy {
   rules: StrategyRule[];
 }
 
-const CATEGORY_LABELS: Record<RuleCategoryType, { label: string; color: string }> = {
-  [RuleCategory.SUBJECTIVE]: { label: "Subjective", color: "bg-violet-500/10 text-violet-500 border-violet-500/20" },
-  [RuleCategory.RISK_EXECUTION]: { label: "Risk & Execution", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  [RuleCategory.CONTEXT]: { label: "Context", color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
-};
-
 export default function EditStrategy() {
+  const { t } = useTranslation("strategies");
   const navigate = useNavigate();
   const params = useParams();
   const strategyId = params?.id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const CATEGORY_LABELS: Record<RuleCategoryType, { label: string; color: string }> = {
+    [RuleCategory.SUBJECTIVE]: { label: t("catSubjective"), color: "bg-violet-500/10 text-violet-500 border-violet-500/20" },
+    [RuleCategory.RISK_EXECUTION]: { label: t("catRiskExecution"), color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    [RuleCategory.CONTEXT]: { label: t("catContext"), color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
+  };
 
   const [strategyName, setStrategyName] = useState("");
   const [strategyDescription, setStrategyDescription] = useState("");
@@ -84,15 +86,15 @@ export default function EditStrategy() {
       queryClient.invalidateQueries({ queryKey: ["/api/strategies"] });
       queryClient.invalidateQueries({ queryKey: ["/api/strategies", strategyId] });
       toast({
-        title: "Strategy Updated",
-        description: `"${strategyName}" has been saved.`,
+        title: t("toastUpdated"),
+        description: t("toastUpdatedDesc", { name: strategyName }),
       });
       navigate("/strategies");
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update strategy",
+        title: t("toastErrorTitle"),
+        description: error.message || t("toastFailedUpdate"),
         variant: "destructive",
       });
     },
@@ -105,7 +107,7 @@ export default function EditStrategy() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/strategies"] });
       queryClient.invalidateQueries({ queryKey: ["/api/strategies", strategyId] });
-      toast({ title: "Strategy activated" });
+      toast({ title: t("toastActivatedShort") });
     },
   });
 
@@ -113,8 +115,8 @@ export default function EditStrategy() {
     e.preventDefault();
     if (!strategyName.trim()) {
       toast({
-        title: "Error",
-        description: "Strategy name is required",
+        title: t("toastErrorTitle"),
+        description: t("errorNameRequired"),
         variant: "destructive",
       });
       return;
@@ -136,9 +138,9 @@ export default function EditStrategy() {
   if (!strategy) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-background gap-4">
-        <p className="text-muted-foreground">Strategy not found</p>
+        <p className="text-muted-foreground">{t("strategyNotFound")}</p>
         <Button variant="outline" onClick={() => navigate("/strategies")}>
-          Back to Strategies
+          {t("backToStrategies")}
         </Button>
       </div>
     );
@@ -155,21 +157,21 @@ export default function EditStrategy() {
             data-testid="button-back"
           >
             <ChevronLeft size={16} className="mr-2" />
-            Back to Strategies
+            {t("backToStrategies")}
           </Button>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Edit Strategy</h1>
-          <p className="text-muted-foreground mt-1">Modify your trading framework</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">{t("editTitle")}</h1>
+          <p className="text-muted-foreground mt-1">{t("editSubtitle")}</p>
         </header>
 
         <form onSubmit={handleSubmit}>
           <Card className="p-6 mb-6">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Strategy Details</h2>
+                <h2 className="text-lg font-semibold">{t("stepDetailsTitle")}</h2>
                 {strategy.isActive ? (
                   <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
                     <Zap size={12} className="mr-1" />
-                    Active
+                    {t("active")}
                   </Badge>
                 ) : (
                   <Button
@@ -185,29 +187,29 @@ export default function EditStrategy() {
                     ) : (
                       <Zap size={14} className="mr-2" />
                     )}
-                    Set as Active
+                    {t("setAsActive")}
                   </Button>
                 )}
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Strategy Name</label>
+                  <label className="text-sm font-medium">{t("fieldStrategyName")}</label>
                   <Input
                     value={strategyName}
                     onChange={(e) => setStrategyName(e.target.value)}
-                    placeholder="e.g., London Session Breakout"
+                    placeholder={t("fieldStrategyNamePlaceholder")}
                     className="max-w-md"
                     data-testid="input-strategy-name"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Description (Optional)</label>
+                  <label className="text-sm font-medium">{t("fieldDescription")}</label>
                   <Textarea
                     value={strategyDescription}
                     onChange={(e) => setStrategyDescription(e.target.value)}
-                    placeholder="Describe your strategy approach..."
+                    placeholder={t("fieldDescriptionPlaceholder")}
                     className="max-w-md resize-none"
                     rows={4}
                     data-testid="input-strategy-description"
@@ -220,11 +222,11 @@ export default function EditStrategy() {
           <Card className="p-6 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <ListChecks size={18} className="text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Rules ({strategy.rules?.length || 0})</h2>
+              <h2 className="text-lg font-semibold">{t("rulesCountLabel", { count: strategy.rules?.length || 0 })}</h2>
             </div>
 
             {strategy.rules?.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No rules defined for this strategy.</p>
+              <p className="text-sm text-muted-foreground">{t("noRulesDefined")}</p>
             ) : (
               <div className="space-y-3">
                 {strategy.rules?.map((rule) => {
@@ -254,12 +256,12 @@ export default function EditStrategy() {
                         {rule.options?.value !== undefined
                           ? typeof rule.options.value === "boolean"
                             ? rule.options.value
-                              ? "Required"
-                              : "Optional"
+                              ? t("valueRequired")
+                              : t("valueOptional")
                             : Array.isArray(rule.options.value)
                             ? rule.options.value.join(", ")
                             : String(rule.options.value)
-                          : "—"}
+                          : t("emDash")}
                       </span>
                     </div>
                   );
@@ -268,7 +270,7 @@ export default function EditStrategy() {
             )}
 
             <p className="text-xs text-muted-foreground mt-4">
-              To modify rules, create a new strategy or duplicate this one.
+              {t("rulesNotEditable")}
             </p>
           </Card>
 
@@ -279,7 +281,7 @@ export default function EditStrategy() {
               onClick={() => navigate("/strategies")}
               data-testid="button-cancel"
             >
-              Cancel
+              {t("btnCancel")}
             </Button>
             <Button
               type="submit"
@@ -291,7 +293,7 @@ export default function EditStrategy() {
               ) : (
                 <Save size={16} className="mr-2" />
               )}
-              Save Changes
+              {t("btnSaveChanges")}
             </Button>
           </div>
         </form>

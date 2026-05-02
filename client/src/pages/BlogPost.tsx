@@ -7,6 +7,7 @@ import { PublicNavbar } from "@/components/PublicNavbar";
 import { SEO } from "@/components/SEO";
 import { CookieSettingsButton } from "@/components/CookieConsent";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "react-i18next";
 
 interface BlogPost {
   id: number;
@@ -26,6 +27,8 @@ interface BlogPost {
 }
 
 export default function BlogPost() {
+  const { t } = useTranslation("common");
+  const tp = (k: string) => t(`publicPages.${k}`);
   const { slug } = useParams<{ slug: string }>();
 
   const { data: post, isLoading, isError } = useQuery<BlogPost>({
@@ -64,14 +67,14 @@ export default function BlogPost() {
   if (isError || !post) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <SEO title="Post Not Found" description="The blog post you're looking for doesn't exist." noindex />
+        <SEO title={tp("postNotFoundSeoTitle")} description={tp("postNotFoundSeoDesc")} noindex />
         <PublicNavbar />
         <div className="max-w-4xl mx-auto px-6 pt-32 pb-24 text-center">
-          <h1 className="text-4xl font-black text-foreground uppercase tracking-tighter mb-4" data-testid="text-not-found">Post Not Found</h1>
-          <p className="text-muted-foreground mb-8">The article you're looking for doesn't exist or has been removed.</p>
+          <h1 className="text-4xl font-black text-foreground uppercase tracking-tighter mb-4" data-testid="text-not-found">{tp("postNotFoundTitle")}</h1>
+          <p className="text-muted-foreground mb-8">{tp("postNotFoundDesc")}</p>
           <Link to="/blog">
             <Button className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs" data-testid="button-back-to-blog">
-              <ArrowLeft size={14} className="mr-2" /> Back to Blog
+              <ArrowLeft size={14} className="mr-2" /> {tp("postBackToBlog")}
             </Button>
           </Link>
         </div>
@@ -118,7 +121,7 @@ export default function BlogPost() {
 
       <article className="max-w-4xl mx-auto px-6 pt-32 pb-24">
         <Link to="/blog" className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors mb-8" data-testid="link-back-to-blog">
-          <ArrowLeft size={14} /> Back to Blog
+          <ArrowLeft size={14} /> {tp("postBackToBlog")}
         </Link>
 
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] uppercase tracking-widest mb-4" data-testid="badge-post-category">
@@ -181,7 +184,7 @@ export default function BlogPost() {
           <div className="mt-10 pt-6 border-t border-border" data-testid="section-tags">
             <div className="flex items-center gap-2 mb-3">
               <Tag size={14} className="text-emerald-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tags</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{tp("postTagsLabel")}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {tags.map((tag) => (
@@ -196,7 +199,7 @@ export default function BlogPost() {
         <div className="mt-12 pt-8 border-t border-border text-center">
           <Link to="/blog">
             <Button variant="outline" className="font-bold uppercase tracking-widest text-xs" data-testid="button-bottom-back-to-blog">
-              <ArrowLeft size={14} className="mr-2" /> Back to Blog
+              <ArrowLeft size={14} className="mr-2" /> {tp("postBackToBlog")}
             </Button>
           </Link>
         </div>
@@ -204,13 +207,13 @@ export default function BlogPost() {
 
       <footer className="py-12 border-t border-border text-center">
         <div className="flex justify-center flex-wrap gap-6 mb-4">
-          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-terms">Terms</Link>
-          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-privacy">Privacy</Link>
-          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-cookie">Cookie Policy</Link>
+          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-terms">{t("footer.terms")}</Link>
+          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-privacy">{t("footer.privacy")}</Link>
+          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-cookie">{t("footer.cookies")}</Link>
           <CookieSettingsButton />
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
+          {t("footer.copyright", { year: 2026 })}
         </p>
       </footer>
     </div>

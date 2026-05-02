@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ interface Strategy {
 }
 
 export default function Strategies() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -75,10 +77,10 @@ export default function Strategies() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/strategies"] });
-      toast({ title: "Strategy activated" });
+      toast({ title: t("strategies.toastActivated") });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("strategies.toastError"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -96,17 +98,17 @@ export default function Strategies() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/strategies"] });
-      toast({ title: "Strategy duplicated" });
+      toast({ title: t("strategies.toastDuplicated") });
     },
     onError: (error: Error) => {
       if (error.message === "LIMIT_REACHED") {
         toast({ 
-          title: "Strategy Limit Reached", 
-          description: "Upgrade to Pro for unlimited strategies.", 
+          title: t("strategies.toastLimitReached"), 
+          description: t("strategies.toastLimitDesc"), 
           variant: "destructive" 
         });
       } else {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: t("strategies.toastError"), description: error.message, variant: "destructive" });
       }
     },
   });
@@ -117,11 +119,11 @@ export default function Strategies() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/strategies"] });
-      toast({ title: "Strategy deleted" });
+      toast({ title: t("strategies.toastDeleted") });
       setDeleteId(null);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("strategies.toastError"), description: error.message, variant: "destructive" });
       setDeleteId(null);
     },
   });
@@ -148,14 +150,14 @@ export default function Strategies() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black uppercase tracking-tighter italic text-foreground">
-              My Strategies
+              {t("strategies.myStrategies")}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Define your trading rules. TradifyApp checks whether you respect them.
+              {t("strategies.subtitle")}
             </p>
             {isUserLoaded && !isPro && maxStrategies !== -1 && (
               <p className="text-xs text-muted-foreground mt-1">
-                {strategies.length}/{maxStrategies} strategies used (Free plan)
+                {t("strategies.usageCount", { used: strategies.length, max: maxStrategies })}
               </p>
             )}
           </div>
@@ -163,14 +165,14 @@ export default function Strategies() {
             <Link to="/pricing">
               <Button data-testid="button-upgrade-pro" className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 border-amber-600">
                 <Crown size={18} />
-                Upgrade for Unlimited
+                {t("strategies.upgradeForUnlimited")}
               </Button>
             </Link>
           ) : (
             <Link to="/strategies/create">
               <Button data-testid="button-create-strategy" className="gap-2">
                 <Plus size={18} />
-                Create Strategy
+                {t("strategies.createStrategy")}
               </Button>
             </Link>
           )}
@@ -185,16 +187,16 @@ export default function Strategies() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">Strategy Limit Reached</span>
+                    <span className="font-semibold text-foreground">{t("strategies.strategyLimitReached")}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Free accounts are limited to {maxStrategies} strategy. Upgrade to Pro for unlimited strategies.
+                    {t("strategies.freeLimitMessage", { max: maxStrategies })}
                   </p>
                 </div>
                 <Link to="/pricing">
                   <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 border-amber-600">
                     <Crown size={14} className="mr-1" />
-                    Upgrade
+                    {t("strategies.upgrade")}
                   </Button>
                 </Link>
               </div>
@@ -213,11 +215,11 @@ export default function Strategies() {
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground">{activeStrategy.name}</span>
                     <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
-                      Active
+                      {t("strategies.active")}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    This strategy is used for compliance tracking
+                    {t("strategies.usedForCompliance")}
                   </p>
                 </div>
               </div>
@@ -236,9 +238,9 @@ export default function Strategies() {
                 <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:bg-emerald-500/20 transition-colors">
                   <Plus size={32} className="text-emerald-500" />
                 </div>
-                <h3 className="font-bold text-foreground mb-1">Create Your First Strategy</h3>
+                <h3 className="font-bold text-foreground mb-1">{t("strategies.createFirst")}</h3>
                 <p className="text-sm text-muted-foreground text-center">
-                  Define the rules you believe in
+                  {t("strategies.defineRules")}
                 </p>
               </Link>
             </Card>
@@ -284,7 +286,7 @@ export default function Strategies() {
                             data-testid={`menu-activate-${strategy.id}`}
                           >
                             <Zap size={14} className="mr-2" />
-                            Set as Active
+                            {t("strategies.setAsActive")}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
@@ -292,7 +294,7 @@ export default function Strategies() {
                           data-testid={`menu-edit-${strategy.id}`}
                         >
                           <Pencil size={14} className="mr-2" />
-                          Edit
+                          {t("strategies.edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDuplicate(strategy.id)}
@@ -300,7 +302,7 @@ export default function Strategies() {
                           data-testid={`menu-duplicate-${strategy.id}`}
                         >
                           <Copy size={14} className="mr-2" />
-                          Duplicate
+                          {t("strategies.duplicate")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -309,7 +311,7 @@ export default function Strategies() {
                           data-testid={`menu-delete-${strategy.id}`}
                         >
                           <Trash2 size={14} className="mr-2" />
-                          Delete
+                          {t("strategies.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -321,18 +323,18 @@ export default function Strategies() {
                       {strategy.isActive ? (
                         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
                           <CheckCircle2 size={12} className="mr-1" />
-                          Active
+                          {t("strategies.active")}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-muted-foreground">
                           <Circle size={12} className="mr-1" />
-                          Inactive
+                          {t("strategies.inactive")}
                         </Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <ListChecks size={14} />
-                      <span>{strategy.rules?.length || 0} rules</span>
+                      <span>{t("strategies.rulesCount", { count: strategy.rules?.length || 0 })}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -344,7 +346,7 @@ export default function Strategies() {
                 <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-3 group-hover:bg-muted/80 transition-colors">
                   <Plus size={24} className="text-muted-foreground" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Add Strategy</span>
+                <span className="text-sm font-medium text-muted-foreground">{t("strategies.addStrategy")}</span>
               </Link>
             </Card>
           </div>
@@ -354,7 +356,7 @@ export default function Strategies() {
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-emerald-500">
               <Sparkles size={18} />
-              How Strategy Compliance Works
+              {t("strategies.howCompliance")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -362,30 +364,30 @@ export default function Strategies() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-foreground font-semibold">
                   <div className="h-6 w-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-xs font-bold">1</div>
-                  Define Your Rules
+                  {t("strategies.step1Title")}
                 </div>
                 <p className="text-sm text-muted-foreground pl-8">
-                  Create a strategy with your own trading rules. Market context, execution conditions, and risk parameters.
+                  {t("strategies.step1Desc")}
                 </p>
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-foreground font-semibold">
                   <div className="h-6 w-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-xs font-bold">2</div>
-                  Log & Validate Trades
+                  {t("strategies.step2Title")}
                 </div>
                 <p className="text-sm text-muted-foreground pl-8">
-                  When you take a trade, use the Validator to check it against your strategy. Answer honestly about each rule.
+                  {t("strategies.step2Desc")}
                 </p>
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-foreground font-semibold">
                   <div className="h-6 w-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-xs font-bold">3</div>
-                  Track Your Discipline
+                  {t("strategies.step3Title")}
                 </div>
                 <p className="text-sm text-muted-foreground pl-8">
-                  Your Compliance Score shows how well you follow your own rules. Deviations are flagged so you can improve.
+                  {t("strategies.step3Desc")}
                 </p>
               </div>
             </div>
@@ -397,10 +399,10 @@ export default function Strategies() {
                     <div className="h-5 w-5 rounded bg-violet-500/20 flex items-center justify-center">
                       <CheckCircle2 size={12} className="text-violet-500" />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wide text-violet-500">Subjective Rules</span>
+                    <span className="text-xs font-bold uppercase tracking-wide text-violet-500">{t("strategies.subjectiveRules")}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Rules only <strong>you</strong> can verify: "Was my entry confirmation present?", "Did I follow my personal model?" You answer honestly when logging trades.
+                    {t("strategies.subjectiveDesc")}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
@@ -408,10 +410,10 @@ export default function Strategies() {
                     <div className="h-5 w-5 rounded bg-cyan-500/20 flex items-center justify-center">
                       <Target size={12} className="text-cyan-500" />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wide text-cyan-500">Objective Rules</span>
+                    <span className="text-xs font-bold uppercase tracking-wide text-cyan-500">{t("strategies.objectiveRules")}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Rules the system can measure: Risk/Reward ratio, trading session, max trades per day. These are auto-calculated from your trade data.
+                    {t("strategies.objectiveDesc")}
                   </p>
                 </div>
               </div>
@@ -419,9 +421,9 @@ export default function Strategies() {
               <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
                 <AlertCircle size={18} className="text-amber-500 mt-0.5 flex-shrink-0" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">TradifyApp does not give trade signals</p>
+                  <p className="text-sm font-medium text-foreground">{t("strategies.noSignalsTitle")}</p>
                   <p className="text-xs text-muted-foreground">
-                    You define how you trade. TradifyApp checks whether you respect that. The platform evaluates alignment, not entries.
+                    {t("strategies.noSignalsDesc")}
                   </p>
                 </div>
               </div>
@@ -429,7 +431,7 @@ export default function Strategies() {
               <Link to="/strategies/validate">
                 <Button variant="outline" className="w-full gap-2" data-testid="button-open-validator">
                   <ShieldCheck size={16} />
-                  Open Trade Validator
+                  {t("strategies.openValidator")}
                 </Button>
               </Link>
             </div>
@@ -440,14 +442,13 @@ export default function Strategies() {
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Strategy</AlertDialogTitle>
+            <AlertDialogTitle>{t("strategies.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this strategy? This action cannot be undone.
-              Your trade history will be preserved.
+              {t("strategies.deleteDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete">{t("strategies.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -456,7 +457,7 @@ export default function Strategies() {
               {deleteMutation.isPending ? (
                 <Loader2 size={16} className="animate-spin mr-2" />
               ) : null}
-              Delete
+              {t("strategies.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

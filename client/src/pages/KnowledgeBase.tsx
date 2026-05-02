@@ -31,6 +31,7 @@ import {
   getPhaseProgress,
 } from "@/data/educationLessons";
 import { DIAGRAM_TYPES } from "@/components/TradingDiagrams";
+import { useTranslation } from "react-i18next";
 
 type LessonProgress = {
   id: number;
@@ -100,6 +101,7 @@ function LessonNode({
   phaseColor: string;
   onSelect: (id: number) => void;
 }) {
+  const { t } = useTranslation("common", { keyPrefix: "kb" });
   const colors = phaseColorMap[phaseColor] || phaseColorMap.slate;
   const canOpen = (isUnlocked || isCompleted) && hasAccess;
   const quizPassed = quizScore >= lesson.requiredScore;
@@ -167,14 +169,14 @@ function LessonNode({
               </div>
               <div className="flex items-center gap-1 text-muted-foreground text-[10px]">
                 <BookOpen size={10} />
-                <span>{lesson.sections.length} sections</span>
+                <span>{t("sections", { count: lesson.sections.length })}</span>
               </div>
               {isCompleted && quizScore > 0 && (
                 <Badge variant="outline" className={cn(
                   "text-[10px] font-bold",
                   quizPassed ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"
                 )}>
-                  Quiz: {quizScore}%
+                  {t("quizScore", { score: quizScore })}
                 </Badge>
               )}
               {!hasAccess && (
@@ -214,6 +216,7 @@ function PhaseCard({
   isExpanded: boolean;
   onToggleExpand: () => void;
 }) {
+  const { t } = useTranslation("common", { keyPrefix: "kb" });
   const { completed, total, percentage } = getPhaseProgress(phase.id, completedLessons);
   const PhaseIcon = phaseIcons[phase.icon] || BookOpen;
   const colors = phaseColorMap[phase.color] || phaseColorMap.slate;
@@ -276,15 +279,15 @@ function PhaseCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <Badge variant="outline" className={cn("text-[10px] font-black", tierBadgeStyles[phase.accessTier])}>
-                  {phase.accessTier === "FREE" ? "FREE" : phase.accessTier}
+                  {phase.accessTier === "FREE" ? t("tierFree") : phase.accessTier}
                 </Badge>
                 <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                  Phase {phase.id}
+                  {t("phasePrefix", { id: phase.id })}
                 </span>
                 {allPhaseLessonsCompleted && (
                   <Badge className="bg-emerald-500 text-white text-[10px] font-black gap-1">
                     <CheckCircle size={10} />
-                    Complete
+                    {t("phaseComplete")}
                   </Badge>
                 )}
               </div>
@@ -324,7 +327,7 @@ function PhaseCard({
           {!isExpanded && nextLesson && (
             <div className={cn("mt-3 ml-16 px-3 py-2 rounded-md text-xs font-medium flex items-center gap-2", colors.bg, colors.text)}>
               <Play size={12} />
-              <span>Next: {nextLesson.title}</span>
+              <span>{t("nextPrefix", { title: nextLesson.title })}</span>
             </div>
           )}
         </button>
@@ -374,6 +377,7 @@ function QuizSection({
   requiredScore: number;
   onQuizPass?: () => void;
 }) {
+  const { t } = useTranslation("common", { keyPrefix: "kb" });
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(false);
 
@@ -419,18 +423,18 @@ function QuizSection({
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <h2 className="text-lg font-black text-foreground uppercase tracking-tight flex items-center gap-2">
           <HelpCircle className="text-amber-500" size={20} />
-          Level Assessment
+          {t("lvlAssessment")}
         </h2>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-[10px] font-bold">
-            Pass: {requiredScore}%
+            {t("passLabel", { required: requiredScore })}
           </Badge>
           {showResults && (
             <Badge className={cn(
               "font-bold",
               passed ? "bg-emerald-500" : "bg-rose-500"
             )}>
-              {scorePercentage}% — {passed ? "PASSED" : "FAILED"}
+              {scorePercentage}% — {passed ? t("passed") : t("failed")}
             </Badge>
           )}
         </div>
@@ -519,22 +523,22 @@ function QuizSection({
             data-testid="button-check-answers"
           >
             <Sparkles size={14} />
-            Submit Assessment
+            {t("submitAssessment")}
           </Button>
         ) : (
           <div className="flex items-center gap-3 flex-wrap">
             <Button onClick={resetQuiz} variant="outline" className="font-bold" data-testid="button-retry-quiz">
-              Try Again
+              {t("tryAgain")}
             </Button>
             {passed && (
               <p className="text-sm text-emerald-500 font-bold flex items-center gap-1">
                 <CheckCircle size={14} />
-                Next lesson unlocked!
+                {t("nextLessonUnlocked")}
               </p>
             )}
             {!passed && (
               <p className="text-sm text-muted-foreground">
-                You need {requiredScore}% to unlock the next lesson. Review the material and try again.
+                {t("needToUnlock", { required: requiredScore })}
               </p>
             )}
           </div>
@@ -545,6 +549,7 @@ function QuizSection({
 }
 
 function AITutorSection({ lesson, hasProAccess }: { lesson: Lesson; hasProAccess: boolean }) {
+  const { t } = useTranslation("common", { keyPrefix: "kb" });
   const [question, setQuestion] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -571,15 +576,15 @@ function AITutorSection({ lesson, hasProAccess }: { lesson: Lesson; hasProAccess
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MessageSquare className="text-purple-500" size={20} />
-            <h2 className="text-lg font-black text-foreground uppercase tracking-tight">AI Tutor</h2>
+            <h2 className="text-lg font-black text-foreground uppercase tracking-tight">{t("aiTutor")}</h2>
           </div>
           <Badge variant="outline" className="text-[10px] font-black gap-1">
             <Crown size={10} className="text-amber-500" />
-            PRO/ELITE
+            {t("proElite")}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
-          Upgrade to Pro or Elite to ask questions about this lesson and get personalized explanations.
+          {t("aiTutorUpgrade")}
         </p>
       </div>
     );
@@ -594,7 +599,7 @@ function AITutorSection({ lesson, hasProAccess }: { lesson: Lesson; hasProAccess
       >
         <div className="flex items-center gap-2">
           <MessageSquare className="text-purple-500" size={20} />
-          <h2 className="text-lg font-black text-foreground uppercase tracking-tight">AI Tutor</h2>
+          <h2 className="text-lg font-black text-foreground uppercase tracking-tight">{t("aiTutor")}</h2>
         </div>
         <ChevronRight className={cn("w-5 h-5 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
       </button>
@@ -602,12 +607,12 @@ function AITutorSection({ lesson, hasProAccess }: { lesson: Lesson; hasProAccess
       {isOpen && (
         <div className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">
-            Ask any question about this lesson and get a personalized explanation based on the content.
+            {t("aiTutorIntro")}
           </p>
 
           <div className="flex gap-2">
             <Input
-              placeholder="e.g., Can you explain order blocks in simpler terms?"
+              placeholder={t("aiTutorPlaceholder")}
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -631,7 +636,7 @@ function AITutorSection({ lesson, hasProAccess }: { lesson: Lesson; hasProAccess
             <div className="p-4 bg-muted/50 rounded-lg border border-border">
               <div className="flex items-center gap-2 text-purple-500 text-xs font-black tracking-widest uppercase mb-2">
                 <Brain size={14} />
-                <span>AI Response</span>
+                <span>{t("aiResponse")}</span>
               </div>
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 {askTutorMutation.data.answer.split('\n\n').map((paragraph, idx) => (
@@ -643,7 +648,7 @@ function AITutorSection({ lesson, hasProAccess }: { lesson: Lesson; hasProAccess
 
           {askTutorMutation.isError && (
             <div className="p-4 bg-rose-500/10 rounded-lg border border-rose-500/20">
-              <p className="text-sm text-rose-500">Failed to get response. Please try again.</p>
+              <p className="text-sm text-rose-500">{t("aiTutorError")}</p>
             </div>
           )}
         </div>
@@ -675,6 +680,7 @@ function LessonViewer({
   quizScore: number;
   nextLesson: Lesson | null;
 }) {
+  const { t } = useTranslation("common", { keyPrefix: "kb" });
   const [showScrollTop, setShowScrollTop] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
   const hasProAccess = userTier === "PRO" || userTier === "ELITE";
@@ -711,12 +717,12 @@ function LessonViewer({
             data-testid="button-back-to-lessons"
           >
             <ArrowLeft size={16} />
-            Back to Phases
+            {t("backToPhases")}
           </Button>
           <div className="flex items-center gap-2">
             {phase && (
               <Badge variant="outline" className={cn("text-[10px] font-bold", colors.text)}>
-                Phase {phase.id} — {phase.title}
+                {t("phaseLabelFull", { id: phase.id, title: phase.title })}
               </Badge>
             )}
             <Button
@@ -729,12 +735,12 @@ function LessonViewer({
               {isBookmarked ? (
                 <>
                   <BookmarkCheck size={14} className="text-amber-500" />
-                  Bookmarked
+                  {t("bookmarked")}
                 </>
               ) : (
                 <>
                   <Bookmark size={14} />
-                  Bookmark
+                  {t("bookmark")}
                 </>
               )}
             </Button>
@@ -746,7 +752,7 @@ function LessonViewer({
                   ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                   : "bg-rose-500/10 text-rose-500 border-rose-500/20"
             )}>
-              {lesson.difficulty}
+              {lesson.difficulty === "Beginner" ? t("difficultyBeginner") : lesson.difficulty === "Intermediate" ? t("difficultyIntermediate") : t("difficultyAdvanced")}
             </Badge>
           </div>
         </div>
@@ -756,13 +762,13 @@ function LessonViewer({
         <div className="max-w-4xl mx-auto py-8">
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              <span>Lesson {lesson.phaseId}.{lesson.order}</span>
+              <span>{t("lessonNumber", { phase: lesson.phaseId, order: lesson.order })}</span>
               <span className="text-border">|</span>
               <Clock size={12} />
               <span>{lesson.duration}</span>
               <span className="text-border">|</span>
               <BookOpen size={12} />
-              <span>{lesson.sections.length} sections</span>
+              <span>{t("sections", { count: lesson.sections.length })}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight mb-3" data-testid="text-lesson-heading">
               {lesson.title}
@@ -802,23 +808,23 @@ function LessonViewer({
                 <div className="mt-6 p-4 bg-card rounded-lg border border-border">
                   <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
                     <Target size={12} />
-                    Trading Example
+                    {t("tradingExample")}
                   </h4>
                   <div className="space-y-3 text-sm">
                     <div>
-                      <span className="font-bold text-foreground">Setup: </span>
+                      <span className="font-bold text-foreground">{t("setupLabel")} </span>
                       <span className="text-foreground/80">{section.tradingExample.setup}</span>
                     </div>
                     <div>
-                      <span className="font-bold text-foreground">Entry: </span>
+                      <span className="font-bold text-foreground">{t("entryLabel")} </span>
                       <span className="text-foreground/80">{section.tradingExample.entry}</span>
                     </div>
                     <div>
-                      <span className="font-bold text-foreground">Management: </span>
+                      <span className="font-bold text-foreground">{t("managementLabel")} </span>
                       <span className="text-foreground/80">{section.tradingExample.management}</span>
                     </div>
                     <div>
-                      <span className="font-bold text-foreground">Outcome: </span>
+                      <span className="font-bold text-foreground">{t("outcomeLabel")} </span>
                       <span className="text-foreground/80">{section.tradingExample.outcome}</span>
                     </div>
                   </div>
@@ -850,7 +856,7 @@ function LessonViewer({
             <div className="mt-10 p-6 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
               <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
                 <Lightbulb className="text-emerald-500" size={20} />
-                Key Takeaways
+                {t("keyTakeaways")}
               </h2>
               <ul className="space-y-2">
                 {lesson.keyPoints.map((point, idx) => (
@@ -867,7 +873,7 @@ function LessonViewer({
             <div className="mt-6 p-6 bg-rose-500/5 rounded-xl border border-rose-500/20">
               <h2 className="text-lg font-black text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
                 <AlertTriangle className="text-rose-500" size={20} />
-                Common Mistakes
+                {t("commonMistakes")}
               </h2>
               <ul className="space-y-2">
                 {lesson.commonMistakes.map((mistake, idx) => (
@@ -910,12 +916,12 @@ function LessonViewer({
                 {isCompleted ? (
                   <>
                     <CheckCircle size={16} className="text-emerald-500" />
-                    Lesson Completed
+                    {t("lessonCompleted")}
                   </>
                 ) : (
                   <>
                     <CircleCheck size={16} />
-                    Mark as Complete
+                    {t("markComplete")}
                   </>
                 )}
               </Button>
@@ -926,13 +932,13 @@ function LessonViewer({
                   className="font-bold gap-2"
                   data-testid="button-next-lesson"
                 >
-                  Next: {nextLesson.title}
+                  {t("nextButtonLabel", { title: nextLesson.title })}
                   <ChevronRight size={16} />
                 </Button>
               )}
 
               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest text-center">
-                Educational content only. Not financial advice.
+                {t("notFinancialAdvice")}
               </p>
             </div>
           </div>
@@ -954,6 +960,7 @@ function LessonViewer({
 }
 
 export default function KnowledgeBase() {
+  const { t } = useTranslation("common", { keyPrefix: "kb" });
   const { tier, isPaid, isElite } = usePlan();
   const [, navigate] = useLocation();
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
@@ -1120,18 +1127,18 @@ export default function KnowledgeBase() {
             <div className="flex items-center gap-3">
               <GraduationCap className="text-emerald-500" size={28} />
               <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight uppercase italic">
-                Education Hub
+                {t("educationHub")}
               </h1>
             </div>
             {isElite ? (
               <Badge className="bg-gradient-to-r from-purple-500 to-violet-500 text-white font-bold gap-1">
                 <Star size={12} />
-                Elite Access
+                {t("eliteAccess")}
               </Badge>
             ) : isPaid ? (
               <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold gap-1">
                 <Star size={12} />
-                Pro Access
+                {t("proAccess")}
               </Badge>
             ) : (
               <Button
@@ -1141,26 +1148,25 @@ export default function KnowledgeBase() {
                 data-testid="button-upgrade-for-access"
               >
                 <Crown size={14} />
-                Upgrade for Full Access
+                {t("upgradeForAccess")}
               </Button>
             )}
           </div>
           <p className="text-muted-foreground mt-1 italic font-medium max-w-2xl">
-            Master trading through {EDUCATION_PHASES.length} progressive phases.
-            Complete each lesson and pass the quiz to unlock the next level.
+            {t("masterTradingThrough", { count: EDUCATION_PHASES.length })}
           </p>
 
           <div className="mt-4 p-4 bg-card border border-border rounded-lg">
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-foreground">Overall Progress</span>
+                <span className="text-sm font-bold text-foreground">{t("overallProgress")}</span>
                 {currentPhase && (
                   <Badge variant="outline" className="text-[10px] font-bold">
-                    Phase {currentPhase.id}: {currentPhase.title}
+                    {t("phaseLabelShort", { id: currentPhase.id, title: currentPhase.title })}
                   </Badge>
                 )}
               </div>
-              <span className="text-sm text-muted-foreground">{completedCount} / {totalLessons} lessons</span>
+              <span className="text-sm text-muted-foreground">{t("lessonsCount", { completed: completedCount, total: totalLessons })}</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2.5">
               <div
@@ -1170,26 +1176,26 @@ export default function KnowledgeBase() {
               />
             </div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-muted-foreground">{overallPercentage}% complete</p>
+              <p className="text-xs text-muted-foreground">{t("percentComplete", { percentage: overallPercentage })}</p>
               <div className="flex items-center gap-3 text-xs">
                 <span className="text-emerald-500 font-bold flex items-center gap-1">
                   <CheckCircle size={10} />
-                  {completedCount} completed
+                  {t("countCompleted", { count: completedCount })}
                 </span>
                 <span className="text-muted-foreground">
-                  {totalLessons - completedCount} remaining
+                  {t("countRemaining", { count: totalLessons - completedCount })}
                 </span>
               </div>
             </div>
           </div>
 
           <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-3 border-l-2 border-amber-500/50 pl-2">
-            Educational content only. Not financial advice.{" "}
+            {t("notFinancialAdvice")}{" "}
             <Link
               to="/risk-disclaimer"
               className="ml-1 text-emerald-500/70 hover:underline"
             >
-              View Risk Disclaimer
+              {t("viewRiskDisclaimer")}
             </Link>
           </p>
         </header>

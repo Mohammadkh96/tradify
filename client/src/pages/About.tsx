@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,6 @@ import {
   Code2,
   Globe,
   Lightbulb,
-  Heart,
   Layers,
   Server,
 } from "lucide-react";
@@ -25,6 +25,8 @@ import { CookieSettingsButton } from "@/components/CookieConsent";
 import { SEO } from "@/components/SEO";
 
 export default function About() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO
@@ -33,7 +35,7 @@ export default function About() {
         canonical="https://tradifyapp.com/about"
         breadcrumbs={[
           { name: "Home", url: "https://tradifyapp.com" },
-          { name: "About", url: "https://tradifyapp.com/about" }
+          { name: "About", url: "https://tradifyapp.com/about" },
         ]}
         structuredData={[
           {
@@ -43,10 +45,11 @@ export default function About() {
             "jobTitle": "Founder & CEO",
             "worksFor": {
               "@type": "Organization",
-              "name": "TradifyApp"
+              "name": "TradifyApp",
             },
-            "description": "Trader and technologist focused on building discipline-first tools for the trading community."
-          }
+            "description":
+              "Trader and technologist focused on building discipline-first tools for the trading community.",
+          },
         ]}
       />
       <PublicNavbar />
@@ -60,30 +63,47 @@ export default function About() {
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-8">
             <Lightbulb size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500" data-testid="text-about-badge">Why We Exist</span>
+            <span
+              className="text-[10px] font-black uppercase tracking-widest text-emerald-500"
+              data-testid="text-about-badge"
+            >
+              {t("about.badge")}
+            </span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]" data-testid="text-about-heading">
-            Discipline is the<br />
-            <span className="text-emerald-500">edge.</span>
+          <h1
+            className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]"
+            data-testid="text-about-heading"
+          >
+            {t("about.heroLine1")}
+            <br />
+            <span className="text-emerald-500">{t("about.heroLine2")}</span>
           </h1>
 
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8" data-testid="text-about-subheading">
-            Most traders don't fail because of bad strategies — they fail because they can't stick to them.
-            TradifyApp was built to solve that problem with data, rules, and accountability.
+          <p
+            className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8"
+            data-testid="text-about-subheading"
+          >
+            {t("about.heroSubtitle")}
           </p>
         </div>
       </section>
 
-      <section className="py-24 border-y border-border bg-muted/20" data-testid="section-mission">
+      <section
+        className="py-24 border-y border-border bg-muted/20"
+        data-testid="section-mission"
+      >
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Our <span className="text-emerald-500">Mission</span>
+              {t("about.missionTitle")}{" "}
+              <span className="text-emerald-500">{t("about.missionTitleHighlight")}</span>
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed" data-testid="text-mission-statement">
-              To give every trader — from beginner to professional — the tools to understand their
-              own performance, enforce their own rules, and improve through data instead of guesswork.
+            <p
+              className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed"
+              data-testid="text-mission-statement"
+            >
+              {t("about.missionStatement")}
             </p>
           </div>
 
@@ -91,26 +111,32 @@ export default function About() {
             {[
               {
                 icon: <Target className="text-emerald-500" size={24} />,
-                title: "Discipline First",
-                desc: "We don't sell signals, predictions, or shortcuts. TradifyApp is built around one principle: consistent execution of your own strategy leads to long-term results."
+                title: t("about.valueDiscFirstTitle"),
+                desc: t("about.valueDiscFirstDesc"),
               },
               {
                 icon: <BarChart3 className="text-blue-500" size={24} />,
-                title: "Data Over Opinion",
-                desc: "Every insight on TradifyApp comes from your own trading data. We show you what happened, why it matters, and what patterns emerge — never what to do next."
+                title: t("about.valueDataTitle"),
+                desc: t("about.valueDataDesc"),
               },
               {
                 icon: <Users className="text-purple-500" size={24} />,
-                title: "Trader Empowerment",
-                desc: "Our goal is to make you a better, more self-aware trader. We provide the mirror — you decide what to change. No dependency, no lock-in, no manipulation."
-              }
+                title: t("about.valueEmpowerTitle"),
+                desc: t("about.valueEmpowerDesc"),
+              },
             ].map((item, i) => (
-              <Card key={i} className="bg-background border-border" data-testid={`card-mission-${i}`}>
+              <Card
+                key={i}
+                className="bg-background border-border"
+                data-testid={`card-mission-${i}`}
+              >
                 <CardContent className="p-8">
                   <div className="h-14 w-14 rounded-2xl bg-muted border border-border flex items-center justify-center mb-6">
                     {item.icon}
                   </div>
-                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-3">{item.title}</h3>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-3">
+                    {item.title}
+                  </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                 </CardContent>
               </Card>
@@ -123,7 +149,9 @@ export default function About() {
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Why <span className="text-emerald-500">TradifyApp</span> Was Built
+              {t("about.whyTitle")}{" "}
+              <span className="text-emerald-500">{t("about.whyTitleHighlight")}</span>{" "}
+              {t("about.whyTitleEnd")}
             </h2>
           </div>
 
@@ -134,12 +162,14 @@ export default function About() {
                   <Lightbulb className="text-emerald-500" size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">The Problem We Saw</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-problem-statement">
-                    Most traders fail not because they lack strategy knowledge, but because they lack discipline.
-                    They overtrade, ignore their own rules, lose track of drawdowns, and make emotional decisions
-                    after losses. The tools available were either too complex, too expensive, or focused on the wrong
-                    things — like signals and predictions instead of self-improvement.
+                  <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">
+                    {t("about.problemTitle")}
+                  </h3>
+                  <p
+                    className="text-sm text-muted-foreground leading-relaxed"
+                    data-testid="text-problem-statement"
+                  >
+                    {t("about.problemBody")}
                   </p>
                 </div>
               </div>
@@ -149,12 +179,14 @@ export default function About() {
                   <Brain className="text-blue-500" size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">The Solution We Built</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-solution-statement">
-                    TradifyApp is a discipline enforcement platform for traders who know their strategy works but 
-                    struggle to follow it. Instead of telling you what to trade, we enforce the rules you already set. 
-                    Instead of promising profits, we expose the behavioral patterns holding you back. Instead of 
-                    complex setups, we auto-sync your trades from MT5 and do the analysis for you.
+                  <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">
+                    {t("about.solutionTitle")}
+                  </h3>
+                  <p
+                    className="text-sm text-muted-foreground leading-relaxed"
+                    data-testid="text-solution-statement"
+                  >
+                    {t("about.solutionBody")}
                   </p>
                 </div>
               </div>
@@ -162,15 +194,20 @@ export default function About() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="p-6 rounded-2xl bg-rose-500/5 border border-rose-500/20">
-                <h4 className="text-xs font-black uppercase tracking-widest text-rose-400 mb-4">What TradifyApp Is NOT</h4>
+                <h4 className="text-xs font-black uppercase tracking-widest text-rose-400 mb-4">
+                  {t("about.isNotTitle")}
+                </h4>
                 <div className="space-y-3">
                   {[
-                    "Not a signal service or copy trading platform",
-                    "Not an automated trading bot",
-                    "Not a 'get rich quick' scheme",
-                    "Not investment advice or financial guidance"
+                    t("about.isNot1"),
+                    t("about.isNot2"),
+                    t("about.isNot3"),
+                    t("about.isNot4"),
                   ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
                       <ShieldCheck size={14} className="text-rose-400 shrink-0" />
                       {item}
                     </div>
@@ -179,13 +216,15 @@ export default function About() {
               </div>
 
               <div className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
-                <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400 mb-4">What TradifyApp IS</h4>
+                <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400 mb-4">
+                  {t("about.isTitle")}
+                </h4>
                 <div className="space-y-3">
                   {[
-                    "A discipline enforcement platform with MT5 auto-sync",
-                    "A rule validation and accountability system",
-                    "A data-driven performance analytics tool",
-                    "A prop firm challenge management system"
+                    t("about.is1"),
+                    t("about.is2"),
+                    t("about.is3"),
+                    t("about.is4"),
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm text-foreground">
                       <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
@@ -199,14 +238,18 @@ export default function About() {
         </div>
       </section>
 
-      <section className="py-24 border-y border-border bg-muted/20" data-testid="section-philosophy">
+      <section
+        className="py-24 border-y border-border bg-muted/20"
+        data-testid="section-philosophy"
+      >
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Product <span className="text-emerald-500">Philosophy</span>
+              {t("about.philosophyTitle")}{" "}
+              <span className="text-emerald-500">{t("about.philosophyTitleHighlight")}</span>
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Every design decision at TradifyApp is guided by these core principles.
+              {t("about.philosophySubtitle")}
             </p>
           </div>
 
@@ -214,31 +257,37 @@ export default function About() {
             {[
               {
                 icon: <Eye className="text-cyan-500" size={20} />,
-                title: "Read-Only by Design",
-                desc: "TradifyApp never accesses your broker credentials, never places trades, and never modifies orders. Our MT5 Expert Advisor is strictly read-only — it reads your trade data and nothing else. Your funds are never at risk from our platform."
+                title: t("about.phReadOnlyTitle"),
+                desc: t("about.phReadOnlyDesc"),
               },
               {
                 icon: <Lock className="text-amber-500" size={20} />,
-                title: "Security First",
-                desc: "We operate on a zero-trust architecture. User data is isolated, encrypted, and never shared with third parties. We don't store broker passwords. We don't have access to your trading capital. Period."
+                title: t("about.phSecurityTitle"),
+                desc: t("about.phSecurityDesc"),
               },
               {
                 icon: <Brain className="text-emerald-500" size={20} />,
-                title: "Responsible AI",
-                desc: "Our AI features analyze your historical performance data to surface patterns and insights. They never predict market direction, never recommend specific trades, and never make promises about future results. AI is explanatory, never directive."
+                title: t("about.phAITitle"),
+                desc: t("about.phAIDesc"),
               },
               {
                 icon: <Layers className="text-purple-500" size={20} />,
-                title: "Transparency Over Hype",
-                desc: "We don't use fake testimonials, inflated statistics, or misleading marketing. Our pricing is clear, our features are honest, and our limitations are stated upfront. We believe trust is earned through transparency."
-              }
+                title: t("about.phTransTitle"),
+                desc: t("about.phTransDesc"),
+              },
             ].map((item, i) => (
-              <div key={i} className="p-6 rounded-2xl bg-background border border-border" data-testid={`card-philosophy-${i}`}>
+              <div
+                key={i}
+                className="p-6 rounded-2xl bg-background border border-border"
+                data-testid={`card-philosophy-${i}`}
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0">
                     {item.icon}
                   </div>
-                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest">{item.title}</h3>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest">
+                    {item.title}
+                  </h3>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
               </div>
@@ -251,44 +300,57 @@ export default function About() {
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Technology & <span className="text-emerald-500">Trust</span>
+              {t("about.techTitle")}{" "}
+              <span className="text-emerald-500">{t("about.techTitleHighlight")}</span>
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Built with modern, reliable technology to ensure your data is always safe and your experience is always fast.
+              {t("about.techSubtitle")}
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { icon: <Server size={20} />, label: "Cloud Infrastructure" },
-              { icon: <Lock size={20} />, label: "Encrypted Data" },
-              { icon: <Globe size={20} />, label: "Global Access" },
-              { icon: <Code2 size={20} />, label: "Modern Stack" }
+              { icon: <Server size={20} />, label: t("about.techCloud") },
+              { icon: <Lock size={20} />, label: t("about.techEncrypted") },
+              { icon: <Globe size={20} />, label: t("about.techGlobal") },
+              { icon: <Code2 size={20} />, label: t("about.techStack") },
             ].map((item, i) => (
-              <div key={i} className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-muted/30 border border-border text-center" data-testid={`card-tech-${i}`}>
+              <div
+                key={i}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-muted/30 border border-border text-center"
+                data-testid={`card-tech-${i}`}
+              >
                 <div className="text-emerald-500">{item.icon}</div>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{item.label}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  {item.label}
+                </span>
               </div>
             ))}
           </div>
 
           <div className="mt-12 p-8 rounded-3xl bg-emerald-500/5 border border-emerald-500/20 text-center">
-            <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-4">Our Commitment</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto" data-testid="text-commitment">
-              TradifyApp is committed to providing accurate, unbiased, and reliable trading analytics.
-              We will never compromise user data for profit, never sell trading signals disguised as
-              analytics, and never make promises about trading outcomes. Our success is measured by
-              how much more disciplined and self-aware our users become — not by how much they trade.
+            <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-4">
+              {t("about.commitmentTitle")}
+            </h3>
+            <p
+              className="text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto"
+              data-testid="text-commitment"
+            >
+              {t("about.commitmentBody")}
             </p>
           </div>
         </div>
       </section>
 
-      <section className="py-24 border-y border-border bg-muted/20" data-testid="section-founder">
+      <section
+        className="py-24 border-y border-border bg-muted/20"
+        data-testid="section-founder"
+      >
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Meet the <span className="text-emerald-500">Founder</span>
+              {t("about.founderTitle")}{" "}
+              <span className="text-emerald-500">{t("about.founderTitleHighlight")}</span>
             </h2>
           </div>
 
@@ -299,34 +361,40 @@ export default function About() {
                   <TrendingUp size={40} className="text-slate-950" />
                 </div>
 
-                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] uppercase tracking-widest mb-4">
-                  Founder & CEO
+                <Badge
+                  variant="outline"
+                  className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] uppercase tracking-widest mb-4"
+                >
+                  {t("about.founderRole")}
                 </Badge>
 
-                <h3 className="text-xl font-black text-foreground uppercase tracking-tight mb-2" data-testid="text-founder-name">
-                  TradifyApp Founder
+                <h3
+                  className="text-xl font-black text-foreground uppercase tracking-tight mb-2"
+                  data-testid="text-founder-name"
+                >
+                  {t("about.founderName")}
                 </h3>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6" data-testid="text-founder-role">
-                  Trader & Technologist
+                <p
+                  className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6"
+                  data-testid="text-founder-role"
+                >
+                  {t("about.founderTitleSub")}
                 </p>
 
-                <p className="text-sm text-muted-foreground leading-relaxed mb-6" data-testid="text-founder-bio">
-                  As a trader who experienced firsthand the frustration of inconsistent execution and lack of
-                  accountability tools, I built TradifyApp to solve the problems I faced every day. Too many
-                  platforms focus on giving traders signals and predictions — but the real edge comes from
-                  understanding your own behavior, enforcing your own rules, and learning from your own data.
+                <p
+                  className="text-sm text-muted-foreground leading-relaxed mb-6"
+                  data-testid="text-founder-bio"
+                >
+                  {t("about.founderBio1")}
                 </p>
 
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                  TradifyApp was born from the belief that trading success is a process, not a product.
-                  We're building the platform I wish existed when I started trading — one that respects traders'
-                  intelligence, protects their data, and helps them grow at their own pace.
+                  {t("about.founderBio2")}
                 </p>
 
                 <div className="pt-6 border-t border-border">
                   <p className="text-xs text-muted-foreground italic">
-                    "The best traders don't predict markets. They master themselves.
-                    TradifyApp is the tool that makes that mastery measurable."
+                    &ldquo;{t("about.founderQuote")}&rdquo;
                   </p>
                 </div>
               </CardContent>
@@ -338,21 +406,28 @@ export default function About() {
       <section className="py-24 bg-gradient-to-b from-background to-muted">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tighter uppercase mb-6">
-            Ready to trade with <span className="text-emerald-500">discipline</span>?
+            {t("about.ctaTitle")}{" "}
+            <span className="text-emerald-500">{t("about.ctaTitleHighlight")}</span>
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Join traders who are taking control of their performance with data-driven analytics,
-            automated journaling, and real-time prop firm tracking.
+            {t("about.ctaSubtitle")}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/signup" data-testid="link-about-signup">
-              <Button className="h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400 shadow-xl shadow-emerald-500/20" data-testid="button-about-signup">
-                Start Free Now <ArrowRight className="ml-2 h-4 w-4" />
+              <Button
+                className="h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400 shadow-xl shadow-emerald-500/20"
+                data-testid="button-about-signup"
+              >
+                {t("about.ctaPrimary")} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/features" data-testid="link-about-features">
-              <Button variant="outline" className="h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted" data-testid="button-about-features">
-                Explore Features
+              <Button
+                variant="outline"
+                className="h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted"
+                data-testid="button-about-features"
+              >
+                {t("about.ctaSecondary")}
               </Button>
             </Link>
           </div>
@@ -361,26 +436,80 @@ export default function About() {
 
       <footer className="py-12 border-t border-border text-center">
         <div className="flex justify-center flex-wrap gap-6 mb-4">
-          <Link to="/features" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-features">Features</Link>
-          <Link to="/pricing" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-pricing">Pricing</Link>
-          <Link to="/how-it-works" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-how-it-works">How It Works</Link>
-          <Link to="/blog" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-blog">Blog</Link>
-          <Link to="/resources" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-resources">Resources</Link>
-          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-terms">Terms</Link>
-          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-privacy">Privacy</Link>
-          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-risk">Risk Disclaimer</Link>
-          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors" data-testid="link-footer-cookie">Cookie Policy</Link>
+          <Link
+            to="/features"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-features"
+          >
+            {t("footer.features")}
+          </Link>
+          <Link
+            to="/pricing"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-pricing"
+          >
+            {t("footer.pricing")}
+          </Link>
+          <Link
+            to="/how-it-works"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-how-it-works"
+          >
+            {t("footer.howItWorks")}
+          </Link>
+          <Link
+            to="/blog"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-blog"
+          >
+            {t("footer.blog")}
+          </Link>
+          <Link
+            to="/resources"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-resources"
+          >
+            {t("footer.resources")}
+          </Link>
+          <Link
+            to="/terms"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-terms"
+          >
+            {t("footer.terms")}
+          </Link>
+          <Link
+            to="/privacy"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-privacy"
+          >
+            {t("footer.privacy")}
+          </Link>
+          <Link
+            to="/risk-disclaimer"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-risk"
+          >
+            {t("footer.riskDisclaimer")}
+          </Link>
+          <Link
+            to="/cookie-policy"
+            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
+            data-testid="link-footer-cookie"
+          >
+            {t("footer.cookies")}
+          </Link>
           <CookieSettingsButton />
           <a
             href="mailto:support@tradify.app?subject=TradifyApp Support Request"
             className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors"
             data-testid="link-contact-us-footer"
           >
-            Contact Us
+            {t("footer.contactUs")}
           </a>
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
+          {t("footer.copyright", { year: new Date().getFullYear() })}
         </p>
       </footer>
     </div>

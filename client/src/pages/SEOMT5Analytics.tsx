@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import {
-  TrendingUp,
-  ShieldCheck,
   CheckCircle2,
   ArrowRight,
   BarChart3,
@@ -13,7 +11,6 @@ import {
   Activity,
   LineChart,
   MonitorSmartphone,
-  Gauge,
   PieChart
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,13 +18,36 @@ import { Badge } from "@/components/ui/badge";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { CookieSettingsButton } from "@/components/CookieConsent";
 import { SEO } from "@/components/SEO";
+import { useTranslation } from "react-i18next";
 
 export default function SEOMT5Analytics() {
+  const { t } = useTranslation("common");
+  const ts = (k: string) => t(`seo.${k}`);
+
+  const features = [
+    { titleKey: "analyticsFeat1Title", descKey: "analyticsFeat1Desc", icon: <LineChart className="text-emerald-500" />, tier: "Free" },
+    { titleKey: "analyticsFeat2Title", descKey: "analyticsFeat2Desc", icon: <PieChart className="text-blue-500" />, tier: "Free" },
+    { titleKey: "analyticsFeat3Title", descKey: "analyticsFeat3Desc", icon: <Target className="text-amber-500" />, tier: "Free" },
+    { titleKey: "analyticsFeat4Title", descKey: "analyticsFeat4Desc", icon: <Brain className="text-emerald-500" />, tier: "Pro" },
+    { titleKey: "analyticsFeat5Title", descKey: "analyticsFeat5Desc", icon: <Clock className="text-purple-500" />, tier: "Elite" },
+    { titleKey: "analyticsFeat6Title", descKey: "analyticsFeat6Desc", icon: <Activity className="text-rose-500" />, tier: "Elite" },
+  ];
+
+  const tracked = ["analyticsTracked1","analyticsTracked2","analyticsTracked3","analyticsTracked4","analyticsTracked5","analyticsTracked6","analyticsTracked7","analyticsTracked8"];
+  const insights = ["analyticsInsight1","analyticsInsight2","analyticsInsight3","analyticsInsight4","analyticsInsight5","analyticsInsight6","analyticsInsight7","analyticsInsight8"];
+  const tags = ["analyticsHeroTag1","analyticsHeroTag2","analyticsHeroTag3","analyticsHeroTag4","analyticsHeroTag5","analyticsHeroTag6"];
+  const multi = [
+    { tk: "analyticsMulti1Title", dk: "analyticsMulti1Desc" },
+    { tk: "analyticsMulti2Title", dk: "analyticsMulti2Desc" },
+    { tk: "analyticsMulti3Title", dk: "analyticsMulti3Desc" },
+  ];
+  const faqs = [1,2,3,4,5].map(i => ({ q: `analyticsFaq${i}Q`, a: `analyticsFaq${i}A` }));
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO
-        title="MT5 Trading Analytics & Performance Tracker - AI-Powered Insights | TradifyApp"
-        description="Track your MT5 trading performance with AI-powered analytics. Equity curves, win rate by instrument, session analysis, drawdown tracking, and behavioral insights. Auto-syncs from MetaTrader 5."
+        title={ts("analyticsTitle")}
+        description={ts("analyticsDesc")}
         canonical="https://tradifyapp.com/mt5-trading-analytics"
         ogImage="https://tradifyapp.com/images/tradify-promo-1.png"
         structuredData={[
@@ -76,32 +96,23 @@ export default function SEOMT5Analytics() {
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-8">
             <BarChart3 size={14} className="text-blue-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Trading Analytics</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">{ts("analyticsHeroBadge")}</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]" data-testid="text-seo-analytics-heading">
-            MT5 Trading<br />
-            <span className="text-blue-500">Analytics &</span><br />
-            Performance Tracker
+            {ts("analyticsHeroTitle1")}<br />
+            <span className="text-blue-500">{ts("analyticsHeroTitle2")}</span><br />
+            {ts("analyticsHeroTitle3")}
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Transform raw MT5 trade data into actionable insights. TradifyApp's AI-powered analytics
-            reveal your true edge — which instruments make you money, when you trade best,
-            and where your discipline breaks down.
+            {ts("analyticsHeroSub")}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
-            {[
-              "Equity Curves",
-              "Win Rate Analysis",
-              "Session Breakdown",
-              "AI Insights",
-              "Drawdown Tracking",
-              "Multi-Account"
-            ].map((tag) => (
+            {tags.map((tag) => (
               <Badge key={tag} variant="outline" className="bg-muted/50 border-border text-muted-foreground text-[10px] font-bold uppercase tracking-widest py-1 px-3">
-                {tag}
+                {ts(tag)}
               </Badge>
             ))}
           </div>
@@ -109,18 +120,18 @@ export default function SEOMT5Analytics() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <Link to="/signup" data-testid="link-seo-analytics-signup">
               <Button className="w-full sm:w-auto h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400 shadow-xl shadow-emerald-500/20" data-testid="button-seo-analytics-signup">
-                Start Free Analytics <ArrowRight className="ml-2 h-4 w-4" />
+                {ts("analyticsHeroCtaPrimary")} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/features" data-testid="link-seo-analytics-features">
               <Button variant="outline" className="w-full sm:w-auto h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted" data-testid="button-seo-analytics-features">
-                See All Features
+                {ts("analyticsHeroCtaSecondary")}
               </Button>
             </Link>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Free plan includes performance dashboard and equity tracking. Pro and Elite unlock advanced analytics.
+            {ts("analyticsHeroDisclaimer")}
           </p>
         </div>
       </section>
@@ -129,53 +140,15 @@ export default function SEOMT5Analytics() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Complete <span className="text-blue-500">Analytics Suite</span>
+              {ts("analyticsSuiteTitle1")} <span className="text-blue-500">{ts("analyticsSuiteTitle2")}</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              From basic win/loss tracking to AI-powered behavioral analysis — TradifyApp gives you
-              the complete picture of your trading performance at every tier.
+              {ts("analyticsSuiteSub")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Equity Curve Tracking",
-                desc: "Visualize your account growth over time with interactive equity curves. Track cumulative P&L, identify growth phases, and spot drawdown periods at a glance. Available for each MT5 account independently.",
-                icon: <LineChart className="text-emerald-500" />,
-                tier: "Free"
-              },
-              {
-                title: "Win Rate by Instrument",
-                desc: "See exactly which currency pairs, commodities, or indices make you money and which ones cost you. Break down performance by instrument to focus on your strongest markets.",
-                icon: <PieChart className="text-blue-500" />,
-                tier: "Free"
-              },
-              {
-                title: "Risk-to-Reward Analysis",
-                desc: "Track your average risk-to-reward ratio across all trades. Identify whether your winners are large enough relative to your losers and whether your expectancy is positive.",
-                icon: <Target className="text-amber-500" />,
-                tier: "Free"
-              },
-              {
-                title: "AI Instrument Analysis",
-                desc: "AI analyzes your performance patterns across instruments. Discover which pairs have positive expectancy, which to avoid, and how your performance changes across different market conditions.",
-                icon: <Brain className="text-emerald-500" />,
-                tier: "Pro"
-              },
-              {
-                title: "Session & Time Analytics",
-                desc: "Break down your performance by London, New York, Tokyo, and Sydney sessions. Discover which day of the week and hour of the day you trade best — based on your actual data, not general advice.",
-                icon: <Clock className="text-purple-500" />,
-                tier: "Elite"
-              },
-              {
-                title: "Behavioral Risk Detection",
-                desc: "AI monitors your trading patterns for revenge trading, overtrading, inconsistent sizing, and other behavioral risks. Get flagged before destructive patterns damage your account.",
-                icon: <Activity className="text-rose-500" />,
-                tier: "Elite"
-              }
-            ].map((feature, i) => (
+            {features.map((feature, i) => (
               <Card key={i} className="bg-background border-border" data-testid={`card-analytics-feature-${i}`}>
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
@@ -184,18 +157,18 @@ export default function SEOMT5Analytics() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-2">
-                        <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">{feature.title}</h3>
+                        <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">{ts(feature.titleKey)}</h3>
                         {feature.tier === "Pro" && (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] py-0 uppercase tracking-widest shrink-0">Pro</Badge>
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] py-0 uppercase tracking-widest shrink-0">{ts("tierPro")}</Badge>
                         )}
                         {feature.tier === "Elite" && (
-                          <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[9px] py-0 uppercase tracking-widest shrink-0">Elite</Badge>
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[9px] py-0 uppercase tracking-widest shrink-0">{ts("tierElite")}</Badge>
                         )}
                         {feature.tier === "Free" && (
-                          <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[9px] py-0 uppercase tracking-widest shrink-0">Free</Badge>
+                          <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[9px] py-0 uppercase tracking-widest shrink-0">{ts("tierFree")}</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{ts(feature.descKey)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -209,51 +182,33 @@ export default function SEOMT5Analytics() {
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              From <span className="text-blue-500">Raw Data</span> to Actionable Insights
+              {ts("analyticsRawTitle1")} <span className="text-blue-500">{ts("analyticsRawTitle2")}</span> {ts("analyticsRawTitle3")}
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              TradifyApp transforms every MT5 trade into meaningful analytics that help you improve.
+              {ts("analyticsRawSub")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
-              <h3 className="text-lg font-bold text-foreground uppercase tracking-widest mb-6">What Gets Tracked</h3>
+              <h3 className="text-lg font-bold text-foreground uppercase tracking-widest mb-6">{ts("analyticsTrackedHeading")}</h3>
               <div className="space-y-4">
-                {[
-                  "Every entry and exit price across all instruments",
-                  "Lot sizes and position values for risk analysis",
-                  "Trade duration and holding periods",
-                  "Profit and loss in both pips and currency",
-                  "Trading session and time-of-day data",
-                  "Sequential trade patterns and streaks",
-                  "Account equity at every trade checkpoint",
-                  "Strategy and rule compliance per trade"
-                ].map((item, i) => (
+                {tracked.map((k, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-muted-foreground">{item}</span>
+                    <span className="text-sm text-muted-foreground">{ts(k)}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-foreground uppercase tracking-widest mb-6">Insights You Get</h3>
+              <h3 className="text-lg font-bold text-foreground uppercase tracking-widest mb-6">{ts("analyticsInsightsHeading")}</h3>
               <div className="space-y-4">
-                {[
-                  "Your most profitable instruments ranked by expectancy",
-                  "Best and worst trading sessions for your style",
-                  "Optimal day-of-week and time-of-day patterns",
-                  "Risk-to-reward consistency across trade types",
-                  "Drawdown depth and recovery time analysis",
-                  "Behavioral patterns that hurt your performance",
-                  "Profit factor and Sharpe ratio calculations",
-                  "Monthly and weekly performance trends"
-                ].map((item, i) => (
+                {insights.map((k, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <BarChart3 size={14} className="text-blue-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-muted-foreground">{item}</span>
+                    <span className="text-sm text-muted-foreground">{ts(k)}</span>
                   </div>
                 ))}
               </div>
@@ -268,21 +223,16 @@ export default function SEOMT5Analytics() {
             <MonitorSmartphone className="text-cyan-500" size={32} />
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-            Multi-Account <span className="text-cyan-500">Analytics</span>
+            {ts("analyticsMultiTitle1")} <span className="text-cyan-500">{ts("analyticsMultiTitle2")}</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-            Trading across multiple brokers or accounts? TradifyApp connects to all your MT5 accounts simultaneously.
-            Each account gets independent analytics, or view your consolidated performance across all accounts.
+            {ts("analyticsMultiSub")}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-            {[
-              { title: "Independent Tracking", desc: "Separate equity curves, drawdowns, and analytics for each account" },
-              { title: "Simultaneous Sync", desc: "All accounts sync in real time through individual MT5 Expert Advisors" },
-              { title: "Unified Dashboard", desc: "Switch between accounts or view aggregate performance metrics" }
-            ].map((item, i) => (
+            {multi.map((item, i) => (
               <div key={i} className="p-6 rounded-2xl bg-background border border-border">
-                <h4 className="text-sm font-bold text-foreground uppercase tracking-widest mb-2">{item.title}</h4>
-                <p className="text-xs text-muted-foreground">{item.desc}</p>
+                <h4 className="text-sm font-bold text-foreground uppercase tracking-widest mb-2">{ts(item.tk)}</h4>
+                <p className="text-xs text-muted-foreground">{ts(item.dk)}</p>
               </div>
             ))}
           </div>
@@ -293,40 +243,19 @@ export default function SEOMT5Analytics() {
         <div className="max-w-3xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Analytics <span className="text-blue-500">FAQ</span>
+              {ts("analyticsFaqTitle1")} <span className="text-blue-500">{ts("analyticsFaqTitle2")}</span>
             </h2>
           </div>
 
           <div className="space-y-4">
-            {[
-              {
-                q: "What trading analytics does TradifyApp provide?",
-                a: "TradifyApp provides comprehensive trading analytics including equity curves, win rate by instrument and session, risk-to-reward analysis, drawdown tracking, profit factor calculation, expectancy metrics, behavioral pattern detection, and AI-powered performance insights. Free users get core metrics; Pro and Elite unlock advanced analytics."
-              },
-              {
-                q: "How does MT5 performance tracking work?",
-                a: "TradifyApp uses a free Expert Advisor (EA) installed on your MT5 platform that reads your trade data in real time. Every trade is automatically captured — entries, exits, lot sizes, instruments, and P&L. The analytics dashboard updates continuously as new trades come in. The EA is strictly read-only."
-              },
-              {
-                q: "What is session analytics in trading?",
-                a: "Session analytics breaks down your performance by market session (London, New York, Tokyo, Sydney), day of week, and hour of day. Instead of following general advice about when to trade, you can see exactly when YOU trade best based on your actual historical data. This is an Elite feature in TradifyApp."
-              },
-              {
-                q: "Can I track my trading performance for free?",
-                a: "Yes. TradifyApp's free plan includes the performance dashboard with equity tracking, basic win/loss analytics, P&L calendar, and risk metrics. The free plan covers core analytics for up to 30 days of trade history. Pro and Elite plans unlock AI analysis, session analytics, and behavioral insights."
-              },
-              {
-                q: "How is TradifyApp different from MT5's built-in reports?",
-                a: "MT5's built-in reports are basic and static. TradifyApp provides dynamic, interactive analytics with AI-powered insights, session breakdowns, behavioral pattern detection, psychology tracking, and rule validation — all in a modern dashboard. Plus, TradifyApp works across multiple MT5 accounts in one place."
-              }
-            ].map((faq, i) => (
+            {faqs.map((faq, i) => (
               <details key={i} className="group bg-card border border-border rounded-2xl overflow-hidden" data-testid={`faq-analytics-${i}`}>
                 <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
-                  <span className="text-sm font-bold text-foreground pr-4">{faq.q}</span>
+                  <span className="text-sm font-bold text-foreground pr-4">{ts(faq.q)}</span>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0 transition-transform group-open:rotate-90" />
                 </summary>
                 <div className="px-6 pb-6">
-                  <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{ts(faq.a)}</p>
                 </div>
               </details>
             ))}
@@ -337,21 +266,20 @@ export default function SEOMT5Analytics() {
       <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-analytics-cta">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-6">
-            Stop guessing.<br /><span className="text-blue-500">Start measuring.</span>
+            {ts("analyticsCtaTitle1")}<br /><span className="text-blue-500">{ts("analyticsCtaTitle2")}</span>
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            The difference between guessing and knowing is data. Connect your MT5 and let TradifyApp
-            show you exactly what's working and what isn't.
+            {ts("analyticsCtaSub")}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/signup" data-testid="link-analytics-cta-signup">
               <Button className="h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400" data-testid="button-analytics-cta-signup">
-                Start Free Analytics
+                {ts("analyticsCtaPrimary")}
               </Button>
             </Link>
             <Link to="/pricing" data-testid="link-analytics-cta-pricing">
               <Button variant="ghost" className="h-14 px-8 text-foreground font-bold uppercase tracking-widest text-xs group" data-testid="button-analytics-cta-pricing">
-                Compare Plans <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
+                {ts("ctaCompare")} <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
               </Button>
             </Link>
           </div>
@@ -360,26 +288,26 @@ export default function SEOMT5Analytics() {
 
       <section className="py-12 border-t border-border" data-testid="section-analytics-related">
         <div className="max-w-4xl mx-auto px-6">
-          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-6 text-center">Related Tools</h3>
+          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-6 text-center">{ts("relatedToolsHeading")}</h3>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/trading-journal" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-analytics-related-journal">
-              MT5 Trading Journal
+              {ts("relatedJournal")}
             </Link>
             <span className="text-border">|</span>
             <Link to="/prop-firm-tracker" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-analytics-related-prop">
-              Prop Firm Challenge Tracker
+              {ts("relatedProp")}
             </Link>
             <span className="text-border">|</span>
             <Link to="/features" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-analytics-related-features">
-              All Features
+              {ts("relatedFeatures")}
             </Link>
             <span className="text-border">|</span>
             <Link to="/pricing" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-analytics-related-pricing">
-              Pricing
+              {ts("relatedPricing")}
             </Link>
             <span className="text-border">|</span>
             <Link to="/blog" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-analytics-related-blog">
-              Blog
+              {ts("relatedBlog")}
             </Link>
           </div>
         </div>
@@ -387,15 +315,15 @@ export default function SEOMT5Analytics() {
 
       <footer className="py-12 border-t border-border text-center">
         <div className="flex justify-center flex-wrap gap-6 mb-4">
-          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
-          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
-          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
-          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Cookie Policy</Link>
-          <Link to="/blog" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Blog</Link>
+          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.terms")}</Link>
+          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.privacy")}</Link>
+          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.riskDisclaimer")}</Link>
+          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.cookies")}</Link>
+          <Link to="/blog" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.blog")}</Link>
           <CookieSettingsButton />
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
+          {t("footer.copyright", { year: 2026 })}
         </p>
       </footer>
     </div>

@@ -34,6 +34,7 @@ import {
   type RuleCategoryType,
   type RuleTypeKey,
 } from "@shared/ruleTypes";
+import { useTranslation, Trans } from "react-i18next";
 
 interface StrategyRule {
   id: number;
@@ -66,13 +67,17 @@ interface RuleInputState {
   };
 }
 
-const CATEGORY_LABELS: Record<RuleCategoryType, { label: string; color: string }> = {
-  [RuleCategory.SUBJECTIVE]: { label: "Subjective", color: "bg-violet-500/10 text-violet-500 border-violet-500/20" },
-  [RuleCategory.RISK_EXECUTION]: { label: "Risk & Execution", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  [RuleCategory.CONTEXT]: { label: "Context", color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
-};
+function useCategoryLabels(): Record<RuleCategoryType, { label: string; color: string }> {
+  const { t } = useTranslation("common", { keyPrefix: "validator" });
+  return {
+    [RuleCategory.SUBJECTIVE]: { label: t("catSubjective"), color: "bg-violet-500/10 text-violet-500 border-violet-500/20" },
+    [RuleCategory.RISK_EXECUTION]: { label: t("catRiskExecution"), color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    [RuleCategory.CONTEXT]: { label: t("catContext"), color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
+  };
+}
 
 function PropFirmRiskBanner() {
+  const { t } = useTranslation("common", { keyPrefix: "validator" });
   const { data: challenges } = useQuery<PropFirmChallenge[]>({
     queryKey: ["/api/prop-firm/challenges"],
   });
@@ -93,18 +98,18 @@ function PropFirmRiskBanner() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="space-y-1">
               <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                Active Prop Firm Challenge{activeChallenges.length > 1 ? "s" : ""}
+                {t("activeChallenges", { count: activeChallenges.length })}
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
                   {activeChallenges.length}
                 </Badge>
               </p>
               <p className="text-xs text-muted-foreground">
-                {activeChallenges.map((c) => `${c.firmName} ${c.phase}`).join(", ")} &mdash; Use the AI Risk Analyzer before entering trades to protect your challenge.
+                {t("activeChallengesHint", { firms: activeChallenges.map((c) => `${c.firmName} ${c.phase}`).join(", ") })}
               </p>
             </div>
             <Link to="/prop-firm">
               <Button variant="outline" size="sm" data-testid="button-goto-risk-check">
-                Risk Check
+                {t("btnRiskCheck")}
                 <ArrowRight size={14} />
               </Button>
             </Link>
@@ -116,6 +121,8 @@ function PropFirmRiskBanner() {
 }
 
 export default function StrategyValidator() {
+  const { t } = useTranslation("common", { keyPrefix: "validator" });
+  const CATEGORY_LABELS = useCategoryLabels();
   const [selectedStrategyId, setSelectedStrategyId] = useState<number | null>(null);
   const [ruleInputs, setRuleInputs] = useState<RuleInputState>({});
   const [hasValidated, setHasValidated] = useState(false);
@@ -280,7 +287,7 @@ export default function StrategyValidator() {
               data-testid={`switch-${rule.ruleType}`}
             />
             <span className="text-sm text-muted-foreground">
-              {input.value ? "Yes" : "No"}
+              {input.value ? t("yes") : t("no")}
             </span>
           </div>
         );
@@ -289,7 +296,7 @@ export default function StrategyValidator() {
         const validation = ruleDefinition.validation;
         const prefix = ruleDefinition.displayPrefix || '';
         const suffix = ruleDefinition.displaySuffix || '';
-        const placeholder = ruleDefinition.inputPlaceholder || `Value`;
+        const placeholder = ruleDefinition.inputPlaceholder || t("valuePlaceholder");
         return (
           <div className="flex items-center gap-2">
             <Input
@@ -316,7 +323,7 @@ export default function StrategyValidator() {
             onValueChange={(val) => updateRuleInput(rule.id, val)}
           >
             <SelectTrigger className="w-48" data-testid={`select-${rule.ruleType}`}>
-              <SelectValue placeholder="Select..." />
+              <SelectValue placeholder={t("selectPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {ruleDefinition.options?.map((opt) => (
@@ -329,7 +336,7 @@ export default function StrategyValidator() {
         );
 
       case "multiselect":
-        const multiselectPlaceholder = ruleDefinition.inputPlaceholder || 'Select...';
+        const multiselectPlaceholder = ruleDefinition.inputPlaceholder || t("selectPlaceholder");
         return (
           <Select
             value={input.value}
@@ -377,18 +384,18 @@ export default function StrategyValidator() {
       <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
         <main className="p-6 lg:p-10 max-w-4xl mx-auto">
           <header className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Trade Validator</h1>
-            <p className="text-muted-foreground mt-1">Check if your trade aligns with your strategy rules</p>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">{t("title")}</h1>
+            <p className="text-muted-foreground mt-1">{t("subtitle")}</p>
           </header>
           <Card className="p-8 text-center">
             <Target className="mx-auto mb-4 text-muted-foreground" size={48} />
-            <h2 className="text-xl font-semibold mb-2">No Strategies Found</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("noStrategiesTitle")}</h2>
             <p className="text-muted-foreground mb-4">
-              Create a strategy first to validate your trades against your rules.
+              {t("noStrategiesDesc")}
             </p>
             <Link to="/strategies/create">
               <Button>
-                Create Strategy
+                {t("btnCreateStrategy")}
               </Button>
             </Link>
           </Card>
@@ -401,8 +408,8 @@ export default function StrategyValidator() {
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-4xl mx-auto">
         <header className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Trade Validator</h1>
-          <p className="text-muted-foreground mt-1">Check if your trade aligns with your strategy rules</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("subtitle")}</p>
         </header>
 
         <Card className="p-4 mb-6 bg-muted/30 border-muted">
@@ -411,9 +418,9 @@ export default function StrategyValidator() {
               <ShieldCheck size={16} className="text-emerald-500" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">How to use the Validator</p>
+              <p className="text-sm font-medium text-foreground">{t("howToUseTitle")}</p>
               <p className="text-xs text-muted-foreground">
-                After taking a trade, answer each rule honestly. <strong>Subjective rules</strong> (purple) require your honest self-assessment. <strong>Objective rules</strong> (amber/cyan) should match your actual trade parameters. Click "Validate Trade" to see if you followed your strategy.
+                <Trans i18nKey="howToUseDesc" ns="validator" components={{ strong: <strong /> }} />
               </p>
             </div>
           </div>
@@ -425,14 +432,14 @@ export default function StrategyValidator() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Select Strategy
+                {t("selectStrategy")}
               </label>
               <Select
                 value={selectedStrategyId?.toString() || activeStrategy?.id?.toString() || ""}
                 onValueChange={(val) => setSelectedStrategyId(parseInt(val))}
               >
                 <SelectTrigger className="w-72" data-testid="select-strategy">
-                  <SelectValue placeholder="Choose a strategy..." />
+                  <SelectValue placeholder={t("chooseStrategyPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {strategies.map((strategy) => (
@@ -441,7 +448,7 @@ export default function StrategyValidator() {
                         {strategy.name}
                         {strategy.isActive && (
                           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 text-[10px] py-0">
-                            Active
+                            {t("active")}
                           </Badge>
                         )}
                       </div>
@@ -453,7 +460,7 @@ export default function StrategyValidator() {
 
             {selectedStrategy && (
               <div className="text-sm text-muted-foreground">
-                <span className="font-medium">{selectedStrategy.rules?.length || 0}</span> rules to validate
+                <Trans i18nKey="rulesToValidate" ns="validator" values={{ count: selectedStrategy.rules?.length || 0 }} components={{ strong: <strong className="font-medium" /> }} />
               </div>
             )}
           </div>
@@ -464,7 +471,7 @@ export default function StrategyValidator() {
             <Card className="p-6 mb-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Target size={18} className="text-emerald-500" />
-                Rule Checklist
+                {t("ruleChecklist")}
               </h2>
 
               <div className="space-y-4">
@@ -524,7 +531,7 @@ export default function StrategyValidator() {
                   data-testid="button-validate"
                 >
                   <ShieldCheck size={18} className="mr-2" />
-                  Validate Trade
+                  {t("btnValidate")}
                 </Button>
               </div>
             </Card>
@@ -555,17 +562,17 @@ export default function StrategyValidator() {
                       "text-2xl font-bold",
                       isAligned ? "text-emerald-500" : "text-rose-500"
                     )}>
-                      {isAligned ? "Strategy Aligned" : "Strategy Not Aligned"}
+                      {isAligned ? t("aligned") : t("notAligned")}
                     </h2>
                     
                     {isAligned ? (
                       <p className="text-muted-foreground">
-                        All {passedRules.length} rules passed. This trade aligns with your strategy.
+                        {t("alignedDesc", { count: passedRules.length })}
                       </p>
                     ) : (
                       <div className="mt-2">
                         <p className="text-muted-foreground mb-2">
-                          {unalignedRules.length} of {selectedStrategy.rules.length} rules not aligned:
+                          {t("notAlignedDesc", { failed: unalignedRules.length, total: selectedStrategy.rules.length })}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {unalignedRules.map((rule: StrategyRule) => (
@@ -589,12 +596,10 @@ export default function StrategyValidator() {
                   isAligned ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"
                 )}>
                   <p className="text-sm font-medium mb-1">
-                    {isAligned ? "Great discipline!" : "Reflection prompt"}
+                    {isAligned ? t("greatDiscipline") : t("reflectionPrompt")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {isAligned 
-                      ? "You followed your trading plan. Whether this trade wins or loses, you made a disciplined decision. That's what separates professionals from gamblers."
-                      : "You deviated from your own rules. Before your next trade, ask yourself: Was this a conscious exception with valid reasoning, or was it emotional trading? Write down what triggered the deviation."}
+                    {isAligned ? t("alignedReflection") : t("notAlignedReflection")}
                   </p>
                 </div>
               </Card>
@@ -603,13 +608,13 @@ export default function StrategyValidator() {
         ) : selectedStrategy && selectedStrategy.rules?.length === 0 ? (
           <Card className="p-8 text-center">
             <AlertTriangle className="mx-auto mb-4 text-amber-500" size={48} />
-            <h2 className="text-xl font-semibold mb-2">No Rules Defined</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("noRulesDefinedTitle")}</h2>
             <p className="text-muted-foreground mb-4">
-              This strategy has no rules to validate against.
+              {t("noRulesDefinedDesc")}
             </p>
             <Link to="/strategies/create">
               <Button variant="outline">
-                Create New Strategy with Rules
+                {t("btnCreateNewWithRules")}
               </Button>
             </Link>
           </Card>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -270,6 +271,7 @@ function formatCurrency(val: number | string | null | undefined, curr = "USD") {
 }
 
 function MT5PositionsPanel({ challengeId }: { challengeId: number }) {
+  const { t } = useTranslation("propfirm");
   const { data, isLoading } = useQuery<any>({
     queryKey: [`/api/prop-firm/mt5-risk/${challengeId}`],
     refetchInterval: 15000,
@@ -295,19 +297,19 @@ function MT5PositionsPanel({ challengeId }: { challengeId: number }) {
         <div className="space-y-1">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Monitor size={16} className="text-cyan-400" />
-            MT5 Live Positions
+            {t("mt5LivePositions")}
             {data.connected ? (
               <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
-                <Wifi size={8} className="mr-1" /> LIVE
+                <Wifi size={8} className="mr-1" /> {t("live").toUpperCase()}
               </Badge>
             ) : (
               <Badge variant="outline" className="bg-muted text-muted-foreground border-muted text-[10px]">
-                <WifiOff size={8} className="mr-1" /> OFFLINE
+                <WifiOff size={8} className="mr-1" /> {t("offline").toUpperCase()}
               </Badge>
             )}
           </CardTitle>
           <CardDescription>
-            Real-time position monitoring against challenge rules
+            {t("mt5LiveDesc")}
           </CardDescription>
         </div>
         {data.floatingPl !== undefined && data.floatingPl !== 0 && (
@@ -352,7 +354,7 @@ function MT5PositionsPanel({ challengeId }: { challengeId: number }) {
 
         {data.positions && data.positions.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground font-medium">Open Positions ({data.positionsCount})</p>
+            <p className="text-xs text-muted-foreground font-medium">{t("openPositions", { n: data.positionsCount })}</p>
             <div className="space-y-1.5">
               {data.positions.map((pos: any, i: number) => (
                 <div
@@ -367,7 +369,7 @@ function MT5PositionsPanel({ challengeId }: { challengeId: number }) {
                       {pos.direction}
                     </Badge>
                     <span className="font-medium">{pos.symbol}</span>
-                    <span className="text-muted-foreground">{pos.volume} lots</span>
+                    <span className="text-muted-foreground">{pos.volume} {t("lots")}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     {pos.sl && <span className="text-muted-foreground">SL: {pos.sl}</span>}
@@ -385,7 +387,7 @@ function MT5PositionsPanel({ challengeId }: { challengeId: number }) {
         {data.metrics && (
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center p-2 rounded-md bg-muted/20">
-              <p className="text-xs text-muted-foreground">Daily DD Used</p>
+              <p className="text-xs text-muted-foreground">{t("dailyDDUsed")}</p>
               <p className={cn("font-bold text-sm",
                 data.metrics.dailyDDUsedPercent > 70 ? "text-rose-400" :
                   data.metrics.dailyDDUsedPercent > 40 ? "text-amber-400" : "text-emerald-400"
@@ -394,11 +396,11 @@ function MT5PositionsPanel({ challengeId }: { challengeId: number }) {
               </p>
             </div>
             <div className="text-center p-2 rounded-md bg-muted/20">
-              <p className="text-xs text-muted-foreground">Daily DD Left</p>
+              <p className="text-xs text-muted-foreground">{t("dailyDDLeft")}</p>
               <p className="font-bold text-sm">{fc(data.metrics.dailyDDRemaining)}</p>
             </div>
             <div className="text-center p-2 rounded-md bg-muted/20">
-              <p className="text-xs text-muted-foreground">Max DD Left</p>
+              <p className="text-xs text-muted-foreground">{t("maxDDLeft")}</p>
               <p className="font-bold text-sm">{fc(data.metrics.maxDDRemaining)}</p>
             </div>
           </div>
@@ -409,6 +411,7 @@ function MT5PositionsPanel({ challengeId }: { challengeId: number }) {
 }
 
 export default function PropFirmTracker() {
+  const { t } = useTranslation("propfirm");
   const { toast } = useToast();
   const [view, setView] = useState<ViewState>("list");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -510,12 +513,12 @@ export default function PropFirmTracker() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/prop-firm/challenges"] });
-      toast({ title: "Challenge created", description: "Your prop firm challenge has been set up." });
+      toast({ title: t("challengeCreated"), description: t("challengeCreatedDesc") });
       setView("list");
       resetForm();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error?.message || "Failed to create challenge.", variant: "destructive" });
+      toast({ title: t("errorTitle"), description: error?.message || t("failedCreateChallenge"), variant: "destructive" });
     },
   });
 
@@ -533,7 +536,7 @@ export default function PropFirmTracker() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/prop-firm/challenges"] });
       queryClient.invalidateQueries({ queryKey: ["/api/prop-firm/challenges", selectedId] });
-      toast({ title: "Status updated" });
+      toast({ title: t("statusUpdated") });
     },
   });
 
@@ -548,7 +551,7 @@ export default function PropFirmTracker() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/prop-firm/challenges"] });
-      toast({ title: "Challenge deleted" });
+      toast({ title: t("challengeDeleted") });
       setView("list");
       setSelectedId(null);
     },
@@ -567,11 +570,11 @@ export default function PropFirmTracker() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/prop-firm/challenges", selectedId] });
-      toast({ title: "Daily stats recorded" });
+      toast({ title: t("dailyStatsRecorded") });
       setDailyForm({ startingBalance: "", endingBalance: "", tradesCount: 0 });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to record daily stats.", variant: "destructive" });
+      toast({ title: t("errorTitle"), description: t("failedRecordDaily"), variant: "destructive" });
     },
   });
 
@@ -619,7 +622,7 @@ export default function PropFirmTracker() {
       setRiskResult(data);
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to analyze trade risk.", variant: "destructive" });
+      toast({ title: t("errorTitle"), description: t("failedAnalyzeRisk"), variant: "destructive" });
     },
   });
 
@@ -710,36 +713,36 @@ export default function PropFirmTracker() {
 
   const formWarnings: { level: "error" | "warning"; message: string }[] = [];
   if (profitTargetNum > 0 && maxDDNum > 0 && profitTargetNum > maxDDNum) {
-    formWarnings.push({ level: "warning", message: "Profit target is larger than max drawdown — this challenge has unfavorable risk-reward." });
+    formWarnings.push({ level: "warning", message: t("warnProfitOverDD") });
   }
   if (formData.minTradingDays > 0 && formData.maxTradingDays > 0 && formData.minTradingDays > formData.maxTradingDays) {
-    formWarnings.push({ level: "error", message: "Min trading days cannot exceed max trading days." });
+    formWarnings.push({ level: "error", message: t("warnMinOverMax") });
   }
   if (formData.startDate && formData.endDate && formData.maxTradingDays > 0) {
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
     const daysBetween = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     if (daysBetween < formData.maxTradingDays) {
-      formWarnings.push({ level: "warning", message: `End date allows only ${daysBetween} calendar days, but max trading days is ${formData.maxTradingDays}.` });
+      formWarnings.push({ level: "warning", message: t("warnEndDateShort", { days: daysBetween, max: formData.maxTradingDays }) });
     }
   }
   const hasBlockingError = formWarnings.some((w) => w.level === "error");
 
   function handleCreateSubmit() {
     const missing: string[] = [];
-    if (!formData.firmName) missing.push("Firm Name");
-    if (!formData.challengeName) missing.push("Challenge Name");
-    if (!formData.accountSize) missing.push("Account Size");
-    if (!formData.profitTarget) missing.push("Profit Target");
-    if (!formData.dailyDrawdownLimit) missing.push("Daily Drawdown Limit");
-    if (!formData.maxDrawdownLimit) missing.push("Max Drawdown Limit");
-    if (!formData.startDate) missing.push("Start Date");
+    if (!formData.firmName) missing.push(t("field_firmName"));
+    if (!formData.challengeName) missing.push(t("field_challengeName"));
+    if (!formData.accountSize) missing.push(t("field_accountSize"));
+    if (!formData.profitTarget) missing.push(t("field_profitTarget"));
+    if (!formData.dailyDrawdownLimit) missing.push(t("field_dailyDrawdown"));
+    if (!formData.maxDrawdownLimit) missing.push(t("field_maxDrawdown"));
+    if (!formData.startDate) missing.push(t("field_startDate"));
     if (missing.length > 0) {
-      toast({ title: "Missing fields", description: `Please fill in: ${missing.join(", ")}.`, variant: "destructive" });
+      toast({ title: t("missingFields"), description: t("missingFieldsDesc", { fields: missing.join(", ") }), variant: "destructive" });
       return;
     }
     if (hasBlockingError) {
-      toast({ title: "Cannot create", description: "Fix the errors before creating.", variant: "destructive" });
+      toast({ title: t("cannotCreate"), description: t("cannotCreateDesc"), variant: "destructive" });
       return;
     }
     createMutation.mutate({
@@ -755,7 +758,7 @@ export default function PropFirmTracker() {
 
   function handleDailySubmit() {
     if (!dailyForm.endingBalance) {
-      toast({ title: "Missing fields", description: "Ending balance is required.", variant: "destructive" });
+      toast({ title: t("missingFields"), description: t("endingBalanceRequired"), variant: "destructive" });
       return;
     }
     const startBal = dailyForm.startingBalance || String(detailData?.progress?.currentBalance || 0);
@@ -786,7 +789,7 @@ export default function PropFirmTracker() {
           >
             <ArrowLeft />
           </Button>
-          <h1 className="font-black text-2xl tracking-tighter uppercase italic">New Challenge</h1>
+          <h1 className="font-black text-2xl tracking-tighter uppercase italic">{t("newChallengeHeading")}</h1>
         </div>
 
         {mt5Accounts && mt5Accounts.length > 0 && (
@@ -794,9 +797,9 @@ export default function PropFirmTracker() {
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Monitor size={16} className="text-cyan-400" />
-                Link MT5 Account
+                {t("linkMt5Account")}
               </CardTitle>
-              <CardDescription>Connect a MetaTrader 5 account for automated daily tracking</CardDescription>
+              <CardDescription>{t("linkMt5Description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -820,11 +823,11 @@ export default function PropFirmTracker() {
                         <span className="font-medium text-sm truncate">{acct.accountName}</span>
                         {acct.isOnline ? (
                           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
-                            <Wifi size={8} className="mr-1" /> Live
+                            <Wifi size={8} className="mr-1" /> {t("live")}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-[10px]">
-                            <WifiOff size={8} className="mr-1" /> Offline
+                            <WifiOff size={8} className="mr-1" /> {t("offline")}
                           </Badge>
                         )}
                       </div>
@@ -854,17 +857,16 @@ export default function PropFirmTracker() {
                       onChange={(e) => setFormData((p) => ({ ...p, mt5AutoSync: e.target.checked }))}
                       className="rounded border-border"
                     />
-                    <span className="text-sm">Auto-sync daily results from MT5</span>
+                    <span className="text-sm">{t("autoSyncDaily")}</span>
                   </label>
                   <Badge variant="outline" className="text-[10px] text-cyan-400 border-cyan-500/20">
-                    <Link2 size={8} className="mr-1" /> Linked
+                    <Link2 size={8} className="mr-1" /> {t("linked")}
                   </Badge>
                 </div>
               )}
               {!formData.mt5AccountId && (
                 <p className="text-xs text-muted-foreground">
-                  Select an MT5 account to auto-fill balance and currency, and enable automated daily tracking.
-                  Skip this step for manual tracking.
+                  {t("selectMt5Hint")}
                 </p>
               )}
             </CardContent>
@@ -873,8 +875,8 @@ export default function PropFirmTracker() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-bold">Select Prop Firm Preset</CardTitle>
-            <CardDescription>Choose a preset or configure a custom challenge</CardDescription>
+            <CardTitle className="text-lg font-bold">{t("selectPropFirmPreset")}</CardTitle>
+            <CardDescription>{t("selectPropFirmPresetDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-wrap gap-2">
@@ -885,7 +887,7 @@ export default function PropFirmTracker() {
                   variant={selectedPreset === name ? "default" : "outline"}
                   onClick={() => applyPreset(name)}
                 >
-                  {name}
+                  {name === "Custom Firm" ? t("customFirm") : name}
                 </Button>
               ))}
             </div>
@@ -894,7 +896,7 @@ export default function PropFirmTracker() {
               <Card className="bg-muted/20 border-muted">
                 <CardContent className="p-4">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    {selectedPreset} Rules Summary
+                    {t("rulesSummary", { name: selectedPreset })}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1.5">
                     {PRESET_RULES[selectedPreset].map((rule, i) => (
@@ -910,25 +912,25 @@ export default function PropFirmTracker() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Firm Name</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("firmName")}</label>
                 <Input
                   data-testid="input-firm-name"
                   value={formData.firmName}
                   onChange={(e) => setFormData((p) => ({ ...p, firmName: e.target.value }))}
                 />
-                <p className="text-xs text-muted-foreground">e.g. FTMO, MyFundedFX</p>
+                <p className="text-xs text-muted-foreground">{t("firmNameHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Challenge Name</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("challengeName")}</label>
                 <Input
                   data-testid="input-challenge-name"
                   value={formData.challengeName}
                   onChange={(e) => setFormData((p) => ({ ...p, challengeName: e.target.value }))}
                 />
-                <p className="text-xs text-muted-foreground">e.g. 100K Challenge, 200K Aggressive</p>
+                <p className="text-xs text-muted-foreground">{t("challengeNameHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Phase</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("phase")}</label>
                 <Select
                   value={formData.phase}
                   onValueChange={(v) => setFormData((p) => ({ ...p, phase: v }))}
@@ -937,14 +939,14 @@ export default function PropFirmTracker() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Phase 1">Phase 1</SelectItem>
-                    <SelectItem value="Phase 2">Phase 2</SelectItem>
-                    <SelectItem value="Funded">Funded</SelectItem>
+                    <SelectItem value="Phase 1">{t("phase1")}</SelectItem>
+                    <SelectItem value="Phase 2">{t("phase2")}</SelectItem>
+                    <SelectItem value="Funded">{t("funded")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Currency</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("currency")}</label>
                 <Select
                   value={formData.currency}
                   onValueChange={(v) => setFormData((p) => ({ ...p, currency: v }))}
@@ -960,17 +962,17 @@ export default function PropFirmTracker() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Account Size ({currSymbol})</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("accountSize", { symbol: currSymbol })}</label>
                 <Input
                   data-testid="input-account-size"
                   type="number"
                   value={formData.accountSize}
                   onChange={(e) => setFormData((p) => ({ ...p, accountSize: e.target.value }))}
                 />
-                <p className="text-xs text-muted-foreground">e.g. 100000</p>
+                <p className="text-xs text-muted-foreground">{t("accountSizeHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Profit Target (%)</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("profitTargetLabel")}</label>
                 <Input
                   data-testid="input-profit-target"
                   type="number"
@@ -979,13 +981,13 @@ export default function PropFirmTracker() {
                 />
                 {acctSizeNum > 0 && profitTargetNum > 0 && (
                   <p className="text-xs text-emerald-400">
-                    Target equity: {currSymbol}{(acctSizeNum + acctSizeNum * profitTargetNum / 100).toLocaleString()}
+                    {t("targetEquity", { value: `${currSymbol}${(acctSizeNum + acctSizeNum * profitTargetNum / 100).toLocaleString()}` })}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">e.g. 10</p>
+                <p className="text-xs text-muted-foreground">{t("profitTargetHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Daily Drawdown Limit (%)</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("dailyDrawdownLimitLabel")}</label>
                 <Input
                   data-testid="input-daily-dd"
                   type="number"
@@ -994,13 +996,13 @@ export default function PropFirmTracker() {
                 />
                 {acctSizeNum > 0 && dailyDDNum > 0 && (
                   <p className="text-xs text-amber-400">
-                    Max daily loss: {currSymbol}{(acctSizeNum * dailyDDNum / 100).toLocaleString()} (based on starting balance)
+                    {t("maxDailyLoss", { value: `${currSymbol}${(acctSizeNum * dailyDDNum / 100).toLocaleString()}` })}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">e.g. 5</p>
+                <p className="text-xs text-muted-foreground">{t("dailyDrawdownLimitHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Max Drawdown Limit (%)</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("maxDrawdownLimitLabel")}</label>
                 <Input
                   data-testid="input-max-dd"
                   type="number"
@@ -1009,16 +1011,16 @@ export default function PropFirmTracker() {
                 />
                 {acctSizeNum > 0 && maxDDNum > 0 && (
                   <p className="text-xs text-rose-400">
-                    Max total loss: {currSymbol}{(acctSizeNum * maxDDNum / 100).toLocaleString()} — breach at {currSymbol}{(acctSizeNum - acctSizeNum * maxDDNum / 100).toLocaleString()}
+                    {t("maxTotalLossText", { loss: `${currSymbol}${(acctSizeNum * maxDDNum / 100).toLocaleString()}`, breach: `${currSymbol}${(acctSizeNum - acctSizeNum * maxDDNum / 100).toLocaleString()}` })}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">e.g. 10</p>
+                <p className="text-xs text-muted-foreground">{t("maxDrawdownLimitHint")}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Drawdown Calculation Type</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("drawdownCalcType")}</label>
                 <Select
                   value={formData.drawdownType}
                   onValueChange={(v) => {
@@ -1030,25 +1032,25 @@ export default function PropFirmTracker() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="static">Static (balance-based) — fixed from initial balance</SelectItem>
-                    <SelectItem value="balance">Balance-based — resets from daily starting balance</SelectItem>
-                    <SelectItem value="equity">Equity-based — calculated from real-time equity</SelectItem>
-                    <SelectItem value="trailing_balance">Trailing (balance) — DD floor rises with profit</SelectItem>
-                    <SelectItem value="trailing_equity">Trailing (equity) — DD floor rises with equity HWM</SelectItem>
+                    <SelectItem value="static">{t("ddStatic")}</SelectItem>
+                    <SelectItem value="balance">{t("ddBalance")}</SelectItem>
+                    <SelectItem value="equity">{t("ddEquity")}</SelectItem>
+                    <SelectItem value="trailing_balance">{t("ddTrailingBalance")}</SelectItem>
+                    <SelectItem value="trailing_equity">{t("ddTrailingEquity")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {formData.drawdownType === "static" && "Drawdown limit measured from your initial account balance — never changes."}
-                  {formData.drawdownType === "balance" && "Daily drawdown measured from each day's opening balance."}
-                  {formData.drawdownType === "equity" && "Drawdown measured from real-time equity (includes floating P&L)."}
-                  {formData.drawdownType === "trailing_balance" && "Max drawdown floor rises as your balance grows — locks profits into your safety net."}
-                  {formData.drawdownType === "trailing_equity" && "Max drawdown floor rises with your equity high-water mark — most restrictive type."}
+                  {formData.drawdownType === "static" && t("ddStaticDesc")}
+                  {formData.drawdownType === "balance" && t("ddBalanceDesc")}
+                  {formData.drawdownType === "equity" && t("ddEquityDesc")}
+                  {formData.drawdownType === "trailing_balance" && t("ddTrailingBalanceDesc")}
+                  {formData.drawdownType === "trailing_equity" && t("ddTrailingEquityDesc")}
                 </p>
               </div>
 
               {formData.trailingDrawdown && (
                 <div className="space-y-2 pl-4 border-l-2 border-amber-500/30">
-                  <label className="text-sm font-medium text-muted-foreground">Trailing Stop Behavior</label>
+                  <label className="text-sm font-medium text-muted-foreground">{t("trailingStopBehavior")}</label>
                   <Select
                     value={formData.trailingStopBehavior}
                     onValueChange={(v) => setFormData((p) => ({ ...p, trailingStopBehavior: v }))}
@@ -1057,14 +1059,14 @@ export default function PropFirmTracker() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="always_trails">Always trails — DD floor continues rising indefinitely</SelectItem>
-                      <SelectItem value="locks_at_breakeven">Locks at breakeven — stops trailing once floor reaches initial balance</SelectItem>
+                      <SelectItem value="always_trails">{t("alwaysTrails")}</SelectItem>
+                      <SelectItem value="locks_at_breakeven">{t("locksAtBreakeven")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
                     {formData.trailingStopBehavior === "always_trails"
-                      ? "The drawdown floor keeps rising as you profit. This is the strictest trailing mode."
-                      : "The trailing floor stops moving once it reaches your initial balance — you can't lose the initial capital."}
+                      ? t("alwaysTrailsDesc")
+                      : t("locksAtBreakevenDesc")}
                   </p>
                 </div>
               )}
@@ -1072,27 +1074,27 @@ export default function PropFirmTracker() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Min Trading Days</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("minTradingDaysLabel")}</label>
                 <Input
                   data-testid="input-min-days"
                   type="number"
                   value={formData.minTradingDays}
                   onChange={(e) => setFormData((p) => ({ ...p, minTradingDays: parseInt(e.target.value) || 0 }))}
                 />
-                <p className="text-xs text-muted-foreground">e.g. 4 — minimum days you must trade</p>
+                <p className="text-xs text-muted-foreground">{t("minTradingDaysHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Max Trading Days</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("maxTradingDaysLabel")}</label>
                 <Input
                   data-testid="input-max-days"
                   type="number"
                   value={formData.maxTradingDays}
                   onChange={(e) => setFormData((p) => ({ ...p, maxTradingDays: parseInt(e.target.value) || 30 }))}
                 />
-                <p className="text-xs text-muted-foreground">e.g. 30 — calendar days allowed for the challenge</p>
+                <p className="text-xs text-muted-foreground">{t("maxTradingDaysHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Start Date</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("startDate")}</label>
                 <Input
                   data-testid="input-start-date"
                   type="date"
@@ -1101,7 +1103,7 @@ export default function PropFirmTracker() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">End Date</label>
+                <label className="text-sm font-medium text-muted-foreground">{t("endDate")}</label>
                 <Input
                   data-testid="input-end-date"
                   type="date"
@@ -1109,7 +1111,7 @@ export default function PropFirmTracker() {
                   onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Leave blank to auto-calculate from start + max days
+                  {t("endDateHint")}
                 </p>
               </div>
             </div>
@@ -1124,7 +1126,7 @@ export default function PropFirmTracker() {
                     onChange={(e) => setFormData((p) => ({ ...p, consistencyRule: e.target.checked }))}
                     className="rounded border-border"
                   />
-                  <span className="text-sm">Consistency Rule</span>
+                  <span className="text-sm">{t("consistencyRule")}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1134,13 +1136,13 @@ export default function PropFirmTracker() {
                     onChange={(e) => setFormData((p) => ({ ...p, phaseLink: e.target.checked }))}
                     className="rounded border-border"
                   />
-                  <span className="text-sm">Links to next phase automatically</span>
+                  <span className="text-sm">{t("linksNextPhase")}</span>
                 </label>
               </div>
 
               {formData.consistencyRule && (
                 <div className="space-y-2 pl-4 border-l-2 border-cyan-500/30">
-                  <label className="text-sm font-medium text-muted-foreground">Max Single Day Profit (%)</label>
+                  <label className="text-sm font-medium text-muted-foreground">{t("maxSingleDayProfit")}</label>
                   <Input
                     data-testid="input-max-day-profit"
                     type="number"
@@ -1148,21 +1150,21 @@ export default function PropFirmTracker() {
                     onChange={(e) => setFormData((p) => ({ ...p, maxDayProfitPercent: e.target.value }))}
                   />
                   <p className="text-xs text-muted-foreground">
-                    No single day can contribute more than this % of your total profit target.
+                    {t("maxSingleDayDesc")}
                   </p>
                   {acctSizeNum > 0 && profitTargetNum > 0 && consistencyPctNum > 0 && (
                     <p className="text-xs text-cyan-400">
-                      Max allowed daily profit: {currSymbol}{((acctSizeNum * profitTargetNum / 100) * consistencyPctNum / 100).toLocaleString()} per day
+                      {t("maxAllowedDailyProfit", { value: `${currSymbol}${((acctSizeNum * profitTargetNum / 100) * consistencyPctNum / 100).toLocaleString()}` })}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">e.g. 40 means your best day can't exceed 40% of the profit target</p>
+                  <p className="text-xs text-muted-foreground">{t("maxSingleDayHint")}</p>
                 </div>
               )}
 
               {formData.phaseLink && (
                 <div className="pl-4 border-l-2 border-blue-500/30">
                   <p className="text-xs text-blue-400">
-                    When this phase is passed, a new challenge will be created for the next phase with inherited rules and carried-over equity.
+                    {t("phaseLinkInfo")}
                   </p>
                 </div>
               )}
@@ -1192,28 +1194,28 @@ export default function PropFirmTracker() {
               <Card className="bg-muted/20 border-muted">
                 <CardContent className="p-4">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    Challenge Preview
+                    {t("challengePreview")}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div className="text-center p-3 rounded-md bg-background/50">
-                      <p className="text-xs text-muted-foreground">Profit Target</p>
+                      <p className="text-xs text-muted-foreground">{t("previewProfitTarget")}</p>
                       <p className="font-bold text-emerald-400">{currSymbol}{(acctSizeNum * profitTargetNum / 100).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">to reach {currSymbol}{(acctSizeNum + acctSizeNum * profitTargetNum / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{t("previewToReach", { value: `${currSymbol}${(acctSizeNum + acctSizeNum * profitTargetNum / 100).toLocaleString()}` })}</p>
                     </div>
                     <div className="text-center p-3 rounded-md bg-background/50">
-                      <p className="text-xs text-muted-foreground">Max Daily Loss</p>
+                      <p className="text-xs text-muted-foreground">{t("previewMaxDailyLoss")}</p>
                       <p className="font-bold text-amber-400">{currSymbol}{(acctSizeNum * dailyDDNum / 100).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">per day</p>
+                      <p className="text-xs text-muted-foreground">{t("perDay")}</p>
                     </div>
                     <div className="text-center p-3 rounded-md bg-background/50">
-                      <p className="text-xs text-muted-foreground">Max Total Loss</p>
+                      <p className="text-xs text-muted-foreground">{t("previewMaxTotalLoss")}</p>
                       <p className="font-bold text-rose-400">{currSymbol}{(acctSizeNum * maxDDNum / 100).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">breach at {currSymbol}{(acctSizeNum - acctSizeNum * maxDDNum / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{t("previewBreachAt", { value: `${currSymbol}${(acctSizeNum - acctSizeNum * maxDDNum / 100).toLocaleString()}` })}</p>
                     </div>
                     <div className="text-center p-3 rounded-md bg-background/50">
-                      <p className="text-xs text-muted-foreground">Trading Window</p>
+                      <p className="text-xs text-muted-foreground">{t("previewTradingWindow")}</p>
                       <p className="font-bold">{formData.minTradingDays}–{formData.maxTradingDays}</p>
-                      <p className="text-xs text-muted-foreground">days</p>
+                      <p className="text-xs text-muted-foreground">{t("days")}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -1227,14 +1229,14 @@ export default function PropFirmTracker() {
               disabled={createMutation.isPending || hasBlockingError}
             >
               {createMutation.isPending && <Loader2 className="animate-spin" />}
-              Create Challenge
+              {t("createChallenge")}
             </Button>
             <Button
               data-testid="button-cancel-create"
               variant="ghost"
               onClick={() => { setView("list"); resetForm(); }}
             >
-              Cancel
+              {t("cancel")}
             </Button>
           </CardFooter>
         </Card>
@@ -1258,9 +1260,9 @@ export default function PropFirmTracker() {
     if (!challenge || !progress) {
       return (
         <div className="p-6 text-center">
-          <p className="text-muted-foreground">Challenge not found.</p>
+          <p className="text-muted-foreground">{t("challengeNotFound")}</p>
           <Button data-testid="button-back-not-found" variant="ghost" className="mt-4" onClick={() => setView("list")}>
-            Back to list
+            {t("backToList")}
           </Button>
         </div>
       );
@@ -1307,7 +1309,7 @@ export default function PropFirmTracker() {
               >
                 <Link2 size={10} className="mr-1" />
                 MT5 #{challenge.mt5AccountId}
-                {challenge.mt5AutoSync && " (Auto)"}
+                {challenge.mt5AutoSync && ` ${t("mt5Auto")}`}
               </Badge>
             )}
           </div>
@@ -1323,7 +1325,7 @@ export default function PropFirmTracker() {
                     disabled={updateStatusMutation.isPending}
                   >
                     <Award size={16} className="text-emerald-400" />
-                    Eligible - Pass Challenge
+                    {t("eligiblePass")}
                   </Button>
                   <Button
                     data-testid="button-share-challenge"
@@ -1345,7 +1347,7 @@ export default function PropFirmTracker() {
                     }}
                   >
                     <Share2 size={14} />
-                    Share Result
+                    {t("shareResult")}
                   </Button>
                 </>
               ) : (
@@ -1356,7 +1358,7 @@ export default function PropFirmTracker() {
                   disabled={updateStatusMutation.isPending}
                 >
                   <CheckCircle2 className="text-blue-400" />
-                  Pass (Manual)
+                  {t("passManual")}
                 </Button>
               )}
               {progress.failTriggered ? (
@@ -1367,7 +1369,7 @@ export default function PropFirmTracker() {
                   disabled={updateStatusMutation.isPending}
                 >
                   <OctagonAlert size={16} />
-                  Rule Breach - Fail
+                  {t("ruleBreachFail")}
                 </Button>
               ) : (
                 <Button
@@ -1377,7 +1379,7 @@ export default function PropFirmTracker() {
                   disabled={updateStatusMutation.isPending}
                 >
                   <XCircle />
-                  Fail (Manual)
+                  {t("failManual")}
                 </Button>
               )}
               <Button
@@ -1415,7 +1417,7 @@ export default function PropFirmTracker() {
               }}
             >
               <Share2 size={14} />
-              Share Result
+              {t("shareResult")}
             </Button>
           </div>
         )}
@@ -1448,7 +1450,7 @@ export default function PropFirmTracker() {
             </span>
             {progress.passEligible && (
               <Badge variant="outline" className="ml-auto bg-emerald-500/10 text-emerald-400 border-emerald-500/20" data-testid="badge-pass-eligible">
-                PASS ELIGIBLE
+                {t("passEligible")}
               </Badge>
             )}
           </div>
@@ -1457,7 +1459,7 @@ export default function PropFirmTracker() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Profit Target</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("profitTarget")}</CardTitle>
               <Target size={16} className="text-emerald-500" />
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-2">
@@ -1468,14 +1470,14 @@ export default function PropFirmTracker() {
                 sublabel={`${fc(progress.currentProfit)} / ${fc(profitTargetAmt)}`}
               />
               <p className="text-xs text-muted-foreground">
-                Remaining: {fc(progress.distanceToProfitTarget)}
+                {t("remaining", { value: fc(progress.distanceToProfitTarget) })}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Daily Drawdown</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("dailyDrawdown")}</CardTitle>
               <TrendingDown size={16} className="text-amber-500" />
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-2">
@@ -1483,11 +1485,11 @@ export default function PropFirmTracker() {
                 value={progress.dailyDDUsedPercent}
                 color={getGaugeColor(progress.dailyDDUsedPercent)}
                 label={`${progress.dailyDDUsedPercent.toFixed(1)}%`}
-                sublabel="of daily limit used"
+                sublabel={t("ofDailyLimit")}
               />
               <div className="text-xs text-muted-foreground text-center space-y-0.5">
-                <p>Remaining: {fc(progress.dailyDDRemaining)} of {fc(progress.dailyDDAmount)}</p>
-                <p className="text-[10px] opacity-70">Resets at broker day close (00:00 server time)</p>
+                <p>{t("dailyRemainingOf", { r: fc(progress.dailyDDRemaining), a: fc(progress.dailyDDAmount) })}</p>
+                <p className="text-[10px] opacity-70">{t("resetsAtClose")}</p>
               </div>
             </CardContent>
           </Card>
@@ -1495,7 +1497,7 @@ export default function PropFirmTracker() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                {challenge.trailingDrawdown ? "Trailing" : "Max"} Drawdown
+                {challenge.trailingDrawdown ? t("trailingDD") : t("maxDD")}
               </CardTitle>
               <Activity size={16} className="text-rose-500" />
             </CardHeader>
@@ -1504,12 +1506,12 @@ export default function PropFirmTracker() {
                 value={progress.maxDDUsedPercent}
                 color={getGaugeColor(progress.maxDDUsedPercent)}
                 label={`${progress.maxDDUsedPercent.toFixed(1)}%`}
-                sublabel="of max limit used"
+                sublabel={t("ofMaxLimit")}
               />
               <div className="text-xs text-muted-foreground text-center space-y-0.5">
-                <p>HWM: {fc(progress.highWaterMark)}</p>
-                {challenge.trailingDrawdown && <p>Floor: {fc(progress.trailingDDFloor)}</p>}
-                <p>Buffer: {fc(progress.maxDDRemaining)}</p>
+                <p>{t("hwm", { value: fc(progress.highWaterMark) })}</p>
+                {challenge.trailingDrawdown && <p>{t("floor", { value: fc(progress.trailingDDFloor) })}</p>}
+                <p>{t("buffer", { value: fc(progress.maxDDRemaining) })}</p>
               </div>
             </CardContent>
           </Card>
@@ -1517,7 +1519,7 @@ export default function PropFirmTracker() {
           {challenge.consistencyRule && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Consistency</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("consistency")}</CardTitle>
                 <ShieldCheck size={16} className="text-emerald-500" />
               </CardHeader>
               <CardContent className="space-y-3">
@@ -1526,22 +1528,22 @@ export default function PropFirmTracker() {
                     value={progress.consistencyScore}
                     color={progress.consistencyScore >= 70 ? "#10b981" : progress.consistencyScore >= 40 ? "#f59e0b" : "#f43f5e"}
                     label={`${progress.consistencyScore.toFixed(0)}%`}
-                    sublabel="consistency score"
+                    sublabel={t("consistencyScore")}
                   />
                 </div>
                 <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t border-border/50">
                   <div className="flex items-center justify-between gap-2 pt-1">
-                    <span>Max Daily Contribution</span>
+                    <span>{t("maxDailyContribution")}</span>
                     <span className="font-semibold text-foreground">{fc(progress.consistencyMaxAllowedAmount)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span>Today Used</span>
+                    <span>{t("todayUsed")}</span>
                     <span className={cn("font-semibold", progress.consistencyTodayUsed > progress.consistencyMaxAllowedAmount ? "text-rose-400" : "text-foreground")}>
                       {fc(progress.consistencyTodayUsed)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span>Remaining</span>
+                    <span>{t("remainingShort")}</span>
                     <span className="font-semibold text-foreground">
                       {fc(Math.max(0, progress.consistencyMaxAllowedAmount - progress.consistencyTodayUsed))}
                     </span>
@@ -1553,7 +1555,7 @@ export default function PropFirmTracker() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Trading Days</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("tradingDays")}</CardTitle>
               <Calendar size={16} className="text-emerald-500" />
             </CardHeader>
             <CardContent className="space-y-3">
@@ -1561,7 +1563,7 @@ export default function PropFirmTracker() {
                 <span className="text-3xl font-black tracking-tighter">
                   {progress.uniqueTradingDays}
                 </span>
-                <span className="text-muted-foreground text-sm"> / {progress.minTradingDays} min</span>
+                <span className="text-muted-foreground text-sm"> {t("daysOfMin", { min: progress.minTradingDays })}</span>
               </div>
               <div className="w-full bg-muted/30 rounded-full h-2">
                 <div
@@ -1570,18 +1572,18 @@ export default function PropFirmTracker() {
                 />
               </div>
               <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                <span>{progress.minDaysMet ? <CheckCircle2 size={12} className="inline text-emerald-400 mr-1" /> : <Clock size={12} className="inline text-amber-400 mr-1" />}{progress.minDaysMet ? "Min days met" : `${Math.max(0, progress.minTradingDays - progress.uniqueTradingDays)} days remaining`}</span>
-                <span>{progress.daysElapsed}d elapsed</span>
+                <span>{progress.minDaysMet ? <CheckCircle2 size={12} className="inline text-emerald-400 mr-1" /> : <Clock size={12} className="inline text-amber-400 mr-1" />}{progress.minDaysMet ? t("minDaysMet") : t("daysRemainingCount", { n: Math.max(0, progress.minTradingDays - progress.uniqueTradingDays) })}</span>
+                <span>{t("daysElapsed", { n: progress.daysElapsed })}</span>
               </div>
               <p className="text-[10px] text-muted-foreground/70 text-center">
-                A trading day is counted when at least one trade is executed
+                {t("tradingDayHint")}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Days Remaining</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("daysRemainingTitle")}</CardTitle>
               <Clock size={16} className={cn(
                 progress.daysRemaining !== null && progress.daysRemaining <= 5 ? "text-rose-500" :
                   progress.daysRemaining !== null && progress.daysRemaining <= 10 ? "text-amber-500" : "text-emerald-500"
@@ -1597,10 +1599,10 @@ export default function PropFirmTracker() {
                   )}>
                     {progress.daysRemaining}
                   </span>
-                  <p className="text-xs text-muted-foreground">days left</p>
+                  <p className="text-xs text-muted-foreground">{t("daysLeft")}</p>
                 </>
               ) : (
-                <span className="text-muted-foreground text-sm">No deadline set</span>
+                <span className="text-muted-foreground text-sm">{t("noDeadlineSet")}</span>
               )}
             </CardContent>
           </Card>
@@ -1608,7 +1610,7 @@ export default function PropFirmTracker() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("currentBalance")}</CardTitle>
             <DollarSign size={16} className="text-emerald-500" />
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1623,19 +1625,19 @@ export default function PropFirmTracker() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="flex items-center justify-between gap-2 p-2.5 rounded-md bg-muted/20">
-                <span className="text-xs text-muted-foreground">To Profit Target</span>
+                <span className="text-xs text-muted-foreground">{t("toProfitTarget")}</span>
                 <span className={cn("text-sm font-bold", progress.distanceToProfitTarget <= 0 ? "text-emerald-400" : "text-foreground")}>
-                  {progress.distanceToProfitTarget <= 0 ? "TARGET MET" : `+${fc(progress.distanceToProfitTarget)}`}
+                  {progress.distanceToProfitTarget <= 0 ? t("targetMet") : `+${fc(progress.distanceToProfitTarget)}`}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2 p-2.5 rounded-md bg-muted/20">
-                <span className="text-xs text-muted-foreground">To {challenge.trailingDrawdown ? "Trail Floor" : "Max Loss"}</span>
+                <span className="text-xs text-muted-foreground">{challenge.trailingDrawdown ? t("toTrailFloor") : t("toMaxLoss")}</span>
                 <span className={cn("text-sm font-bold", progress.distanceToMaxLoss < acctSize * 0.02 ? "text-rose-400" : "text-foreground")}>
                   -{fc(progress.distanceToMaxLoss)}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2 p-2.5 rounded-md bg-muted/20">
-                <span className="text-xs text-muted-foreground">Daily DD Left</span>
+                <span className="text-xs text-muted-foreground">{t("dailyDDLeft")}</span>
                 <span className={cn("text-sm font-bold", progress.distanceToDailyDDLimit < progress.dailyDDAmount * 0.3 ? "text-amber-400" : "text-foreground")}>
                   -{fc(progress.distanceToDailyDDLimit)}
                 </span>
@@ -1648,24 +1650,24 @@ export default function PropFirmTracker() {
           <Card className={challenge.mt5AutoSync ? "border-cyan-500/20" : ""}>
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                Log Daily Results
+                {t("logDailyResults")}
                 {challenge.mt5AutoSync && (
                   <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[10px]">
-                    <Link2 size={8} className="mr-1" /> Auto-Synced from MT5
+                    <Link2 size={8} className="mr-1" /> {t("autoSyncedFromMt5")}
                   </Badge>
                 )}
               </CardTitle>
               <CardDescription>
                 {challenge.mt5AutoSync
-                  ? "Daily results are automatically recorded from your MT5 account. You can still log manually if needed."
-                  : "Record today's trading performance"}
+                  ? t("logDailyAutoDesc")
+                  : t("logDailyManualDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                 <div className="space-y-1.5">
                   <label className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Lock size={10} /> Starting Balance (auto-filled)
+                    <Lock size={10} /> {t("startingBalanceAuto")}
                   </label>
                   <Input
                     data-testid="input-daily-start-balance"
@@ -1676,29 +1678,29 @@ export default function PropFirmTracker() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Ending Balance</label>
+                  <label className="text-xs text-muted-foreground">{t("endingBalance")}</label>
                   <Input
                     data-testid="input-daily-end-balance"
                     type="number"
                     value={dailyForm.endingBalance}
                     onChange={(e) => setDailyForm((p) => ({ ...p, endingBalance: e.target.value }))}
-                    placeholder="Enter today's ending balance"
+                    placeholder={t("endingBalancePlaceholder")}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Trades Count</label>
+                  <label className="text-xs text-muted-foreground">{t("tradesCount")}</label>
                   <Input
                     data-testid="input-daily-trades-count"
                     type="number"
                     value={dailyForm.tradesCount}
                     onChange={(e) => setDailyForm((p) => ({ ...p, tradesCount: parseInt(e.target.value) || 0 }))}
-                    placeholder="Number of trades executed"
+                    placeholder={t("tradesPlaceholder")}
                   />
                 </div>
               </div>
               {dailyForm.endingBalance && (
                 <div className="mt-3 p-3 rounded-md bg-muted/20 text-xs text-muted-foreground">
-                  <span className="font-medium">Preview: </span>
+                  <span className="font-medium">{t("previewLabel")}</span>
                   P&L = <span className={cn("font-semibold",
                     parseFloat(dailyForm.endingBalance) - progress.currentBalance >= 0 ? "text-emerald-400" : "text-rose-400"
                   )}>
@@ -1715,7 +1717,7 @@ export default function PropFirmTracker() {
                 disabled={dailyStatMutation.isPending}
               >
                 {dailyStatMutation.isPending && <Loader2 className="animate-spin" />}
-                Record Daily Stats
+                {t("recordDailyStats")}
               </Button>
             </CardFooter>
           </Card>
@@ -1727,18 +1729,18 @@ export default function PropFirmTracker() {
               <div className="space-y-1">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Brain size={16} className="text-amber-500" />
-                  AI Risk Analysis
+                  {t("aiRiskAnalysis")}
                 </CardTitle>
-                <CardDescription>Check trade risk against your challenge rules before entering</CardDescription>
+                <CardDescription>{t("aiRiskDesc")}</CardDescription>
               </div>
               <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
-                ELITE
+                {t("elite")}
               </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Pair</label>
+                  <label className="text-xs text-muted-foreground">{t("pair")}</label>
                   <Input
                     data-testid="input-risk-pair"
                     value={riskCheckForm.pair}
@@ -1747,7 +1749,7 @@ export default function PropFirmTracker() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Direction</label>
+                  <label className="text-xs text-muted-foreground">{t("direction")}</label>
                   <Select
                     value={riskCheckForm.tradeDirection}
                     onValueChange={(v) => setRiskCheckForm((p) => ({ ...p, tradeDirection: v }))}
@@ -1756,13 +1758,13 @@ export default function PropFirmTracker() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Long">Long</SelectItem>
-                      <SelectItem value="Short">Short</SelectItem>
+                      <SelectItem value="Long">{t("long")}</SelectItem>
+                      <SelectItem value="Short">{t("short")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Entry Price</label>
+                  <label className="text-xs text-muted-foreground">{t("entryPrice")}</label>
                   <Input
                     data-testid="input-risk-entry"
                     type="number"
@@ -1773,7 +1775,7 @@ export default function PropFirmTracker() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Stop Loss</label>
+                  <label className="text-xs text-muted-foreground">{t("stopLoss")}</label>
                   <Input
                     data-testid="input-risk-sl"
                     type="number"
@@ -1784,7 +1786,7 @@ export default function PropFirmTracker() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Lot Size</label>
+                  <label className="text-xs text-muted-foreground">{t("lotSize")}</label>
                   <Input
                     data-testid="input-risk-lots"
                     type="number"
@@ -1795,7 +1797,7 @@ export default function PropFirmTracker() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Open P&L</label>
+                  <label className="text-xs text-muted-foreground">{t("openPL")}</label>
                   <Input
                     data-testid="input-risk-pl"
                     type="number"
@@ -1812,7 +1814,7 @@ export default function PropFirmTracker() {
                 variant="default"
               >
                 {riskCheckMutation.isPending ? <Loader2 className="animate-spin" /> : <Zap size={16} />}
-                Analyze Risk
+                {t("analyzeRisk")}
               </Button>
 
               {riskResult && (
@@ -1838,15 +1840,15 @@ export default function PropFirmTracker() {
                           riskResult.warnings.some((w: any) => w.level === "warning") ? "text-amber-300" : "text-emerald-300"
                       )}>
                         {riskResult.warnings.some((w: any) => w.level === "critical")
-                          ? "Trade would breach challenge rules"
+                          ? t("verdictBreach")
                           : riskResult.warnings.some((w: any) => w.level === "warning")
-                            ? "Trade risks violating challenge limits"
-                            : "Trade complies with all challenge rules"}
+                            ? t("verdictRisks")
+                            : t("verdictSafe")}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {riskResult.warnings.length === 0
-                          ? "All drawdown limits and rules are within safe parameters."
-                          : `${riskResult.warnings.length} issue${riskResult.warnings.length > 1 ? "s" : ""} detected`}
+                          ? t("allLimitsSafe")
+                          : t("issuesDetected", { count: riskResult.warnings.length })}
                       </p>
                     </div>
                   </div>
@@ -1886,26 +1888,26 @@ export default function PropFirmTracker() {
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     <div className="text-center p-2 rounded-md bg-muted/20">
-                      <p className="text-xs text-muted-foreground">Potential Loss</p>
+                      <p className="text-xs text-muted-foreground">{t("potentialLoss")}</p>
                       <p className="font-bold text-rose-400" data-testid="text-potential-loss">{fc(riskResult.metrics.potentialLoss)}</p>
                     </div>
                     <div className="text-center p-2 rounded-md bg-muted/20">
-                      <p className="text-xs text-muted-foreground">Daily DD Left</p>
+                      <p className="text-xs text-muted-foreground">{t("dailyDDLeft")}</p>
                       <p className="font-bold" data-testid="text-daily-dd-left">{fc(riskResult.metrics.dailyDDRemaining)}</p>
                     </div>
                     <div className="text-center p-2 rounded-md bg-muted/20">
-                      <p className="text-xs text-muted-foreground">Max DD Left</p>
+                      <p className="text-xs text-muted-foreground">{t("maxDDLeft")}</p>
                       <p className="font-bold" data-testid="text-max-dd-left">{fc(riskResult.metrics.maxDDRemaining)}</p>
                     </div>
                     {riskResult.metrics.suggestedMaxSL && (
                       <div className="text-center p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
-                        <p className="text-xs text-amber-400">Suggested SL</p>
+                        <p className="text-xs text-amber-400">{t("suggestedSL")}</p>
                         <p className="font-bold text-amber-300" data-testid="text-suggested-sl">{riskResult.metrics.suggestedMaxSL}</p>
                       </div>
                     )}
                     {riskResult.metrics.suggestedTP && (
                       <div className="text-center p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-xs text-emerald-400">Suggested TP</p>
+                        <p className="text-xs text-emerald-400">{t("suggestedTP")}</p>
                         <p className="font-bold text-emerald-300" data-testid="text-suggested-tp">{riskResult.metrics.suggestedTP}</p>
                       </div>
                     )}
@@ -1923,19 +1925,19 @@ export default function PropFirmTracker() {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-xs font-medium flex items-center gap-2">
                             <Gauge size={14} className="text-amber-400" />
-                            If You Lose This Trade
+                            {t("ifYouLose")}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="grid grid-cols-2 gap-3 text-xs">
                             <div>
-                              <p className="text-muted-foreground">New Balance</p>
+                              <p className="text-muted-foreground">{t("newBalance")}</p>
                               <p className="font-bold text-rose-400">
                                 {fc(progress.currentBalance - riskResult.metrics.potentialLoss)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">New {challenge.trailingDrawdown ? "Trail" : "Max"} DD Buffer</p>
+                              <p className="text-muted-foreground">{t("newDDBuffer", { label: challenge.trailingDrawdown ? t("labelTrail") : t("labelMax") })}</p>
                               <p className={cn("font-bold",
                                 progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0 ? "text-rose-400" : "text-amber-400"
                               )}>
@@ -1943,7 +1945,7 @@ export default function PropFirmTracker() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Daily DD Remaining</p>
+                              <p className="text-muted-foreground">{t("dailyDDRemaining")}</p>
                               <p className={cn("font-bold",
                                 progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0 ? "text-rose-400" : "text-amber-400"
                               )}>
@@ -1951,17 +1953,17 @@ export default function PropFirmTracker() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Challenge Status</p>
+                              <p className="text-muted-foreground">{t("challengeStatus")}</p>
                               <p className={cn("font-bold",
                                 progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0
                                   ? "text-rose-400" : progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0
                                     ? "text-rose-400" : "text-emerald-400"
                               )}>
                                 {progress.distanceToMaxLoss - riskResult.metrics.potentialLoss <= 0
-                                  ? "FAILED"
+                                  ? t("statusFailed")
                                   : progress.distanceToDailyDDLimit - riskResult.metrics.potentialLoss <= 0
-                                    ? "DAILY BREACH"
-                                    : "SAFE"}
+                                    ? t("statusDailyBreach")
+                                    : t("statusSafe")}
                               </p>
                             </div>
                           </div>
@@ -1973,25 +1975,25 @@ export default function PropFirmTracker() {
                           <CardHeader className="pb-2">
                             <CardTitle className="text-xs font-medium flex items-center gap-2">
                               <Target size={14} className="text-emerald-400" />
-                              If You Hit Suggested TP
+                              {t("ifYouHitTP")}
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
                             <div className="grid grid-cols-2 gap-3 text-xs">
                               <div>
-                                <p className="text-muted-foreground">New Balance</p>
+                                <p className="text-muted-foreground">{t("newBalance")}</p>
                                 <p className="font-bold text-emerald-400" data-testid="text-win-balance">
                                   {fc(progress.currentBalance + riskResult.metrics.potentialProfit)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">Profit from Trade</p>
+                                <p className="text-muted-foreground">{t("profitFromTrade")}</p>
                                 <p className="font-bold text-emerald-400" data-testid="text-win-profit">
                                   +{fc(riskResult.metrics.potentialProfit)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">Target Progress</p>
+                                <p className="text-muted-foreground">{t("targetProgress")}</p>
                                 <p className="font-bold text-emerald-400" data-testid="text-win-progress">
                                   {(() => {
                                     const total = riskResult.metrics.currentProfit + riskResult.metrics.remainingToTarget;
@@ -2001,13 +2003,13 @@ export default function PropFirmTracker() {
                                 </p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">Remaining to Target</p>
+                                <p className="text-muted-foreground">{t("remainingToTarget")}</p>
                                 <p className={cn("font-bold",
                                   riskResult.metrics.remainingToTarget - riskResult.metrics.potentialProfit <= 0
                                     ? "text-emerald-400" : "text-amber-400"
                                 )} data-testid="text-win-remaining">
                                   {riskResult.metrics.remainingToTarget - riskResult.metrics.potentialProfit <= 0
-                                    ? "TARGET HIT"
+                                    ? t("targetHit")
                                     : fc(riskResult.metrics.remainingToTarget - riskResult.metrics.potentialProfit)}
                                 </p>
                               </div>
@@ -2032,7 +2034,7 @@ export default function PropFirmTracker() {
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <History size={16} className="text-muted-foreground" />
-                Rule Events
+                {t("ruleEvents")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -2059,18 +2061,18 @@ export default function PropFirmTracker() {
         {dailyStats.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Daily Stats History</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("dailyStatsHistory")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-muted-foreground text-left">
-                      <th className="pb-2 pr-4">Date</th>
-                      <th className="pb-2 pr-4">Start</th>
-                      <th className="pb-2 pr-4">End</th>
-                      <th className="pb-2 pr-4">P&L</th>
-                      <th className="pb-2">Trades</th>
+                      <th className="pb-2 pr-4">{t("colDate")}</th>
+                      <th className="pb-2 pr-4">{t("colStart")}</th>
+                      <th className="pb-2 pr-4">{t("colEnd")}</th>
+                      <th className="pb-2 pr-4">{t("colPL")}</th>
+                      <th className="pb-2">{t("colTrades")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2103,7 +2105,7 @@ export default function PropFirmTracker() {
           open={challengeShareOpen}
           onOpenChange={setChallengeShareOpen}
           variant="challenge"
-          title="Share Your Result"
+          title={t("shareResultTitle")}
           subtitle={`${challengeShareData.firmName} · ${challengeShareData.challengeName}`}
           userName={currentUser?.fullName}
           data={challengeShareData}
@@ -2125,15 +2127,15 @@ export default function PropFirmTracker() {
       )}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-black text-2xl tracking-tighter uppercase italic">Prop Firm Tracker</h1>
-          <p className="text-muted-foreground text-sm">Manage your prop firm challenges and track progress</p>
+          <h1 className="font-black text-2xl tracking-tighter uppercase italic">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
         <Button
           data-testid="button-new-challenge"
           onClick={() => setView("create")}
         >
           <Plus />
-          New Challenge
+          {t("newChallenge")}
         </Button>
       </div>
 
@@ -2151,7 +2153,7 @@ export default function PropFirmTracker() {
                     variant="outline"
                     className="text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                   >
-                    Sample
+                    {t("sample")}
                   </Badge>
                 </CardTitle>
                 <CardDescription>
@@ -2160,15 +2162,15 @@ export default function PropFirmTracker() {
               </div>
               <Badge variant="outline" className="text-[10px]">
                 ${parseFloat(sampleChallenge.accountSize).toLocaleString()}{" "}
-                account
+                {t("accountSuffix")}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Profit Target</span>
-                <span>62% reached</span>
+                <span>{t("profitTarget")}</span>
+                <span>{t("samplePctReached", { pct: 62 })}</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
@@ -2179,7 +2181,7 @@ export default function PropFirmTracker() {
             </div>
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Daily Drawdown Used</span>
+                <span>{t("sampleDDUsed")}</span>
                 <span>34%</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -2190,8 +2192,7 @@ export default function PropFirmTracker() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Once you connect MT5 and create a real challenge, this card will
-              be replaced by your live progress.
+              {t("sampleReplacedHint")}
             </p>
           </CardContent>
         </Card>
@@ -2203,13 +2204,13 @@ export default function PropFirmTracker() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
             <BarChart3 size={48} className="text-muted-foreground/40" />
-            <p className="text-muted-foreground text-center">No challenges yet. Create your first prop firm challenge to start tracking.</p>
+            <p className="text-muted-foreground text-center">{t("noChallenges")}</p>
             <Button
               data-testid="button-new-challenge-empty"
               onClick={() => setView("create")}
             >
               <Plus />
-              Create Challenge
+              {t("createChallenge")}
             </Button>
           </CardContent>
         </Card>
@@ -2250,16 +2251,16 @@ export default function PropFirmTracker() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="text-muted-foreground">Account</span>
+                    <span className="text-muted-foreground">{t("account")}</span>
                     <span className="font-semibold">{formatCurrency(acct)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="text-muted-foreground">Target</span>
+                    <span className="text-muted-foreground">{t("target")}</span>
                     <span className="font-semibold">{target}%</span>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span>Progress</span>
+                      <span>{t("progress")}</span>
                       <span>{Math.min(profitPct, 100).toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-muted/30 rounded-full h-1.5">

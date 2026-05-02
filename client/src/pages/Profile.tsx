@@ -69,6 +69,7 @@ const countries = [
 const timezones = Intl.supportedValuesOf('timeZone');
 
 function FoundingSuggestionsCard({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -88,12 +89,12 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
       setTitle("");
       setDescription("");
       toast({
-        title: "Suggestion Submitted",
-        description: "Thank you for helping shape Tradify's future!",
+        title: t("profile.toastSuggestionSubmitted"),
+        description: t("profile.toastSuggestionSubmittedDesc"),
       });
     },
     onError: (error: any) => {
-      let errorMsg = "Please try again later.";
+      let errorMsg = t("profile.toastSubmitFailedDefault");
       try {
         const parsed = error.message?.match(/\d+:\s*(.*)/);
         if (parsed?.[1]) {
@@ -102,7 +103,7 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
         }
       } catch { }
       toast({
-        title: "Failed to submit",
+        title: t("profile.toastSubmitFailed"),
         description: errorMsg,
         variant: "destructive",
       });
@@ -112,8 +113,8 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
   const handleSubmit = () => {
     if (!title.trim() || !description.trim()) {
       toast({
-        title: "Missing fields",
-        description: "Please provide both a title and description for your suggestion.",
+        title: t("profile.toastMissingFields"),
+        description: t("profile.toastMissingFieldsDesc"),
         variant: "destructive",
       });
       return;
@@ -124,11 +125,11 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge variant="secondary" className="text-[9px] uppercase tracking-widest">Pending</Badge>;
+        return <Badge variant="secondary" className="text-[9px] uppercase tracking-widest">{t("profile.statusPending")}</Badge>;
       case "reviewed":
-        return <Badge className="text-[9px] uppercase tracking-widest bg-blue-500/20 text-blue-500 border-blue-500/30">Reviewed</Badge>;
+        return <Badge className="text-[9px] uppercase tracking-widest bg-blue-500/20 text-blue-500 border-blue-500/30">{t("profile.statusReviewed")}</Badge>;
       case "implemented":
-        return <Badge className="text-[9px] uppercase tracking-widest bg-emerald-500/20 text-emerald-500 border-emerald-500/30">Implemented</Badge>;
+        return <Badge className="text-[9px] uppercase tracking-widest bg-emerald-500/20 text-emerald-500 border-emerald-500/30">{t("profile.statusImplemented")}</Badge>;
       default:
         return <Badge variant="outline" className="text-[9px] uppercase tracking-widest">{status}</Badge>;
     }
@@ -143,53 +144,53 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
           </div>
           <div>
             <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black flex items-center gap-2">
-              Shape the Roadmap
+              {t("profile.shapeRoadmap")}
               <Crown size={16} className="text-amber-500" />
             </CardTitle>
             <CardDescription className="text-amber-500/70 uppercase text-[10px] font-black tracking-widest">
-              Founding Member Exclusive
+              {t("profile.founderExclusive")}
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          As a Founding Member, your feedback directly influences Tradify's development. Share feature ideas, improvement suggestions, or any thoughts to help shape the platform.
+          {t("profile.shapeRoadmapBody")}
         </p>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Category</label>
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.categoryLabel")}</label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="bg-muted border-border" data-testid="select-suggestion-category">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="feature">Feature Request</SelectItem>
-                <SelectItem value="improvement">Improvement</SelectItem>
-                <SelectItem value="bug">Bug Report</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="feature">{t("profile.categoryFeature")}</SelectItem>
+                <SelectItem value="improvement">{t("profile.categoryImprovement")}</SelectItem>
+                <SelectItem value="bug">{t("profile.categoryBug")}</SelectItem>
+                <SelectItem value="other">{t("profile.categoryOther")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Title</label>
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.titleLabel")}</label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Brief title for your suggestion"
+              placeholder={t("profile.titlePlaceholder")}
               className="bg-muted border-border"
               data-testid="input-suggestion-title"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Description</label>
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.descriptionLabel")}</label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your idea in detail..."
+              placeholder={t("profile.descriptionPlaceholder")}
               className="bg-muted border-border min-h-[100px] resize-none"
               data-testid="textarea-suggestion-description"
             />
@@ -204,12 +205,12 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
             {submitSuggestionMutation.isPending ? (
               <>
                 <Loader2 size={14} className="animate-spin mr-2" />
-                Submitting...
+                {t("profile.submitting")}
               </>
             ) : (
               <>
                 <Send size={14} className="mr-2" />
-                Submit Suggestion
+                {t("profile.submitSuggestion")}
               </>
             )}
           </Button>
@@ -221,7 +222,7 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
           </div>
         ) : mySuggestions && mySuggestions.length > 0 && (
           <div className="space-y-3 pt-4 border-t border-amber-500/20">
-            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Your Previous Suggestions</h4>
+            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.previousSuggestions")}</h4>
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {mySuggestions.slice(0, 5).map((suggestion: any) => (
                 <div key={suggestion.id} className="p-3 bg-muted/50 rounded-lg border border-border">
@@ -235,7 +236,7 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
                   <p className="text-xs text-muted-foreground line-clamp-2">{suggestion.description}</p>
                   {suggestion.adminNotes && (
                     <div className="mt-2 p-2 bg-emerald-500/10 rounded border border-emerald-500/20">
-                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Response</p>
+                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">{t("profile.responseLabel")}</p>
                       <p className="text-xs text-muted-foreground">{suggestion.adminNotes}</p>
                     </div>
                   )}
@@ -250,6 +251,7 @@ function FoundingSuggestionsCard({ userId }: { userId: number }) {
 }
 
 function SampleDataCard() {
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useSampleModeDismissed();
   const { toast } = useToast();
   const enabled = !dismissed;
@@ -257,10 +259,10 @@ function SampleDataCard() {
   const handleToggle = (next: boolean) => {
     setDismissed(!next);
     toast({
-      title: next ? "Sample Data Enabled" : "Sample Data Hidden",
+      title: next ? t("profile.toastSampleEnabled") : t("profile.toastSampleHidden"),
       description: next
-        ? "Your dashboard now shows a 60-day demo dataset."
-        : "Sample data is hidden. Connect MT5 to see your real trades.",
+        ? t("profile.toastSampleEnabledDesc")
+        : t("profile.toastSampleHiddenDesc"),
     });
   };
 
@@ -272,8 +274,8 @@ function SampleDataCard() {
             <Sparkles size={20} className="text-emerald-500" />
           </div>
           <div>
-            <CardTitle className="text-foreground uppercase italic tracking-tight font-black">Sample Data</CardTitle>
-            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Demo dataset for empty dashboards</CardDescription>
+            <CardTitle className="text-foreground uppercase italic tracking-tight font-black">{t("profile.sampleDataTitle")}</CardTitle>
+            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.sampleDataSubtitle")}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -281,33 +283,33 @@ function SampleDataCard() {
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-black text-foreground uppercase tracking-tight">Show Sample Data</h4>
+              <h4 className="text-sm font-black text-foreground uppercase tracking-tight">{t("profile.showSampleData")}</h4>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-foreground"
-                    aria-label="What is sample mode?"
+                    aria-label={t("profile.sampleAria")}
                     data-testid="tooltip-trigger-sample-data"
                   >
                     <Info size={14} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  Sample mode populates your dashboard, prop firm tracker, and journal with a deterministic 60-day demo dataset whenever you have no real trades and MT5 isn't connected. Useful for screenshots, demos, or previewing the populated experience.
+                  {t("profile.sampleTooltip")}
                 </TooltipContent>
               </Tooltip>
             </div>
             <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">
               {enabled
-                ? "Demo data is shown when you have no real trades"
-                : "Sample data is hidden until you re-enable it"}
+                ? t("profile.sampleEnabledHint")
+                : t("profile.sampleDisabledHint")}
             </p>
           </div>
           <Switch
             checked={enabled}
             onCheckedChange={handleToggle}
-            aria-label="Toggle sample data"
+            aria-label={t("profile.showSampleData")}
             data-testid="switch-sample-data"
           />
         </div>
@@ -317,6 +319,7 @@ function SampleDataCard() {
 }
 
 function EmailPreferencesCard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: prefs, isLoading } = useQuery<{ marketingEmails: boolean }>({
     queryKey: ["/api/email-preferences"],
@@ -329,14 +332,14 @@ function EmailPreferencesCard() {
     onSuccess: (_data, enabled) => {
       queryClient.invalidateQueries({ queryKey: ["/api/email-preferences"] });
       toast({
-        title: enabled ? "Marketing Emails Enabled" : "Marketing Emails Disabled",
+        title: enabled ? t("profile.toastMarketingEnabled") : t("profile.toastMarketingDisabled"),
         description: enabled
-          ? "You will receive trading insights and product updates."
-          : "You will no longer receive marketing emails. Account-related emails will still be sent.",
+          ? t("profile.toastMarketingEnabledDesc")
+          : t("profile.toastMarketingDisabledDesc"),
       });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update preferences.", variant: "destructive" });
+      toast({ title: t("profile.toastError"), description: t("profile.toastPrefsFailed"), variant: "destructive" });
     },
   });
 
@@ -348,16 +351,16 @@ function EmailPreferencesCard() {
             <Send size={20} className="text-emerald-500" />
           </div>
           <div>
-            <CardTitle className="text-foreground uppercase italic tracking-tight font-black">Email Preferences</CardTitle>
-            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Manage communications</CardDescription>
+            <CardTitle className="text-foreground uppercase italic tracking-tight font-black">{t("profile.emailPrefsTitle")}</CardTitle>
+            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.emailPrefsSubtitle")}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <div className="flex items-center justify-between" data-testid="toggle-marketing-emails">
           <div>
-            <h4 className="text-sm font-black text-foreground uppercase tracking-tight">Marketing Emails</h4>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Trading insights, product updates, and tips</p>
+            <h4 className="text-sm font-black text-foreground uppercase tracking-tight">{t("profile.marketingEmails")}</h4>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">{t("profile.marketingEmailsDesc")}</p>
           </div>
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -373,16 +376,16 @@ function EmailPreferencesCard() {
               }
               data-testid="button-toggle-marketing-emails"
             >
-              {toggleMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : prefs?.marketingEmails ? "Enabled" : "Disabled"}
+              {toggleMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : prefs?.marketingEmails ? t("profile.enabled") : t("profile.disabled")}
             </Button>
           )}
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-sm font-black text-foreground uppercase tracking-tight">Account Emails</h4>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Password resets, billing, and security alerts</p>
+            <h4 className="text-sm font-black text-foreground uppercase tracking-tight">{t("profile.accountEmails")}</h4>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">{t("profile.accountEmailsDesc")}</p>
           </div>
-          <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-emerald-500/30 text-emerald-500">Always On</Badge>
+          <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-emerald-500/30 text-emerald-500">{t("profile.alwaysOn")}</Badge>
         </div>
       </CardContent>
     </Card>
@@ -390,6 +393,7 @@ function EmailPreferencesCard() {
 }
 
 function ReferralCard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: referralStats, isLoading } = useQuery<{
     referralCode: string;
@@ -402,7 +406,7 @@ function ReferralCard() {
   const copyLink = () => {
     if (referralStats?.referralLink) {
       navigator.clipboard.writeText(referralStats.referralLink);
-      toast({ title: "Link Copied", description: "Referral link copied to clipboard." });
+      toast({ title: t("profile.toastLinkCopied"), description: t("profile.toastLinkCopiedDesc") });
     }
   };
 
@@ -414,8 +418,8 @@ function ReferralCard() {
             <Users size={20} className="text-emerald-500" />
           </div>
           <div>
-            <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">Invite Friends</CardTitle>
-            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Share Tradify</CardDescription>
+            <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">{t("profile.inviteFriends")}</CardTitle>
+            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.shareTradify")}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -427,10 +431,10 @@ function ReferralCard() {
         ) : referralStats ? (
           <>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Share your referral link with fellow traders. Help them discover disciplined trading.
+              {t("profile.referralBody")}
             </p>
             <div className="p-3 bg-background rounded-lg border border-border">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Your Referral Link</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">{t("profile.yourReferralLink")}</p>
               <div className="flex items-center gap-2">
                 <Input
                   value={referralStats.referralLink}
@@ -444,12 +448,12 @@ function ReferralCard() {
                   className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-[10px] h-9 px-4 shrink-0"
                   data-testid="button-copy-referral"
                 >
-                  Copy
+                  {t("profile.copy")}
                 </Button>
               </div>
             </div>
             <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Referrals</span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.referrals")}</span>
               <span className="text-lg font-black text-emerald-500" data-testid="text-referral-count">{referralStats.referralCount}</span>
             </div>
           </>
@@ -520,6 +524,7 @@ function LanguageSection({ initial }: { initial: string }) {
 }
 
 export default function Profile() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: user, isLoading } = useQuery<UserRole>({
     queryKey: ["/api/user"],
@@ -557,14 +562,16 @@ export default function Profile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/paypal/subscription"] });
-      const tierName = isElite ? "Elite" : "Pro";
-      toast({ title: "Subscription Cancelled", description: `Your subscription has been cancelled. You'll retain ${tierName} access until the end of your billing period.` });
+      toast({
+        title: t("profile.toastSubscriptionCancelledElite"),
+        description: isElite ? t("profile.toastSubscriptionCancelledEliteDesc") : t("profile.toastSubscriptionCancelledProDesc"),
+      });
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Cancellation Failed", 
-        description: error.message || "Failed to cancel subscription. Please try again.", 
-        variant: "destructive" 
+      toast({
+        title: t("profile.toastCancellationFailed"),
+        description: error.message || t("profile.toastCancellationFailedDesc"),
+        variant: "destructive"
       });
     },
   });
@@ -580,14 +587,14 @@ export default function Profile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({ title: "Profile Updated", description: "Your changes have been saved." });
+      toast({ title: t("profile.toastProfileUpdated"), description: t("profile.toastProfileUpdatedDesc") });
     },
   });
 
   const changePasswordMutation = useMutation({
     mutationFn: async () => {
       if (newPassword !== confirmPassword) {
-        throw new Error("New passwords do not match");
+        throw new Error(t("profile.passwordsDoNotMatch"));
       }
       const res = await apiRequest("POST", "/api/user/change-password", {
         currentPassword,
@@ -595,7 +602,7 @@ export default function Profile() {
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to change password");
+        throw new Error(error.message || t("profile.failedToChangePassword"));
       }
       return res.json();
     },
@@ -603,13 +610,13 @@ export default function Profile() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      toast({ title: "Password Changed", description: "Your password has been updated successfully." });
+      toast({ title: t("profile.toastPasswordChanged"), description: t("profile.toastPasswordChangedDesc") });
     },
     onError: (error: Error) => {
-      toast({ 
-        title: "Password Change Failed", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: t("profile.toastPasswordChangeFailed"),
+        description: error.message,
+        variant: "destructive"
       });
     },
   });
@@ -624,21 +631,21 @@ export default function Profile() {
     },
   });
 
-  if (isLoading) return <div className="p-8 text-emerald-500 font-black animate-pulse uppercase tracking-widest">Loading Profile...</div>;
+  if (isLoading) return <div className="p-8 text-emerald-500 font-black animate-pulse uppercase tracking-widest">{t("profile.loading")}</div>;
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8 text-foreground bg-background min-h-screen">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-foreground uppercase italic tracking-tighter">App Settings</h1>
-          <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-black opacity-70">Manage your institutional account</p>
+          <h1 className="text-3xl font-black text-foreground uppercase italic tracking-tighter">{t("profile.title")}</h1>
+          <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-black opacity-70">{t("profile.subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
           {user?.foundingMember && <FoundingMemberBadge size="lg" />}
           <TierBadge tier={user?.subscriptionTier} size="lg" />
           <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border border-border rounded-xl">
             <CreditCard size={16} className="text-emerald-500" />
-            <span className="text-[10px] font-black text-foreground uppercase tracking-widest">{user?.subscriptionTier} PLAN</span>
+            <span className="text-[10px] font-black text-foreground uppercase tracking-widest">{t("profile.tierPlan", { tier: user?.subscriptionTier })}</span>
           </div>
         </div>
       </div>
@@ -652,20 +659,20 @@ export default function Profile() {
                   <User size={20} className="text-emerald-500" />
                 </div>
                 <div>
-                  <CardTitle className="text-foreground uppercase italic tracking-tight font-black">Personal Information</CardTitle>
-                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Identity and localization</CardDescription>
+                  <CardTitle className="text-foreground uppercase italic tracking-tight font-black">{t("profile.personalTitle")}</CardTitle>
+                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.personalSubtitle")}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Address (Read-only)</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("profile.emailLabel")}</label>
                   <Input value={user?.userId} disabled className="bg-background border-border text-muted-foreground h-11 font-bold opacity-60" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
-                    <Globe size={10} /> Country
+                    <Globe size={10} /> {t("profile.countryLabel")}
                   </label>
                   <Select value={country} onValueChange={setCountry}>
                     <SelectTrigger className="bg-background border-border text-foreground h-11 uppercase text-[10px] font-black tracking-widest">
@@ -682,7 +689,7 @@ export default function Profile() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
-                    <Clock size={10} /> Time Zone
+                    <Clock size={10} /> {t("profile.timezoneLabel")}
                   </label>
                   <Select value={timezone} onValueChange={setTimezone}>
                     <SelectTrigger className="bg-background border-border text-foreground h-11 uppercase text-[10px] font-black tracking-widest">
@@ -699,12 +706,12 @@ export default function Profile() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
-                    <Phone size={10} /> Phone (Optional)
+                    <Phone size={10} /> {t("profile.phoneLabel")}
                   </label>
                   <Input 
                     value={phoneNumber} 
                     onChange={(e) => setPhoneNumber(e.target.value)} 
-                    placeholder="+1 234 567 890"
+                    placeholder={t("profile.phonePlaceholder")}
                     className="bg-background border-border text-foreground h-11 focus:ring-primary/20 font-bold" 
                   />
                 </div>
@@ -716,7 +723,7 @@ export default function Profile() {
                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest text-xs h-11 px-8 shadow-md shadow-emerald-500/20"
                 >
                   <Save size={16} className="mr-2" />
-                  {updateMutation.isPending ? "Syncing..." : "Save Changes"}
+                  {updateMutation.isPending ? t("profile.saving") : t("profile.saveChanges")}
                 </Button>
               </div>
             </CardContent>
@@ -731,20 +738,20 @@ export default function Profile() {
                   <Lock size={20} className="text-amber-500" />
                 </div>
                 <div>
-                  <CardTitle className="text-foreground uppercase italic tracking-tight font-black">Security</CardTitle>
-                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Change your password</CardDescription>
+                  <CardTitle className="text-foreground uppercase italic tracking-tight font-black">{t("profile.securityTitle")}</CardTitle>
+                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.securitySubtitle")}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Current Password</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("profile.currentPasswordLabel")}</label>
                 <div className="relative">
                   <Input 
                     type={showCurrentPassword ? "text" : "password"}
                     value={currentPassword} 
                     onChange={(e) => setCurrentPassword(e.target.value)} 
-                    placeholder="Enter current password"
+                    placeholder={t("profile.currentPasswordPlaceholder")}
                     className="bg-background border-border text-foreground h-11 font-bold pr-10"
                     data-testid="input-current-password"
                   />
@@ -759,13 +766,13 @@ export default function Profile() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">New Password</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("profile.newPasswordLabel")}</label>
                 <div className="relative">
                   <Input 
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword} 
                     onChange={(e) => setNewPassword(e.target.value)} 
-                    placeholder="Enter new password (min 8 characters)"
+                    placeholder={t("profile.newPasswordPlaceholder")}
                     className="bg-background border-border text-foreground h-11 font-bold pr-10"
                     data-testid="input-new-password"
                   />
@@ -780,12 +787,12 @@ export default function Profile() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Confirm New Password</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("profile.confirmPasswordLabel")}</label>
                 <Input 
                   type="password"
                   value={confirmPassword} 
                   onChange={(e) => setConfirmPassword(e.target.value)} 
-                  placeholder="Confirm new password"
+                  placeholder={t("profile.confirmPasswordPlaceholder")}
                   className="bg-background border-border text-foreground h-11 font-bold"
                   data-testid="input-confirm-password"
                 />
@@ -798,7 +805,7 @@ export default function Profile() {
                   data-testid="button-change-password"
                 >
                   <Lock size={16} className="mr-2" />
-                  {changePasswordMutation.isPending ? "Updating..." : "Change Password"}
+                  {changePasswordMutation.isPending ? t("profile.updating") : t("profile.changePassword")}
                 </Button>
               </div>
             </CardContent>
@@ -817,27 +824,27 @@ export default function Profile() {
                   <AlertTriangle size={20} className="text-destructive" />
                 </div>
                 <div>
-                  <CardTitle className="text-foreground uppercase italic tracking-tight font-black">Danger Zone</CardTitle>
-                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Irreversible account actions</CardDescription>
+                  <CardTitle className="text-foreground uppercase italic tracking-tight font-black">{t("profile.dangerZone")}</CardTitle>
+                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.dangerZoneSubtitle")}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-black text-foreground uppercase tracking-tight">Deactivate Account</h4>
-                  <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Disable account access. Data is retained.</p>
+                  <h4 className="text-sm font-black text-foreground uppercase tracking-tight">{t("profile.deactivateAccount")}</h4>
+                  <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">{t("profile.deactivateDesc")}</p>
                 </div>
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    if (confirm("Are you sure you want to deactivate your account?")) {
+                    if (confirm(t("profile.deactivateConfirm"))) {
                       deactivateMutation.mutate();
                     }
                   }}
                   className="border-destructive/50 text-destructive hover:bg-destructive/10 uppercase font-black text-[10px] tracking-widest"
                 >
-                  Deactivate
+                  {t("profile.deactivate")}
                 </Button>
               </div>
             </CardContent>
@@ -847,45 +854,45 @@ export default function Profile() {
         <div className="space-y-6">
           <Card className="bg-card border-border shadow-2xl overflow-hidden">
             <CardHeader className="border-b border-border bg-muted/20">
-              <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">Plan Overview</CardTitle>
+              <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">{t("profile.planOverview")}</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="p-4 bg-background rounded-xl border border-border shadow-inner">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Current Plan</span>
-                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Active</span>
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.currentPlan")}</span>
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">{t("profile.active")}</span>
                 </div>
                 <div className="text-2xl font-black text-foreground uppercase italic tracking-tighter">{user?.subscriptionTier}</div>
               </div>
               
               <div className="space-y-2">
-                <h5 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 opacity-70">Included Features</h5>
+                <h5 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 opacity-70">{t("profile.includedFeatures")}</h5>
                 <ul className="space-y-2">
                   {user?.subscriptionTier === "FREE" ? (
                     <>
                       <li className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Basic Journaling
+                        <CheckCircle2 size={12} className="text-emerald-500" /> {t("profile.freeFeature1")}
                       </li>
                       <li className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> MT5 Integration
+                        <CheckCircle2 size={12} className="text-emerald-500" /> {t("profile.freeFeature2")}
                       </li>
                       <li className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Educational Hub
+                        <CheckCircle2 size={12} className="text-emerald-500" /> {t("profile.freeFeature3")}
                       </li>
                       <li className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground/40 italic">
-                        <XCircle size={12} className="text-muted-foreground/30" /> Advanced Analytics
+                        <XCircle size={12} className="text-muted-foreground/30" /> {t("profile.freeFeature4")}
                       </li>
                     </>
                   ) : (
                     <>
                       <li className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Full Intelligence Suite
+                        <CheckCircle2 size={12} className="text-emerald-500" /> {t("profile.paidFeature1")}
                       </li>
                       <li className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Unlimited Storage
+                        <CheckCircle2 size={12} className="text-emerald-500" /> {t("profile.paidFeature2")}
                       </li>
                       <li className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground">
-                        <CheckCircle2 size={12} className="text-emerald-500" /> Priority Sync
+                        <CheckCircle2 size={12} className="text-emerald-500" /> {t("profile.paidFeature3")}
                       </li>
                     </>
                   )}
@@ -895,7 +902,7 @@ export default function Profile() {
               {user?.subscriptionTier === "FREE" && (
                 <Link to="/pricing">
                   <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-emerald-500/20 group h-12 rounded-xl">
-                    Upgrade to PRO
+                    {t("profile.upgradeToPro")}
                     <ArrowRight size={14} className="ml-2 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
@@ -912,8 +919,8 @@ export default function Profile() {
                     <SiPaypal size={20} className="text-[#0070ba]" />
                   </div>
                   <div>
-                    <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">Subscription</CardTitle>
-                    <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">Manage your billing</CardDescription>
+                    <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">{t("profile.subscriptionTitle")}</CardTitle>
+                    <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.subscriptionSubtitle")}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -928,7 +935,7 @@ export default function Profile() {
                       <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 size={14} className="text-emerald-500" />
-                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Status</span>
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.status")}</span>
                         </div>
                         <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{subscription.status}</span>
                       </div>
@@ -937,7 +944,7 @@ export default function Profile() {
                         <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
                           <div className="flex items-center gap-2">
                             <Calendar size={14} className="text-muted-foreground" />
-                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Next Billing</span>
+                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.nextBilling")}</span>
                           </div>
                           <span className="text-[10px] font-black text-foreground uppercase tracking-widest">
                             {new Date(subscription.nextBillingTime).toLocaleDateString()}
@@ -948,7 +955,7 @@ export default function Profile() {
                       <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
                         <div className="flex items-center gap-2">
                           <DollarSign size={14} className="text-muted-foreground" />
-                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Billing</span>
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("profile.billing")}</span>
                         </div>
                         <span className="text-[10px] font-black text-foreground uppercase tracking-widest">
                           {(() => {
@@ -957,10 +964,10 @@ export default function Profile() {
                             const isFM = user?.foundingMember === true;
                             if (subscription.billingPeriod === 'annual') {
                               const price = isFM ? getFounderPrice(config.pricing.annual) : config.pricing.annual;
-                              return `$${price}.00/year`;
+                              return `$${price}.00${t("profile.perYear")}`;
                             } else {
                               const price = isFM ? getFounderPrice(config.pricing.monthly) : config.pricing.monthly;
-                              return `$${price}.00/month`;
+                              return `$${price}.00${t("profile.perMonth")}`;
                             }
                           })()}
                         </span>
@@ -975,7 +982,7 @@ export default function Profile() {
                         onClick={() => window.location.href = '/checkout?plan=ELITE'}
                       >
                         <Crown size={14} className="mr-2" />
-                        Upgrade to Elite
+                        {t("profile.upgradeToElite")}
                       </Button>
                     )}
 
@@ -988,24 +995,24 @@ export default function Profile() {
                             className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 uppercase font-black text-[10px] tracking-widest mt-2"
                             data-testid="button-cancel-subscription"
                           >
-                            Cancel Subscription
+                            {t("profile.cancelSubscription")}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="bg-card border-border">
                           <AlertDialogHeader>
-                            <AlertDialogTitle className="text-foreground font-black uppercase tracking-tight">Cancel Subscription?</AlertDialogTitle>
+                            <AlertDialogTitle className="text-foreground font-black uppercase tracking-tight">{t("profile.cancelDialogTitle")}</AlertDialogTitle>
                             <AlertDialogDescription className="text-muted-foreground">
-                              Are you sure you want to cancel your {isElite ? "Elite" : "Pro"} subscription? You'll retain access until the end of your current billing period, then your account will be downgraded to Free.
+                              {isElite ? t("profile.cancelDialogDescElite") : t("profile.cancelDialogDescPro")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel className="uppercase font-black text-[10px] tracking-widest">Keep Subscription</AlertDialogCancel>
+                            <AlertDialogCancel className="uppercase font-black text-[10px] tracking-widest">{t("profile.keepSubscription")}</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={() => cancelSubscriptionMutation.mutate()}
                               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground uppercase font-black text-[10px] tracking-widest"
                               disabled={cancelSubscriptionMutation.isPending}
                             >
-                              {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Yes, Cancel"}
+                              {cancelSubscriptionMutation.isPending ? t("profile.cancelling") : t("profile.yesCancel")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -1015,7 +1022,7 @@ export default function Profile() {
                 ) : (
                   <div className="text-center py-4">
                     <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                      Subscription details unavailable
+                      {t("profile.subscriptionUnavailable")}
                     </p>
                   </div>
                 )}
@@ -1039,21 +1046,21 @@ export default function Profile() {
                   <Shield size={20} className="text-emerald-500" />
                 </div>
                 <div>
-                  <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">Need Help?</CardTitle>
-                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">We're here for you</CardDescription>
+                  <CardTitle className="text-foreground uppercase italic tracking-tight text-lg font-black">{t("profile.needHelp")}</CardTitle>
+                  <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.wereHereForYou")}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Having issues with your account or have questions about Tradify? Our support team is ready to help.
+                {t("profile.needHelpBody")}
               </p>
               <a 
                 href="mailto:support@tradify.app?subject=Tradify Support Request" 
                 data-testid="link-contact-us-profile"
               >
                 <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20 h-12 rounded-xl">
-                  Contact Support
+                  {t("profile.contactSupport")}
                 </Button>
               </a>
             </CardContent>

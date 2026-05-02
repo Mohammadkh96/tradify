@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -41,24 +42,25 @@ interface SelectedRule {
   value: string | number | boolean | string[];
 }
 
-const STEPS = [
-  { id: 1, label: "Basics", icon: FileText },
-  { id: 2, label: "Rules", icon: ListChecks },
-  { id: 3, label: "Configure", icon: Settings },
-  { id: 4, label: "Labels", icon: Tag },
-  { id: 5, label: "Review", icon: Eye },
-];
-
-const CATEGORY_LABELS: Record<RuleCategoryType, { label: string; color: string }> = {
-  [RuleCategory.SUBJECTIVE]: { label: "Subjective", color: "bg-violet-500/10 text-violet-500 border-violet-500/20" },
-  [RuleCategory.RISK_EXECUTION]: { label: "Risk & Execution", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  [RuleCategory.CONTEXT]: { label: "Context", color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
-};
-
 export default function CreateStrategy() {
+  const { t } = useTranslation("strategies");
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const STEPS = [
+    { id: 1, label: t("stepBasics"), icon: FileText },
+    { id: 2, label: t("stepRules"), icon: ListChecks },
+    { id: 3, label: t("stepConfigure"), icon: Settings },
+    { id: 4, label: t("stepLabels"), icon: Tag },
+    { id: 5, label: t("stepReview"), icon: Eye },
+  ];
+
+  const CATEGORY_LABELS: Record<RuleCategoryType, { label: string; color: string }> = {
+    [RuleCategory.SUBJECTIVE]: { label: t("catSubjective"), color: "bg-violet-500/10 text-violet-500 border-violet-500/20" },
+    [RuleCategory.RISK_EXECUTION]: { label: t("catRiskExecution"), color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    [RuleCategory.CONTEXT]: { label: t("catContext"), color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
+  };
 
   const [currentStep, setCurrentStep] = useState(1);
   const [strategyName, setStrategyName] = useState("");
@@ -79,30 +81,30 @@ export default function CreateStrategy() {
         if (errorData.error === "FREE_LIMIT_REACHED") {
           throw new Error("LIMIT_REACHED");
         }
-        throw new Error(errorData.message || "Failed to create strategy");
+        throw new Error(errorData.message || t("toastFailedCreate"));
       }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/strategies"] });
       toast({
-        title: "Strategy Created",
-        description: `"${strategyName}" has been saved successfully.`,
+        title: t("toastCreated"),
+        description: t("toastCreatedDesc", { name: strategyName }),
       });
       navigate("/strategies");
     },
     onError: (error: Error) => {
       if (error.message === "LIMIT_REACHED") {
         toast({
-          title: "Strategy Limit Reached",
-          description: "Free accounts are limited to 1 strategy. Upgrade to Pro for unlimited strategies.",
+          title: t("toastLimitTitle"),
+          description: t("toastLimitFullDesc"),
           variant: "destructive",
         });
         navigate("/pricing");
       } else {
         toast({
-          title: "Error",
-          description: error.message || "Failed to create strategy",
+          title: t("toastErrorTitle"),
+          description: error.message || t("toastFailedCreate"),
           variant: "destructive",
         });
       }
@@ -197,7 +199,7 @@ export default function CreateStrategy() {
               data-testid={`switch-${rule.ruleType}`}
             />
             <span className="text-sm text-muted-foreground">
-              {value ? "Required" : "Not Required"}
+              {value ? t("valueRequired") : t("valueNotRequired")}
             </span>
           </div>
         );
@@ -216,13 +218,13 @@ export default function CreateStrategy() {
               data-testid={`input-${rule.ruleType}`}
             />
             {rule.ruleType === RuleType.MAX_RISK_PERCENT && (
-              <span className="text-sm text-muted-foreground">%</span>
+              <span className="text-sm text-muted-foreground">{t("unitPercent")}</span>
             )}
             {rule.ruleType === RuleType.MIN_RISK_REWARD && (
-              <span className="text-sm text-muted-foreground">: 1 R:R</span>
+              <span className="text-sm text-muted-foreground">{t("unitRR")}</span>
             )}
             {rule.ruleType === RuleType.MAX_TRADES_PER_DAY && (
-              <span className="text-sm text-muted-foreground">trades</span>
+              <span className="text-sm text-muted-foreground">{t("unitTrades")}</span>
             )}
           </div>
         );
@@ -270,7 +272,7 @@ export default function CreateStrategy() {
               className="w-28"
               data-testid={`input-${rule.ruleType}-start`}
             />
-            <span className="text-muted-foreground">to</span>
+            <span className="text-muted-foreground">{t("timeTo")}</span>
             <Input
               type="time"
               value={(value as string)?.split("-")[1] || "17:00"}
@@ -293,8 +295,8 @@ export default function CreateStrategy() {
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-4xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Create Strategy</h1>
-          <p className="text-muted-foreground mt-1">Define your trading framework</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">{t("createTitle")}</h1>
+          <p className="text-muted-foreground mt-1">{t("createSubtitle")}</p>
         </header>
 
         <div className="mb-8">
@@ -348,30 +350,30 @@ export default function CreateStrategy() {
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold mb-4">Strategy Details</h2>
+                <h2 className="text-lg font-semibold mb-4">{t("stepDetailsTitle")}</h2>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Give your strategy a name and description to identify it later.
+                  {t("stepDetailsDesc")}
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Strategy Name</label>
+                  <label className="text-sm font-medium">{t("fieldStrategyName")}</label>
                   <Input
                     value={strategyName}
                     onChange={(e) => setStrategyName(e.target.value)}
-                    placeholder="e.g., London Session Breakout"
+                    placeholder={t("fieldStrategyNamePlaceholder")}
                     className="max-w-md"
                     data-testid="input-strategy-name"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Description (Optional)</label>
+                  <label className="text-sm font-medium">{t("fieldDescription")}</label>
                   <Textarea
                     value={strategyDescription}
                     onChange={(e) => setStrategyDescription(e.target.value)}
-                    placeholder="Describe your strategy approach..."
+                    placeholder={t("fieldDescriptionPlaceholder")}
                     className="max-w-md resize-none"
                     rows={4}
                     data-testid="input-strategy-description"
@@ -384,9 +386,9 @@ export default function CreateStrategy() {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold mb-4">Select Rules</h2>
+                <h2 className="text-lg font-semibold mb-4">{t("stepSelectRulesTitle")}</h2>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Choose the rules that define your trading strategy. Click to add or remove.
+                  {t("stepSelectRulesDesc")}
                 </p>
               </div>
 
@@ -451,7 +453,7 @@ export default function CreateStrategy() {
                 <div className="pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <ListChecks size={16} />
-                    <span>{selectedRules.length} rule{selectedRules.length !== 1 ? "s" : ""} selected</span>
+                    <span>{t("rulesSelected", { count: selectedRules.length })}</span>
                   </div>
                 </div>
               )}
@@ -461,16 +463,16 @@ export default function CreateStrategy() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold mb-4">Configure Rules</h2>
+                <h2 className="text-lg font-semibold mb-4">{t("stepConfigureTitle")}</h2>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Set the parameters for each rule in your strategy.
+                  {t("stepConfigureDesc")}
                 </p>
               </div>
 
               {selectedRules.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <ListChecks className="mx-auto mb-3 opacity-50" size={40} />
-                  <p>No rules selected. Go back and add some rules.</p>
+                  <p>{t("noRulesGoBack")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -506,16 +508,16 @@ export default function CreateStrategy() {
           {currentStep === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold mb-4">Custom Labels</h2>
+                <h2 className="text-lg font-semibold mb-4">{t("stepLabelsTitle")}</h2>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Personalize rule labels to match your trading terminology.
+                  {t("stepLabelsDesc")}
                 </p>
               </div>
 
               {selectedRules.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Tag className="mx-auto mb-3 opacity-50" size={40} />
-                  <p>No rules selected. Go back and add some rules.</p>
+                  <p>{t("noRulesGoBack")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -542,15 +544,15 @@ export default function CreateStrategy() {
           {currentStep === 5 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold mb-4">Review Strategy</h2>
+                <h2 className="text-lg font-semibold mb-4">{t("stepReviewTitle")}</h2>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Review your strategy before saving.
+                  {t("stepReviewDesc")}
                 </p>
               </div>
 
               <div className="space-y-6">
                 <div className="p-4 rounded-lg bg-muted/50">
-                  <h3 className="text-sm font-semibold mb-2">Strategy Name</h3>
+                  <h3 className="text-sm font-semibold mb-2">{t("fieldStrategyName")}</h3>
                   <p className="text-lg font-bold">{strategyName}</p>
                   {strategyDescription && (
                     <p className="text-sm text-muted-foreground mt-2">{strategyDescription}</p>
@@ -558,7 +560,7 @@ export default function CreateStrategy() {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold mb-3">Rules ({selectedRules.length})</h3>
+                  <h3 className="text-sm font-semibold mb-3">{t("rulesCountLabel", { count: selectedRules.length })}</h3>
                   <div className="space-y-2">
                     {selectedRules.map((rule) => {
                       const categoryInfo = CATEGORY_LABELS[rule.definition.category];
@@ -576,8 +578,8 @@ export default function CreateStrategy() {
                           <span className="text-sm text-muted-foreground">
                             {typeof rule.value === "boolean"
                               ? rule.value
-                                ? "Required"
-                                : "Optional"
+                                ? t("valueRequired")
+                                : t("valueOptional")
                               : Array.isArray(rule.value)
                               ? rule.value.join(", ")
                               : String(rule.value)}
@@ -590,9 +592,9 @@ export default function CreateStrategy() {
 
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
                   <div>
-                    <h4 className="font-medium">Set as Active Strategy</h4>
+                    <h4 className="font-medium">{t("setActiveStrategyTitle")}</h4>
                     <p className="text-xs text-muted-foreground">
-                      Active strategy is used for trade compliance tracking
+                      {t("setActiveStrategyDesc")}
                     </p>
                   </div>
                   <Switch
@@ -613,7 +615,7 @@ export default function CreateStrategy() {
               data-testid="button-back"
             >
               <ChevronLeft size={16} className="mr-2" />
-              Back
+              {t("btnBack")}
             </Button>
 
             {currentStep < 5 ? (
@@ -622,7 +624,7 @@ export default function CreateStrategy() {
                 disabled={!canProceed()}
                 data-testid="button-next"
               >
-                Next
+                {t("btnNext")}
                 <ChevronRight size={16} className="ml-2" />
               </Button>
             ) : (
@@ -636,7 +638,7 @@ export default function CreateStrategy() {
                 ) : (
                   <Zap size={16} className="mr-2" />
                 )}
-                Save Strategy
+                {createStrategyMutation.isPending ? t("creating") : t("btnCreateStrategy")}
               </Button>
             )}
           </div>

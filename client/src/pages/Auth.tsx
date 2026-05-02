@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link, Navigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { TrendingUp, Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3, History, Check, X, Globe, User, RefreshCw, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +51,7 @@ const countries = [
 const timezones = Intl.supportedValuesOf('timeZone');
 
 export default function Auth() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -78,8 +80,8 @@ export default function Auth() {
       setRequiresVerification(false);
       setIsLogin(true);
       toast({
-        title: "Email Verified",
-        description: "Your email has been verified. You can now log in.",
+        title: t("auth.verified"),
+        description: t("auth.verifiedDesc"),
       });
     }
     
@@ -92,20 +94,20 @@ export default function Auth() {
         if (errorEmail) setVerificationEmail(decodeURIComponent(errorEmail));
         toast({
           variant: "destructive",
-          title: "Verification Link Expired",
-          description: "Your verification link has expired. Please request a new one.",
+          title: t("auth.verificationExpired"),
+          description: t("auth.verificationExpiredDesc"),
         });
       } else if (verificationError === "invalid_token") {
         toast({
           variant: "destructive",
-          title: "Invalid Verification Link",
-          description: "This verification link is invalid or has already been used.",
+          title: t("auth.verificationInvalid"),
+          description: t("auth.verificationInvalidDesc"),
         });
       } else {
         toast({
           variant: "destructive",
-          title: "Verification Failed",
-          description: "Something went wrong. Please try again.",
+          title: t("auth.verificationFailed"),
+          description: t("auth.verificationFailedGeneric"),
         });
       }
     }
@@ -119,7 +121,7 @@ export default function Auth() {
         setIsLogin(false); // Switch to signup mode for founding members
       }
     }
-  }, [searchParams, toast]);
+  }, [searchParams, toast, t]);
 
   const { data: userRole } = useQuery<any>({
     queryKey: ["/api/user"],
@@ -142,10 +144,10 @@ export default function Auth() {
   }
 
   const passwordRules = [
-    { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
-    { label: "1 uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
-    { label: "1 lowercase letter", test: (p: string) => /[a-z]/.test(p) },
-    { label: "1 number", test: (p: string) => /[0-9]/.test(p) },
+    { label: t("auth.pwRule8"), test: (p: string) => p.length >= 8 },
+    { label: t("auth.pwRuleUpper"), test: (p: string) => /[A-Z]/.test(p) },
+    { label: t("auth.pwRuleLower"), test: (p: string) => /[a-z]/.test(p) },
+    { label: t("auth.pwRuleNumber"), test: (p: string) => /[0-9]/.test(p) },
   ];
 
   const isPasswordValid = passwordRules.every(rule => rule.test(password));
@@ -165,21 +167,21 @@ export default function Auth() {
       const data = await response.json();
       if (response.ok) {
         toast({
-          title: "Verification Email Sent",
-          description: "Please check your inbox for the verification link.",
+          title: t("auth.verificationSent"),
+          description: t("auth.verificationSentDesc"),
         });
       } else {
         toast({
           variant: "destructive",
-          title: "Failed to Resend",
-          description: data.message || "Could not resend verification email.",
+          title: t("auth.failedResend"),
+          description: data.message || t("auth.failedResendDesc"),
         });
       }
     } catch (err) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to resend verification email.",
+        title: t("common.error"),
+        description: t("auth.failedResendDesc"),
       });
     } finally {
       setResendingVerification(false);
@@ -219,8 +221,8 @@ export default function Auth() {
         setVerificationEmail(data.email);
         toast({
           variant: "destructive",
-          title: "Email Not Verified",
-          description: "Please verify your email before logging in.",
+          title: t("auth.emailNotVerified"),
+          description: t("auth.emailNotVerifiedDesc"),
         });
         return;
       }
@@ -239,8 +241,8 @@ export default function Auth() {
         }
         trackFBEvent('CompleteRegistration');
         toast({
-          title: data.foundingMember ? "Founding Member Spot Secured!" : "Account Created",
-          description: "Please check your email to verify your account.",
+          title: data.foundingMember ? t("auth.founderSecured") : t("auth.accountCreated"),
+          description: t("auth.accountCreatedDesc"),
         });
         return;
       }
@@ -249,8 +251,8 @@ export default function Auth() {
       if (data.requiresPasswordReset) {
         setRequiresPasswordReset(true);
         toast({
-          title: "Password Reset Required",
-          description: "Please set a new password to continue.",
+          title: t("auth.passwordResetRequired"),
+          description: t("auth.passwordResetRequiredDesc"),
         });
         return;
       }
@@ -271,15 +273,15 @@ export default function Auth() {
       }
       
       toast({
-        title: "Session Initialized",
-        description: "Welcome back to TradifyApp.",
+        title: t("auth.sessionInitialized"),
+        description: t("auth.welcomeBack"),
       });
     } catch (err: any) {
       console.error("Auth error:", err);
       toast({
         variant: "destructive",
-        title: isLogin ? "Login Failed" : "Registration Failed",
-        description: err.message || "An error occurred.",
+        title: isLogin ? t("auth.loginFailed") : t("auth.registrationFailed"),
+        description: err.message || t("auth.errorOccurred"),
       });
     }
   };
@@ -294,15 +296,15 @@ export default function Auth() {
       });
       const data = await response.json();
       toast({
-        title: "Reset Link Sent",
+        title: t("auth.resetLinkSent"),
         description: data.message,
       });
       setShowForgot(false);
     } catch (err) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to process reset request.",
+        title: t("common.error"),
+        description: t("auth.resetFailed"),
       });
     }
   };
@@ -314,8 +316,8 @@ export default function Auth() {
     if (newPassword.length < 8) {
       toast({
         variant: "destructive",
-        title: "Invalid Password",
-        description: "Password must be at least 8 characters.",
+        title: t("auth.invalidPassword"),
+        description: t("auth.invalidPasswordDesc"),
       });
       return;
     }
@@ -323,8 +325,8 @@ export default function Auth() {
     if (newPassword !== confirmNewPassword) {
       toast({
         variant: "destructive",
-        title: "Passwords Don't Match",
-        description: "Please make sure both passwords match.",
+        title: t("auth.passwordsDontMatch"),
+        description: t("auth.passwordsDontMatchDesc"),
       });
       return;
     }
@@ -344,8 +346,8 @@ export default function Auth() {
       }
 
       toast({
-        title: "Password Updated",
-        description: "Your password has been set. Redirecting to dashboard...",
+        title: t("auth.passwordUpdated"),
+        description: t("auth.passwordUpdatedDesc"),
       });
 
       // Redirect to dashboard after successful password reset
@@ -355,8 +357,8 @@ export default function Auth() {
     } catch (err: any) {
       toast({
         variant: "destructive",
-        title: "Reset Failed",
-        description: err.message || "Failed to update password.",
+        title: t("auth.resetFailed"),
+        description: err.message || t("auth.errorOccurred"),
       });
     }
   };
@@ -372,18 +374,18 @@ export default function Auth() {
               <div className="mx-auto w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg mb-4">
                 <Lock size={32} strokeWidth={2.5} />
               </div>
-              <h3 className="text-2xl font-bold text-foreground uppercase italic tracking-tighter" data-testid="text-reset-title">Set Your Password</h3>
-              <p className="text-muted-foreground mt-2 text-xs uppercase tracking-widest font-bold">Create a secure password for your account</p>
+              <h3 className="text-2xl font-bold text-foreground uppercase italic tracking-tighter" data-testid="text-reset-title">{t("auth.setPasswordTitle")}</h3>
+              <p className="text-muted-foreground mt-2 text-xs uppercase tracking-widest font-bold">{t("auth.setPasswordSubtitle")}</p>
             </div>
             <form onSubmit={handlePasswordReset} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">New Password</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.newPasswordLabel")}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                   <Input 
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder={t("auth.newPasswordPlaceholder")}
                     className="bg-muted border-border text-foreground h-12 pl-10"
                     type="password"
                     required
@@ -392,13 +394,13 @@ export default function Auth() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Confirm Password</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.confirmPasswordLabel")}</label>
                 <div className="relative">
                   <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                   <Input 
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                    placeholder={t("auth.confirmPasswordPlaceholder")}
                     className="bg-muted border-border text-foreground h-12 pl-10"
                     type="password"
                     required
@@ -420,7 +422,7 @@ export default function Auth() {
                 disabled={!passwordRules.every(rule => rule.test(newPassword)) || newPassword !== confirmNewPassword}
                 data-testid="button-set-password"
               >
-                Set Password & Continue
+                {t("auth.setPasswordButton")}
               </Button>
             </form>
           </div>
@@ -443,7 +445,7 @@ export default function Auth() {
                   <Crown className="text-amber-500" size={28} />
                 </div>
                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-500 mb-1">
-                  Founding Member Secured
+                  {t("auth.foundingSecured")}
                 </div>
                 {founderSpotNumber && (
                   <div className="text-4xl font-black text-foreground tracking-tighter mb-1">
@@ -451,14 +453,14 @@ export default function Auth() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground mt-2">
-                  You're locked in. 1 month free Pro + 30% off your subscription, forever.
+                  {t("auth.foundingPerksLine")}
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2 text-left">
                   {[
-                    "1 Month Free Pro",
-                    "30% Lifetime Discount",
-                    "Early Feature Access",
-                    "Founding Badge",
+                    t("auth.perk1MonthFree"),
+                    t("auth.perk30Discount"),
+                    t("auth.perkEarlyAccess"),
+                    t("auth.perkBadge"),
                   ].map((perk) => (
                     <div key={perk} className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wide">
                       <div className="w-3.5 h-3.5 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
@@ -476,15 +478,15 @@ export default function Auth() {
               <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
                 <Mail className="text-emerald-500" size={28} />
               </div>
-              <h3 className="text-xl font-bold text-foreground uppercase italic tracking-tighter">Verify Your Email</h3>
+              <h3 className="text-xl font-bold text-foreground uppercase italic tracking-tighter">{t("auth.verifyEmailTitle")}</h3>
               <p className="text-muted-foreground mt-2 text-sm">
-                We've sent a link to <span className="text-emerald-500 font-bold">{verificationEmail}</span>
+                {t("auth.verifyEmailSentTo")} <span className="text-emerald-500 font-bold">{verificationEmail}</span>
               </p>
               <p className="text-xs text-muted-foreground uppercase tracking-widest mt-4">
-                Click the link to activate your account.
+                {t("auth.verifyEmailActivate")}
               </p>
               <div className="mt-4 p-4 bg-muted rounded-lg border border-border">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Didn't receive the email?</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">{t("auth.verifyDidntReceive")}</p>
                 <Button
                   onClick={handleResendVerification}
                   disabled={resendingVerification}
@@ -495,12 +497,12 @@ export default function Auth() {
                   {resendingVerification ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
+                      {t("auth.resendSending")}
                     </>
                   ) : (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Resend Verification Email
+                      {t("auth.resendButton")}
                     </>
                   )}
                 </Button>
@@ -515,7 +517,7 @@ export default function Auth() {
                 className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-4"
                 data-testid="button-back-to-login"
               >
-                Back to Login
+                {t("auth.backToLogin")}
               </Button>
             </div>
           </div>
@@ -531,16 +533,16 @@ export default function Auth() {
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-2xl border border-border">
             <div className="text-center">
-              <h3 className="text-2xl font-bold text-foreground uppercase italic tracking-tighter">Reset Password</h3>
-              <p className="text-muted-foreground mt-2 text-xs uppercase tracking-widest font-bold">Enter your email to receive a recovery link</p>
+              <h3 className="text-2xl font-bold text-foreground uppercase italic tracking-tighter">{t("auth.resetPasswordTitle")}</h3>
+              <p className="text-muted-foreground mt-2 text-xs uppercase tracking-widest font-bold">{t("auth.resetPasswordSubtitle")}</p>
             </div>
             <form onSubmit={handleResetRequest} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Address</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.emailAddressLabel")}</label>
                 <Input 
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  placeholder={t("auth.enterEmailPlaceholder")}
                   className="bg-muted border-border text-foreground h-12"
                   type="email"
                   required
@@ -548,14 +550,14 @@ export default function Auth() {
                 />
               </div>
               <Button type="submit" className="w-full h-12 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest">
-                Send Recovery Link
+                {t("auth.sendRecoveryLink")}
               </Button>
               <button 
                 type="button"
                 onClick={() => setShowForgot(false)}
                 className="w-full text-muted-foreground hover:text-foreground text-xs font-bold uppercase tracking-widest"
               >
-                Back to Login
+                {t("auth.backToLogin")}
               </button>
             </form>
           </div>
@@ -594,15 +596,15 @@ export default function Auth() {
 
             <div className="space-y-10 max-w-md">
               <div>
-                <h2 className="text-4xl font-bold text-foreground mb-4 leading-tight">Professional MT5 analytics and disciplined trading.</h2>
-                <p className="text-muted-foreground text-lg">No hype. Just deterministic rule-based intelligence for serious traders.</p>
+                <h2 className="text-4xl font-bold text-foreground mb-4 leading-tight">{t("auth.brandHeadline")}</h2>
+                <p className="text-muted-foreground text-lg">{t("auth.brandSubheading")}</p>
               </div>
 
               <div className="space-y-6">
                 {[
-                  { icon: <Zap size={20} />, title: "Live MT5 Sync", desc: "Direct integration with your trading terminal." },
-                  { icon: <BarChart3 size={20} />, title: "Advanced Metrics", desc: "Equity curves, win rates, and drawdown analysis." },
-                  { icon: <History size={20} />, title: "Rule-Based Journal", desc: "Enforce discipline with custom validation engines." }
+                  { icon: <Zap size={20} />, title: t("auth.featLiveSync"), desc: t("auth.featLiveSyncDesc") },
+                  { icon: <BarChart3 size={20} />, title: t("auth.featMetrics"), desc: t("auth.featMetricsDesc") },
+                  { icon: <History size={20} />, title: t("auth.featJournal"), desc: t("auth.featJournalDesc") },
                 ].map((item, i) => (
                   <div key={i} className="flex gap-4 items-start">
                     <div className="mt-1 text-emerald-500">{item.icon}</div>
@@ -617,11 +619,11 @@ export default function Auth() {
           </div>
 
           <div className="relative z-10 flex items-center gap-6 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
-            <span>© 2026 TRADIFY</span>
+            <span>© {new Date().getFullYear()} TRADIFY</span>
             <div className="w-1 h-1 rounded-full bg-border" />
-            <span>Precision</span>
+            <span>{t("auth.trustPrecision")}</span>
             <div className="w-1 h-1 rounded-full bg-border" />
-            <span>Discipline</span>
+            <span>{t("auth.trustDiscipline")}</span>
           </div>
         </div>
 
@@ -631,22 +633,22 @@ export default function Auth() {
           
           <div className="w-full max-w-md space-y-8 relative z-10 py-12">
             <div className="text-center lg:text-left">
-              <h3 className="text-3xl font-bold text-foreground">{isLogin ? "Welcome back" : "Create your account"}</h3>
+              <h3 className="text-3xl font-bold text-foreground">{isLogin ? t("auth.loginH3") : t("auth.signupH3")}</h3>
               <p className="text-muted-foreground mt-2">
-                {isLogin ? "Log in to your trading dashboard." : "Professional MT5 analytics and disciplined trading — no hype."}
+                {isLogin ? t("auth.loginP") : t("auth.signupP")}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Address</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.emailAddressLabel")}</label>
                   <div className="relative group">
                     <Mail className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
                     <Input 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email" 
+                      placeholder={t("auth.enterEmailPlaceholder")}
                       className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                       type="email"
                       required
@@ -659,13 +661,13 @@ export default function Auth() {
                 {!isLogin && (
                   <>
                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Full Name</label>
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.fullNameLabel")}</label>
                       <div className="relative group">
                         <User className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
                         <Input 
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
-                          placeholder="Enter your full name" 
+                          placeholder={t("auth.fullNamePlaceholder")}
                           className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                           type="text"
                           required
@@ -676,10 +678,10 @@ export default function Auth() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Country</label>
+                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.countryLabel")}</label>
                         <Select value={country} onValueChange={setCountry} required={!isLogin}>
                           <SelectTrigger className="bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50 uppercase text-[10px] tracking-widest">
-                            <SelectValue placeholder="SELECT COUNTRY" />
+                            <SelectValue placeholder={t("auth.selectCountry")} />
                           </SelectTrigger>
                           <SelectContent className="bg-popover border-border text-popover-foreground">
                             {countries.map((c) => (
@@ -691,10 +693,10 @@ export default function Auth() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Time Zone</label>
+                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.timezoneLabel")}</label>
                         <Select value={timezone} onValueChange={setTimezone} required={!isLogin}>
                           <SelectTrigger className="bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50 uppercase text-[10px] tracking-widest">
-                            <SelectValue placeholder="SELECT ZONE" />
+                            <SelectValue placeholder={t("auth.selectTimezone")} />
                           </SelectTrigger>
                           <SelectContent className="bg-popover border-border text-popover-foreground">
                             {timezones.map((tz) => (
@@ -707,11 +709,11 @@ export default function Auth() {
                       </div>
                     </div>
                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Phone (Optional)</label>
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.phoneLabel")}</label>
                       <Input 
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="+1 234 567 890" 
+                        placeholder={t("auth.phonePlaceholder")}
                         className="bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                       />
                     </div>
@@ -720,14 +722,14 @@ export default function Auth() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Password</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("auth.passwordLabelShort")}</label>
                     {isLogin && (
                       <button 
                         type="button" 
                         onClick={() => setShowForgot(true)}
                         className="text-[10px] font-bold text-emerald-500/70 hover:text-emerald-500 transition-colors uppercase tracking-widest"
                       >
-                        Forgot?
+                        {t("auth.forgot")}
                       </button>
                     )}
                   </div>
@@ -736,7 +738,7 @@ export default function Auth() {
                     <Input 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••" 
+                      placeholder={t("auth.passwordSecret")}
                       className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                       type="password"
                       required
@@ -756,20 +758,20 @@ export default function Auth() {
 
                 {!isLogin && (
                   <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Confirm Identity</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t("auth.confirmIdentity")}</label>
                     <div className="relative group">
                       <Lock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
                       <Input 
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="••••••••" 
+                        placeholder={t("auth.passwordSecret")}
                         className="pl-10 bg-muted border-border text-foreground h-12 focus:ring-emerald-500/20 focus:border-emerald-500/50"
                         type="password"
                         required
                       />
                     </div>
                     {confirmPassword && password !== confirmPassword && (
-                      <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest ml-1">Passwords do not match</p>
+                      <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest ml-1">{t("auth.passwordMismatch")}</p>
                     )}
                   </div>
                 )}
@@ -780,7 +782,7 @@ export default function Auth() {
                 disabled={!isFormValid}
                 className="w-full h-14 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-black uppercase tracking-[0.15em] text-xs transition-all shadow-2xl shadow-emerald-500/20 disabled:opacity-50 disabled:grayscale"
               >
-                {isLogin ? "Initialize Session" : "Establish Account"}
+                {isLogin ? t("auth.loginButton") : t("auth.signupButton")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
@@ -790,14 +792,11 @@ export default function Auth() {
                 onClick={() => { setIsLogin(!isLogin); setAgreedToTerms(false); }}
                 className="text-muted-foreground hover:text-emerald-500 text-xs font-bold transition-colors"
               >
-                {isLogin ? "Need an account? Create one" : "Already registered? Log in"}
+                {isLogin ? t("auth.noAccount") : t("auth.hasAccount")}
               </button>
               {isLogin ? (
                 <p className="text-center text-[10px] text-muted-foreground mt-6 leading-relaxed uppercase tracking-widest font-bold">
-                  By logging in, you agree to our{" "}
-                  <Link to="/terms" className="text-emerald-500 hover:underline">Terms</Link>,{" "}
-                  <Link to="/privacy" className="text-emerald-500 hover:underline">Privacy</Link>, and acknowledge the{" "}
-                  <Link to="/risk-disclaimer" className="text-emerald-500 hover:underline">Risk Disclaimer</Link>.
+                  {t("auth.agreeLogin")}
                 </p>
               ) : (
                 <label className="flex items-start gap-3 mt-6 cursor-pointer group" data-testid="checkbox-terms-consent">
@@ -809,10 +808,7 @@ export default function Auth() {
                     data-testid="input-terms-checkbox"
                   />
                   <span className="text-[10px] text-muted-foreground leading-relaxed uppercase tracking-widest font-bold group-hover:text-foreground transition-colors">
-                    I agree to the{" "}
-                    <Link to="/terms" className="text-emerald-500 hover:underline" onClick={(e) => e.stopPropagation()}>Terms of Service</Link>,{" "}
-                    <Link to="/privacy" className="text-emerald-500 hover:underline" onClick={(e) => e.stopPropagation()}>Privacy Policy</Link>, and acknowledge the{" "}
-                    <Link to="/risk-disclaimer" className="text-emerald-500 hover:underline" onClick={(e) => e.stopPropagation()}>Risk Disclaimer</Link>.
+                    {t("auth.agreeTerms")}
                   </span>
                 </label>
               )}
@@ -821,11 +817,11 @@ export default function Auth() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
               <div className="flex items-center gap-2 p-3 bg-muted rounded-xl border border-border">
                 <ShieldCheck size={16} className="text-emerald-500/50" />
-                <span className="text-[9px] text-muted-foreground leading-tight">No broker credentials needed</span>
+                <span className="text-[9px] text-muted-foreground leading-tight">{t("auth.trustNoBroker")}</span>
               </div>
               <div className="flex items-center gap-2 p-3 bg-muted rounded-xl border border-border">
                 <ShieldCheck size={16} className="text-emerald-500/50" />
-                <span className="text-[9px] text-muted-foreground leading-tight">Local MT5 execution</span>
+                <span className="text-[9px] text-muted-foreground leading-tight">{t("auth.trustLocal")}</span>
               </div>
             </div>
           </div>

@@ -6,17 +6,12 @@ import {
   CheckCircle2,
   ArrowRight,
   BarChart3,
-  BookOpen,
   FileText,
   MonitorSmartphone,
   Brain,
-  Clock,
   Target,
-  Calculator,
   Trophy,
   ChevronRight,
-  Zap,
-  Activity,
   Upload,
   HeartPulse
 } from "lucide-react";
@@ -25,13 +20,52 @@ import { Badge } from "@/components/ui/badge";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { CookieSettingsButton } from "@/components/CookieConsent";
 import { SEO } from "@/components/SEO";
+import { useTranslation } from "react-i18next";
 
 export default function SEOTradingJournal() {
+  const { t } = useTranslation("common");
+  const ts = (k: string) => t(`seo.${k}`);
+
+  const features = [
+    { titleKey: "journalFeat1Title", descKey: "journalFeat1Desc", icon: <MonitorSmartphone className="text-cyan-500" /> },
+    { titleKey: "journalFeat2Title", descKey: "journalFeat2Desc", icon: <ShieldCheck className="text-blue-500" /> },
+    { titleKey: "journalFeat3Title", descKey: "journalFeat3Desc", icon: <Brain className="text-emerald-500" /> },
+    { titleKey: "journalFeat4Title", descKey: "journalFeat4Desc", icon: <HeartPulse className="text-pink-500" /> },
+    { titleKey: "journalFeat5Title", descKey: "journalFeat5Desc", icon: <Upload className="text-teal-500" /> },
+    { titleKey: "journalFeat6Title", descKey: "journalFeat6Desc", icon: <BarChart3 className="text-purple-500" /> },
+  ];
+
+  const steps = [
+    { step: "01", titleKey: "journalStep1Title", descKey: "journalStep1Desc" },
+    { step: "02", titleKey: "journalStep2Title", descKey: "journalStep2Desc" },
+    { step: "03", titleKey: "journalStep3Title", descKey: "journalStep3Desc" },
+  ];
+
+  const personas = [
+    {
+      titleKey: "journalPersona1Title", descKey: "journalPersona1Desc",
+      icon: <TrendingUp className="text-emerald-500" size={28} />,
+      featKeys: ["journalPersona1Feat1","journalPersona1Feat2","journalPersona1Feat3","journalPersona1Feat4"]
+    },
+    {
+      titleKey: "journalPersona2Title", descKey: "journalPersona2Desc",
+      icon: <Target className="text-amber-500" size={28} />,
+      featKeys: ["journalPersona2Feat1","journalPersona2Feat2","journalPersona2Feat3","journalPersona2Feat4"]
+    },
+    {
+      titleKey: "journalPersona3Title", descKey: "journalPersona3Desc",
+      icon: <Trophy className="text-blue-500" size={28} />,
+      featKeys: ["journalPersona3Feat1","journalPersona3Feat2","journalPersona3Feat3","journalPersona3Feat4"]
+    },
+  ];
+
+  const faqs = [1,2,3,4,5].map(i => ({ q: `journalFaq${i}Q`, a: `journalFaq${i}A` }));
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO
-        title="Best MT5 Trading Journal Software - Auto-Sync & Rule Validation | TradifyApp"
-        description="The #1 MT5 trading journal that auto-syncs every trade, validates entries against your rules, and tracks performance with AI analytics. Free plan available. No manual logging."
+        title={ts("journalTitle")}
+        description={ts("journalDesc")}
         canonical="https://tradifyapp.com/trading-journal"
         ogImage="https://tradifyapp.com/images/tradify-promo-1.png"
         structuredData={[
@@ -79,36 +113,34 @@ export default function SEOTradingJournal() {
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-8">
             <FileText size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Trading Journal Software</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{ts("journalHeroBadge")}</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]" data-testid="text-seo-journal-heading">
-            The Best MT5<br />
-            <span className="text-emerald-500">Trading Journal</span><br />
-            Software
+            {ts("journalHeroTitle1")}<br />
+            <span className="text-emerald-500">{ts("journalHeroTitle2")}</span><br />
+            {ts("journalHeroTitle3")}
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Stop manually logging trades in spreadsheets. TradifyApp auto-syncs every trade from MetaTrader 5,
-            validates entries against your strategy rules, and delivers AI-powered performance insights —
-            so you can focus on becoming a better trader.
+            {ts("journalHeroSub")}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <Link to="/signup" data-testid="link-seo-journal-signup">
               <Button className="w-full sm:w-auto h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400 shadow-xl shadow-emerald-500/20" data-testid="button-seo-journal-signup">
-                Start Your Free Journal <ArrowRight className="ml-2 h-4 w-4" />
+                {ts("journalHeroCtaPrimary")} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/features" data-testid="link-seo-journal-features">
               <Button variant="outline" className="w-full sm:w-auto h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted" data-testid="button-seo-journal-features">
-                See All Features
+                {ts("journalHeroCtaSecondary")}
               </Button>
             </Link>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Free forever plan. No credit card required. Set up in under 2 minutes.
+            {ts("journalHeroDisclaimer")}
           </p>
         </div>
       </section>
@@ -117,54 +149,22 @@ export default function SEOTradingJournal() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Why Traders Choose TradifyApp <span className="text-emerald-500">Over Spreadsheets</span>
+              {ts("journalWhyTitle1")} <span className="text-emerald-500">{ts("journalWhyTitle2")}</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Manual journaling fails because it relies on willpower. TradifyApp automates the hard part so you can
-              focus on the insights that actually improve your trading.
+              {ts("journalWhySub")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Automatic MT5 Trade Sync",
-                desc: "Every trade from MetaTrader 5 is captured instantly — entries, exits, lot sizes, and P&L. No copy-paste, no missed trades, no errors. Works with multiple MT5 accounts simultaneously.",
-                icon: <MonitorSmartphone className="text-cyan-500" />
-              },
-              {
-                title: "Rule-Based Validation",
-                desc: "Define your trading rules once. TradifyApp validates every trade against your strategy — position sizing, risk limits, allowed instruments, and session times. Know instantly when you deviate.",
-                icon: <ShieldCheck className="text-blue-500" />
-              },
-              {
-                title: "AI Performance Analytics",
-                desc: "Go beyond basic win/loss counting. TradifyApp analyzes your performance by instrument, session, time of day, and risk-to-reward ratio to reveal what actually works in your trading.",
-                icon: <Brain className="text-emerald-500" />
-              },
-              {
-                title: "Psychology & Mood Tracking",
-                desc: "Tag every trade with your emotional state — confident, anxious, revenge trading, or disciplined. Discover how your psychology impacts your bottom line with hard data.",
-                icon: <HeartPulse className="text-pink-500" />
-              },
-              {
-                title: "CSV Import Support",
-                desc: "Trading on MT4, TradingView, or another platform? Import your trades via CSV with automatic column detection. Your complete trading history in one place.",
-                icon: <Upload className="text-teal-500" />
-              },
-              {
-                title: "Performance Dashboard",
-                desc: "Equity curves, drawdown charts, win rate by instrument, and risk metrics — all updating in real time as your trades sync. One view of your complete trading performance.",
-                icon: <BarChart3 className="text-purple-500" />
-              }
-            ].map((feature, i) => (
+            {features.map((feature, i) => (
               <Card key={i} className="bg-background border-border" data-testid={`card-journal-feature-${i}`}>
                 <CardContent className="p-6">
                   <div className="h-12 w-12 rounded-xl bg-muted border border-border flex items-center justify-center mb-4">
                     {feature.icon}
                   </div>
-                  <h3 className="text-sm font-bold text-foreground uppercase tracking-widest mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
+                  <h3 className="text-sm font-bold text-foreground uppercase tracking-widest mb-2">{ts(feature.titleKey)}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{ts(feature.descKey)}</p>
                 </CardContent>
               </Card>
             ))}
@@ -176,38 +176,22 @@ export default function SEOTradingJournal() {
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              How the <span className="text-emerald-500">Trading Journal</span> Works
+              {ts("journalHowTitle1")} <span className="text-emerald-500">{ts("journalHowTitle2")}</span> {ts("journalHowTitle3")}
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              From MT5 to actionable insights in three simple steps.
+              {ts("journalHowSub")}
             </p>
           </div>
 
           <div className="space-y-8">
-            {[
-              {
-                step: "01",
-                title: "Install the Free MT5 Expert Advisor",
-                desc: "Download and install TradifyApp's free Expert Advisor on your MetaTrader 5 platform. It takes less than 2 minutes. The EA is strictly read-only — it never places trades, modifies orders, or accesses your broker credentials."
-              },
-              {
-                step: "02",
-                title: "Trades Sync Automatically",
-                desc: "Every trade you take on MT5 is automatically captured in your TradifyApp journal. Entry price, exit price, lot size, instrument, profit/loss, and timestamps — all logged instantly without any manual input."
-              },
-              {
-                step: "03",
-                title: "Review, Analyze, and Improve",
-                desc: "Use the performance dashboard to review your equity curve, analyze your win rate by instrument and session, track your psychology patterns, and validate that you're following your strategy rules. The data tells you exactly where to improve."
-              }
-            ].map((item, i) => (
+            {steps.map((item, i) => (
               <div key={i} className="flex gap-6 items-start">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-black text-sm shrink-0">
                   {item.step}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-2">{ts(item.titleKey)}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{ts(item.descKey)}</p>
                 </div>
               </div>
             ))}
@@ -219,43 +203,24 @@ export default function SEOTradingJournal() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Built for <span className="text-emerald-500">Every MT5 Trader</span>
+              {ts("journalWhoTitle1")} <span className="text-emerald-500">{ts("journalWhoTitle2")}</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Forex Traders",
-                desc: "Track every currency pair trade with session-specific analytics. See which pairs make you money and which sessions deliver your best results.",
-                icon: <TrendingUp className="text-emerald-500" size={28} />,
-                features: ["Multi-pair tracking", "Session analytics", "Pip-based P&L", "Equity curves"]
-              },
-              {
-                title: "Gold & Commodity Traders",
-                desc: "XAUUSD, XAGUSD, oil — track all commodity trades with instrument-specific insights and risk analysis tailored to volatile markets.",
-                icon: <Target className="text-amber-500" size={28} />,
-                features: ["Instrument breakdown", "Volatility tracking", "Risk-to-reward analysis", "Drawdown monitoring"]
-              },
-              {
-                title: "Prop Firm Traders",
-                desc: "Journal every trade while simultaneously tracking your prop firm challenge rules. Never fail a challenge because you lost track of your limits.",
-                icon: <Trophy className="text-blue-500" size={28} />,
-                features: ["Challenge rule tracking", "Drawdown alerts", "Consistency scoring", "Daily stats logging"]
-              }
-            ].map((persona, i) => (
+            {personas.map((persona, i) => (
               <Card key={i} className="bg-background border-border" data-testid={`card-journal-persona-${i}`}>
                 <CardContent className="p-8">
                   <div className="h-14 w-14 rounded-2xl bg-muted border border-border flex items-center justify-center mb-6">
                     {persona.icon}
                   </div>
-                  <h3 className="text-lg font-black text-foreground uppercase tracking-widest mb-3">{persona.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-6">{persona.desc}</p>
+                  <h3 className="text-lg font-black text-foreground uppercase tracking-widest mb-3">{ts(persona.titleKey)}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-6">{ts(persona.descKey)}</p>
                   <div className="space-y-2">
-                    {persona.features.map((f, j) => (
+                    {persona.featKeys.map((fk, j) => (
                       <div key={j} className="flex items-center gap-2 text-xs text-muted-foreground">
                         <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
-                        {f}
+                        {ts(fk)}
                       </div>
                     ))}
                   </div>
@@ -270,40 +235,19 @@ export default function SEOTradingJournal() {
         <div className="max-w-3xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase mb-4">
-              Trading Journal <span className="text-emerald-500">FAQ</span>
+              {ts("journalFaqTitle1")} <span className="text-emerald-500">{ts("journalFaqTitle2")}</span>
             </h2>
           </div>
 
           <div className="space-y-4">
-            {[
-              {
-                q: "What is a trading journal?",
-                a: "A trading journal is a systematic record of all your trades, including entry/exit prices, position sizes, strategy used, emotional state, and outcome. It helps traders identify patterns in their behavior and performance to improve decision-making over time. Professional traders consider it an essential tool for consistent profitability."
-              },
-              {
-                q: "Why do I need an automated trading journal?",
-                a: "Manual journaling is time-consuming and prone to errors. Studies show that traders who journal consistently improve their win rate by 10-20%. An automated trading journal like TradifyApp removes the friction by syncing directly with MT5, capturing every trade instantly with 100% accurate data."
-              },
-              {
-                q: "How does TradifyApp compare to other trading journals?",
-                a: "TradifyApp combines automatic MT5 sync, rule-based trade validation, AI analytics, psychology tracking, and prop firm challenge monitoring in one platform. Most competitors offer only basic logging. TradifyApp enforces discipline, not just documentation."
-              },
-              {
-                q: "Can I use TradifyApp as a forex trading journal?",
-                a: "Yes. TradifyApp is built for forex, gold, indices, and any instrument traded on MT5. It tracks all currency pairs, provides instrument-specific analytics, session performance breakdowns, and supports multi-account journaling."
-              },
-              {
-                q: "Is there a free trading journal option?",
-                a: "Yes. TradifyApp's free plan includes MT5 multi-account sync, 30-day trade journal history, psychology tracking, CSV import, risk calculators, and 3 education lessons. No credit card required to start."
-              }
-            ].map((faq, i) => (
+            {faqs.map((faq, i) => (
               <details key={i} className="group bg-card border border-border rounded-2xl overflow-hidden" data-testid={`faq-journal-${i}`}>
                 <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
-                  <span className="text-sm font-bold text-foreground pr-4">{faq.q}</span>
+                  <span className="text-sm font-bold text-foreground pr-4">{ts(faq.q)}</span>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0 transition-transform group-open:rotate-90" />
                 </summary>
                 <div className="px-6 pb-6">
-                  <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{ts(faq.a)}</p>
                 </div>
               </details>
             ))}
@@ -314,21 +258,20 @@ export default function SEOTradingJournal() {
       <section className="py-24 bg-muted/30 border-y border-border" data-testid="section-journal-cta">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-6">
-            Start journaling<br />your trades <span className="text-emerald-500">today</span>.
+            {ts("journalCtaTitle1")}<br />{ts("journalCtaTitle2")} <span className="text-emerald-500">{ts("journalCtaTitle3")}</span>.
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Every profitable trader keeps a journal. Make yours automatic, intelligent, and
-            impossible to skip. Free forever plan available.
+            {ts("journalCtaSub")}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/signup" data-testid="link-journal-cta-signup">
               <Button className="h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400" data-testid="button-journal-cta-signup">
-                Start Free Journal
+                {ts("journalCtaPrimary")}
               </Button>
             </Link>
             <Link to="/pricing" data-testid="link-journal-cta-pricing">
               <Button variant="ghost" className="h-14 px-8 text-foreground font-bold uppercase tracking-widest text-xs group" data-testid="button-journal-cta-pricing">
-                Compare Plans <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
+                {ts("ctaCompare")} <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
               </Button>
             </Link>
           </div>
@@ -337,26 +280,26 @@ export default function SEOTradingJournal() {
 
       <section className="py-12 border-t border-border" data-testid="section-journal-related">
         <div className="max-w-4xl mx-auto px-6">
-          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-6 text-center">Related Tools</h3>
+          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-6 text-center">{ts("relatedToolsHeading")}</h3>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/prop-firm-tracker" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-journal-related-prop">
-              Prop Firm Challenge Tracker
+              {ts("relatedProp")}
             </Link>
             <span className="text-border">|</span>
             <Link to="/mt5-trading-analytics" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-journal-related-analytics">
-              MT5 Trading Analytics
+              {ts("relatedAnalytics")}
             </Link>
             <span className="text-border">|</span>
             <Link to="/features" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-journal-related-features">
-              All Features
+              {ts("relatedFeatures")}
             </Link>
             <span className="text-border">|</span>
             <Link to="/pricing" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-journal-related-pricing">
-              Pricing
+              {ts("relatedPricing")}
             </Link>
             <span className="text-border">|</span>
             <Link to="/blog" className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest" data-testid="link-journal-related-blog">
-              Blog
+              {ts("relatedBlog")}
             </Link>
           </div>
         </div>
@@ -364,15 +307,15 @@ export default function SEOTradingJournal() {
 
       <footer className="py-12 border-t border-border text-center">
         <div className="flex justify-center flex-wrap gap-6 mb-4">
-          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
-          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
-          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
-          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Cookie Policy</Link>
-          <Link to="/blog" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Blog</Link>
+          <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.terms")}</Link>
+          <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.privacy")}</Link>
+          <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.riskDisclaimer")}</Link>
+          <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.cookies")}</Link>
+          <Link to="/blog" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("footer.blog")}</Link>
           <CookieSettingsButton />
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-          &copy; 2026 TradifyApp Intelligence Systems. All Rights Reserved.
+          {t("footer.copyright", { year: 2026 })}
         </p>
       </footer>
     </div>

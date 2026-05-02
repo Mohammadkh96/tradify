@@ -2,70 +2,43 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Printer, ArrowLeft, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SEO } from "@/components/SEO";
-
-const sections = [
-  {
-    title: "1. HTF Bias & Rule Enforcement",
-    items: [
-      "Confirmed daily/4H trend direction aligns with my rule set",
-      "Checked TradifyApp rule engine — no active session restrictions triggered",
-      "Verified no high-impact news within my restricted news window",
-      "HTF bias is clear and matches my allowed trading direction rules",
-    ],
-  },
-  {
-    title: "2. Entry & Exit Validation Against Session Rules",
-    items: [
-      "Entry setup matches one of my pre-defined strategy templates",
-      "Stop loss is placed beyond structure — not an arbitrary round number",
-      "Take profit is at the next key level with minimum acceptable R:R",
-      "This trade passes my TradifyApp entry checklist rule (if configured)",
-    ],
-  },
-  {
-    title: "3. Prop Firm Drawdown Awareness Check",
-    items: [
-      "Checked current drawdown distance in TradifyApp Prop Tracker",
-      "This trade's risk will NOT push me within 50% of my daily drawdown limit",
-      "Total open risk across all positions stays within max drawdown threshold",
-      "If trailing drawdown: verified high-water mark and current cushion",
-    ],
-  },
-  {
-    title: "4. Position Size & Risk Calculator Input",
-    items: [
-      "Calculated position size using TradifyApp risk calculator (not mental math)",
-      "Risk per trade is ≤ 2% of current drawdown allowance (not account balance)",
-      "No correlated positions open that double my effective exposure",
-      "Lot size matches my pre-committed session rule — no manual override",
-    ],
-  },
-  {
-    title: "5. Psychological & Emotional State Audit",
-    items: [
-      "Logged my pre-session mood in TradifyApp (calm / anxious / frustrated / confident)",
-      "Not revenge trading after a previous loss this session",
-      "Not FOMO entering because I missed the initial move",
-      "I slept enough, I'm not fatigued, and I can think clearly right now",
-    ],
-  },
-  {
-    title: "6. Behavioral Discipline Trigger Review",
-    items: [
-      "I have not exceeded my max trades per session rule",
-      "My session loss limit has NOT been hit — TradifyApp confirms green status",
-      "I am trading within my defined session hours (not outside my window)",
-      "This is a planned trade from my watchlist — not a spontaneous impulse entry",
-    ],
-  },
-];
+import { useTranslation } from "react-i18next";
 
 export default function PreTradeChecklist() {
+  const { t } = useTranslation("common", { keyPrefix: "checklist" });
+
+  const sections = [
+    {
+      title: t("section1Title"),
+      items: [t("section1Item1"), t("section1Item2"), t("section1Item3"), t("section1Item4")],
+    },
+    {
+      title: t("section2Title"),
+      items: [t("section2Item1"), t("section2Item2"), t("section2Item3"), t("section2Item4")],
+    },
+    {
+      title: t("section3Title"),
+      items: [t("section3Item1"), t("section3Item2"), t("section3Item3"), t("section3Item4")],
+    },
+    {
+      title: t("section4Title"),
+      items: [t("section4Item1"), t("section4Item2"), t("section4Item3"), t("section4Item4")],
+    },
+    {
+      title: t("section5Title"),
+      items: [t("section5Item1"), t("section5Item2"), t("section5Item3"), t("section5Item4")],
+    },
+    {
+      title: t("section6Title"),
+      items: [t("section6Item1"), t("section6Item2"), t("section6Item3"), t("section6Item4")],
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Free Pre-Trade Checklist for Disciplined Traders | TradifyApp"
-        description="Download the free pre-trade checklist used by disciplined traders. Covers HTF bias, entry validation, risk management, and psychology checks. Print and use before every trade."
+        title={t("seoTitle")}
+        description={t("seoDesc")}
         canonical="https://tradifyapp.com/checklist"
       />
 
@@ -74,7 +47,7 @@ export default function PreTradeChecklist() {
           <Link to="/">
             <Button variant="ghost" className="text-muted-foreground hover:text-foreground" data-testid="button-back-home">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
+              {t("btnBackHome")}
             </Button>
           </Link>
           <Button
@@ -83,19 +56,19 @@ export default function PreTradeChecklist() {
             data-testid="button-print-checklist"
           >
             <Printer className="mr-2 h-4 w-4" />
-            Print Checklist
+            {t("btnPrint")}
           </Button>
         </div>
 
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight uppercase mb-2 print:text-2xl">
-            Pre-Trade <span className="text-emerald-500">Discipline</span> Checklist
+            {t("headlinePart1")} <span className="text-emerald-500">{t("headlineDiscipline")}</span> {t("headlinePart2")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Complete every item before executing a trade. No exceptions.
+            {t("subtitle")}
           </p>
           <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-widest">
-            by TradifyApp — tradifyapp.com
+            {t("byline")}
           </p>
         </div>
 
@@ -126,15 +99,14 @@ export default function PreTradeChecklist() {
             <Shield className="text-emerald-500" size={28} />
           </div>
           <h3 className="text-lg font-black text-foreground uppercase tracking-widest mb-2">
-            This Checklist Is Automated Inside TradifyApp
+            {t("ctaTitle")}
           </h3>
           <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto leading-relaxed">
-            Every item you just checked is enforced automatically when you connect your MT5 account. 
-            Drawdown tracking, rule enforcement, position sizing, session limits — all running in real time.
+            {t("ctaDesc")}
           </p>
           <Link to="/signup" data-testid="link-checklist-signup">
             <Button className="bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs hover:bg-emerald-400 h-12 px-8" data-testid="button-checklist-signup">
-              Start Free — Your Rules. Enforced.
+              {t("ctaButton")}
             </Button>
           </Link>
         </div>

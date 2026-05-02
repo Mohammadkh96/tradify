@@ -60,6 +60,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "react-i18next";
 
 // Type for MT5 Account
 type MT5Account = {
@@ -77,6 +78,7 @@ type MT5Account = {
 import { Trophy as TrophyIcon, Flame, Star, Award as AwardIcon, ArrowRight } from "lucide-react";
 
 function AchievementsWidget() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery<any>({
@@ -102,8 +104,8 @@ function AchievementsWidget() {
             const def = defData.find((d: any) => d.key === key);
             if (def) {
               toast({
-                title: "Achievement Unlocked!",
-                description: `${def.name} — +${def.xpReward} XP`,
+                title: t("dashboard.achievementUnlockedToast"),
+                description: t("dashboard.achievementUnlockedDesc", { name: def.name, xp: def.xpReward }),
               });
             }
           }
@@ -140,10 +142,10 @@ function AchievementsWidget() {
       <div className="flex items-center justify-between mb-5">
         <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
           <TrophyIcon size={18} className="text-emerald-500" />
-          Achievements
+          {t("dashboard.achievements")}
         </h3>
         <Link to="/achievements" className="text-xs font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-1 hover:text-emerald-400" data-testid="link-view-all-achievements">
-          View All <ArrowRight size={12} />
+          {t("dashboard.viewAll")} <ArrowRight size={12} />
         </Link>
       </div>
 
@@ -151,9 +153,9 @@ function AchievementsWidget() {
         <div className="bg-background/50 rounded-xl p-4 border border-border">
           <div className="flex items-center gap-2 mb-1">
             <Star size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Level {level?.level || 1}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t("dashboard.level", { level: level?.level || 1 })}</span>
           </div>
-          <p className="text-sm font-bold text-foreground">{level?.name || "Beginner"}</p>
+          <p className="text-sm font-bold text-foreground">{level?.name || t("dashboard.beginner")}</p>
           <Progress value={level?.progress || 0} className="h-1 mt-2" />
           <p className="text-[10px] text-muted-foreground mt-1">{totalXp} XP</p>
         </div>
@@ -161,31 +163,31 @@ function AchievementsWidget() {
         <div className="bg-background/50 rounded-xl p-4 border border-border">
           <div className="flex items-center gap-2 mb-1">
             <Flame size={14} className={journalStreak > 0 ? "text-orange-500" : "text-muted-foreground"} />
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Journal Streak</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t("dashboard.journalStreak")}</span>
           </div>
-          <p className="text-xl font-black text-foreground">{journalStreak}<span className="text-xs text-muted-foreground ml-1">days</span></p>
+          <p className="text-xl font-black text-foreground">{journalStreak}<span className="text-xs text-muted-foreground ml-1">{t("dashboard.daysShort")}</span></p>
         </div>
 
         <div className="bg-background/50 rounded-xl p-4 border border-border">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp size={14} className={tradingStreak > 0 ? "text-emerald-500" : "text-muted-foreground"} />
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trading Streak</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t("dashboard.tradingStreak")}</span>
           </div>
-          <p className="text-xl font-black text-foreground">{tradingStreak}<span className="text-xs text-muted-foreground ml-1">days</span></p>
+          <p className="text-xl font-black text-foreground">{tradingStreak}<span className="text-xs text-muted-foreground ml-1">{t("dashboard.daysShort")}</span></p>
         </div>
 
         <div className="bg-background/50 rounded-xl p-4 border border-border">
           <div className="flex items-center gap-2 mb-1">
             <AwardIcon size={14} className="text-yellow-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Badges</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t("dashboard.badges")}</span>
           </div>
-          <p className="text-xl font-black text-foreground">{unlockedCount}<span className="text-xs text-muted-foreground ml-1">/ {achievements.length}</span></p>
+          <p className="text-xl font-black text-foreground">{unlockedCount}<span className="text-xs text-muted-foreground ml-1">{t("dashboard.ofCount", { count: achievements.length })}</span></p>
         </div>
       </div>
 
       {recentUnlocked.length > 0 && (
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Recent Achievements</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">{t("dashboard.recentAchievements")}</p>
           <div className="flex gap-3 flex-wrap">
             {recentUnlocked.map((ach: any) => (
               <div key={ach.key} className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-2">
@@ -202,6 +204,7 @@ function AchievementsWidget() {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
@@ -296,8 +299,8 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/compliance/score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/prop-firm'] });
       toast({
-        title: "Account Deleted",
-        description: "MT5 account and all associated data have been removed.",
+        title: t("dashboard.accountDeletedTitle"),
+        description: t("dashboard.accountDeletedDesc"),
       });
       setAccountToDelete(null);
     },
@@ -508,31 +511,31 @@ export default function Dashboard() {
 
   const stats = [
     { 
-      label: "Balance", 
+      label: t("dashboard.statBalance"), 
       value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.balance).toLocaleString()}` : "$0", 
       icon: <Wallet size={18} />, 
-      subtext: mt5?.status === "CONNECTED" ? "CONNECTED" : "OFFLINE",
+      subtext: mt5?.status === "CONNECTED" ? t("dashboard.connected") : t("dashboard.offline"),
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Equity", 
+      label: t("dashboard.statEquity"), 
       value: mt5?.status === "CONNECTED" && mt5.metrics ? `$${parseFloat(mt5.metrics.equity).toLocaleString()}` : "$0", 
       icon: <Activity size={18} />, 
-      subtext: mt5?.status === "CONNECTED" ? "CONNECTED" : "OFFLINE",
+      subtext: mt5?.status === "CONNECTED" ? t("dashboard.connected") : t("dashboard.offline"),
       trend: mt5?.status === "CONNECTED" ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Period P&L", 
+      label: t("dashboard.statPeriodPL"), 
       value: formatPl(filteredStats.totalPl), 
       icon: <DollarSign size={18} />, 
-      subtext: `${filteredStats.total} trades`,
+      subtext: t("dashboard.statTrades", { count: filteredStats.total }),
       trend: filteredStats.totalPl >= 0 ? "up" : "down" as "up" | "down"
     },
     { 
-      label: "Win Rate", 
+      label: t("dashboard.statWinRate"), 
       value: `${filteredStats.winRate}%`, 
       icon: <Percent size={18} />, 
-      subtext: `${filteredStats.wins}W / ${filteredStats.losses}L`,
+      subtext: t("dashboard.statWL", { wins: filteredStats.wins, losses: filteredStats.losses }),
       trend: parseFloat(filteredStats.winRate) >= 50 ? "up" : "down" as "up" | "down"
     },
   ];
@@ -544,12 +547,12 @@ export default function Dashboard() {
       .filter(point => isWithinDateRange(point.date))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5)
-      .map(t => ({
-        symbol: t.symbol,
-        netPl: t.netPl,
-        date: t.date,
-        source: t.source,
-        outcome: t.netPl > 0 ? "Win" : t.netPl < 0 ? "Loss" : "Break-even"
+      .map(tr => ({
+        symbol: tr.symbol,
+        netPl: tr.netPl,
+        date: tr.date,
+        source: tr.source,
+        outcome: tr.netPl > 0 ? "Win" : tr.netPl < 0 ? "Loss" : "Break-even"
       }));
   }, [equityCurveData, dateFilter, customStartDate, customEndDate]);
 
@@ -571,21 +574,21 @@ export default function Dashboard() {
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-2">
                   <LayoutDashboard className="text-emerald-500" />
-                  Trader Dashboard
+                  {t("dashboard.title")}
                 </h1>
                 {user?.foundingMember && <FoundingMemberBadge size="md" />}
               </div>
-              <p className="text-muted-foreground text-sm mt-1">Market Overview & Performance Metrics</p>
+              <p className="text-muted-foreground text-sm mt-1">{t("dashboard.subtitle")}</p>
             </div>
             {mt5?.status === "CONNECTED" ? (
               <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">MT5 Live Sync</span>
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">{t("dashboard.mt5LiveSync")}</span>
                 </div>
                 <div className="w-px h-5 bg-border" />
                 <div className="text-[10px] text-muted-foreground font-mono font-bold uppercase">
-                  ACTIVE
+                  {t("dashboard.active")}
                 </div>
               </div>
             ) : (
@@ -593,25 +596,25 @@ export default function Dashboard() {
                 <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">MT5 Offline</span>
+                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">{t("dashboard.mt5Offline")}</span>
                   </div>
                   {mt5?.lastSync && (
                     <>
                       <div className="w-px h-5 bg-border" />
                       <div className="text-[10px] text-muted-foreground font-mono font-bold">
-                        Last: {format(new Date(mt5.lastSync), 'MMM d, HH:mm')}
+                        {t("dashboard.lastSync")}: {format(new Date(mt5.lastSync), 'MMM d, HH:mm')}
                       </div>
                     </>
                   )}
                 </div>
                 {mt5?.error && (
                   <span className="text-[9px] text-amber-500 font-bold uppercase tracking-tighter pr-4">
-                    Status: {mt5.error}
+                    {t("dashboard.statusLabel")}: {mt5.error}
                   </span>
                 )}
                 {!mt5?.lastSync && (
                   <Link to="/traders-hub">
-                    <Button variant="ghost" className="text-[10px] text-emerald-500 h-auto p-0 font-bold uppercase">Setup Bridge</Button>
+                    <Button variant="ghost" className="text-[10px] text-emerald-500 h-auto p-0 font-bold uppercase">{t("dashboard.setupBridge")}</Button>
                   </Link>
                 )}
               </div>
@@ -631,7 +634,7 @@ export default function Dashboard() {
                   )}
                   data-testid={`dashboard-filter-${filter}`}
                 >
-                  {filter === 'all' ? 'All Time' : filter === '7days' ? '7 Days' : filter === '30days' ? '30 Days' : filter}
+                  {filter === 'all' ? t("dashboard.filterAll") : filter === '7days' ? t("dashboard.filter7days") : filter === '30days' ? t("dashboard.filter30days") : filter === 'today' ? t("dashboard.filterToday") : filter}
                 </Button>
               ))}
               <Popover>
@@ -646,15 +649,15 @@ export default function Dashboard() {
                     data-testid="dashboard-filter-custom"
                   >
                     <Calendar className="h-3 w-3 mr-1" />
-                    Custom
+                    {t("dashboard.custom")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-4" align="end">
                   <div className="space-y-3">
-                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Date Range</div>
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("dashboard.customDateRange")}</div>
                     <div className="flex flex-col gap-2">
                       <div>
-                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">From</label>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">{t("dashboard.from")}</label>
                         <Input
                           type="date"
                           value={customStartDate}
@@ -664,7 +667,7 @@ export default function Dashboard() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">To</label>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">{t("dashboard.to")}</label>
                         <Input
                           type="date"
                           value={customEndDate}
@@ -680,7 +683,7 @@ export default function Dashboard() {
                       className="w-full bg-emerald-500 text-white text-xs font-bold uppercase"
                       data-testid="dashboard-button-apply-custom-date"
                     >
-                      Apply Filter
+                      {t("dashboard.applyFilter")}
                     </Button>
                   </div>
                 </PopoverContent>
@@ -701,7 +704,7 @@ export default function Dashboard() {
                     className="w-[180px] text-xs border-border bg-background"
                     data-testid="mt5-account-selector"
                   >
-                    <SelectValue placeholder="Select MT5 Account">
+                    <SelectValue placeholder={t("dashboard.selectMT5Account")}>
                       {activeAccount ? (
                         <span className="flex items-center gap-2">
                           <CircleCheck className="h-3 w-3 text-emerald-500" />
@@ -713,7 +716,7 @@ export default function Dashboard() {
                           {mt5Accounts[0].accountName || mt5Accounts[0].accountNumber}
                         </span>
                       ) : (
-                        <span>Select Account</span>
+                        <span>{t("dashboard.selectAccount")}</span>
                       )}
                     </SelectValue>
                   </SelectTrigger>
@@ -750,19 +753,19 @@ export default function Dashboard() {
                   </Button>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete MT5 Account?</AlertDialogTitle>
+                      <AlertDialogTitle>{t("dashboard.deleteMT5AccountTitle")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete account #{accountToDelete} and all its trade history, equity snapshots, prop firm daily stats, and synced data. This action cannot be undone.
+                        {t("dashboard.deleteMT5AccountDesc", { account: accountToDelete })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t("dashboard.cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         className="bg-destructive text-destructive-foreground"
                         onClick={() => accountToDelete && deleteAccountMutation.mutate(accountToDelete)}
                         data-testid="button-confirm-delete-account"
                       >
-                        {deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
+                        {deleteAccountMutation.isPending ? t("dashboard.deleting") : t("dashboard.deleteAccount")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -814,24 +817,24 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                   <Activity size={18} className="text-emerald-500" />
-                  Equity Curve
+                  {t("dashboard.equityCurve")}
                 </h3>
-                <p className="text-xs text-muted-foreground">Growth performance over time</p>
+                <p className="text-xs text-muted-foreground">{t("dashboard.equityCurveDesc")}</p>
               </div>
             </div>
             <div className="h-[300px] w-full relative">
               {chartData.length < 2 && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/20 backdrop-blur-[1px] rounded-xl border border-dashed border-border/50">
                   <Activity className="text-muted-foreground/30 mb-2 animate-pulse" size={32} />
-                  <p className="text-xs text-muted-foreground font-bold uppercase tracking-tighter">Awaiting trade history</p>
-                  <span className="text-[9px] text-muted-foreground/50 mt-1 italic">Curve populates from cumulative trade P&L</span>
+                  <p className="text-xs text-muted-foreground font-bold uppercase tracking-tighter">{t("dashboard.awaitingHistory")}</p>
+                  <span className="text-[9px] text-muted-foreground/50 mt-1 italic">{t("dashboard.curveHint")}</span>
                 </div>
               )}
               {!isPro && chartData.length >= 30 && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm rounded-xl">
                   <Lock className="text-emerald-500 mb-2" size={24} />
-                  <p className="text-sm font-bold text-foreground uppercase tracking-widest">30-Day Limit (FREE)</p>
-                  <p className="text-xs text-muted-foreground mt-1 uppercase font-bold">Upgrade to PRO for full history</p>
+                  <p className="text-sm font-bold text-foreground uppercase tracking-widest">{t("dashboard.day30Limit")}</p>
+                  <p className="text-xs text-muted-foreground mt-1 uppercase font-bold">{t("dashboard.upgradeForHistory")}</p>
                 </div>
               )}
               <ResponsiveContainer width="100%" height="100%">
@@ -876,7 +879,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <BarChart3 size={18} className="text-emerald-500" />
-                AI Instrument Analysis
+                {t("dashboard.aiInstrumentAnalysis")}
               </h3>
             </div>
             
@@ -887,7 +890,7 @@ export default function Dashboard() {
                   className="w-full bg-background/50 border-border"
                   data-testid="select-instrument"
                 >
-                  <SelectValue placeholder="Select an instrument to analyze..." />
+                  <SelectValue placeholder={t("dashboard.selectInstrumentPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {instrumentsData?.symbols && instrumentsData.symbols.length > 0 ? (
@@ -897,7 +900,7 @@ export default function Dashboard() {
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="none" disabled>No instruments found</SelectItem>
+                    <SelectItem value="none" disabled>{t("dashboard.noInstrumentsFound")}</SelectItem>
                   )}
                 </SelectContent>
               </Select>
@@ -907,7 +910,7 @@ export default function Dashboard() {
               {instrumentAnalysisMutation.isPending ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-2">
                   <div className="animate-spin text-emerald-500"><RefreshCw size={24} /></div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Analyzing {selectedInstrument}...</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{t("dashboard.analyzing", { symbol: selectedInstrument })}</p>
                 </div>
               ) : instrumentAnalysis?.analysisText ? (
                 <div className="space-y-4">
@@ -915,15 +918,15 @@ export default function Dashboard() {
                   {instrumentAnalysis.tradeCount > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                       <div className="bg-background/50 p-2.5 rounded-lg border border-border">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">Trades</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">{t("dashboard.colTrades")}</span>
                         <span className="text-sm font-black text-foreground">{instrumentAnalysis.tradeCount}</span>
                       </div>
                       <div className="bg-background/50 p-2.5 rounded-lg border border-border">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">Win Rate</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">{t("dashboard.colWinRate")}</span>
                         <span className="text-sm font-black text-emerald-500">{instrumentAnalysis.winRate}%</span>
                       </div>
                       <div className="bg-background/50 p-2.5 rounded-lg border border-border">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">Avg P&L</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">{t("dashboard.colAvgPL")}</span>
                         <span className={cn(
                           "text-sm font-black",
                           parseFloat(instrumentAnalysis.avgProfitLoss) >= 0 ? "text-emerald-500" : "text-red-500"
@@ -932,7 +935,7 @@ export default function Dashboard() {
                         </span>
                       </div>
                       <div className="bg-background/50 p-2.5 rounded-lg border border-border">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">Total P&L</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">{t("dashboard.colTotalPL")}</span>
                         <span className={cn(
                           "text-sm font-black",
                           parseFloat(instrumentAnalysis.totalProfitLoss) >= 0 ? "text-emerald-500" : "text-red-500"
@@ -952,20 +955,20 @@ export default function Dashboard() {
                   
                   <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-2.5">
                     <p className="text-[9px] text-muted-foreground/60 font-bold uppercase tracking-tighter">
-                      Performance review only. Not financial advice.
+                      {t("dashboard.aiDisclaimer")}
                     </p>
                   </div>
                 </div>
               ) : selectedInstrument ? (
                 <div className="py-6 text-center">
-                  <p className="text-xs text-muted-foreground italic">Select an instrument to see AI-powered analysis of your trading performance.</p>
+                  <p className="text-xs text-muted-foreground italic">{t("dashboard.aiInstrumentHint")}</p>
                 </div>
               ) : (
                 <div className="py-6 text-center">
                   <BarChart3 size={32} className="text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground italic">Select an instrument from your MT5 history to analyze your performance.</p>
+                  <p className="text-xs text-muted-foreground italic">{t("dashboard.aiSelectInstrumentHint")}</p>
                   {(!instrumentsData?.symbols || instrumentsData.symbols.length === 0) && (
-                    <p className="text-[10px] text-muted-foreground/50 mt-2">Connect MT5 and sync trades to unlock this feature.</p>
+                    <p className="text-[10px] text-muted-foreground/50 mt-2">{t("dashboard.aiConnectMT5Hint")}</p>
                   )}
                 </div>
               )}
@@ -974,8 +977,8 @@ export default function Dashboard() {
             {!isPro && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
                 <Lock className="text-emerald-500 mb-3" size={24} />
-                <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">AI Analyst Locked</h4>
-                <p className="text-[10px] text-muted-foreground mb-4">Subscribe to PRO to unlock instrument analysis.</p>
+                <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">{t("dashboard.aiAnalystLocked")}</h4>
+                <p className="text-[10px] text-muted-foreground mb-4">{t("dashboard.aiAnalystLockedDesc")}</p>
               </div>
             )}
           </div>
@@ -986,20 +989,20 @@ export default function Dashboard() {
             </div>
             <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
               <ShieldCheck size={18} className="text-emerald-500" />
-              Performance Intelligence
+              {t("dashboard.performanceIntelligence")}
             </h3>
             
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-background/50 p-3 rounded-xl border border-border">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Best Session</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.bestSession")}</span>
                   <div className="flex items-center gap-2">
                     <Clock size={12} className="text-emerald-500" />
                     <span className="text-xs font-bold text-foreground">{intelligence?.bestSession || "..."}</span>
                   </div>
                 </div>
                 <div className="bg-background/50 p-3 rounded-xl border border-border">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Best Day</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.bestDay")}</span>
                   <div className="flex items-center gap-2">
                     <Calendar size={12} className="text-emerald-500" />
                     <span className="text-xs font-bold text-foreground">{intelligence?.bestDay || "..."}</span>
@@ -1008,7 +1011,7 @@ export default function Dashboard() {
               </div>
 
               <div className="bg-background/50 p-3 rounded-xl border border-border">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Profit Factor</span>
+                <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.profitFactor")}</span>
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-black text-emerald-500">{filteredStats.profitFactor}</span>
                   <div className="h-1.5 w-24 bg-secondary rounded-full overflow-hidden">
@@ -1019,11 +1022,11 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Total Trades</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.totalTrades")}</span>
                   <span className="text-sm font-black text-foreground">{filteredStats.total}</span>
                 </div>
                 <div className="p-3 sm:text-right">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Expectancy</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.expectancy")}</span>
                   <span className={cn("text-sm font-black", filteredStats.expectancy >= 0 ? "text-emerald-500" : "text-rose-500")}>
                     ${filteredStats.expectancy.toFixed(2)}
                   </span>
@@ -1034,8 +1037,8 @@ export default function Dashboard() {
             {!isPro && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
                 <Lock className="text-emerald-500 mb-3" size={24} />
-                <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">Intelligence Layer Locked</h4>
-                <p className="text-[10px] text-muted-foreground mb-4">Subscribe to PRO to unlock advanced session and expectancy analytics.</p>
+                <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">{t("dashboard.intelligenceLocked")}</h4>
+                <p className="text-[10px] text-muted-foreground mb-4">{t("dashboard.intelligenceLockedDesc")}</p>
               </div>
             )}
           </div>
@@ -1047,7 +1050,7 @@ export default function Dashboard() {
             </div>
             <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
               <CheckCircle2 size={18} className="text-emerald-500" />
-              Strategy Compliance
+              {t("dashboard.strategyCompliance")}
             </h3>
             
             {isComplianceLoading ? (
@@ -1109,19 +1112,19 @@ export default function Dashboard() {
                       {complianceScore.trendDirection === 'improving' && (
                         <>
                           <ArrowUp size={12} className="text-emerald-500" />
-                          <span className="text-sm font-bold text-emerald-500" data-testid="text-compliance-trend">Improving</span>
+                          <span className="text-sm font-bold text-emerald-500" data-testid="text-compliance-trend">{t("dashboard.improving")}</span>
                         </>
                       )}
                       {complianceScore.trendDirection === 'declining' && (
                         <>
                           <ArrowDown size={12} className="text-rose-500" />
-                          <span className="text-sm font-bold text-rose-500" data-testid="text-compliance-trend">Declining</span>
+                          <span className="text-sm font-bold text-rose-500" data-testid="text-compliance-trend">{t("dashboard.declining")}</span>
                         </>
                       )}
                       {complianceScore.trendDirection === 'stable' && (
                         <>
                           <Minus size={12} className="text-muted-foreground" />
-                          <span className="text-sm font-bold text-muted-foreground" data-testid="text-compliance-trend">Stable</span>
+                          <span className="text-sm font-bold text-muted-foreground" data-testid="text-compliance-trend">{t("dashboard.stable")}</span>
                         </>
                       )}
                     </div>
@@ -1131,17 +1134,17 @@ export default function Dashboard() {
                 {/* Trades Evaluated */}
                 <div className="text-center pt-2 border-t border-border">
                   <span className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">
-                    Based on last {complianceScore.tradesEvaluated} evaluated trades
+                    {t("dashboard.basedOnLastTrades", { count: complianceScore.tradesEvaluated })}
                   </span>
                 </div>
               </div>
             ) : (
               <div className="py-8 text-center space-y-2">
                 <CheckCircle2 size={32} className="mx-auto text-muted-foreground/30" />
-                <p className="text-xs text-muted-foreground">No active strategy found</p>
+                <p className="text-xs text-muted-foreground">{t("dashboard.noActiveStrategy")}</p>
                 <Link to="/strategies">
                   <Button variant="ghost" className="text-[10px] font-bold uppercase text-emerald-500 hover:bg-transparent" data-testid="link-create-strategy">
-                    Create Strategy
+                    {t("dashboard.createStrategy")}
                   </Button>
                 </Link>
               </div>
@@ -1154,20 +1157,20 @@ export default function Dashboard() {
             </div>
             <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
               <Target size={18} className="text-emerald-500" />
-              Trade Statistics
+              {t("dashboard.tradeStatistics")}
             </h3>
             
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-background/50 p-3 rounded-xl border border-border">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Avg Win</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.avgWin")}</span>
                   <div className="flex items-center gap-2">
                     <TrendingUp size={12} className="text-emerald-500" />
                     <span className="text-xs font-bold text-emerald-500">+${filteredStats.avgWin.toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="bg-background/50 p-3 rounded-xl border border-border">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Avg Loss</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.avgLoss")}</span>
                   <div className="flex items-center gap-2">
                     <TrendingDown size={12} className="text-rose-500" />
                     <span className="text-xs font-bold text-rose-500">-${filteredStats.avgLoss.toFixed(2)}</span>
@@ -1177,26 +1180,26 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Best Trade</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.bestTrade")}</span>
                   <span className="text-sm font-black text-emerald-500">+${filteredStats.bestTrade.toFixed(2)}</span>
                 </div>
                 <div className="bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Worst Trade</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">{t("dashboard.worstTrade")}</span>
                   <span className="text-sm font-black text-rose-500">${filteredStats.worstTrade.toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="border-t border-border pt-4 mt-2">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Wins</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">{t("dashboard.wins")}</span>
                   <span className="text-xs font-mono font-bold text-emerald-500">{filteredStats.wins}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Losses</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">{t("dashboard.losses")}</span>
                   <span className="text-xs font-mono font-bold text-rose-500">{filteredStats.losses}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Break-even</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">{t("dashboard.breakeven")}</span>
                   <span className="text-xs font-mono font-bold text-muted-foreground">{filteredStats.breakeven}</span>
                 </div>
               </div>
@@ -1258,7 +1261,7 @@ export default function Dashboard() {
           <div className="bg-card border border-border rounded-2xl p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
               <Percent size={18} className="text-emerald-500" />
-              Open Positions
+              {t("dashboard.openPositions")}
             </h3>
             <div className="space-y-4 overflow-y-auto max-h-[400px]">
               {mt5?.metrics?.positions && mt5.metrics.positions.length > 0 ? (
@@ -1266,11 +1269,11 @@ export default function Dashboard() {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="text-muted-foreground border-b border-border">
-                        <th className="pb-2 font-medium">Symbol</th>
-                        <th className="pb-2 font-medium">Type</th>
-                        <th className="pb-2 font-medium text-right">Lots</th>
-                        <th className="pb-2 font-medium text-right">Entry</th>
-                        <th className="pb-2 font-medium text-right font-bold text-foreground">P&L</th>
+                        <th className="pb-2 font-medium">{t("dashboard.colSymbol")}</th>
+                        <th className="pb-2 font-medium">{t("dashboard.colType")}</th>
+                        <th className="pb-2 font-medium text-right">{t("dashboard.colLots")}</th>
+                        <th className="pb-2 font-medium text-right">{t("dashboard.colEntry")}</th>
+                        <th className="pb-2 font-medium text-right font-bold text-foreground">{t("dashboard.colPL")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -1301,17 +1304,17 @@ export default function Dashboard() {
               ) : (
                 <div className="py-10 flex flex-col items-center justify-center text-muted-foreground opacity-50">
                   <Activity size={32} className="mb-2" />
-                  <p className="text-xs">No active open positions</p>
+                  <p className="text-xs">{t("dashboard.noOpenPositions")}</p>
                 </div>
               )}
             </div>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-foreground mb-6">Account Health</h3>
+            <h3 className="text-lg font-bold text-foreground mb-6">{t("dashboard.accountHealth")}</h3>
             <div className="space-y-4">
               <div className="flex justify-between p-3 bg-background rounded-xl border border-border">
-                <span className="text-xs text-muted-foreground">Margin Level</span>
+                <span className="text-xs text-muted-foreground">{t("dashboard.marginLevel")}</span>
                 <span className={cn(
                   "text-sm font-mono font-bold",
                   parseFloat(mt5?.metrics?.marginLevel || "0") > 300 ? "text-emerald-500" :
@@ -1321,13 +1324,13 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="flex justify-between p-3 bg-background rounded-xl border border-border">
-                <span className="text-xs text-muted-foreground">Free Margin %</span>
+                <span className="text-xs text-muted-foreground">{t("dashboard.freeMarginPct")}</span>
                 <span className="text-sm font-mono font-bold text-emerald-500">
                   {mt5?.metrics ? ((parseFloat(mt5.metrics.freeMargin) / parseFloat(mt5.metrics.equity)) * 100).toFixed(1) : "0"}%
                 </span>
               </div>
               <div className="flex justify-between p-3 bg-background rounded-xl border border-border">
-                <span className="text-xs text-muted-foreground">Margin Used</span>
+                <span className="text-xs text-muted-foreground">{t("dashboard.marginUsed")}</span>
                 <span className="text-sm font-mono font-bold text-foreground">
                   ${parseFloat(mt5?.metrics?.margin || "0").toLocaleString()}
                 </span>
@@ -1336,11 +1339,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-foreground mb-6">Recent Entries</h3>
+            <h3 className="text-lg font-bold text-foreground mb-6">{t("dashboard.recentEntries")}</h3>
             <div className="space-y-4">
               {recentTrades.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  No trades in selected period
+                  {t("dashboard.noTradesInPeriod")}
                 </div>
               ) : (
                 recentTrades.map((trade, idx) => (
@@ -1355,7 +1358,7 @@ export default function Dashboard() {
                         {trade.symbol?.substring(0, 3) || "---"}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-foreground">{trade.symbol || "Unknown"}</div>
+                        <div className="text-xs font-bold text-foreground">{trade.symbol || t("dashboard.unknown")}</div>
                         <div className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">
                           {trade.source} • {format(new Date(trade.date), 'MMM d')}
                         </div>
@@ -1374,14 +1377,14 @@ export default function Dashboard() {
                         trade.outcome === "Loss" ? "bg-rose-500/10 text-rose-500" :
                         "bg-muted text-muted-foreground"
                       )}>
-                        {trade.outcome.toUpperCase()}
+                        {trade.outcome === "Win" ? t("dashboard.outcomeWin") : trade.outcome === "Loss" ? t("dashboard.outcomeLoss") : t("dashboard.outcomeBreakeven")}
                       </div>
                     </div>
                   </div>
                 ))
               )}
               <Link to="/journal">
-                <Button variant="ghost" className="w-full text-[10px] font-bold uppercase text-muted-foreground hover:text-emerald-500">View Full Journal →</Button>
+                <Button variant="ghost" className="w-full text-[10px] font-bold uppercase text-muted-foreground hover:text-emerald-500">{t("dashboard.viewFullJournal")}</Button>
               </Link>
             </div>
           </div>

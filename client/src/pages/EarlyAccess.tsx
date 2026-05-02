@@ -5,29 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { SEO } from "@/components/SEO";
-
-const benefits = [
-  {
-    icon: Zap,
-    title: "1 Month Free Pro Access",
-    description: "Full access to Pro features automatically granted when you sign up. No upfront commitment required."
-  },
-  {
-    icon: Gift,
-    title: "30% Lifetime Discount",
-    description: "Secure a 30% discounted subscription rate, maintained for as long as your subscription remains active."
-  },
-  {
-    icon: Users,
-    title: "Influence the Roadmap",
-    description: "Provide structured feedback, help prioritize features, and contribute to the product's early development cycle."
-  },
-  {
-    icon: Shield,
-    title: "Permanent Founder Badge",
-    description: "A permanent founding member identifier displayed on your profile — locked in forever."
-  }
-];
+import { useTranslation, Trans } from "react-i18next";
 
 interface FounderCount {
   claimed: number;
@@ -37,6 +15,7 @@ interface FounderCount {
 }
 
 export default function EarlyAccess() {
+  const { t } = useTranslation("common", { keyPrefix: "earlyAccess" });
   const [founderCount, setFounderCount] = useState<FounderCount | null>(null);
 
   useEffect(() => {
@@ -48,29 +27,36 @@ export default function EarlyAccess() {
 
   const progressPct = founderCount ? (founderCount.claimed / founderCount.total) * 100 : 0;
 
+  const benefits = [
+    { icon: Zap, title: t("benefit1Title"), description: t("benefit1Desc") },
+    { icon: Gift, title: t("benefit2Title"), description: t("benefit2Desc") },
+    { icon: Users, title: t("benefit3Title"), description: t("benefit3Desc") },
+    { icon: Shield, title: t("benefit4Title"), description: t("benefit4Desc") },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
-      <SEO 
-        title="Founding Member Program - Early Access | Tradify"
-        description="Join Tradify's Founding Member program. Get 1 month free Pro access, 30% lifetime discount, influence the roadmap, and earn your permanent founder badge. First 500 users only."
+      <SEO
+        title={t("seoTitle")}
+        description={t("seoDesc")}
         canonical="https://tradifyapp.com/early-access"
       />
       <PublicNavbar />
-      
+
       <div className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-1.5 mb-6">
               <Sparkles className="h-4 w-4 text-amber-400" />
-              <span className="text-amber-400 text-sm font-bold uppercase tracking-widest">Founding Member Program</span>
+              <span className="text-amber-400 text-sm font-bold uppercase tracking-widest">{t("programBadge")}</span>
             </div>
-            
+
             <h1 className="text-4xl md:text-5xl font-black text-foreground uppercase italic tracking-tighter mb-6">
-              Founding Member <span className="text-emerald-500">Access</span>
+              {t("headlinePart1")} <span className="text-emerald-500">{t("headlineHighlight")}</span>
             </h1>
-            
+
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-              The first <span className="text-foreground font-bold">500 users</span> who sign up automatically become Founding Members — no form, no waitlist. Just create your account before spots run out.
+              <Trans i18nKey="subheading" ns="earlyAccess" components={{ strong: <span className="text-foreground font-bold" /> }} />
             </p>
           </div>
 
@@ -82,14 +68,14 @@ export default function EarlyAccess() {
                 <h3 className="text-2xl font-black text-foreground uppercase tracking-tight mb-1">
                   {founderCount
                     ? founderCount.isFull
-                      ? "All Spots Claimed"
-                      : `${founderCount.remaining} Spots Remaining`
-                    : "Loading..."}
+                      ? t("allClaimed")
+                      : t("spotsRemaining", { count: founderCount.remaining })
+                    : t("loading")}
                 </h3>
                 <p className="text-muted-foreground text-sm">
                   {founderCount
-                    ? `${founderCount.claimed} of ${founderCount.total} founding member spots claimed`
-                    : "Fetching live count..."}
+                    ? t("spotsClaimedOf", { claimed: founderCount.claimed, total: founderCount.total })
+                    : t("fetchingCount")}
                 </p>
               </div>
 
@@ -97,7 +83,7 @@ export default function EarlyAccess() {
               <div className="mb-8">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
                   <span>0</span>
-                  <span>{founderCount ? Math.round(progressPct) : 0}% Claimed</span>
+                  <span>{t("percentClaimed", { percent: founderCount ? Math.round(progressPct) : 0 })}</span>
                   <span>500</span>
                 </div>
                 <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
@@ -108,37 +94,37 @@ export default function EarlyAccess() {
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-[10px] text-amber-500 font-black uppercase tracking-widest">
-                    {founderCount ? founderCount.claimed : "—"} claimed
+                    {t("claimedLabel", { count: founderCount ? founderCount.claimed : "—" })}
                   </span>
                   <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                    {founderCount ? founderCount.remaining : "—"} left
+                    {t("leftLabel", { count: founderCount ? founderCount.remaining : "—" })}
                   </span>
                 </div>
               </div>
 
               {founderCount?.isFull ? (
                 <div className="text-center">
-                  <p className="text-muted-foreground text-sm mb-4">The founding member program is now closed. You can still create a free account.</p>
+                  <p className="text-muted-foreground text-sm mb-4">{t("fullDesc")}</p>
                   <Link to="/signup">
                     <Button className="bg-muted text-foreground font-black uppercase tracking-widest px-10 h-12" data-testid="button-signup-after-cap">
-                      Create Free Account <ArrowRight className="ml-2 h-4 w-4" />
+                      {t("btnSignupAfterCap")} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                 </div>
               ) : (
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-5">
-                    No email submission needed — just sign up and founding member status is <span className="text-amber-500 font-bold">applied automatically</span>.
+                    <Trans i18nKey="noEmailNeeded" ns="earlyAccess" components={{ strong: <span className="text-amber-500 font-bold" /> }} />
                   </p>
                   <Link to="/signup">
                     <Button className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-widest text-sm px-10 h-14 shadow-xl shadow-amber-500/20" data-testid="button-claim-founding-spot">
                       <Crown className="mr-2 h-4 w-4" />
-                      Claim Your Founding Spot
+                      {t("btnClaimSpot")}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                   <p className="text-[10px] text-muted-foreground mt-3 font-bold uppercase tracking-widest">
-                    Free to start · No credit card required
+                    {t("freeNoCard")}
                   </p>
                 </div>
               )}
@@ -166,9 +152,9 @@ export default function EarlyAccess() {
 
           <div className="text-center">
             <p className="text-muted-foreground text-sm">
-              Already have an account?{" "}
+              {t("alreadyHaveAccount")}{" "}
               <Link to="/login" className="text-emerald-500 font-bold hover:underline">
-                Sign in
+                {t("signIn")}
               </Link>
             </p>
           </div>
@@ -184,13 +170,13 @@ export default function EarlyAccess() {
             <span className="font-black text-xl text-foreground uppercase italic tracking-tighter">TRADIFY</span>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Trading Discipline Platform — Your Rules. Enforced.
+            {t("footerTagline")}
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Terms</Link>
-            <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Privacy</Link>
-            <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Risk Disclaimer</Link>
-            <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">Cookie Policy</Link>
+            <Link to="/terms" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("linkTerms")}</Link>
+            <Link to="/privacy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("linkPrivacy")}</Link>
+            <Link to="/risk-disclaimer" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("linkRiskDisclaimer")}</Link>
+            <Link to="/cookie-policy" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-emerald-500 transition-colors">{t("linkCookiePolicy")}</Link>
           </div>
         </div>
       </footer>

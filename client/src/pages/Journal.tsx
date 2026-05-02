@@ -15,31 +15,32 @@ import CsvImportDialog from "@/components/CsvImportDialog";
 import { useSampleMode } from "@/hooks/useSampleMode";
 import { getSampleTrades } from "@/lib/sampleData";
 import { SampleDataBanner } from "@/components/SampleDataBanner";
+import { useTranslation } from "react-i18next";
 
 const MOOD_OPTIONS = [
-  { value: "confident", label: "Confident", color: "text-emerald-500" },
-  { value: "calm", label: "Calm", color: "text-blue-400" },
-  { value: "neutral", label: "Neutral", color: "text-muted-foreground" },
-  { value: "anxious", label: "Anxious", color: "text-amber-500" },
-  { value: "fearful", label: "Fearful", color: "text-orange-500" },
-  { value: "greedy", label: "Greedy", color: "text-rose-500" },
-  { value: "frustrated", label: "Frustrated", color: "text-red-400" },
-  { value: "revenge", label: "Revenge", color: "text-red-600" },
+  { value: "confident", labelKey: "journal.moodConfident", color: "text-emerald-500" },
+  { value: "calm", labelKey: "journal.moodCalm", color: "text-blue-400" },
+  { value: "neutral", labelKey: "journal.moodNeutral", color: "text-muted-foreground" },
+  { value: "anxious", labelKey: "journal.moodAnxious", color: "text-amber-500" },
+  { value: "fearful", labelKey: "journal.moodFearful", color: "text-orange-500" },
+  { value: "greedy", labelKey: "journal.moodGreedy", color: "text-rose-500" },
+  { value: "frustrated", labelKey: "journal.moodFrustrated", color: "text-red-400" },
+  { value: "revenge", labelKey: "journal.moodRevenge", color: "text-red-600" },
 ];
 
 const MISTAKE_OPTIONS = [
-  { value: "none", label: "No Mistake" },
-  { value: "early_entry", label: "Early Entry" },
-  { value: "late_entry", label: "Late Entry" },
-  { value: "no_stop_loss", label: "No Stop Loss" },
-  { value: "moved_stop_loss", label: "Moved Stop Loss" },
-  { value: "oversized", label: "Oversized Position" },
-  { value: "fomo", label: "FOMO Trade" },
-  { value: "revenge_trade", label: "Revenge Trade" },
-  { value: "ignored_rules", label: "Ignored Rules" },
-  { value: "poor_risk_reward", label: "Poor R:R" },
-  { value: "early_exit", label: "Early Exit" },
-  { value: "overtrading", label: "Overtrading" },
+  { value: "none", labelKey: "journal.mistakeNone" },
+  { value: "early_entry", labelKey: "journal.mistakeEarlyEntry" },
+  { value: "late_entry", labelKey: "journal.mistakeLateEntry" },
+  { value: "no_stop_loss", labelKey: "journal.mistakeNoStopLoss" },
+  { value: "moved_stop_loss", labelKey: "journal.mistakeMovedStopLoss" },
+  { value: "oversized", labelKey: "journal.mistakeOversized" },
+  { value: "fomo", labelKey: "journal.mistakeFomo" },
+  { value: "revenge_trade", labelKey: "journal.mistakeRevenge" },
+  { value: "ignored_rules", labelKey: "journal.mistakeIgnoredRules" },
+  { value: "poor_risk_reward", labelKey: "journal.mistakePoorRR" },
+  { value: "early_exit", labelKey: "journal.mistakeEarlyExit" },
+  { value: "overtrading", labelKey: "journal.mistakeOvertrading" },
 ];
 
 type MT5Account = {
@@ -53,6 +54,7 @@ type MT5Account = {
 };
 
 export default function Journal() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: user } = useQuery<any>({
     queryKey: ["/api/user"],
@@ -279,7 +281,7 @@ export default function Journal() {
     return { total, winRate, netPl, wins, losses, breakeven, profitFactor, avgWin, avgLoss, expectancy };
   }, [filteredTrades]);
 
-  const statsDerivedLabel = "Derived from history";
+  const statsDerivedLabel = t("journal.derivedFromHistory");
   
   const TRADES_PER_PAGE = 30;
   const [visibleCount, setVisibleCount] = useState(TRADES_PER_PAGE);
@@ -293,16 +295,16 @@ export default function Journal() {
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
         {sampleMode.active && (
-          <SampleDataBanner surface="your trade journal" />
+          <SampleDataBanner surface={t("journal.surfaceJournal")} />
         )}
         <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center justify-between w-full md:w-auto">
             <div>
               <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
                 <HistoryIcon className="text-emerald-500" />
-                Trade Journal
+                {t("journal.title")}
               </h1>
-              <p className="text-muted-foreground mt-1">Institutional-grade performance logging</p>
+              <p className="text-muted-foreground mt-1">{t("journal.subtitle")}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -319,14 +321,14 @@ export default function Journal() {
                   className="w-[200px] text-xs border-border bg-card"
                   data-testid="journal-mt5-account-selector"
                 >
-                  <SelectValue placeholder="Select MT5 Account">
+                  <SelectValue placeholder={t("journal.selectMT5Account")}>
                     <span className="flex items-center gap-2">
                       <Monitor size={12} className="text-cyan-400" />
                       {activeAccount
-                        ? (activeAccount.accountName || `Account ${activeAccount.accountNumber}`)
+                        ? (activeAccount.accountName || t("journal.accountLabel", { number: activeAccount.accountNumber }))
                         : mt5Accounts[0]
-                          ? (mt5Accounts[0].accountName || `Account ${mt5Accounts[0].accountNumber}`)
-                          : "Select Account"}
+                          ? (mt5Accounts[0].accountName || t("journal.accountLabel", { number: mt5Accounts[0].accountNumber }))
+                          : t("journal.selectAccount")}
                     </span>
                   </SelectValue>
                 </SelectTrigger>
@@ -339,7 +341,7 @@ export default function Journal() {
                     >
                       <div className="flex flex-col">
                         <span className="font-medium">
-                          {account.accountName || `Account ${account.accountNumber}`}
+                          {account.accountName || t("journal.accountLabel", { number: account.accountNumber })}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
                           #{account.accountNumber} {account.broker ? `- ${account.broker}` : ""}
@@ -353,7 +355,7 @@ export default function Journal() {
             {!isPaidUser && (
               <Link to="/pricing">
                 <Button variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
-                  Upgrade to PRO
+                  {t("journal.upgradeToPro")}
                 </Button>
               </Link>
             )}
@@ -370,7 +372,7 @@ export default function Journal() {
                   )}
                   data-testid={`filter-${filter}`}
                 >
-                  {filter === 'all' ? 'All Time' : filter === 'today' ? 'Today' : filter === '7days' ? '7 Days' : filter === '30days' ? '30 Days' : filter}
+                  {filter === 'all' ? t("journal.filterAll") : filter === 'today' ? t("journal.filterToday") : filter === '7days' ? t("journal.filter7days") : filter === '30days' ? t("journal.filter30days") : filter}
                 </Button>
               ))}
               <Popover>
@@ -385,15 +387,15 @@ export default function Journal() {
                     data-testid="filter-custom"
                   >
                     <Calendar className="h-3 w-3 mr-1" />
-                    Custom
+                    {t("journal.custom")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-4" align="end">
                   <div className="space-y-3">
-                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Date Range</div>
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("journal.customDateRange")}</div>
                     <div className="flex flex-col gap-2">
                       <div>
-                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">From</label>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">{t("journal.from")}</label>
                         <Input
                           type="date"
                           value={customStartDate}
@@ -403,7 +405,7 @@ export default function Journal() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">To</label>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">{t("journal.to")}</label>
                         <Input
                           type="date"
                           value={customEndDate}
@@ -419,7 +421,7 @@ export default function Journal() {
                       className="w-full bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold uppercase h-9"
                       data-testid="button-apply-custom-date"
                     >
-                      Apply Filter
+                      {t("journal.applyFilter")}
                     </Button>
                   </div>
                 </PopoverContent>
@@ -432,7 +434,7 @@ export default function Journal() {
                 className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs uppercase transition-all shadow-lg shadow-emerald-500/20 px-6 h-10 rounded-xl"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Log Trade
+                {t("journal.logTrade")}
               </Button>
             </Link>
           </div>
@@ -441,19 +443,19 @@ export default function Journal() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-card border border-border rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1 h-full bg-muted-foreground" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Total Trades</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">{t("journal.totalTrades")}</span>
             <div className="text-3xl font-black text-foreground">{stats.total}</div>
             <div className="text-[9px] text-muted-foreground/50 mt-2 font-bold uppercase tracking-tighter">{statsDerivedLabel}</div>
           </div>
           <div className="bg-card border border-border rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Win Rate</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">{t("journal.winRate")}</span>
             <div className="text-3xl font-black text-foreground">{stats.winRate}%</div>
             <div className="text-[9px] text-muted-foreground/50 mt-2 font-bold uppercase tracking-tighter">{statsDerivedLabel}</div>
           </div>
           <div className="bg-card border border-border rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Net P&L</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">{t("journal.netPL")}</span>
             <div className={cn("text-3xl font-black", stats.netPl >= 0 ? "text-emerald-500" : "text-rose-500")}>
               ${stats.netPl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
@@ -461,7 +463,7 @@ export default function Journal() {
           </div>
           <div className="bg-card border border-border rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Wins / Losses</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">{t("journal.winsLosses")}</span>
             <div className="text-3xl font-black text-foreground">{stats.wins}W / {stats.losses}L</div>
             <div className="text-[9px] text-muted-foreground/50 mt-2 font-bold uppercase tracking-tighter">{statsDerivedLabel}</div>
           </div>
@@ -484,7 +486,7 @@ export default function Journal() {
                   className="absolute top-2 right-2 inline-flex items-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500"
                   data-testid={`badge-sample-trade-${trade.id}`}
                 >
-                  Sample
+                  {t("journal.sample")}
                 </span>
               )}
 
@@ -507,12 +509,12 @@ export default function Journal() {
                       </span>
                       {trade.volume && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-border text-muted-foreground uppercase">
-                          {trade.volume} lots
+                          {t("journal.lots", { count: trade.volume })}
                         </span>
                       )}
                     </div>
                     <div className="text-[10px] text-muted-foreground font-mono mt-0.5 uppercase flex items-center gap-2 flex-wrap">
-                      {trade.source === "MT5" ? <span className="text-sky-500 font-bold">MT5 SYNCED</span> : <span className="text-muted-foreground">MANUAL</span>}
+                      {trade.source === "MT5" ? <span className="text-sky-500 font-bold">{t("journal.mt5Synced")}</span> : <span className="text-muted-foreground">{t("journal.manual")}</span>}
                       {trade.ticket && <span className="text-muted-foreground/50 bg-muted/50 px-1 rounded">#{trade.ticket}</span>}
                     </div>
                     {trade.tags && trade.tags.length > 0 && (
@@ -535,12 +537,12 @@ export default function Journal() {
                       >
                         <SelectTrigger className="h-6 w-auto min-w-[100px] text-[10px] border-border/50 bg-background/50 px-2 gap-1" data-testid={`select-mood-${trade.id}`}>
                           <Brain size={10} className="text-purple-400 shrink-0" />
-                          <SelectValue placeholder="Mood" />
+                          <SelectValue placeholder={t("journal.mood")} />
                         </SelectTrigger>
                         <SelectContent>
                           {MOOD_OPTIONS.map(m => (
                             <SelectItem key={m.value} value={m.value}>
-                              <span className={m.color}>{m.label}</span>
+                              <span className={m.color}>{t(m.labelKey)}</span>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -555,11 +557,11 @@ export default function Journal() {
                       >
                         <SelectTrigger className="h-6 w-auto min-w-[110px] text-[10px] border-border/50 bg-background/50 px-2 gap-1" data-testid={`select-mistake-${trade.id}`}>
                           <AlertTriangle size={10} className="text-amber-400 shrink-0" />
-                          <SelectValue placeholder="Mistake" />
+                          <SelectValue placeholder={t("journal.mistake")} />
                         </SelectTrigger>
                         <SelectContent>
                           {MISTAKE_OPTIONS.map(m => (
-                            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                            <SelectItem key={m.value} value={m.value}>{t(m.labelKey)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -569,7 +571,7 @@ export default function Journal() {
                 
                 <div className="flex items-center justify-between md:justify-end gap-6 lg:gap-10 flex-wrap">
                   <div className="text-right">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Duration</div>
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">{t("journal.duration")}</div>
                     <div className="text-sm font-mono text-muted-foreground" data-testid={`text-duration-${trade.id}`}>
                       {trade.duration && trade.duration > 0 ? (
                         (() => {
@@ -583,12 +585,12 @@ export default function Journal() {
                           return `${seconds}s`;
                         })()
                       ) : (
-                        <span className="text-muted-foreground/50">Instant</span>
+                        <span className="text-muted-foreground/50">{t("journal.instant")}</span>
                       )}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">P&L</div>
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">{t("journal.pnl")}</div>
                     <div className={cn(
                       "text-xl font-black font-mono",
                       parseFloat(trade.netPl) >= 0 ? "text-emerald-500" : "text-rose-500"
@@ -597,12 +599,12 @@ export default function Journal() {
                     </div>
                   </div>
                   <div className="text-right w-24">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Status</div>
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">{t("journal.status")}</div>
                     <div className={cn(
                       "text-sm font-bold px-3 py-1 rounded-full border",
                       trade.outcome === "Win" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : trade.outcome === "Loss" ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : "bg-muted/50 text-muted-foreground border-border"
                     )}>
-                      {trade.outcome}
+                      {trade.outcome === "Win" ? t("journal.outcomeWin") : trade.outcome === "Loss" ? t("journal.outcomeLoss") : t("journal.outcomeBreakeven")}
                     </div>
                   </div>
                 </div>
@@ -611,31 +613,31 @@ export default function Journal() {
               {trade.isMT5 && (
                 <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                   <div>
-                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Entry</div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">{t("journal.entry")}</div>
                     <div className="text-xs font-mono text-foreground">{trade.entryPrice || '--'}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Exit</div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">{t("journal.exit")}</div>
                     <div className="text-xs font-mono text-foreground">{trade.exitPrice || '--'}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Opened</div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">{t("journal.opened")}</div>
                     <div className="text-xs font-mono text-muted-foreground">
                       {trade.createdAt ? format(new Date(trade.createdAt), 'MMM dd, HH:mm:ss') : '--'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Closed</div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">{t("journal.closed")}</div>
                     <div className="text-xs font-mono text-muted-foreground">
                       {trade.closeTime ? format(new Date(trade.closeTime), 'MMM dd, HH:mm:ss') : '--'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Commission</div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">{t("journal.commission")}</div>
                     <div className="text-xs font-mono text-muted-foreground">${(trade.commission || 0).toFixed(2)}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">Swap</div>
+                    <div className="text-[9px] text-muted-foreground/70 uppercase font-bold">{t("journal.swap")}</div>
                     <div className="text-xs font-mono text-muted-foreground">${(trade.swap || 0).toFixed(2)}</div>
                   </div>
                 </div>
@@ -645,13 +647,13 @@ export default function Journal() {
           {paginatedTrades.length === 0 && (
             <div className="py-20 flex flex-col items-center justify-center text-muted-foreground bg-card border border-border rounded-2xl border-dashed">
               <HistoryIcon size={48} className="mb-4 opacity-20" />
-              <p>No trades found for this filter</p>
+              <p>{t("journal.noTradesFound")}</p>
             </div>
           )}
           {hasMore && (
             <div className="flex flex-col items-center gap-2 pt-4">
               <p className="text-xs text-muted-foreground" data-testid="text-trade-count">
-                Showing {paginatedTrades.length} of {filteredTrades.length} trades
+                {t("journal.showingOf", { shown: paginatedTrades.length, total: filteredTrades.length })}
               </p>
               <Button
                 variant="outline"
@@ -659,13 +661,13 @@ export default function Journal() {
                 className="px-8"
                 data-testid="button-load-more"
               >
-                Load More
+                {t("journal.loadMore")}
               </Button>
             </div>
           )}
           {!hasMore && filteredTrades.length > TRADES_PER_PAGE && (
             <p className="text-center text-xs text-muted-foreground pt-4">
-              All {filteredTrades.length} trades loaded
+              {t("journal.allTradesLoaded", { total: filteredTrades.length })}
             </p>
           )}
         </div>

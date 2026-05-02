@@ -30,8 +30,10 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 export default function TradersHub() {
+  const { t } = useTranslation("common", { keyPrefix: "tradersHub" });
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newPost, setNewPost] = useState({ title: "", content: "", symbol: "", type: "Idea", imageUrl: "" });
@@ -58,7 +60,7 @@ export default function TradersHub() {
     },
     onSuccess: () => {
       setIsApplyOpen(false);
-      toast({ title: "Application submitted", description: "Moderators will review your request." });
+      toast({ title: t("toastApplied"), description: t("toastAppliedDesc") });
     }
   });
 
@@ -70,7 +72,7 @@ export default function TradersHub() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/traders-hub/creators/${user?.userId}`] });
       setIsProfileOpen(false);
-      toast({ title: "Profile updated" });
+      toast({ title: t("toastProfileUpdated") });
     }
   });
 
@@ -83,13 +85,13 @@ export default function TradersHub() {
       queryClient.invalidateQueries({ queryKey: ["/api/traders-hub/posts"] });
       setIsCreateOpen(false);
       setNewPost({ title: "", content: "", symbol: "", type: "Idea", imageUrl: "" });
-      toast({ title: "Post published", description: "Your idea has been shared with the community." });
+      toast({ title: t("toastPostPublished"), description: t("toastPostPublishedDesc") });
     },
     onError: (error: any) => {
       toast({ 
         variant: "destructive", 
-        title: "Post failed", 
-        description: error.message || "Failed to publish post. Please check for prohibited language." 
+        title: t("toastPostFailed"), 
+        description: error.message || t("toastPostFailedDesc")
       });
     }
   });
@@ -100,7 +102,7 @@ export default function TradersHub() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/traders-hub/posts"] });
-      toast({ title: "Post removed" });
+      toast({ title: t("toastPostRemoved") });
     }
   });
 
@@ -109,11 +111,11 @@ export default function TradersHub() {
       await apiRequest("POST", "/api/traders-hub/reports", { postId, reason: "Signal/Financial Advice" });
     },
     onSuccess: () => {
-      toast({ title: "Reported", description: "Moderators will review this content." });
+      toast({ title: t("toastReported"), description: t("toastReportedDesc") });
     }
   });
 
-  if (isLoading) return <div className="p-8 text-muted-foreground uppercase font-black animate-pulse">Synchronizing Hub...</div>;
+  if (isLoading) return <div className="p-8 text-muted-foreground uppercase font-black animate-pulse">{t("syncing")}</div>;
 
   return (
     <div className="container mx-auto p-6 space-y-6 bg-background text-foreground min-h-screen relative">
@@ -124,15 +126,15 @@ export default function TradersHub() {
             <Users className="text-emerald-500" size={40} />
           </div>
           <div>
-            <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">Coming Soon</h2>
-            <p className="text-muted-foreground mt-2 uppercase text-xs font-bold tracking-widest">Stay Tuned for Trader Hub</p>
+            <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">{t("comingSoon")}</h2>
+            <p className="text-muted-foreground mt-2 uppercase text-xs font-bold tracking-widest">{t("comingSoonHint")}</p>
           </div>
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              We're building something special for the trading community. Connect, learn, and share insights with fellow traders.
+              {t("comingSoonDesc")}
             </p>
             <p className="text-xs text-emerald-500 font-bold uppercase tracking-wider">
-              Launching Soon
+              {t("launchingSoon")}
             </p>
           </div>
           <div className="flex justify-center gap-2">
@@ -149,12 +151,12 @@ export default function TradersHub() {
         <div>
           <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase flex items-center gap-3">
             <Users className="text-emerald-500" size={32} />
-            Trader Hub
+            {t("title")}
           </h1>
-          <p className="text-muted-foreground mt-1 uppercase text-xs font-bold tracking-widest">Community Learning & Research</p>
+          <p className="text-muted-foreground mt-1 uppercase text-xs font-bold tracking-widest">{t("subtitle")}</p>
           <p className="text-[10px] text-muted-foreground/70 uppercase font-bold tracking-widest mt-2 border-l-2 border-amber-500/50 pl-2">
-            Community content reflects personal opinions and is not financial advice. 
-            <Link to="/risk-disclaimer" className="ml-2 text-emerald-500/70 hover:underline">View Risk Disclaimer</Link>
+            {t("disclaimer")}
+            <Link to="/risk-disclaimer" className="ml-2 text-emerald-500/70 hover:underline">{t("viewRiskDisclaimer")}</Link>
           </p>
         </div>
 
@@ -164,19 +166,19 @@ export default function TradersHub() {
               <DialogTrigger asChild>
                 <Button variant="outline" className="border-emerald-500/30 text-emerald-500 font-bold uppercase text-xs tracking-widest hover:bg-emerald-500/10">
                   <UserCheck className="mr-2" size={16} />
-                  Creator Profile
+                  {t("btnCreatorProfile")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-card border-border text-foreground max-w-lg">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-black uppercase tracking-tighter">Edit Creator Profile</DialogTitle>
+                  <DialogTitle className="text-xl font-black uppercase tracking-tighter">{t("editCreatorProfile")}</DialogTitle>
                   <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground">
-                    This is your public presence on the platform.
+                    {t("publicPresence")}
                   </CardDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Display Name</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelDisplayName")}</label>
                     <Input 
                       className="bg-background border-border"
                       value={profileData.displayName || creatorProfile.displayName}
@@ -184,7 +186,7 @@ export default function TradersHub() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Bio</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelBio")}</label>
                     <Textarea 
                       className="bg-background border-border"
                       value={profileData.bio || creatorProfile.bio || ""}
@@ -192,10 +194,10 @@ export default function TradersHub() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">External Link (Telegram/Discord)</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelExternalLink")}</label>
                     <Input 
                       className="bg-background border-border"
-                      placeholder="https://t.me/yourchannel"
+                      placeholder={t("externalLinkPlaceholder")}
                       value={profileData.externalLink || creatorProfile.externalLink || ""}
                       onChange={(e) => setProfileData({...profileData, externalLink: e.target.value})}
                     />
@@ -206,7 +208,7 @@ export default function TradersHub() {
                     className="w-full font-black uppercase tracking-tighter"
                     onClick={() => updateProfileMutation.mutate(profileData)}
                   >
-                    Save Profile
+                    {t("btnSaveProfile")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -216,30 +218,30 @@ export default function TradersHub() {
               <DialogTrigger asChild>
                 <Button variant="outline" className="border-border text-muted-foreground font-bold uppercase text-xs tracking-widest hover:bg-muted">
                   <ShieldCheck className="mr-2" size={16} />
-                  Become a Creator
+                  {t("btnBecomeCreator")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-card border-border text-foreground max-w-lg">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-black uppercase tracking-tighter">Creator Program Application</DialogTitle>
+                  <DialogTitle className="text-xl font-black uppercase tracking-tighter">{t("creatorApplicationTitle")}</DialogTitle>
                   <CardDescription className="text-xs font-bold text-muted-foreground uppercase tracking-tight">
-                    Creators share ideas and educational content. This is not a signal service.
+                    {t("creatorApplicationDesc")}
                   </CardDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Trading Background</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelTradingBackground")}</label>
                     <Textarea 
-                      placeholder="Briefly describe your experience..."
+                      placeholder={t("tradingBackgroundPlaceholder")}
                       className="bg-background border-border"
                       value={applyData.background}
                       onChange={(e) => setApplyData({...applyData, background: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Content Focus</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelContentFocus")}</label>
                     <Input 
-                      placeholder="e.g. Price Action, Macro Analysis, Education"
+                      placeholder={t("contentFocusPlaceholder")}
                       className="bg-background border-border"
                       value={applyData.contentFocus}
                       onChange={(e) => setApplyData({...applyData, contentFocus: e.target.value})}
@@ -252,7 +254,7 @@ export default function TradersHub() {
                     disabled={applyMutation.isPending || !applyData.background || !applyData.contentFocus}
                     onClick={() => applyMutation.mutate(applyData)}
                   >
-                    Submit Application
+                    {t("btnSubmitApplication")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -263,36 +265,36 @@ export default function TradersHub() {
             <DialogTrigger asChild>
               <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-tighter">
                 <Plus className="mr-2" size={18} />
-                Share Reasoning
+                {t("btnShareReasoning")}
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-card border-border text-foreground max-w-2xl">
               <DialogHeader>
-                <DialogTitle className="text-xl font-black uppercase tracking-tighter">New Community Post</DialogTitle>
+                <DialogTitle className="text-xl font-black uppercase tracking-tighter">{t("newCommunityPost")}</DialogTitle>
                 <CardDescription className="text-muted-foreground font-bold uppercase text-[10px]">
-                  Focus on reasoning and learning. No signals or advisory content.
+                  {t("newCommunityPostDesc")}
                 </CardDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Post Type</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelPostType")}</label>
                     <Select value={newPost.type} onValueChange={(v) => setNewPost({...newPost, type: v})}>
                       <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t("selectType")} />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        <SelectItem value="Idea">Market Idea</SelectItem>
-                        <SelectItem value="Review">Post-Trade Review</SelectItem>
-                        <SelectItem value="Commentary">Session Commentary</SelectItem>
-                        <SelectItem value="Education">Educational Write-up</SelectItem>
+                        <SelectItem value="Idea">{t("typeIdea")}</SelectItem>
+                        <SelectItem value="Review">{t("typeReview")}</SelectItem>
+                        <SelectItem value="Commentary">{t("typeCommentary")}</SelectItem>
+                        <SelectItem value="Education">{t("typeEducation")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Symbol (Optional)</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelSymbolOptional")}</label>
                     <Input 
-                      placeholder="e.g. XAUUSD"
+                      placeholder={t("symbolPlaceholder")}
                       className="bg-background border-border"
                       value={newPost.symbol}
                       onChange={(e) => setNewPost({...newPost, symbol: e.target.value})}
@@ -300,18 +302,18 @@ export default function TradersHub() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Title</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelTitle")}</label>
                   <Input 
-                    placeholder="The core reasoning behind this observation..."
+                    placeholder={t("titlePlaceholder")}
                     className="bg-background border-border"
                     value={newPost.title}
                     onChange={(e) => setNewPost({...newPost, title: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Reasoning / Commentary</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("labelReasoning")}</label>
                   <Textarea 
-                    placeholder="Describe your observations, market context, and the 'why' behind this post..."
+                    placeholder={t("reasoningPlaceholder")}
                     className="bg-background border-border min-h-[150px]"
                     value={newPost.content}
                     onChange={(e) => setNewPost({...newPost, content: e.target.value})}
@@ -319,10 +321,10 @@ export default function TradersHub() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
-                    <ImageIcon size={14} /> Image URL (Static Charts Only)
+                    <ImageIcon size={14} /> {t("labelImageUrl")}
                   </label>
                   <Input 
-                    placeholder="https://example.com/chart-screenshot.png"
+                    placeholder={t("imageUrlPlaceholder")}
                     className="bg-background border-border"
                     value={newPost.imageUrl}
                     onChange={(e) => setNewPost({...newPost, imageUrl: e.target.value})}
@@ -334,7 +336,7 @@ export default function TradersHub() {
                   <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex gap-3">
                     <AlertTriangle className="text-amber-500 shrink-0" size={18} />
                     <p className="text-[10px] text-amber-700 dark:text-amber-200 leading-relaxed uppercase font-bold italic">
-                      I confirm this post is for educational reasoning only. No "Buy/Sell" commands, guarantees, or investment advice.
+                      {t("guidelineConfirm")}
                     </p>
                   </div>
                   <Button 
@@ -342,7 +344,7 @@ export default function TradersHub() {
                     disabled={createMutation.isPending || !newPost.title || !newPost.content}
                     onClick={() => createMutation.mutate(newPost)}
                   >
-                    {createMutation.isPending ? "ENFORCING GUIDELINES..." : "PUBLISH TO HUB"}
+                    {createMutation.isPending ? t("btnEnforcing") : t("btnPublishToHub")}
                   </Button>
                 </div>
               </DialogFooter>
@@ -374,9 +376,9 @@ export default function TradersHub() {
                     {post.title}
                   </CardTitle>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter flex items-center gap-2">
-                    Shared by <span className="text-emerald-500">{post.user?.userId || "Unknown"}</span>
+                    {t("sharedBy")} <span className="text-emerald-500">{post.user?.userId || t("unknown")}</span>
                     {post.user?.role === "OWNER" && (
-                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px] font-black h-4 uppercase">Verified</Badge>
+                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px] font-black h-4 uppercase">{t("verified")}</Badge>
                     )}
                   </p>
                 </div>
@@ -386,7 +388,7 @@ export default function TradersHub() {
                     size="icon" 
                     className="text-muted-foreground hover:text-destructive h-8 w-8"
                     onClick={() => {
-                      if (window.confirm("Delete this post?")) deleteMutation.mutate(post.id);
+                      if (window.confirm(t("confirmDelete"))) deleteMutation.mutate(post.id);
                     }}
                   >
                     <Trash2 size={16} />
@@ -399,7 +401,7 @@ export default function TradersHub() {
                 </p>
                 {post.imageUrl && (
                   <div className="rounded-lg border border-border overflow-hidden bg-background">
-                    <img src={post.imageUrl} alt="Market Reasoning Chart" className="w-full h-auto object-contain max-h-[400px]" />
+                    <img src={post.imageUrl} alt={t("imgAltChart")} className="w-full h-auto object-contain max-h-[400px]" />
                   </div>
                 )}
               </CardContent>
@@ -408,7 +410,7 @@ export default function TradersHub() {
                   <div className="flex items-center gap-4">
                     <button className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground hover:text-emerald-500 transition-colors uppercase">
                       <MessageSquare size={14} />
-                      {post.commentCount} Discussions
+                      {post.commentCount} {t("discussions")}
                     </button>
                   </div>
                   <Button 
@@ -418,7 +420,7 @@ export default function TradersHub() {
                     onClick={() => reportMutation.mutate(post.id)}
                   >
                     <Flag size={12} />
-                    Flag
+                    {t("btnFlag")}
                   </Button>
                 </div>
                 
@@ -435,16 +437,16 @@ export default function TradersHub() {
             <CardHeader>
               <CardTitle className="text-sm font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
                 <span className="shrink-0"><Info size={16} /></span>
-                Hub Guidelines
+                {t("hubGuidelines")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 {[
-                  { label: "EDUCATION ONLY", desc: "This space is for sharing logic and learning, not for instruction." },
-                  { label: "NO SIGNALS", desc: "Strictly no 'Buy/Sell' commands or entry/exit triggers." },
-                  { label: "NO GUARANTEES", desc: "Never promise ROI or high-probability outcomes." },
-                  { label: "BE FACTUAL", desc: "Use data and charts to support your reasoning." }
+                  { label: t("guideEducationLabel"), desc: t("guideEducationDesc") },
+                  { label: t("guideNoSignalsLabel"), desc: t("guideNoSignalsDesc") },
+                  { label: t("guideNoGuaranteesLabel"), desc: t("guideNoGuaranteesDesc") },
+                  { label: t("guideBeFactualLabel"), desc: t("guideBeFactualDesc") }
                 ].map((item, i) => (
                   <div key={i} className="space-y-1">
                     <h5 className="text-[10px] font-black text-foreground tracking-tight uppercase italic">{item.label}</h5>
@@ -462,6 +464,7 @@ export default function TradersHub() {
 }
 
 function CreatorInfo({ userId }: { userId: string }) {
+  const { t } = useTranslation("common", { keyPrefix: "tradersHub" });
   const { data: profile } = useQuery<any>({
     queryKey: [`/api/traders-hub/creators/${userId}`],
     enabled: !!userId
@@ -474,9 +477,9 @@ function CreatorInfo({ userId }: { userId: string }) {
       <div className="flex-1 min-w-0">
         <p className="text-[10px] font-black text-foreground uppercase truncate flex items-center gap-2">
           {profile.displayName}
-          {profile.isVerified && <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[7px] h-3 uppercase">Verified</Badge>}
+          {profile.isVerified && <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[7px] h-3 uppercase">{t("verified")}</Badge>}
         </p>
-        <p className="text-[9px] text-muted-foreground font-bold uppercase truncate mt-0.5">{profile.bio || "No bio provided"}</p>
+        <p className="text-[9px] text-muted-foreground font-bold uppercase truncate mt-0.5">{profile.bio || t("noBio")}</p>
       </div>
     </div>
   );

@@ -34,6 +34,7 @@ import { Progress } from "@/components/ui/progress";
 import { MilestoneShareModal } from "@/components/MilestoneShareModal";
 import { parseTier } from "@/components/MilestoneShareCard";
 import type { AchievementCardData, StreakCardData, MilestoneCardVariant } from "@/components/MilestoneShareCard";
+import { useTranslation } from "react-i18next";
 
 const ICON_MAP: Record<string, any> = {
   footprints: Footprints,
@@ -80,13 +81,16 @@ const TIER_GLOW: Record<string, string> = {
   platinum: "shadow-cyan-400/30",
 };
 
-const CATEGORY_LABELS: Record<string, { label: string; icon: any }> = {
-  milestones: { label: "Milestones", icon: Trophy },
-  discipline: { label: "Discipline", icon: Shield },
-  streaks: { label: "Streaks", icon: Flame },
-  education: { label: "Education", icon: BookOpen },
-  performance: { label: "Performance", icon: Target },
-};
+function useCategoryLabels(): Record<string, { label: string; icon: any }> {
+  const { t } = useTranslation("common", { keyPrefix: "achievements" });
+  return {
+    milestones: { label: t("catMilestones"), icon: Trophy },
+    discipline: { label: t("catDiscipline"), icon: Shield },
+    streaks: { label: t("catStreaks"), icon: Flame },
+    education: { label: t("catEducation"), icon: BookOpen },
+    performance: { label: t("catPerformance"), icon: Target },
+  };
+}
 
 interface AchievementData {
   key: string;
@@ -162,6 +166,8 @@ function computeStreakMeta(data: AchievementsResponse, type: "journaling" | "tra
 }
 
 export default function Achievements() {
+  const { t } = useTranslation("common", { keyPrefix: "achievements" });
+  const CATEGORY_LABELS = useCategoryLabels();
   const { toast } = useToast();
 
   const [shareState, setShareState] = useState<ShareState>({
@@ -217,7 +223,7 @@ export default function Achievements() {
         tier: parseTier(achDef.tier),
         xpEarned: achDef.xpReward,
         totalXp: data.totalXp || 0,
-        levelName: data.level?.name || "Beginner",
+        levelName: data.level?.name || t("defaultLevelName"),
         levelNumber: data.level?.level || 1,
         complianceStreak: data.streaks?.compliance?.currentStreak,
       };
@@ -225,8 +231,8 @@ export default function Achievements() {
       pendingState = {
         open: true,
         variant: "achievement",
-        title: "Achievement Unlocked",
-        subtitle: "Share your progress with the trading community",
+        title: t("modalAchievementUnlocked"),
+        subtitle: t("modalSharePrompt"),
         data: cardData,
       };
     });
@@ -251,16 +257,17 @@ export default function Achievements() {
 
           markMilestoneShown(key);
           const { complianceRate, accountHealth } = computeStreakMeta(data, type);
+          const typeLabel = t(`type${type.charAt(0).toUpperCase() + type.slice(1)}` as any);
           pendingState = {
             open: true,
             variant: "streak",
-            title: `${threshold}-Day Streak!`,
-            subtitle: `${type.charAt(0).toUpperCase() + type.slice(1)} — ${current} consecutive days`,
+            title: t("streakDayMilestone", { count: threshold }),
+            subtitle: t("streakSubtitle", { type: typeLabel, count: current }),
             data: {
               streakType: type,
               currentStreak: current,
               longestStreak: streak.longestStreak,
-              levelName: data.level?.name || "Beginner",
+              levelName: data.level?.name || t("defaultLevelName"),
               levelNumber: data.level?.level || 1,
               totalXp: data.totalXp || 0,
               complianceRate,
@@ -286,8 +293,8 @@ export default function Achievements() {
       queryClient.invalidateQueries({ queryKey: ["/api/achievements"] });
       if (result.newlyUnlocked?.length > 0) {
         toast({
-          title: "Achievements Unlocked!",
-          description: `You unlocked ${result.newlyUnlocked.length} new achievement${result.newlyUnlocked.length > 1 ? "s" : ""}!`,
+          title: t("toastUnlocked"),
+          description: t("toastUnlockedDesc", { count: result.newlyUnlocked.length }),
         });
         const shown = getShownMilestones();
         const firstNew = result.newlyUnlocked[0] as string;
@@ -303,7 +310,7 @@ export default function Achievements() {
                 tier: parseTier(achDef.tier),
                 xpEarned: achDef.xpReward,
                 totalXp: currentData.totalXp || 0,
-                levelName: currentData.level?.name || "Beginner",
+                levelName: currentData.level?.name || t("defaultLevelName"),
                 levelNumber: currentData.level?.level || 1,
                 complianceStreak: currentData.streaks?.compliance?.currentStreak,
               };
@@ -311,8 +318,8 @@ export default function Achievements() {
               setShareState({
                 open: true,
                 variant: "achievement",
-                title: "Achievement Unlocked",
-                subtitle: "Share your progress with the trading community",
+                title: t("modalAchievementUnlocked"),
+                subtitle: t("modalSharePrompt"),
                 data: cardData,
               });
             }
@@ -320,8 +327,8 @@ export default function Achievements() {
         }
       } else {
         toast({
-          title: "Achievements Checked",
-          description: "Your progress has been updated.",
+          title: t("toastChecked"),
+          description: t("toastCheckedDesc"),
         });
       }
     },
@@ -335,14 +342,14 @@ export default function Achievements() {
       tier: parseTier(achievement.tier),
       xpEarned: achievement.xpReward,
       totalXp: data.totalXp || 0,
-      levelName: data.level?.name || "Beginner",
+      levelName: data.level?.name || t("defaultLevelName"),
       levelNumber: data.level?.level || 1,
       complianceStreak: data.streaks?.compliance?.currentStreak,
     };
     setShareState({
       open: true,
       variant: "achievement",
-      title: "Share Achievement",
+      title: t("modalShareAchievement"),
       subtitle: achievement.name,
       data: cardData,
     });
@@ -355,7 +362,7 @@ export default function Achievements() {
       streakType: type,
       currentStreak: streak.currentStreak,
       longestStreak: streak.longestStreak,
-      levelName: data.level?.name || "Beginner",
+      levelName: data.level?.name || t("defaultLevelName"),
       levelNumber: data.level?.level || 1,
       totalXp: data.totalXp || 0,
       complianceRate,
@@ -364,8 +371,8 @@ export default function Achievements() {
     setShareState({
       open: true,
       variant: "streak",
-      title: "Share Streak",
-      subtitle: `${streak.currentStreak}-day streak`,
+      title: t("modalShareStreak"),
+      subtitle: t("modalStreakSubtitle", { count: streak.currentStreak }),
       data: cardData,
     });
   }
@@ -404,10 +411,10 @@ export default function Achievements() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black uppercase tracking-tighter italic text-foreground" data-testid="achievements-title">
-              Achievements
+              {t("title")}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {unlockedCount} of {achievements.length} unlocked
+              {t("unlockedOf", { unlocked: unlockedCount, total: achievements.length })}
             </p>
           </div>
           <button
@@ -417,7 +424,7 @@ export default function Achievements() {
             data-testid="button-check-achievements"
           >
             <Sparkles className="w-4 h-4" />
-            {checkMutation.isPending ? "Checking..." : "Sync Progress"}
+            {checkMutation.isPending ? t("btnChecking") : t("btnSyncProgress")}
           </button>
         </div>
 
@@ -428,18 +435,18 @@ export default function Achievements() {
                 <Star className="w-6 h-6 text-emerald-500" />
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Level {level?.level || 1}</p>
-                <p className="text-lg font-bold text-foreground">{level?.name || "Beginner"}</p>
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">{t("level", { level: level?.level || 1 })}</p>
+                <p className="text-lg font-bold text-foreground">{level?.name || t("defaultLevelName")}</p>
               </div>
             </div>
             <div className="space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{totalXp} XP</span>
-                <span>{level?.nextLevelXp || 50} XP</span>
+                <span>{totalXp} {t("xpUnit")}</span>
+                <span>{level?.nextLevelXp || 50} {t("xpUnit")}</span>
               </div>
               <Progress value={level?.progress || 0} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                Next: {level?.nextLevelName || "Apprentice"}
+                {t("next", { name: level?.nextLevelName || t("defaultNextLevelName") })}
               </p>
             </div>
           </div>
@@ -447,9 +454,9 @@ export default function Achievements() {
           {(["journaling", "trading", "compliance"] as const).map((type) => {
             const streak = streaks[type];
             const labels: Record<string, string> = {
-              journaling: "Journal Streak",
-              trading: "Trading Streak",
-              compliance: "Compliance Streak",
+              journaling: t("journalingStreak"),
+              trading: t("tradingStreak"),
+              compliance: t("complianceStreak"),
             };
             const icons: Record<string, any> = {
               journaling: Calendar,
@@ -486,7 +493,7 @@ export default function Achievements() {
                         <span className="text-2xl font-black text-foreground" data-testid={`streak-count-${type}`}>
                           {current}
                         </span>
-                        <span className="text-sm text-muted-foreground">days</span>
+                        <span className="text-sm text-muted-foreground">{t("days")}</span>
                       </div>
                     </div>
                   </div>
@@ -494,7 +501,7 @@ export default function Achievements() {
                     <button
                       onClick={() => openStreakShare(type, streak)}
                       className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-500/60 hover:text-emerald-500 transition-colors"
-                      title="Share this streak"
+                      title={t("shareStreakTitle")}
                       data-testid={`button-share-streak-${type}`}
                     >
                       <Share2 className="w-3.5 h-3.5" />
@@ -502,7 +509,7 @@ export default function Achievements() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Best: {longest} days
+                  {t("best", { count: longest })}
                 </p>
               </div>
             );
@@ -586,10 +593,10 @@ export default function Achievements() {
                             "text-[10px] font-black uppercase tracking-widest",
                             isUnlocked ? "text-emerald-500" : "text-muted-foreground"
                           )}>
-                            {isUnlocked ? "Unlocked" : `${achievement.progress}%`}
+                            {isUnlocked ? t("unlocked") : `${achievement.progress}%`}
                           </span>
                           <span className="text-[10px] font-bold text-muted-foreground">
-                            +{achievement.xpReward} XP
+                            {t("xpReward", { xp: achievement.xpReward })}
                           </span>
                         </div>
                       </div>
@@ -599,7 +606,7 @@ export default function Achievements() {
                           <button
                             onClick={() => openAchievementShare(achievement)}
                             className="p-1 rounded-md hover:bg-emerald-500/10 text-emerald-500/50 hover:text-emerald-500 transition-colors"
-                            title="Share this achievement"
+                            title={t("shareAchievementTitle")}
                             data-testid={`button-share-achievement-${achievement.key}`}
                           >
                             <Share2 className="w-3 h-3" />

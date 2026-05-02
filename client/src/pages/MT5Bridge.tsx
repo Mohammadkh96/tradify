@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MT5_CONNECTOR_PYTHON } from "@/lib/mt5ConnectorScript";
 import {
   Cpu,
@@ -33,15 +34,6 @@ import {
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5;
 
-const STEP_META: Array<{ title: string; description: string }> = [
-  { title: "Get started", description: "What we're about to do" },
-  { title: "Generate token", description: "One-click sync key" },
-  { title: "Download connector", description: "Get the .pyw file" },
-  { title: "Run the connector", description: "Open it on your machine" },
-  { title: "Verify connection", description: "Wait for first sync" },
-  { title: "You're live", description: "Real data is flowing" },
-];
-
 function trackEvent(name: string, params?: Record<string, any>) {
   try {
     if (typeof window !== "undefined" && typeof window.gtag === "function") {
@@ -51,10 +43,19 @@ function trackEvent(name: string, params?: Record<string, any>) {
 }
 
 function StepperHeader({ current }: { current: Step }) {
+  const { t } = useTranslation();
+  const stepMeta = [
+    { title: t("mt5Bridge.step0Title") },
+    { title: t("mt5Bridge.step1Title") },
+    { title: t("mt5Bridge.step2Title") },
+    { title: t("mt5Bridge.step3Title") },
+    { title: t("mt5Bridge.step4Title") },
+    { title: t("mt5Bridge.step5Title") },
+  ];
   return (
     <div className="mb-8" data-testid="wizard-stepper">
       <ol className="grid grid-cols-6 gap-2">
-        {STEP_META.map((s, i) => {
+        {stepMeta.map((s, i) => {
           const done = i < current;
           const active = i === current;
           return (
@@ -97,7 +98,7 @@ function StepperHeader({ current }: { current: Step }) {
 function NavRow({
   onBack,
   onNext,
-  nextLabel = "Continue",
+  nextLabel,
   nextDisabled = false,
   hideBack = false,
   rightSlot,
@@ -109,6 +110,8 @@ function NavRow({
   hideBack?: boolean;
   rightSlot?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
+  const label = nextLabel || t("mt5Bridge.navContinue");
   return (
     <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-5">
       {!hideBack ? (
@@ -119,7 +122,7 @@ function NavRow({
           className="gap-1.5"
         >
           <ChevronLeft size={16} />
-          Back
+          {t("mt5Bridge.navBack")}
         </Button>
       ) : (
         <span />
@@ -133,7 +136,7 @@ function NavRow({
             data-testid="button-wizard-next"
             className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold uppercase tracking-widest gap-1.5"
           >
-            {nextLabel}
+            {label}
             <ChevronRight size={16} />
           </Button>
         )}
@@ -142,11 +145,6 @@ function NavRow({
   );
 }
 
-/**
- * Final wizard step. Shows the celebratory state and auto-redirects to the
- * dashboard after a short pause so users land on real data without an extra
- * click. The user can also click "Go to dashboard" immediately.
- */
 function DoneStep({
   mt5,
   onGoNow,
@@ -154,6 +152,7 @@ function DoneStep({
   mt5: any;
   onGoNow: () => void;
 }) {
+  const { t } = useTranslation();
   const [secondsLeft, setSecondsLeft] = useState(5);
 
   useEffect(() => {
@@ -171,17 +170,17 @@ function DoneStep({
         <Sparkles size={32} />
       </div>
       <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight italic mb-3">
-        You're live.
+        {t("mt5Bridge.doneHeading")}
       </h2>
       <p className="text-muted-foreground mb-6">
-        Your MT5 account is connected. Every trade you close from here on lands in your journal automatically.
+        {t("mt5Bridge.doneBody")}
       </p>
 
       {mt5?.metrics && (
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto mb-6">
           <div className="rounded-xl border border-border bg-background/40 p-3">
             <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              Balance
+              {t("mt5Bridge.doneBalance")}
             </div>
             <div className="text-lg font-black text-foreground mt-1">
               ${parseFloat(mt5.metrics.balance).toLocaleString()}
@@ -189,7 +188,7 @@ function DoneStep({
           </div>
           <div className="rounded-xl border border-border bg-background/40 p-3">
             <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              Equity
+              {t("mt5Bridge.doneEquity")}
             </div>
             <div className="text-lg font-black text-foreground mt-1">
               ${parseFloat(mt5.metrics.equity).toLocaleString()}
@@ -203,15 +202,15 @@ function DoneStep({
         className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold uppercase tracking-widest gap-1.5"
         data-testid="button-go-to-dashboard"
       >
-        Go to dashboard
+        {t("mt5Bridge.doneCta")}
         <ArrowRight size={14} />
       </Button>
       <div className="mt-4 text-xs text-muted-foreground" data-testid="text-auto-redirect">
-        Taking you to the dashboard in {secondsLeft}s…
+        {t("mt5Bridge.doneAutoRedirect", { seconds: secondsLeft })}
       </div>
       <div className="mt-3">
         <Badge variant="outline" className="text-[10px]">
-          Your sample data was just replaced with your real account
+          {t("mt5Bridge.doneSampleReplaced")}
         </Badge>
       </div>
     </div>
@@ -219,6 +218,7 @@ function DoneStep({
 }
 
 export default function MT5Bridge() {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>(0);
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
@@ -258,7 +258,6 @@ export default function MT5Bridge() {
   const isConnected = mt5?.status === "CONNECTED";
   const hasToken = !!userRoleData?.syncToken;
 
-  // Auto-detect OS
   useEffect(() => {
     if (typeof navigator === "undefined") return;
     const ua = navigator.userAgent.toLowerCase();
@@ -266,8 +265,6 @@ export default function MT5Bridge() {
     else setOs("windows");
   }, []);
 
-  // Auto-advance to "Done" once we detect the first connection while on
-  // the verify step.
   useEffect(() => {
     if (step === 4 && isConnected) {
       trackEvent("mt5_first_sync_success");
@@ -275,7 +272,6 @@ export default function MT5Bridge() {
     }
   }, [step, isConnected]);
 
-  // Instrumentation
   useEffect(() => {
     trackEvent("wizard_step_completed", { step });
   }, [step]);
@@ -293,8 +289,8 @@ export default function MT5Bridge() {
         queryKey: [`/api/traders-hub/user-role/${currentUserId}`],
       });
       toast({
-        title: "Token Generated",
-        description: "Your sync token is ready. Copy it into the connector when prompted.",
+        title: t("mt5Bridge.toastTokenGenerated"),
+        description: t("mt5Bridge.toastTokenGeneratedDesc"),
       });
     },
   });
@@ -310,8 +306,8 @@ export default function MT5Bridge() {
   const copyScript = () => {
     if (!currentUserId || !userRoleData?.syncToken) {
       toast({
-        title: "Generate a token first",
-        description: "Go back to Step 2 before copying the script.",
+        title: t("mt5Bridge.toastGenerateFirst"),
+        description: t("mt5Bridge.toastGenerateFirstCopy"),
         variant: "destructive",
       });
       return;
@@ -323,19 +319,19 @@ export default function MT5Bridge() {
       .replace(/__TRADIFY_API_URL__/g, apiUrl);
     navigator.clipboard.writeText(populated);
     setCopiedScript(true);
-    setDownloaded(true); // unlock the Continue button — copy is a valid path
+    setDownloaded(true);
     setTimeout(() => setCopiedScript(false), 2500);
     toast({
-      title: "Script copied",
-      description: "Paste it into a new file named tradify_connector.pyw on your trading machine.",
+      title: t("mt5Bridge.toastScriptCopied"),
+      description: t("mt5Bridge.toastScriptCopiedDesc"),
     });
   };
 
   const downloadConnector = () => {
     if (!currentUserId || !userRoleData?.syncToken) {
       toast({
-        title: "Generate a token first",
-        description: "Go back to Step 2 and generate your sync token before downloading.",
+        title: t("mt5Bridge.toastGenerateFirst"),
+        description: t("mt5Bridge.toastGenerateFirstDownload"),
         variant: "destructive",
       });
       return;
@@ -354,41 +350,25 @@ export default function MT5Bridge() {
     document.body.removeChild(a);
     setDownloaded(true);
     toast({
-      title: "Connector downloaded",
-      description: "Open tradify_connector.pyw on your trading machine.",
+      title: t("mt5Bridge.toastConnectorDownloaded"),
+      description: t("mt5Bridge.toastConnectorDownloadedDesc"),
     });
   };
 
   const troubleshooting = useMemo(
     () => [
-      {
-        q: "MT5 connection failed / init error",
-        a: "Make sure MetaTrader 5 is installed and running, and that you're logged into a trading account. Keep MT5 open in the background while the connector runs.",
-      },
-      {
-        q: "Auth Error: Invalid or expired token",
-        a: "Regenerate a fresh token in Step 2, then redownload the connector and paste the new token into it.",
-      },
-      {
-        q: "Network error / connection timeout",
-        a: "Check your internet. The connector retries automatically every 10 seconds.",
-      },
-      {
-        q: "ModuleNotFoundError: No module named 'MetaTrader5'",
-        a: "Install the dependencies: pip install MetaTrader5 requests. The MetaTrader5 package is Windows-only.",
-      },
-      {
-        q: "Trades not appearing on dashboard",
-        a: "The connector syncs every 10 seconds and only closed trades land in the journal. Make sure the connector window shows CONNECTED.",
-      },
+      { q: t("mt5Bridge.ts1Q"), a: t("mt5Bridge.ts1A") },
+      { q: t("mt5Bridge.ts2Q"), a: t("mt5Bridge.ts2A") },
+      { q: t("mt5Bridge.ts3Q"), a: t("mt5Bridge.ts3A") },
+      { q: t("mt5Bridge.ts4Q"), a: t("mt5Bridge.ts4A") },
+      { q: t("mt5Bridge.ts5Q"), a: t("mt5Bridge.ts5A") },
     ],
-    []
+    [t]
   );
 
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background" data-testid="page-mt5-bridge">
       <main className="p-4 lg:p-8 max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-3">
             <div className="bg-emerald-500/10 p-2.5 rounded-md">
@@ -399,10 +379,10 @@ export default function MT5Bridge() {
                 className="text-2xl font-bold text-foreground uppercase tracking-tight"
                 data-testid="text-page-title"
               >
-                Connect MT5
+                {t("mt5Bridge.pageTitle")}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Six steps · about 5 minutes · works on any MT5 broker
+                {t("mt5Bridge.pageSubtitle")}
               </p>
             </div>
           </div>
@@ -411,14 +391,14 @@ export default function MT5Bridge() {
               <>
                 <Wifi size={14} className="text-emerald-500" />
                 <span className="text-xs font-bold uppercase tracking-widest text-emerald-500" data-testid="text-status-pill">
-                  Connected
+                  {t("mt5Bridge.statusConnected")}
                 </span>
               </>
             ) : (
               <>
                 <WifiOff size={14} className="text-muted-foreground" />
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground" data-testid="text-status-pill">
-                  Not connected
+                  {t("mt5Bridge.statusNotConnected")}
                 </span>
               </>
             )}
@@ -428,27 +408,26 @@ export default function MT5Bridge() {
         <StepperHeader current={step} />
 
         <Card className="p-6 md:p-8">
-          {/* STEP 0 — Intro */}
           {step === 0 && (
             <div data-testid="wizard-step-intro">
               <div className="flex items-center gap-2 text-emerald-500 mb-2">
                 <Sparkles size={16} />
                 <span className="text-[10px] font-black uppercase tracking-widest">
-                  Step 1 of 6
+                  {t("mt5Bridge.stepOfTotal", { current: 1, total: 6 })}
                 </span>
               </div>
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight italic mb-3">
-                Let's get your trades flowing
+                {t("mt5Bridge.introHeading")}
               </h2>
               <p className="text-muted-foreground mb-6">
-                We'll connect MetaTrader 5 to Tradify in 6 short steps. Your trades will sync automatically — every 10 seconds — and we'll start surfacing patterns, risk flags, and prop firm progress in real time.
+                {t("mt5Bridge.introBody")}
               </p>
 
               <div className="grid sm:grid-cols-3 gap-3 mb-6">
                 {[
-                  { icon: ShieldCheck, label: "Read-only", body: "We never place trades. The connector only reads from MT5." },
-                  { icon: Monitor, label: "Local-first", body: "Runs on your trading machine alongside MT5." },
-                  { icon: RefreshCw, label: "Auto-syncs", body: "Pings every 10 seconds. Closed trades are journaled." },
+                  { icon: ShieldCheck, label: t("mt5Bridge.cardReadOnlyLabel"), body: t("mt5Bridge.cardReadOnlyBody") },
+                  { icon: Monitor, label: t("mt5Bridge.cardLocalLabel"), body: t("mt5Bridge.cardLocalBody") },
+                  { icon: RefreshCw, label: t("mt5Bridge.cardSyncLabel"), body: t("mt5Bridge.cardSyncBody") },
                 ].map((item) => (
                   <div key={item.label} className="rounded-xl border border-border bg-background/40 p-4">
                     <item.icon size={18} className="text-emerald-500 mb-2" />
@@ -459,37 +438,36 @@ export default function MT5Bridge() {
               </div>
 
               <div className="rounded-xl border border-border bg-muted/40 p-4 text-xs text-muted-foreground">
-                <strong className="text-foreground">You'll need:</strong> a Windows or Mac machine with MetaTrader 5 installed, Python 3.8+ (already on most systems), and your MT5 terminal logged in to your trading account.
+                <strong className="text-foreground">{t("mt5Bridge.introYouNeed")}</strong>{t("mt5Bridge.introNeedBody")}
               </div>
 
               <NavRow
                 hideBack
                 onNext={() => setStep(1)}
-                nextLabel="Start setup"
+                nextLabel={t("mt5Bridge.introCta")}
               />
             </div>
           )}
 
-          {/* STEP 1 — Generate token */}
           {step === 1 && (
             <div data-testid="wizard-step-token">
               <div className="flex items-center gap-2 text-emerald-500 mb-2">
                 <Key size={16} />
                 <span className="text-[10px] font-black uppercase tracking-widest">
-                  Step 2 of 6
+                  {t("mt5Bridge.stepOfTotal", { current: 2, total: 6 })}
                 </span>
               </div>
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight italic mb-3">
-                Generate your sync token
+                {t("mt5Bridge.tokenHeading")}
               </h2>
               <p className="text-muted-foreground mb-6">
-                This one-time token authenticates the connector with your account. We'll bake it into the connector file you download next.
+                {t("mt5Bridge.tokenBody")}
               </p>
 
               {hasToken ? (
                 <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2">
-                    Your token
+                    {t("mt5Bridge.tokenYour")}
                   </div>
                   <div className="flex items-center gap-2">
                     <code
@@ -506,17 +484,17 @@ export default function MT5Bridge() {
                       className="gap-1.5"
                     >
                       {copied ? <Check size={14} /> : <Copy size={14} />}
-                      {copied ? "Copied" : "Copy"}
+                      {copied ? t("mt5Bridge.tokenCopied") : t("mt5Bridge.tokenCopy")}
                     </Button>
                   </div>
                   <p className="mt-3 text-[11px] text-muted-foreground">
-                    Keep this private. If it leaks, regenerate it.
+                    {t("mt5Bridge.tokenPrivate")}
                   </p>
                 </div>
               ) : (
                 <div className="rounded-xl border border-border bg-background/40 p-6 text-center">
                   <p className="text-sm text-muted-foreground mb-4">
-                    No token yet. Click below to generate one.
+                    {t("mt5Bridge.tokenNoneYet")}
                   </p>
                   <Button
                     onClick={() => generateTokenMutation.mutate()}
@@ -529,7 +507,7 @@ export default function MT5Bridge() {
                     ) : (
                       <Key size={14} />
                     )}
-                    Generate Token
+                    {t("mt5Bridge.tokenGenerate")}
                   </Button>
                 </div>
               )}
@@ -538,14 +516,14 @@ export default function MT5Bridge() {
                 <div className="mt-4 text-xs text-muted-foreground flex items-start gap-2">
                   <Info size={14} className="text-emerald-500 shrink-0 mt-0.5" />
                   <span>
-                    Need to invalidate this token?{" "}
+                    {t("mt5Bridge.tokenInvalidate")}
                     <button
                       type="button"
                       onClick={() => generateTokenMutation.mutate()}
                       className="text-emerald-500 hover:text-emerald-400 underline underline-offset-2"
                       data-testid="button-regenerate-token"
                     >
-                      Regenerate
+                      {t("mt5Bridge.tokenRegenerate")}
                     </button>
                     .
                   </span>
@@ -560,29 +538,28 @@ export default function MT5Bridge() {
             </div>
           )}
 
-          {/* STEP 2 — Download connector */}
           {step === 2 && (
             <div data-testid="wizard-step-download">
               <div className="flex items-center gap-2 text-emerald-500 mb-2">
                 <Download size={16} />
                 <span className="text-[10px] font-black uppercase tracking-widest">
-                  Step 3 of 6
+                  {t("mt5Bridge.stepOfTotal", { current: 3, total: 6 })}
                 </span>
               </div>
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight italic mb-3">
-                Download the connector
+                {t("mt5Bridge.downloadHeading")}
               </h2>
               <p className="text-muted-foreground mb-6">
-                The connector is a small Python app. Save it on the same machine where MetaTrader 5 is running.
+                {t("mt5Bridge.downloadBody")}
               </p>
 
               <div className="rounded-xl border border-border bg-background/40 p-6 text-center">
                 <Download className="mx-auto text-emerald-500 mb-3" size={28} />
                 <p className="text-sm font-bold text-foreground mb-1">
-                  tradify_connector.pyw
+                  {t("mt5Bridge.downloadFile")}
                 </p>
                 <p className="text-xs text-muted-foreground mb-5">
-                  ~22 KB · safe to inspect — it's plain text
+                  {t("mt5Bridge.downloadFileMeta")}
                 </p>
                 <Button
                   onClick={downloadConnector}
@@ -590,15 +567,15 @@ export default function MT5Bridge() {
                   data-testid="button-download-connector"
                 >
                   <Download size={14} />
-                  Download connector
+                  {t("mt5Bridge.downloadCta")}
                 </Button>
                 {downloaded && (
                   <p className="mt-3 text-xs text-emerald-500 flex items-center justify-center gap-1.5">
-                    <CheckCircle2 size={14} /> Downloaded — find it in your Downloads folder
+                    <CheckCircle2 size={14} /> {t("mt5Bridge.downloadDone")}
                   </p>
                 )}
                 <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <span>Download blocked?</span>
+                  <span>{t("mt5Bridge.downloadBlocked")}</span>
                   <button
                     type="button"
                     onClick={copyScript}
@@ -606,7 +583,7 @@ export default function MT5Bridge() {
                     data-testid="button-copy-script"
                   >
                     {copiedScript ? <Check size={12} /> : <Copy size={12} />}
-                    {copiedScript ? "Script copied" : "Copy script to clipboard"}
+                    {copiedScript ? t("mt5Bridge.copyScriptDone") : t("mt5Bridge.copyScript")}
                   </button>
                 </div>
               </div>
@@ -614,8 +591,7 @@ export default function MT5Bridge() {
               <div className="mt-4 text-xs text-muted-foreground flex items-start gap-2">
                 <Info size={14} className="text-emerald-500 shrink-0 mt-0.5" />
                 <span>
-                  Your sync token is loaded automatically when you launch the
-                  connector — no manual paste required.
+                  {t("mt5Bridge.downloadInfo")}
                 </span>
               </div>
 
@@ -627,20 +603,19 @@ export default function MT5Bridge() {
             </div>
           )}
 
-          {/* STEP 3 — Run */}
           {step === 3 && (
             <div data-testid="wizard-step-run">
               <div className="flex items-center gap-2 text-emerald-500 mb-2">
                 <Play size={16} />
                 <span className="text-[10px] font-black uppercase tracking-widest">
-                  Step 4 of 6
+                  {t("mt5Bridge.stepOfTotal", { current: 4, total: 6 })}
                 </span>
               </div>
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight italic mb-3">
-                Run the connector
+                {t("mt5Bridge.runHeading")}
               </h2>
               <p className="text-muted-foreground mb-5">
-                Launch MetaTrader 5 first, then double-click the connector you just downloaded.
+                {t("mt5Bridge.runBody")}
               </p>
 
               <div className="mb-5 inline-flex rounded-full border border-border bg-background p-1">
@@ -653,7 +628,7 @@ export default function MT5Bridge() {
                   )}
                   data-testid="button-os-windows"
                 >
-                  Windows
+                  {t("mt5Bridge.osWindows")}
                 </button>
                 <button
                   type="button"
@@ -664,7 +639,7 @@ export default function MT5Bridge() {
                   )}
                   data-testid="button-os-mac"
                 >
-                  Mac
+                  {t("mt5Bridge.osMac")}
                 </button>
               </div>
 
@@ -672,40 +647,44 @@ export default function MT5Bridge() {
                 <ol className="space-y-3 text-sm text-foreground">
                   <li className="flex gap-3">
                     <span className="h-6 w-6 shrink-0 rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold flex items-center justify-center">1</span>
-                    Open MetaTrader 5 and log into your trading account.
+                    {t("mt5Bridge.winStep1")}
                   </li>
                   <li className="flex gap-3">
                     <span className="h-6 w-6 shrink-0 rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold flex items-center justify-center">2</span>
-                    Double-click <code className="rounded bg-muted px-1.5 py-0.5 text-xs">tradify_connector.pyw</code> from your Downloads folder.
+                    <span>
+                      {t("mt5Bridge.winStep2Pre")}
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">tradify_connector.pyw</code>
+                      {t("mt5Bridge.winStep2Post")}
+                    </span>
                   </li>
                   <li className="flex gap-3">
                     <span className="h-6 w-6 shrink-0 rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold flex items-center justify-center">3</span>
-                    A small window appears. The connector installs its dependencies on first launch — this can take ~30 seconds.
+                    {t("mt5Bridge.winStep3")}
                   </li>
                   <li className="flex gap-3">
                     <span className="h-6 w-6 shrink-0 rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold flex items-center justify-center">4</span>
-                    Watch for the green "CONNECTED" badge in the connector window. Then come back here and click Continue.
+                    {t("mt5Bridge.winStep4")}
                   </li>
                 </ol>
               ) : (
                 <ol className="space-y-3 text-sm text-foreground">
                   <li className="flex gap-3">
                     <span className="h-6 w-6 shrink-0 rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold flex items-center justify-center">1</span>
-                    The official MetaTrader 5 Python package only ships for Windows.
-                    On Mac, run MT5 inside CrossOver or Parallels and follow the
-                    Windows instructions inside that VM.
+                    {t("mt5Bridge.macStep1")}
                   </li>
                   <li className="flex gap-3">
                     <span className="h-6 w-6 shrink-0 rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold flex items-center justify-center">2</span>
-                    Inside the Windows environment: install Python 3.8+, then run{" "}
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                      pip install MetaTrader5 requests
-                    </code>
-                    .
+                    <span>
+                      {t("mt5Bridge.macStep2Pre")}
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                        pip install MetaTrader5 requests
+                      </code>
+                      {t("mt5Bridge.macStep2Post")}
+                    </span>
                   </li>
                   <li className="flex gap-3">
                     <span className="h-6 w-6 shrink-0 rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold flex items-center justify-center">3</span>
-                    Copy the downloaded connector into the VM and double-click it.
+                    {t("mt5Bridge.macStep3")}
                   </li>
                 </ol>
               )}
@@ -720,7 +699,7 @@ export default function MT5Bridge() {
                   data-testid="checkbox-connector-opened"
                 />
                 <label htmlFor="opened-connector" className="text-sm text-muted-foreground cursor-pointer">
-                  I've launched the connector
+                  {t("mt5Bridge.runLaunched")}
                 </label>
               </div>
 
@@ -728,26 +707,24 @@ export default function MT5Bridge() {
                 onBack={() => setStep(2)}
                 onNext={() => setStep(4)}
                 nextDisabled={!hasOpened}
-                nextLabel="Verify connection"
+                nextLabel={t("mt5Bridge.runVerifyCta")}
               />
             </div>
           )}
 
-          {/* STEP 4 — Verify */}
           {step === 4 && (
             <div data-testid="wizard-step-verify">
               <div className="flex items-center gap-2 text-emerald-500 mb-2">
                 <RefreshCw size={16} />
                 <span className="text-[10px] font-black uppercase tracking-widest">
-                  Step 5 of 6
+                  {t("mt5Bridge.stepOfTotal", { current: 5, total: 6 })}
                 </span>
               </div>
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight italic mb-3">
-                Verifying connection…
+                {t("mt5Bridge.verifyHeading")}
               </h2>
               <p className="text-muted-foreground mb-6">
-                We're polling for the first sync from your connector. This usually
-                takes 10–30 seconds.
+                {t("mt5Bridge.verifyBody")}
               </p>
 
               <div
@@ -763,20 +740,20 @@ export default function MT5Bridge() {
                   <>
                     <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={48} />
                     <p className="text-lg font-black uppercase tracking-tight italic text-foreground">
-                      Connected!
+                      {t("mt5Bridge.verifySuccess")}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      First sync received. Taking you to the success screen…
+                      {t("mt5Bridge.verifySuccessDesc")}
                     </p>
                   </>
                 ) : (
                   <>
                     <Loader2 className="mx-auto text-emerald-500 mb-3 animate-spin" size={40} />
                     <p className="text-sm font-bold text-foreground">
-                      Waiting for first sync from your connector
+                      {t("mt5Bridge.verifyWaiting")}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Make sure the connector window shows "CONNECTED" — and that MT5 is open.
+                      {t("mt5Bridge.verifyWaitingDesc")}
                     </p>
                   </>
                 )}
@@ -789,12 +766,12 @@ export default function MT5Bridge() {
                 data-testid="button-troubleshoot-toggle"
               >
                 <HelpCircle size={14} />
-                {showTroubleshooting ? "Hide" : "Show"} troubleshooting
+                {showTroubleshooting ? t("mt5Bridge.troubleshootHide") : t("mt5Bridge.troubleshootShow")}
               </button>
 
               {showTroubleshooting && (
                 <div className="mt-4 space-y-2">
-                  {troubleshooting.map((t, i) => (
+                  {troubleshooting.map((tt, i) => (
                     <details
                       key={i}
                       className="rounded-xl border border-border bg-background/40 p-3 text-sm"
@@ -802,9 +779,9 @@ export default function MT5Bridge() {
                     >
                       <summary className="cursor-pointer font-bold text-foreground flex items-center gap-2">
                         <AlertCircle size={14} className="text-amber-500 shrink-0" />
-                        {t.q}
+                        {tt.q}
                       </summary>
-                      <p className="mt-2 text-xs text-muted-foreground">{t.a}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">{tt.a}</p>
                     </details>
                   ))}
                 </div>
@@ -814,12 +791,11 @@ export default function MT5Bridge() {
                 onBack={() => setStep(3)}
                 onNext={() => setStep(5)}
                 nextDisabled={!isConnected}
-                nextLabel="See success"
+                nextLabel={t("mt5Bridge.verifyCta")}
               />
             </div>
           )}
 
-          {/* STEP 5 — Done. Auto-redirects to /dashboard after a short pause */}
           {step === 5 && (
             <DoneStep
               mt5={mt5}
@@ -828,17 +804,16 @@ export default function MT5Bridge() {
           )}
         </Card>
 
-        {/* Live status pill — visible from step 4 onwards */}
         {step >= 4 && (
           <div className="mt-6 text-center text-xs text-muted-foreground">
-            Live status:{" "}
+            {t("mt5Bridge.liveStatus")}{" "}
             <span
               className={cn(
                 "font-bold",
                 isConnected ? "text-emerald-500" : "text-muted-foreground"
               )}
             >
-              {isConnected ? "CONNECTED" : "OFFLINE"}
+              {isConnected ? t("mt5Bridge.liveOnline") : t("mt5Bridge.liveOffline")}
             </span>
           </div>
         )}
