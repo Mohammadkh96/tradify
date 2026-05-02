@@ -14,7 +14,7 @@ export default function PropFirmsIndex() {
         title="Prop Firm Trackers — Live Rule Monitoring for FTMO, MFF, FundedNext & More | TradifyApp"
         description="Live challenge trackers for every major prop firm. Real-time drawdown, consistency, and profit-target monitoring. Pick your firm and start free."
         canonical="https://tradifyapp.com/prop-firms"
-        ogImage="https://tradifyapp.com/images/tradify-promo-1.png"
+        ogImage="https://tradifyapp.com/api/og/prop-firms.svg"
         structuredData={[
           {
             "@context": "https://schema.org",

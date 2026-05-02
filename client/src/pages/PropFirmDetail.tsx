@@ -38,7 +38,7 @@ export default function PropFirmDetail() {
         title={title}
         description={description}
         canonical={url}
-        ogImage="https://tradifyapp.com/images/tradify-promo-1.png"
+        ogImage={`https://tradifyapp.com/api/og/prop-firm/${firm.slug}.svg`}
         structuredData={[
           {
             "@context": "https://schema.org",

@@ -251,6 +251,89 @@ export async function registerRoutes(
     next();
   });
 
+  // SEO: dynamic OG images (SVG, 1200×630) — per prop firm + index.
+  // Used in <SEO ogImage="..."> meta tags. SVG is rendered natively by
+  // X/Twitter, LinkedIn, Discord, Slack — the platforms that matter for
+  // prop-firm trader audiences.
+  const xmlEscape = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+
+  const renderOgSvg = (opts: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+  }) => {
+    const eyebrow = xmlEscape(opts.eyebrow.toUpperCase());
+    const title = xmlEscape(opts.title);
+    const subtitle = xmlEscape(opts.subtitle);
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#020617"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#10b981"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.15" r="0.6">
+      <stop offset="0" stop-color="#10b981" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect x="80" y="80" width="6" height="48" fill="url(#accent)" rx="3"/>
+  <text x="104" y="116" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="900" letter-spacing="6" fill="#10b981">${eyebrow}</text>
+  <text x="80" y="280" font-family="Inter, system-ui, sans-serif" font-size="96" font-weight="900" letter-spacing="-2" fill="#ffffff">${title}</text>
+  <text x="80" y="360" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="500" fill="#94a3b8">${subtitle}</text>
+  <g transform="translate(80,500)">
+    <rect width="14" height="14" fill="url(#accent)" rx="3"/>
+    <text x="28" y="13" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="800" letter-spacing="3" fill="#e2e8f0">TRADIFYAPP</text>
+    <text x="28" y="40" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="500" letter-spacing="2" fill="#64748b">TRADING DISCIPLINE PLATFORM</text>
+  </g>
+  <g transform="translate(960,500)">
+    <rect width="160" height="44" fill="#10b981" rx="22"/>
+    <text x="80" y="29" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="900" letter-spacing="3" fill="#020617" text-anchor="middle">LIVE TRACKER</text>
+  </g>
+</svg>`;
+  };
+
+  app.get("/api/og/prop-firm/:slug.svg", async (req, res) => {
+    try {
+      const { propFirms } = await import("../client/src/data/propFirms");
+      const firm = propFirms.find((f) => f.slug === req.params.slug);
+      if (!firm) return res.status(404).type("text/plain").send("Not found");
+      const svg = renderOgSvg({
+        eyebrow: `${firm.name} CHALLENGE TRACKER`,
+        title: firm.name,
+        subtitle: firm.tagline.length > 70 ? firm.tagline.slice(0, 67) + "…" : firm.tagline,
+      });
+      res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+      res.send(svg);
+    } catch (e) {
+      res.status(500).type("text/plain").send("og error");
+    }
+  });
+
+  app.get("/api/og/prop-firms.svg", (_req, res) => {
+    const svg = renderOgSvg({
+      eyebrow: "PROP FIRM TRACKERS",
+      title: "Every Prop Firm",
+      subtitle: "Live rule monitoring for FTMO, MFF, FundedNext, Topstep & more.",
+    });
+    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+    res.send(svg);
+  });
+
   // SEO: robots.txt — serve the static file from client/public
   app.get("/robots.txt", (_req, res) => {
     res.type("text/plain").send(`# TradifyApp - Trading Discipline Platform
