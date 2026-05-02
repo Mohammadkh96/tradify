@@ -3,6 +3,154 @@ import * as schema from "@shared/schema";
 import { eq, and, desc, gte, sql } from "drizzle-orm";
 import { sendRiskAlertEmail } from "./emailService";
 
+// ==================== PURE HELPERS (testable, no DB) ====================
+
+/**
+ * Compute today's drawdown in absolute and percent-of-allowed terms.
+ * `dailyDDLimitPct` is the firm's daily limit as a percent (e.g. 5 → 5%).
+ * `dailyPct` is what % of that allowance has been used (0..N), so 100
+ * means the limit is exactly hit.
+ */
+export function computeDailyDD(
+  dayStartBalance: number,
+  currentBalance: number,
+  dailyDDLimitPct: number,
+): { dailyLoss: number; dailyDDAmount: number; dailyPct: number } {
+  const dailyDDAmount = dayStartBalance * (dailyDDLimitPct / 100);
+  const dailyLoss = Math.max(0, dayStartBalance - currentBalance);
+  const dailyPct = dailyDDAmount > 0 ? (dailyLoss / dailyDDAmount) * 100 : 0;
+  return { dailyLoss, dailyDDAmount, dailyPct };
+}
+
+/**
+ * Compute the max-drawdown breach math, supporting both static (anchored
+ * to `accountSize`) and trailing (anchored to `highWaterMark`) variants.
+ * Returns the floor (account value at which breach occurs) and the
+ * percent of the allowed buffer that has been consumed so far.
+ */
+export function computeMaxDD(
+  accountSize: number,
+  currentBalance: number,
+  maxDDLimitPct: number,
+  trailingDrawdown: boolean,
+  highWaterMark: number,
+): { maxDDFloor: number; maxDDPct: number } {
+  const anchor = trailingDrawdown ? highWaterMark : accountSize;
+  const maxDDFloor = anchor * (1 - maxDDLimitPct / 100);
+  const maxDDDenominator = anchor * (maxDDLimitPct / 100);
+  const maxDDLossSoFar = Math.max(0, anchor - currentBalance);
+  const maxDDPct = maxDDDenominator > 0 ? (maxDDLossSoFar / maxDDDenominator) * 100 : 0;
+  return { maxDDFloor, maxDDPct };
+}
+
+export type DDSeverity = "none" | "warn" | "critical";
+
+/**
+ * Maps a percent-of-allowance reading to alert severity using the
+ * configured warn/critical thresholds.
+ *
+ * IMPORTANT: thresholds are inclusive — `pct === critT` is critical,
+ * matching the production behavior. Critical takes precedence over warn
+ * when both fire.
+ */
+export function classifyDDSeverity(
+  pct: number,
+  warnThreshold: number,
+  criticalThreshold: number,
+): DDSeverity {
+  if (pct >= criticalThreshold) return "critical";
+  if (pct >= warnThreshold) return "warn";
+  return "none";
+}
+
+export interface RevengeTrade {
+  closeTime: Date;
+  openTime: Date;
+  netPl: number;
+}
+
+/**
+ * Detects a "revenge trading" cluster — 3+ trades opened within
+ * `windowMs` after a losing trade closed. Returns the index of the
+ * triggering loss + the cluster size, or null when no cluster fits.
+ *
+ * Trades are expected sorted oldest → newest by closeTime.
+ */
+export function detectRevengeCluster(
+  trades: RevengeTrade[],
+  windowMs: number = 15 * 60 * 1000,
+  minClusterSize: number = 3,
+): { triggerIndex: number; clusterSize: number } | null {
+  if (trades.length < minClusterSize + 1) return null;
+  for (let i = 0; i < trades.length; i++) {
+    if (trades[i].netPl >= 0) continue;
+    const lossClose = trades[i].closeTime.getTime();
+    const cluster = trades
+      .slice(i + 1)
+      .filter((t) => {
+        const delta = t.openTime.getTime() - lossClose;
+        return delta >= 0 && delta <= windowMs;
+      });
+    if (cluster.length >= minClusterSize) {
+      return { triggerIndex: i, clusterSize: cluster.length };
+    }
+  }
+  return null;
+}
+
+export type OvertradingSeverity = "none" | "warn" | "critical";
+
+/**
+ * Classifies overtrading severity given today's trade count and the
+ * user's daily cap. Critical at 1.5× the cap (matching alert engine).
+ */
+export function classifyOvertrading(
+  tradeCount: number,
+  dailyCap: number,
+): OvertradingSeverity {
+  if (dailyCap <= 0) return "none";
+  if (tradeCount >= dailyCap * 1.5) return "critical";
+  if (tradeCount >= dailyCap) return "warn";
+  return "none";
+}
+
+/**
+ * Returns true when the symbol does not appear in the user's known
+ * (journaled-in-the-last-30-days) symbols. Comparison is case-insensitive.
+ *
+ * Used for the strategy-deviation heuristic — a "deviation" is a trade
+ * whose symbol the user has not journaled against any active strategy.
+ */
+export function isStrategyDeviation(
+  symbol: string,
+  knownSymbols: Iterable<string>,
+): boolean {
+  const target = (symbol || "").trim().toUpperCase();
+  if (!target) return false;
+  const set = new Set<string>();
+  for (const s of knownSymbols) set.add((s || "").toUpperCase());
+  return !set.has(target);
+}
+
+/**
+ * Returns true when a previously-emitted alert with the same dedupeKey
+ * is still inside its cooldown window and therefore must NOT be re-emitted.
+ *
+ * A null/undefined `cooldownUntil` (or one in the past) means the cooldown
+ * has expired and a new alert is allowed.
+ */
+export function isAlertWithinCooldown(
+  cooldownUntil: Date | string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!cooldownUntil) return false;
+  const until = cooldownUntil instanceof Date ? cooldownUntil : new Date(cooldownUntil);
+  if (isNaN(until.getTime())) return false;
+  return until.getTime() > now.getTime();
+}
+
+// ==================== END PURE HELPERS ====================
+
 export interface AlertEvent {
   type: string;
   severity: "low" | "medium" | "high";
@@ -219,21 +367,21 @@ async function evaluateDrawdownAlerts(ctx: SyncContext, prefs: Awaited<ReturnTyp
       ? parseFloat(todayStat.startingBalance)
       : (stats[0] ? parseFloat(stats[0].endingBalance) : parseFloat(challenge.currentBalance || challenge.accountSize));
 
-    const dailyDDAmount = dayStartBalance * (dailyDDLimit / 100);
-    const dailyLoss = Math.max(0, dayStartBalance - ctx.balance);
-    const dailyPct = dailyDDAmount > 0 ? (dailyLoss / dailyDDAmount) * 100 : 0;
-
-    // Max DD calc (matches /api/prop-firm/challenges/:id)
-    const maxDDFloor = challenge.trailingDrawdown
-      ? highWaterMark * (1 - maxDDLimit / 100)
-      : accountSize * (1 - maxDDLimit / 100);
-    const maxDDDenominator = challenge.trailingDrawdown
-      ? highWaterMark * (maxDDLimit / 100)
-      : accountSize * (maxDDLimit / 100);
-    const maxDDLossSoFar = challenge.trailingDrawdown
-      ? Math.max(0, highWaterMark - ctx.balance)
-      : Math.max(0, accountSize - ctx.balance);
-    const maxDDPct = maxDDDenominator > 0 ? (maxDDLossSoFar / maxDDDenominator) * 100 : 0;
+    // Helpers (also exercised by alertEngine.test.ts) compute the same
+    // numbers as before — kept here so the tested code path matches the
+    // production code path.
+    const { dailyLoss, dailyDDAmount, dailyPct } = computeDailyDD(
+      dayStartBalance,
+      ctx.balance,
+      dailyDDLimit,
+    );
+    const { maxDDFloor, maxDDPct } = computeMaxDD(
+      accountSize,
+      ctx.balance,
+      maxDDLimit,
+      !!challenge.trailingDrawdown,
+      highWaterMark,
+    );
 
     const warnT = prefs.drawdownWarnThreshold;
     const critT = prefs.drawdownCriticalThreshold;
@@ -327,45 +475,42 @@ async function evaluateBehavioralAlerts(ctx: SyncContext, prefs: Awaited<ReturnT
     .sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
 
   // ---- REVENGE TRADING: 3+ trades within 15 min after a loss ----
-  if (prefs.revengeEnabled && trades.length >= 3) {
-    for (let i = 0; i < trades.length; i++) {
-      if (trades[i].netPl >= 0) continue;
-      const lossClose = trades[i].closeTime.getTime();
-      const cluster = trades
-        .slice(i + 1)
-        .filter(t => (t.openTime.getTime() - lossClose) >= 0 && (t.openTime.getTime() - lossClose) <= 15 * 60 * 1000);
-      if (cluster.length >= 3) {
-        await emitAlert(ctx.userId, {
-          type: "revenge_trade",
-          severity: "high",
-          title: `Revenge trading detected`,
-          body: `${cluster.length} new trades opened within 15 minutes after a $${Math.abs(trades[i].netPl).toFixed(0)} loss on ${trades[i].symbol}. Step back before sizing up further.`,
-          payload: { trigger: trades[i].ticket, clusterSize: cluster.length, symbol: trades[i].symbol },
-          linkUrl: `/journal`,
-          dedupeKey: `revenge_${ctx.userId}_${dateKey}_${trades[i].ticket}`,
-          cooldownMinutes: prefs.cooldownMinutes,
-          inAppEligible: prefs.revengeInApp,
-          emailEligible: prefs.revengeEmail,
-        });
-        break;
-      }
+  if (prefs.revengeEnabled) {
+    const cluster = detectRevengeCluster(trades);
+    if (cluster) {
+      const trigger = trades[cluster.triggerIndex];
+      await emitAlert(ctx.userId, {
+        type: "revenge_trade",
+        severity: "high",
+        title: `Revenge trading detected`,
+        body: `${cluster.clusterSize} new trades opened within 15 minutes after a $${Math.abs(trigger.netPl).toFixed(0)} loss on ${trigger.symbol}. Step back before sizing up further.`,
+        payload: { trigger: trigger.ticket, clusterSize: cluster.clusterSize, symbol: trigger.symbol },
+        linkUrl: `/journal`,
+        dedupeKey: `revenge_${ctx.userId}_${dateKey}_${trigger.ticket}`,
+        cooldownMinutes: prefs.cooldownMinutes,
+        inAppEligible: prefs.revengeInApp,
+        emailEligible: prefs.revengeEmail,
+      });
     }
   }
 
   // ---- OVERTRADING: trade count >= daily cap ----
-  if (prefs.overtradingEnabled && prefs.overtradingDailyCap > 0 && trades.length >= prefs.overtradingDailyCap) {
-    await emitAlert(ctx.userId, {
-      type: "overtrading",
-      severity: trades.length >= prefs.overtradingDailyCap * 1.5 ? "high" : "medium",
-      title: `Overtrading: ${trades.length} trades today`,
-      body: `You've placed ${trades.length} trades today, which meets or exceeds your daily cap of ${prefs.overtradingDailyCap}. High trade frequency often correlates with chasing — consider stopping for the day.`,
-      payload: { tradesToday: trades.length, cap: prefs.overtradingDailyCap },
-      linkUrl: `/journal`,
-      dedupeKey: `overtrading_${ctx.userId}_${dateKey}`,
-      cooldownMinutes: prefs.cooldownMinutes,
-      inAppEligible: prefs.overtradingInApp,
-      emailEligible: prefs.overtradingEmail,
-    });
+  if (prefs.overtradingEnabled) {
+    const sev = classifyOvertrading(trades.length, prefs.overtradingDailyCap);
+    if (sev !== "none") {
+      await emitAlert(ctx.userId, {
+        type: "overtrading",
+        severity: sev === "critical" ? "high" : "medium",
+        title: `Overtrading: ${trades.length} trades today`,
+        body: `You've placed ${trades.length} trades today, which meets or exceeds your daily cap of ${prefs.overtradingDailyCap}. High trade frequency often correlates with chasing — consider stopping for the day.`,
+        payload: { tradesToday: trades.length, cap: prefs.overtradingDailyCap },
+        linkUrl: `/journal`,
+        dedupeKey: `overtrading_${ctx.userId}_${dateKey}`,
+        cooldownMinutes: prefs.cooldownMinutes,
+        inAppEligible: prefs.overtradingInApp,
+        emailEligible: prefs.overtradingEmail,
+      });
+    }
   }
 }
 
@@ -419,8 +564,8 @@ async function evaluateStrategyDeviation(ctx: SyncContext, prefs: Awaited<Return
         eq(schema.tradeJournal.userId, ctx.userId),
         gte(schema.tradeJournal.createdAt, cutoff),
       ));
-    const knownSymbols = new Set(journaled.map(j => (j.pair || "").toUpperCase()));
-    if (knownSymbols.has(symbol.toUpperCase())) return;
+    const knownSymbols = journaled.map(j => j.pair || "");
+    if (!isStrategyDeviation(symbol, knownSymbols)) return;
   } catch {
     return;
   }

@@ -19,13 +19,13 @@
  */
 
 import { spawn, execFileSync } from "node:child_process";
-import { createGzip } from "node:zlib";
+import { createGzip, gunzipSync } from "node:zlib";
 import { PassThrough } from "node:stream";
 import { readdirSync, existsSync } from "node:fs";
 import { Client } from "@replit/object-storage";
 import { db, pool } from "./db";
 import { databaseBackups, type DatabaseBackup } from "@shared/schema";
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, lt, sql } from "drizzle-orm";
 import { emailService } from "./emailService";
 
 const BUCKET_PREFIX = "db-backups";
@@ -37,11 +37,53 @@ let storageClient: Client | null = null;
 let resolvedPgDump: string | null = null;
 
 /**
+ * Postgres advisory-lock keys. Cross-process / cross-instance mutex so
+ * autoscaled or rolling-deploy environments cannot run two concurrent
+ * backups (or two concurrent verifications). Picked as arbitrary
+ * stable 32-bit ints so they don't collide with anything else in the DB.
+ */
+const ADVISORY_LOCK_BACKUP = 0x7261_6466; // "Tradf"
+const ADVISORY_LOCK_VERIFY = 0x76657266; // "verf"
+
+/**
+ * Wraps `fn` in a `pg_try_advisory_lock(key)` so only one process at a
+ * time can run it. Returns the wrapped result, or `null` when the lock
+ * is held elsewhere (caller should treat as no-op).
+ */
+async function withAdvisoryLock<T>(key: number, fn: () => Promise<T>): Promise<T | null> {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query<{ locked: boolean }>(
+      "SELECT pg_try_advisory_lock($1) AS locked",
+      [key],
+    );
+    if (!rows[0]?.locked) return null;
+    try {
+      return await fn();
+    } finally {
+      try {
+        await client.query("SELECT pg_advisory_unlock($1)", [key]);
+      } catch (e) {
+        console.warn(`[backup] advisory unlock failed for key ${key}:`, e);
+      }
+    }
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Locates a pg_dump binary whose major version matches the live database.
- * Resolution order:
- *   1. PG_DUMP_BIN env var (explicit override)
- *   2. The pg_dump on PATH if its major version matches the server
- *   3. Highest matching `pg_dump` found under /nix/store/*postgresql-N*
+ *
+ * Resolution order (intentionally short and explicit so a Nix GC or
+ * environment rebuild fails loudly instead of silently producing
+ * unusable backups):
+ *   1. `PG_DUMP_BIN` env var (explicit override)
+ *   2. `pg_dump` on PATH (this is the canonical path; `.replit` pins
+ *      `postgresql-17` so this should always exist and match Neon 17.x)
+ *   3. **Last-resort fallback only**: walk `/nix/store` for a matching
+ *      postgresql-N.x. Logs a loud warning if this path is taken
+ *      because it means the env config has drifted.
  * Throws if nothing usable is found.
  */
 async function resolvePgDump(): Promise<string> {
@@ -52,12 +94,48 @@ async function resolvePgDump(): Promise<string> {
   const serverMajor = parseInt(serverVersion.split(".")[0] ?? "0", 10);
   if (!serverMajor) throw new Error(`Unable to detect server version (got "${serverVersion}")`);
 
-  const candidates: string[] = [];
-  if (process.env.PG_DUMP_BIN) candidates.push(process.env.PG_DUMP_BIN);
-  candidates.push("pg_dump");
+  const tryCandidate = (bin: string): { major: number; raw: string } | null => {
+    try {
+      const out = execFileSync(bin, ["--version"], { stdio: ["ignore", "pipe", "ignore"] }).toString();
+      // "pg_dump (PostgreSQL) 17.6"
+      const m = /\(PostgreSQL\)\s+(\d+)/.exec(out);
+      return { major: m ? parseInt(m[1], 10) : 0, raw: out.trim() };
+    } catch {
+      return null;
+    }
+  };
 
-  // Walk /nix/store for postgresql-N.x bin/pg_dump entries and prefer the
-  // newest minor matching the server major.
+  // 1. Explicit override.
+  if (process.env.PG_DUMP_BIN) {
+    const r = tryCandidate(process.env.PG_DUMP_BIN);
+    if (r && r.major === serverMajor) {
+      resolvedPgDump = process.env.PG_DUMP_BIN;
+      console.log(`[backup] Using pg_dump ${r.raw} (PG_DUMP_BIN) for server ${serverVersion}`);
+      return resolvedPgDump;
+    }
+    console.warn(
+      `[backup] PG_DUMP_BIN=${process.env.PG_DUMP_BIN} is unusable or wrong major (got ${r?.major ?? "?"} vs server ${serverMajor}). Falling back.`,
+    );
+  }
+
+  // 2. PATH (canonical).
+  const onPath = tryCandidate("pg_dump");
+  if (onPath && onPath.major === serverMajor) {
+    resolvedPgDump = "pg_dump";
+    console.log(`[backup] Using pg_dump ${onPath.raw} (PATH) for server ${serverVersion}`);
+    return resolvedPgDump;
+  }
+  if (onPath) {
+    console.warn(
+      `[backup] pg_dump on PATH is ${onPath.major}.x but server is ${serverMajor}.x. ` +
+        `Update .replit modules to postgresql-${serverMajor}. Falling back to /nix/store scan.`,
+    );
+  }
+
+  // 3. Last-resort: walk /nix/store. Loud warning because this means env drift.
+  console.warn(
+    `[backup] Last-resort /nix/store scan engaged. Pin pg_dump via .replit (postgresql-${serverMajor}) or PG_DUMP_BIN to remove this fragility.`,
+  );
   try {
     const entries = readdirSync("/nix/store");
     const matches: { path: string; minor: number }[] = [];
@@ -71,31 +149,31 @@ async function resolvePgDump(): Promise<string> {
       }
     }
     matches.sort((a, b) => b.minor - a.minor);
-    for (const m of matches) candidates.push(m.path);
+    for (const m of matches) {
+      const r = tryCandidate(m.path);
+      if (r && r.major === serverMajor) {
+        resolvedPgDump = m.path;
+        console.warn(`[backup] Using pg_dump ${r.raw} (/nix/store fallback) for server ${serverVersion}`);
+        return resolvedPgDump;
+      }
+    }
   } catch (err) {
     console.warn("[backup] /nix/store scan failed:", err);
   }
 
-  for (const bin of candidates) {
-    try {
-      const out = execFileSync(bin, ["--version"], { stdio: ["ignore", "pipe", "ignore"] }).toString();
-      // "pg_dump (PostgreSQL) 17.6"
-      const m = /\(PostgreSQL\)\s+(\d+)/.exec(out);
-      const major = m ? parseInt(m[1], 10) : 0;
-      if (major === serverMajor) {
-        resolvedPgDump = bin;
-        console.log(`[backup] Using pg_dump ${out.trim()} for server ${serverVersion}`);
-        return bin;
-      }
-    } catch {
-      // try the next candidate
-    }
-  }
-
   throw new Error(
     `No pg_dump binary matching server major version ${serverMajor} found. ` +
-      `Set PG_DUMP_BIN to a pg_dump ${serverMajor}.x binary.`,
+      `Update .replit modules to postgresql-${serverMajor}, or set PG_DUMP_BIN to a pg_dump ${serverMajor}.x binary.`,
   );
+}
+
+/**
+ * Verifies that a usable pg_dump binary is reachable. Called once at
+ * startup so the backup scheduler doesn't arm against a broken env.
+ * Returns the resolved path on success; throws on failure.
+ */
+export async function ensurePgDumpAvailable(): Promise<string> {
+  return resolvePgDump();
 }
 
 function getStorageClient(): Client {
@@ -320,6 +398,39 @@ export async function runBackup(opts: RunBackupOptions = {}): Promise<DatabaseBa
     const storageKey = buildStorageKey(now);
     console.log(`[backup] Starting ${trigger} backup -> ${storageKey}`);
 
+    // Cross-instance mutex — if another instance/replica is already
+    // mid-backup, exit cleanly without writing a duplicate row.
+    const lockOwner = await pool.connect();
+    let haveLock = false;
+    try {
+      const { rows } = await lockOwner.query<{ locked: boolean }>(
+        "SELECT pg_try_advisory_lock($1) AS locked",
+        [ADVISORY_LOCK_BACKUP],
+      );
+      haveLock = !!rows[0]?.locked;
+    } finally {
+      if (!haveLock) lockOwner.release();
+    }
+    if (!haveLock) {
+      console.log("[backup] Another instance holds the backup lock — skipping this run.");
+      // Return a synthetic skipped row so callers always get a value;
+      // do not insert into databaseBackups.
+      return {
+        id: -1,
+        runAt: now,
+        status: "success",
+        storageKey: null,
+        sizeBytes: null,
+        durationMs: 0,
+        isMonthly: false,
+        trigger,
+        errorMessage: null,
+        restoreVerifiedAt: null,
+        restoreVerifiedStatus: null,
+        restoreVerifiedMessage: null,
+      } as DatabaseBackup;
+    }
+
     try {
       const url = getBackupConnectionString();
       const compressed = await dumpAndCompress(url);
@@ -384,6 +495,12 @@ export async function runBackup(opts: RunBackupOptions = {}): Promise<DatabaseBa
 
       return row;
     } finally {
+      try {
+        await lockOwner.query("SELECT pg_advisory_unlock($1)", [ADVISORY_LOCK_BACKUP]);
+      } catch (e) {
+        console.warn("[backup] advisory unlock failed:", e);
+      }
+      lockOwner.release();
       inFlight = null;
     }
   })();
@@ -455,6 +572,160 @@ export async function getBackupStatus(): Promise<{
   };
 }
 
+// ==================== RESTORE VERIFICATION (#41) ====================
+
+/**
+ * Tables we expect to find in every backup. If any are missing, the
+ * dump is structurally broken and we should not trust it for restore.
+ * Picked because they are core to the product surface; any of these
+ * being absent indicates either a partial dump or schema rot.
+ *
+ * Names are matched against `CREATE TABLE public.<name>` produced by
+ * pg_dump. Update this list whenever a new core table is introduced
+ * (or an old one is renamed).
+ */
+const REQUIRED_TABLES = [
+  "session",
+  "trade_journal",
+  "strategies",
+  "alert_preferences",
+  "mt5_accounts",
+  "database_backups",
+  "leads",
+];
+
+const MIN_BACKUP_BYTES_GZ = 4 * 1024; // <4KB gz means almost certainly truncated
+
+export interface VerifyResult {
+  backupId: number | null;
+  status: "success" | "failure" | "skipped";
+  message: string;
+  storageKey: string | null;
+}
+
+/**
+ * Downloads the latest successful backup, gunzips it, and validates
+ * structural integrity:
+ *   - object-storage download succeeds
+ *   - gunzip succeeds (catches CRC corruption)
+ *   - SQL header looks like a pg_dump output
+ *   - all REQUIRED_TABLES appear in CREATE TABLE statements
+ *   - dump is not suspiciously small
+ *
+ * Result is persisted onto the source backup row's
+ * restore_verified_* columns. On failure, fires the verification
+ * alert email through the same email service path as backup failures.
+ */
+export async function verifyLatestBackup(): Promise<VerifyResult> {
+  // Cross-instance mutex so two replicas don't both verify (and both
+  // potentially fire failure emails) at the same time.
+  const locked = await withAdvisoryLock(ADVISORY_LOCK_VERIFY, () => verifyLatestBackupLocked());
+  if (locked === null) {
+    const message = "Another instance is already running verification — skipped.";
+    console.log(`[backup-verify] ${message}`);
+    return { backupId: null, status: "skipped", message, storageKey: null };
+  }
+  return locked;
+}
+
+async function verifyLatestBackupLocked(): Promise<VerifyResult> {
+  const [latest] = await db
+    .select()
+    .from(databaseBackups)
+    .where(and(eq(databaseBackups.status, "success"), isNotNull(databaseBackups.storageKey)))
+    .orderBy(desc(databaseBackups.runAt))
+    .limit(1);
+
+  if (!latest || !latest.storageKey) {
+    const message = "No successful backup with a storage key available to verify.";
+    console.warn(`[backup-verify] ${message}`);
+    return { backupId: null, status: "skipped", message, storageKey: null };
+  }
+
+  const startedAt = Date.now();
+  console.log(`[backup-verify] Verifying backup #${latest.id} (${latest.storageKey})`);
+
+  let status: "success" | "failure" = "success";
+  let message = "";
+
+  try {
+    const client = getStorageClient();
+    const dl = await client.downloadAsBytes(latest.storageKey);
+    if (!dl.ok || !dl.value || !dl.value[0]) {
+      throw new Error(`download failed: ${dl.error?.message ?? "no payload"}`);
+    }
+    const compressed = dl.value[0] as Buffer;
+
+    if (compressed.length < MIN_BACKUP_BYTES_GZ) {
+      throw new Error(
+        `backup is suspiciously small (${compressed.length} bytes gz) — likely truncated`,
+      );
+    }
+
+    let plain: Buffer;
+    try {
+      plain = gunzipSync(compressed);
+    } catch (err: any) {
+      throw new Error(`gunzip failed: ${err?.message || err}`);
+    }
+
+    const sql = plain.toString("utf8");
+
+    if (!/PostgreSQL database dump/i.test(sql) && !/pg_dump version/i.test(sql)) {
+      throw new Error("dump does not look like pg_dump output (missing header)");
+    }
+
+    const missing: string[] = [];
+    for (const t of REQUIRED_TABLES) {
+      const re = new RegExp(`CREATE TABLE\\s+(?:public\\.)?["\`]?${t}["\`]?\\b`, "i");
+      if (!re.test(sql)) missing.push(t);
+    }
+    if (missing.length > 0) {
+      throw new Error(`missing CREATE TABLE for: ${missing.join(", ")}`);
+    }
+
+    // pg_dump trailers — both indicate a clean finish.
+    if (!/PostgreSQL database dump complete/i.test(sql)) {
+      throw new Error('dump appears truncated (no "PostgreSQL database dump complete" trailer)');
+    }
+
+    const sizeMb = (compressed.length / 1024 / 1024).toFixed(2);
+    const elapsed = Date.now() - startedAt;
+    message = `verified ${sizeMb} MB gz / ${(plain.length / 1024 / 1024).toFixed(2)} MB sql in ${elapsed} ms · ${REQUIRED_TABLES.length} required tables present`;
+    console.log(`[backup-verify] OK · backup #${latest.id} · ${message}`);
+  } catch (err: any) {
+    status = "failure";
+    message = err?.message || String(err);
+    console.error(`[backup-verify] FAILED · backup #${latest.id} · ${message}`);
+  }
+
+  await db
+    .update(databaseBackups)
+    .set({
+      restoreVerifiedAt: new Date(),
+      restoreVerifiedStatus: status,
+      restoreVerifiedMessage: message.slice(0, 4000),
+    })
+    .where(eq(databaseBackups.id, latest.id));
+
+  if (status === "failure") {
+    try {
+      await emailService.sendBackupVerificationFailureAlertEmail({
+        errorMessage: message,
+        attemptedAt: new Date(),
+        backupRunAt: latest.runAt,
+        storageKey: latest.storageKey,
+      });
+    } catch (alertErr) {
+      console.error("[backup-verify] Verification alert email failed:", alertErr);
+    }
+  }
+
+  return { backupId: latest.id, status, message, storageKey: latest.storageKey };
+}
+
+// ==================== SCHEDULERS ====================
+
 /**
  * Daily scheduler. Computes ms until next 03:30 UTC then runs once,
  * after which it self-schedules every 24 hours. Idempotent — safe to
@@ -464,6 +735,12 @@ export async function getBackupStatus(): Promise<{
 const TARGET_HOUR_UTC = 3;
 const TARGET_MINUTE_UTC = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+
+/** Verification runs Sunday 04:30 UTC (an hour after the daily backup). */
+const VERIFY_HOUR_UTC = 4;
+const VERIFY_MINUTE_UTC = 30;
+const VERIFY_DOW_UTC = 0; // Sunday
 
 function msUntilNextRun(): number {
   const now = new Date();
@@ -486,8 +763,20 @@ function msUntilNextRun(): number {
 
 let schedulerStarted = false;
 
-export function startBackupScheduler() {
+export async function startBackupScheduler() {
   if (schedulerStarted) return;
+
+  // Refuse to arm if the env can't even resolve a compatible pg_dump.
+  // We'd rather fail loud at boot than discover this silently at 03:30.
+  try {
+    await ensurePgDumpAvailable();
+  } catch (err: any) {
+    console.error(
+      `[backup] Refusing to arm scheduler — pg_dump unavailable: ${err?.message || err}`,
+    );
+    return;
+  }
+
   schedulerStarted = true;
   const wait = msUntilNextRun();
   const nextRun = new Date(Date.now() + wait);
@@ -499,5 +788,54 @@ export function startBackupScheduler() {
     setInterval(() => {
       void runBackup({ trigger: "scheduled" });
     }, DAY_MS);
+  }, wait);
+}
+
+function msUntilNextVerificationRun(): number {
+  const now = new Date();
+  const next = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      VERIFY_HOUR_UTC,
+      VERIFY_MINUTE_UTC,
+      0,
+      0,
+    ),
+  );
+  // Roll forward to the next Sunday at 04:30 UTC.
+  const dayDelta = (VERIFY_DOW_UTC - next.getUTCDay() + 7) % 7;
+  next.setUTCDate(next.getUTCDate() + dayDelta);
+  if (next.getTime() <= now.getTime()) {
+    next.setUTCDate(next.getUTCDate() + 7);
+  }
+  return next.getTime() - now.getTime();
+}
+
+let verificationSchedulerStarted = false;
+
+/**
+ * Weekly verifier. Picks the latest successful backup and re-validates
+ * it end-to-end (download → gunzip → structural check). Schedules the
+ * next run 7 days later. Idempotent.
+ */
+export function startBackupVerificationScheduler() {
+  if (verificationSchedulerStarted) return;
+  verificationSchedulerStarted = true;
+  const wait = msUntilNextVerificationRun();
+  const nextRun = new Date(Date.now() + wait);
+  console.log(
+    `[backup-verify] Scheduler armed. Next verification at ${nextRun.toISOString()} (in ${(wait / 1000 / 60 / 60).toFixed(1)} h)`,
+  );
+  setTimeout(() => {
+    void verifyLatestBackup().catch((e) =>
+      console.error("[backup-verify] Scheduled verify error:", e),
+    );
+    setInterval(() => {
+      void verifyLatestBackup().catch((e) =>
+        console.error("[backup-verify] Scheduled verify error:", e),
+      );
+    }, WEEK_MS);
   }, wait);
 }

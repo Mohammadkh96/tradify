@@ -554,6 +554,51 @@ async function sendBackupFailureAlertEmail(params: {
   return sendEmail(ADMIN_EMAIL, subject, html);
 }
 
+/**
+ * Sent when the weekly restore-verification job determines that the
+ * most recent successful backup is structurally broken (download
+ * failure, gunzip CRC error, missing CREATE TABLE markers, truncated
+ * trailer, etc). The backup itself completed — what's at risk is its
+ * usability, so the copy here is intentionally distinct from the
+ * "backup failed" alert.
+ */
+async function sendBackupVerificationFailureAlertEmail(params: {
+  errorMessage: string;
+  attemptedAt: Date;
+  backupRunAt: Date;
+  storageKey: string;
+}): Promise<boolean> {
+  const { errorMessage, attemptedAt, backupRunAt, storageKey } = params;
+  const safeError = escapeHtml(errorMessage.slice(0, 4000));
+  const subject = `[ALERT] Tradify backup verification FAILED — restore at risk`;
+
+  const content = `
+    <h1 style="color: #ffffff; font-size: 22px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">&#128737;&#65039; Backup Verification Failed</h1>
+    <p style="color: #D1D5DB; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">The latest successful backup completed, but the weekly verification job could not validate it as restorable. Treat this as a backup outage — recovery is at risk.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #131A2B; padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+      <tr><td style="padding-bottom: 12px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px;">Verified at</p>
+        <p style="margin: 0; font-size: 14px; color: #ffffff; font-family: monospace;">${attemptedAt.toISOString()}</p>
+      </td></tr>
+      <tr><td style="padding-bottom: 12px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px;">Backup taken at</p>
+        <p style="margin: 0; font-size: 14px; color: #ffffff; font-family: monospace;">${backupRunAt.toISOString()}</p>
+      </td></tr>
+      <tr><td style="padding-bottom: 12px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px;">Storage key</p>
+        <p style="margin: 0; font-size: 13px; color: #ffffff; font-family: monospace; word-break: break-all;">${escapeHtml(storageKey)}</p>
+      </td></tr>
+      <tr><td>
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px;">Reason</p>
+        <pre style="margin: 0; font-size: 12px; color: #FCA5A5; background-color: #0A0F1E; padding: 12px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-family: monospace; line-height: 1.5;">${safeError}</pre>
+      </td></tr>
+    </table>
+    <p style="color: #9CA3AF; font-size: 13px; line-height: 1.6; margin: 16px 0 0 0;">Open the admin Database Backups panel and click "Verify Now" on a known-good backup, or run <code style="background-color: #1F2937; padding: 2px 6px; border-radius: 4px; color: #00D9A3;">npx tsx scripts/backup-db.ts</code> to capture a fresh snapshot.</p>`;
+
+  const html = wrapEmailBody(content, subject, "Tradify backup verification failure alert");
+  return sendEmail(ADMIN_EMAIL, subject, html);
+}
+
 function getEmailLogs(): EmailLog[] {
   return [...emailLogs];
 }
@@ -1676,6 +1721,7 @@ export const emailService = {
   sendEmailVerificationEmail,
   sendAdminSignupNotification,
   sendBackupFailureAlertEmail,
+  sendBackupVerificationFailureAlertEmail,
   sendRiskAlertEmail,
   getEmailLogs,
   isEmailConfigured,

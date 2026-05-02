@@ -12,7 +12,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { emailService } from "./emailService";
-import { runBackup, getBackupStatus } from "./backup-service";
+import { runBackup, getBackupStatus, verifyLatestBackup } from "./backup-service";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
@@ -1416,6 +1416,16 @@ ${blogPosts.map(p => `  <url>
     } catch (error: any) {
       console.error("Manual backup error:", error);
       res.status(500).json({ message: "Backup invocation failed", error: error?.message });
+    }
+  });
+
+  app.post("/api/admin/backups/verify", requireAdmin, async (_req, res) => {
+    try {
+      const result = await verifyLatestBackup();
+      res.json(result);
+    } catch (error: any) {
+      console.error("Manual verify error:", error);
+      res.status(500).json({ message: "Verification invocation failed", error: error?.message });
     }
   });
 

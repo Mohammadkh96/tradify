@@ -833,6 +833,10 @@ export const databaseBackups = pgTable("database_backups", {
   isMonthly: boolean("is_monthly").default(false).notNull(),
   trigger: text("trigger").default("scheduled").notNull(), // 'scheduled' | 'manual'
   errorMessage: text("error_message"),
+  // Restore-verification fields (#41). Populated by verifyLatestBackup().
+  restoreVerifiedAt: timestamp("restore_verified_at"),
+  restoreVerifiedStatus: text("restore_verified_status"), // 'success' | 'failure' | null
+  restoreVerifiedMessage: text("restore_verified_message"),
 });
 
 export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups).omit({ id: true, runAt: true });

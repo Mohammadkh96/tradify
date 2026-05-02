@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Database, RefreshCw, CheckCircle2, AlertTriangle, Clock, HardDrive, Calendar, PlayCircle } from "lucide-react";
+import { Database, RefreshCw, CheckCircle2, AlertTriangle, Clock, HardDrive, Calendar, PlayCircle, ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,16 @@ interface BackupRow {
   isMonthly: boolean;
   trigger: string;
   errorMessage: string | null;
+  restoreVerifiedAt: string | null;
+  restoreVerifiedStatus: "success" | "failure" | null;
+  restoreVerifiedMessage: string | null;
+}
+
+interface VerifyResponse {
+  backupId: number | null;
+  status: "success" | "failure" | "skipped";
+  message: string;
+  storageKey: string | null;
 }
 
 interface BackupStatusResponse {
@@ -86,6 +96,30 @@ export default function DatabaseBackups() {
     },
   });
 
+  const verifyMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/backups/verify");
+      return res.json() as Promise<VerifyResponse>;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/backups/status"] });
+      if (result.status === "success") {
+        toast({ title: "Verification passed", description: result.message });
+      } else if (result.status === "skipped") {
+        toast({ title: "Verification skipped", description: result.message });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Verification FAILED",
+          description: result.message,
+        });
+      }
+    },
+    onError: (err: any) => {
+      toast({ variant: "destructive", title: "Verification failed to start", description: err?.message || "Unknown error" });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="p-8 space-y-4">
@@ -125,6 +159,16 @@ export default function DatabaseBackups() {
           >
             <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
             Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => verifyMutation.mutate()}
+            disabled={verifyMutation.isPending}
+            data-testid="button-verify-backup-now"
+          >
+            <ShieldCheck size={14} />
+            {verifyMutation.isPending ? "Verifying..." : "Verify Now"}
           </Button>
           <Button
             size="sm"
@@ -264,6 +308,63 @@ export default function DatabaseBackups() {
         </Card>
       </div>
 
+      {/* Restore verification banner */}
+      {(() => {
+        const v = latestSuccess?.restoreVerifiedStatus ?? null;
+        const at = latestSuccess?.restoreVerifiedAt ?? null;
+        const msg = latestSuccess?.restoreVerifiedMessage ?? null;
+        const cls =
+          v === "success"
+            ? "bg-emerald-500/5 border-emerald-500/30"
+            : v === "failure"
+            ? "bg-rose-500/10 border-rose-500/40"
+            : "bg-slate-500/5 border-slate-500/30";
+        const Icon = v === "success" ? ShieldCheck : v === "failure" ? ShieldAlert : ShieldQuestion;
+        const tone =
+          v === "success"
+            ? "text-emerald-500"
+            : v === "failure"
+            ? "text-rose-500"
+            : "text-slate-400";
+        return (
+          <Card className={cls} data-testid="card-restore-verification">
+            <CardContent className="pt-6 flex items-center gap-4">
+              <Icon className={`${tone} shrink-0`} size={32} />
+              <div className="flex-1">
+                {v === "success" && at ? (
+                  <>
+                    <p className="font-bold text-foreground" data-testid="text-verification-status">
+                      Latest backup verified restorable
+                    </p>
+                    <p className="text-sm text-muted-foreground" data-testid="text-verification-detail">
+                      {formatRelative(at)} · {msg || "structural checks passed"}
+                    </p>
+                  </>
+                ) : v === "failure" && at ? (
+                  <>
+                    <p className="font-bold text-rose-500" data-testid="text-verification-status">
+                      Latest backup failed verification
+                    </p>
+                    <p className="text-sm text-muted-foreground" data-testid="text-verification-detail">
+                      {formatRelative(at)} · {msg || "see logs"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold text-foreground" data-testid="text-verification-status">
+                      Latest backup not yet verified
+                    </p>
+                    <p className="text-sm text-muted-foreground" data-testid="text-verification-detail">
+                      Click "Verify Now" to validate, or wait for the weekly check (Sundays 04:30 UTC).
+                    </p>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Latest error */}
       {data?.latestFailure && (
         <Card className="bg-card border-border" data-testid="card-latest-error">
@@ -298,6 +399,7 @@ export default function DatabaseBackups() {
                 <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Trigger</TableHead>
                 <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Size</TableHead>
                 <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Duration</TableHead>
+                <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Verified</TableHead>
                 <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Storage Key</TableHead>
               </TableRow>
             </TableHeader>
@@ -323,6 +425,19 @@ export default function DatabaseBackups() {
                   <TableCell className="text-xs text-muted-foreground">{row.trigger}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{formatBytes(row.sizeBytes)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{formatDuration(row.durationMs)}</TableCell>
+                  <TableCell data-testid={`cell-verified-${row.id}`}>
+                    {row.restoreVerifiedStatus === "success" ? (
+                      <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30">
+                        <ShieldCheck size={10} className="mr-1" /> verified
+                      </Badge>
+                    ) : row.restoreVerifiedStatus === "failure" ? (
+                      <Badge variant="destructive" className="bg-rose-500/20 text-rose-500 border-rose-500/30">
+                        <ShieldAlert size={10} className="mr-1" /> failed
+                      </Badge>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-[10px] font-mono text-muted-foreground break-all max-w-xs">
                     {row.storageKey || (row.errorMessage ? <span className="text-rose-400">{row.errorMessage.slice(0, 80)}</span> : "—")}
                   </TableCell>
@@ -330,7 +445,7 @@ export default function DatabaseBackups() {
               ))}
               {(data?.recent?.length ?? 0) === 0 && (
                 <TableRow className="border-border">
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic text-sm border-0">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic text-sm border-0">
                     No backup runs recorded yet.
                   </TableCell>
                 </TableRow>

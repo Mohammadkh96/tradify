@@ -164,8 +164,9 @@ async function initializeApp() {
   // Idempotent: subsequent calls become no-ops, and concurrent runs are
   // guarded inside backup-service.runBackup().
   try {
-    const { startBackupScheduler } = await import("./backup-service");
-    startBackupScheduler();
+    const { startBackupScheduler, startBackupVerificationScheduler } = await import("./backup-service");
+    await startBackupScheduler();
+    startBackupVerificationScheduler();
   } catch (err) {
     log(`Failed to arm backup scheduler: ${err}`, "backup");
   }
