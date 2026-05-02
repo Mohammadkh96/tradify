@@ -12,6 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import CsvImportDialog from "@/components/CsvImportDialog";
+import { useSampleMode } from "@/hooks/useSampleMode";
+import { getSampleTrades } from "@/lib/sampleData";
+import { SampleDataBanner } from "@/components/SampleDataBanner";
 
 const MOOD_OPTIONS = [
   { value: "confident", label: "Confident", color: "text-emerald-500" },
@@ -93,6 +96,8 @@ export default function Journal() {
     enabled: true,
   });
 
+  const sampleMode = useSampleMode();
+
   const subscription = user?.subscriptionTier?.toUpperCase() || "FREE";
   const isPaidUser = subscription === "PRO" || subscription === "ELITE";
 
@@ -115,6 +120,43 @@ export default function Journal() {
   const [customEndDate, setCustomEndDate] = useState<string>("");
 
   const combinedTrades = useMemo(() => {
+    // Sample mode: render the deterministic 60-day sample dataset so a brand
+    // new user can explore Journal filters/stats without any real trades.
+    if (sampleMode.active) {
+      return getSampleTrades().map((t) => ({
+        id: t.id,
+        ticket: t.id,
+        pair: t.pair,
+        direction: t.direction,
+        timeframe: "Sample",
+        createdAt: t.openTime,
+        closeTime: t.closeTime,
+        duration: Math.max(
+          0,
+          Math.floor(
+            (new Date(t.closeTime).getTime() - new Date(t.openTime).getTime()) /
+              1000,
+          ),
+        ),
+        outcome: t.netPl > 0 ? "Win" : t.netPl < 0 ? "Loss" : "Break-even",
+        netPl: t.netPl,
+        riskReward: t.riskReward != null ? `1:${t.riskReward.toFixed(2)}` : "N/A",
+        notes: t.notes || "",
+        tags: [] as string[],
+        source: "Sample",
+        isMT5: false,
+        volume: t.volume,
+        entryPrice: t.entryPrice,
+        exitPrice: t.exitPrice,
+        commission: 0,
+        swap: 0,
+        sl: null,
+        tp: null,
+        mood: t.mood,
+        mistakeCategory: t.mistakeCategory,
+      }));
+    }
+
     // Only show manual trades that are NOT MT5 sync duplicates
     const manual = (manualTrades || [])
       .filter(t => !t.notes?.startsWith("MT5_TICKET_"))
@@ -171,7 +213,7 @@ export default function Journal() {
     return [...manual, ...mt5].sort((a, b) => 
       new Date(b.closeTime!).getTime() - new Date(a.closeTime!).getTime()
     );
-  }, [manualTrades, mt5History]);
+  }, [manualTrades, mt5History, sampleMode.active]);
 
   const filteredTrades = useMemo(() => {
     let base = combinedTrades.filter(trade => {
@@ -256,6 +298,9 @@ export default function Journal() {
   return (
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
+        {sampleMode.active && (
+          <SampleDataBanner surface="your trade journal" />
+        )}
         <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center justify-between w-full md:w-auto">
             <div>

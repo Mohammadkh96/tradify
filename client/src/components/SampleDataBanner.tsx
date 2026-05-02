@@ -1,6 +1,6 @@
 import { Sparkles, ArrowRight, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { dismissSampleMode } from "@/hooks/useSampleMode";
 
 interface Props {
@@ -10,8 +10,24 @@ interface Props {
   dismissible?: boolean;
 }
 
+function trackEvent(name: string, params?: Record<string, any>) {
+  try {
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", name, params || {});
+    }
+  } catch {}
+}
+
 export function SampleDataBanner({ surface, dismissible = true }: Props) {
   const [hidden, setHidden] = useState(false);
+
+  // Fire the activation analytics event the first time the banner mounts on
+  // a given surface — this is the canonical signal that a user is seeing
+  // sample data.
+  useEffect(() => {
+    trackEvent("sample_data_viewed", { surface: surface ?? "dashboard" });
+  }, [surface]);
+
   if (hidden) return null;
 
   const subject = surface ?? "your dashboard";

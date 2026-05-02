@@ -1,9 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Sparkles, X, ArrowRight } from "lucide-react";
+import { Sparkles, X, ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const LS_PREFIX = "tradify_first_sync_seen_";
+
+function trackEvent(name: string, params?: Record<string, any>) {
+  try {
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", name, params || {});
+    }
+  } catch {}
+}
 
 /**
  * Watches the MT5 connection status and shows a one-time celebratory modal
@@ -42,11 +50,29 @@ export function FirstSyncMoment() {
     // seeing real data — show the celebration.
     if (status === "CONNECTED" && !alreadySeen) {
       setOpen(true);
+      trackEvent("aha_moment_shown", { userId });
       try {
         localStorage.setItem(lsKey, "1");
       } catch {}
     }
   }, [mt5?.status, userId]);
+
+  // When the modal opens, ask the existing OpenAI-backed behavioural pipeline
+  // for a real one-line insight using the freshly synced trades. We fall back
+  // to a static line if the request hasn't returned yet (or errors).
+  const { data: aiInsight } = useQuery<{ flags?: Array<{ title: string; description: string }> }>({
+    queryKey: ["/api/behavioral-risks", userId, "all"],
+    queryFn: async () => {
+      const res = await fetch(`/api/behavioral-risks/${userId}?period=all`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!userId && open,
+    staleTime: 30_000,
+    retry: false,
+  });
 
   if (!open) return null;
 
@@ -109,13 +135,18 @@ export function FirstSyncMoment() {
         )}
 
         <div className="mt-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
             First insight
+            {!aiInsight && (
+              <Loader2 size={11} className="animate-spin opacity-70" />
+            )}
           </div>
-          <p className="mt-1.5 text-sm text-foreground">
-            {positions.length > 0
-              ? `You have ${positions.length} open position${positions.length === 1 ? "" : "s"}. As soon as your trade history lands, we'll start surfacing behavioural patterns.`
-              : `No open positions right now — perfect time to set up your first strategy and let us track every trade as it closes.`}
+          <p className="mt-1.5 text-sm text-foreground" data-testid="text-first-insight">
+            {aiInsight?.flags && aiInsight.flags.length > 0
+              ? `${aiInsight.flags[0].title}. ${aiInsight.flags[0].description}`
+              : positions.length > 0
+                ? `You have ${positions.length} open position${positions.length === 1 ? "" : "s"}. As soon as your trade history lands, we'll start surfacing behavioural patterns.`
+                : `No open positions right now — perfect time to set up your first strategy and let us track every trade as it closes.`}
           </p>
         </div>
 

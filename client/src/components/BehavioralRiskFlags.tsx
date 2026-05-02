@@ -20,6 +20,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSampleMode } from "@/hooks/useSampleMode";
+import { getSampleBehavioralRisks } from "@/lib/sampleData";
 
 interface RiskFlag {
   type: string;
@@ -102,17 +104,25 @@ const PERIOD_OPTIONS = [
 export function BehavioralRiskFlags({ userId }: BehavioralRiskFlagsProps) {
   const { isElite } = usePlan();
   const [period, setPeriod] = useState("all");
+  const sampleMode = useSampleMode();
 
-  const { data, isLoading, error } = useQuery<BehavioralRisksData>({
+  const { data: realData, isLoading: realLoading, error } = useQuery<BehavioralRisksData>({
     queryKey: ['/api/behavioral-risks', userId, period],
     queryFn: async () => {
       const res = await fetch(`/api/behavioral-risks/${userId}?period=${period}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
-    enabled: !!userId && isElite,
+    enabled: !!userId && isElite && !sampleMode.active,
     staleTime: 60000,
   });
+
+  // In sample mode we render a deterministic risk-flag set so new users can
+  // immediately understand what this surface does.
+  const data = sampleMode.active
+    ? (getSampleBehavioralRisks() as BehavioralRisksData)
+    : realData;
+  const isLoading = sampleMode.active ? false : realLoading;
 
   if (!isElite) {
     return (

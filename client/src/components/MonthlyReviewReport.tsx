@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePlan } from "@/hooks/usePlan";
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import { useSampleMode } from "@/hooks/useSampleMode";
+import { getSampleMonthlyReview } from "@/lib/sampleData";
 import { 
   FileText, 
   Calendar,
@@ -68,10 +70,11 @@ const monthNames = ["January", "February", "March", "April", "May", "June",
 export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
   const { isElite } = usePlan();
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
-  
+  const sampleMode = useSampleMode();
+
   const { data: availableMonths } = useQuery<{ availableMonths: AvailableMonth[] }>({
     queryKey: [`/api/monthly-review/${userId}/available`],
-    enabled: !!userId && isElite,
+    enabled: !!userId && isElite && !sampleMode.active,
   });
 
   useEffect(() => {
@@ -92,15 +95,22 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
     return `/api/monthly-review/${userId}${params.toString() ? `?${params}` : ''}`;
   };
 
-  const { data, isLoading, error, refetch, isFetching } = useQuery<MonthlyReviewData>({
+  const { data: realData, isLoading: realLoading, error, refetch, isFetching } = useQuery<MonthlyReviewData>({
     queryKey: ['/api/monthly-review', userId, queryMonth, queryYear],
     queryFn: async ({ queryKey }) => {
       const res = await fetch(buildUrl(), { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
-    enabled: !!userId && isElite && !!selectedMonth,
+    enabled: !!userId && isElite && !!selectedMonth && !sampleMode.active,
   });
+
+  // In sample mode, render a deterministic monthly review so new users see
+  // what an Elite review looks like before connecting MT5.
+  const data: MonthlyReviewData | undefined = sampleMode.active
+    ? (getSampleMonthlyReview() as MonthlyReviewData)
+    : realData;
+  const isLoading = sampleMode.active ? false : realLoading;
 
   const handleExport = () => {
     if (!data?.insightText) return;

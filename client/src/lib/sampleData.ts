@@ -293,3 +293,107 @@ export function getSampleInsight() {
 
 export const SAMPLE_INSIGHT_FALLBACK =
   "We analyzed your last 30 trades — your average winner is 1.4× your average loser, which is a real edge to protect.";
+
+/**
+ * Sample behavioural-risk payload shaped to match the real
+ * `/api/behavioral-risks/:userId` response so the BehavioralRiskFlags
+ * component can render without modification.
+ */
+export function getSampleBehavioralRisks() {
+  const d = getSampleData();
+  const revengeCount = d.trades.filter((t) => t.mistakeCategory === "Revenge Trading").length;
+  const overtradeCount = d.trades.filter((t) => t.mistakeCategory === "Overtrading").length;
+  return {
+    flags: [
+      {
+        type: "revenge_trading",
+        severity: "high" as const,
+        title: "Revenge trading cluster detected",
+        description:
+          "On two separate days you placed 6+ trades within 90 minutes after a loss, with position sizes 1.6× your normal risk.",
+        evidence: `${revengeCount} trades flagged across the last 60 days. Avg loss on those was -$${Math.round(82 * 1.6)} vs -$82 baseline.`,
+        period: "60d",
+      },
+      {
+        type: "session_overtrading",
+        severity: "medium" as const,
+        title: "Overtrading on a single session",
+        description:
+          "One day in the last 30 you placed 14 trades in the London session — 4× your normal volume.",
+        evidence: `${overtradeCount} trades in a single session. Win-rate dropped to 32% on that day.`,
+        period: "30d",
+      },
+      {
+        type: "risk_creep",
+        severity: "low" as const,
+        title: "Position-size drift on losing days",
+        description:
+          "Your average position size grows by 18% on days where you're already down -1R or more.",
+        evidence: "Sized up on 7 of 9 losing days in the last 60 days.",
+        period: "60d",
+      },
+    ],
+    summary: {
+      totalFlags: 3,
+      highRisk: 1,
+      mediumRisk: 1,
+      lowRisk: 1,
+    },
+    historicalComparison: {
+      recentPeriod: "Last 30 days",
+      priorPeriod: "Prior 30 days",
+      volumeChange: "+12%",
+      frequencyChange: "+18%",
+      recentTradeCount: 78,
+      priorTradeCount: 66,
+    },
+    analyzedTrades: d.trades.length,
+  };
+}
+
+/**
+ * Sample monthly-review payload that matches the real
+ * `/api/monthly-review/:userId` shape.
+ */
+export function getSampleMonthlyReview() {
+  const now = new Date();
+  return {
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+    cached: true,
+    hasData: true,
+    insightText: `## What went well this month
+
+Your equity curve recovered strongly in the final week of the period — you closed the month with a **56% win-rate** and a profit factor of **1.4**. Wins on EURUSD and GBPJPY did most of the heavy lifting, and you stuck to your London-session entries on 78% of trades.
+
+## What to watch
+
+We spotted a **revenge-trading cluster** on day 22 and day 38: six losses in a row, each ~1.6× the size of your normal losers. The pattern is clear — a string of 2+ losses in the same session triggers a sharper, larger trade that almost always loses.
+
+## One thing to change next month
+
+Set a **3-loss / day circuit breaker**. Walk away after the third red trade, regardless of the setup. Backtested against this month, that single rule would have saved you roughly $1,820 — turning a yellow month into a green one.`,
+    metrics: {
+      current: {
+        tradeCount: 78,
+        wins: 44,
+        losses: 34,
+        totalPnL: 4280,
+        winRate: 56,
+        avgWin: 215,
+        avgLoss: -98,
+        profitFactor: "1.42",
+      },
+      previous: {
+        tradeCount: 64,
+        wins: 33,
+        losses: 31,
+        totalPnL: 1340,
+        winRate: 52,
+        avgWin: 185,
+        avgLoss: -110,
+        profitFactor: "1.10",
+      },
+    },
+  };
+}

@@ -230,6 +230,30 @@ export default function MT5Bridge() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const [copiedScript, setCopiedScript] = useState(false);
+  const copyScript = () => {
+    if (!currentUserId || !userRoleData?.syncToken) {
+      toast({
+        title: "Generate a token first",
+        description: "Go back to Step 2 before copying the script.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const apiUrl = `${window.location.protocol}//${window.location.host}/api/mt5/sync`;
+    const populated = MT5_CONNECTOR_PYTHON
+      .replace(/__TRADIFY_USER_ID__/g, currentUserId)
+      .replace(/__TRADIFY_SYNC_TOKEN__/g, userRoleData.syncToken)
+      .replace(/__TRADIFY_API_URL__/g, apiUrl);
+    navigator.clipboard.writeText(populated);
+    setCopiedScript(true);
+    setTimeout(() => setCopiedScript(false), 2500);
+    toast({
+      title: "Script copied",
+      description: "Paste it into a new file named tradify_connector.pyw on your trading machine.",
+    });
+  };
+
   const downloadConnector = () => {
     if (!currentUserId || !userRoleData?.syncToken) {
       toast({
@@ -496,6 +520,18 @@ export default function MT5Bridge() {
                     <CheckCircle2 size={14} /> Downloaded — find it in your Downloads folder
                   </p>
                 )}
+                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <span>Download blocked?</span>
+                  <button
+                    type="button"
+                    onClick={copyScript}
+                    className="inline-flex items-center gap-1 text-emerald-500 hover:text-emerald-400 underline underline-offset-2"
+                    data-testid="button-copy-script"
+                  >
+                    {copiedScript ? <Check size={12} /> : <Copy size={12} />}
+                    {copiedScript ? "Script copied" : "Copy script to clipboard"}
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 text-xs text-muted-foreground flex items-start gap-2">
@@ -706,54 +742,12 @@ export default function MT5Bridge() {
             </div>
           )}
 
-          {/* STEP 5 — Done */}
+          {/* STEP 5 — Done. Auto-redirects to /dashboard after a short pause */}
           {step === 5 && (
-            <div className="text-center" data-testid="wizard-step-done">
-              <div className="mx-auto h-16 w-16 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center mb-4">
-                <Sparkles size={32} />
-              </div>
-              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight italic mb-3">
-                You're live.
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                Your MT5 account is connected. Every trade you close from here on lands in your journal automatically.
-              </p>
-
-              {mt5?.metrics && (
-                <div className="grid grid-cols-2 gap-3 max-w-md mx-auto mb-6">
-                  <div className="rounded-xl border border-border bg-background/40 p-3">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      Balance
-                    </div>
-                    <div className="text-lg font-black text-foreground mt-1">
-                      ${parseFloat(mt5.metrics.balance).toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-border bg-background/40 p-3">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      Equity
-                    </div>
-                    <div className="text-lg font-black text-foreground mt-1">
-                      ${parseFloat(mt5.metrics.equity).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                onClick={() => navigate("/dashboard")}
-                className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold uppercase tracking-widest gap-1.5"
-                data-testid="button-go-to-dashboard"
-              >
-                Go to dashboard
-                <ArrowRight size={14} />
-              </Button>
-              <div className="mt-4">
-                <Badge variant="outline" className="text-[10px]">
-                  Your sample data was just replaced with your real account
-                </Badge>
-              </div>
-            </div>
+            <DoneStep
+              mt5={mt5}
+              onGoNow={() => navigate("/dashboard")}
+            />
           )}
         </Card>
 
