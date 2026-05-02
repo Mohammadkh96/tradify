@@ -46,7 +46,7 @@ Preferred communication style: Simple, everyday language.
 - **AI Psychology Review:** Pro+ dashboard widget for psychology-aware insights using OpenAI.
 - **AI Marketing Hub:** Admin-only command center with Content Studio (Quick Create & Funnel Builder), Meta Ads Strategist, Brand Settings, Library & Calendar, Smart Suggestions, and Content Pipeline.
 - **Achievements & Badges System:** Gamification with XP, leveling, streaks, and achievements across various categories.
-- **MT5 Connector (Professional GUI):** Enhanced Python connector script with tkinter GUI for improved user experience.
+- **MT5 Connector (Professional GUI):** Enhanced Python connector script with tkinter GUI for improved user experience. Sandbox e2e regression test in `scripts/test-mt5-bridge.ts` (run with `tsx scripts/test-mt5-bridge.ts`) and a manual QA checklist in `docs/MT5_BRIDGE_QA.md` cover the full /mt5-bridge wizard flow.
 - **Blog System:** Full CMS for content marketing with CRUD, public listing, categories, and SEO.
 - **SEO System:** Enhanced SEO with Open Graph, Twitter Cards, structured data, dynamic `robots.txt` and `sitemap.xml`, and targeted landing pages.
 - **About Page:** Provides founder story, mission, product philosophy, and trust signals.
