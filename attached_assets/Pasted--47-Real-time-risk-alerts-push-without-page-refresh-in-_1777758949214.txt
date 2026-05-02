@@ -1,0 +1,28 @@
+#47 Real-time risk alerts — push without page refresh (in progress)
+#42 Pin pg_dump version — appears partially landed (logs already show pg_dump 17.6 resolved)
+#41 Backup restore verification — scheduler is already armed in logs
+Highest-value next moves (my recommendation, ranked)
+Tier 1 — Growth & activation (revenue lever)
+
+Finish onboarding "aha moment" — the new sample mode is great; close the loop with a guided 60-second tour the first time a real user lands on the dashboard. Conversion lever.
+Verified stats / testimonials block on Landing — social proof is the #1 missing trust signal on TradifyApp. Even 3 short quotes + 1 stat ("$1.2M tracked across 200 challenges") moves signup conversion meaningfully.
+Shareable milestone cards — when a user passes a phase or hits a payout, generate a shareable PNG ("I just passed FTMO Phase 1 with TradifyApp"). Free viral channel.
+Affiliate / referral program — prop traders are the most viral niche. 20% lifetime referral commission is industry standard.
+Tier 2 — Conversion polish
+5. OG images — every public page should have a custom social-share image. The new prop-firm pages especially.
+
+Landing page screenshots — the landing currently leans heavy on illustrations; real product screenshots (now possible thanks to sample mode) would lift conversion.
+"Not for you" section — counterintuitive but proven: a section saying "TradifyApp isn't for you if…" filters out bad-fit users and increases signup quality.
+UTM tracking dashboard — the new prop-firm pages have UTM tags; you need an admin view that shows which campaigns convert.
+Tier 3 — Robustness (the bundle in the saved session plan)
+9. #48 Alert engine regression tests — locks in the alert behavior so future changes don't silently break revenge/overtrading detection.
+
+Finish #41 / #42 verification — confirm the in-flight backup work is complete and add the admin UI badge.
+Tier 4 — New features for retention
+11. Coach / team tier — let one user own multiple trader accounts. Opens a higher-ticket B2B SKU (prop firms themselves are buyers).
+
+Full email lifecycle — drip campaigns for trial → first trade → first payout → at-risk → win-back.
+Admin users CRM redesign — the current admin view is functional but not optimized for daily growth ops.
+App walkthrough / interactive demo — replaces the static /demo with a guided clickthrough.
+Tier 5 — Bug cleanup (tactical)
+15. Monthly review cached metrics + default month bug, P&L discrepancy investigation, profile crash fix.
