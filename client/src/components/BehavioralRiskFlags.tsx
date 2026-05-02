@@ -124,7 +124,10 @@ export function BehavioralRiskFlags({ userId }: BehavioralRiskFlagsProps) {
     : realData;
   const isLoading = sampleMode.active ? false : realLoading;
 
-  if (!isElite) {
+  // In sample mode we deliberately bypass the Elite paywall so a brand-new
+  // free user can still see what this surface delivers — that's the entire
+  // point of sample mode.
+  if (!isElite && !sampleMode.active) {
     return (
       <Card className="bg-card border-border shadow-2xl overflow-hidden" data-testid="behavioral-risks-locked">
         <CardHeader className="border-b border-border bg-muted/20">

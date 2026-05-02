@@ -323,6 +323,7 @@ export default function MT5Bridge() {
       .replace(/__TRADIFY_API_URL__/g, apiUrl);
     navigator.clipboard.writeText(populated);
     setCopiedScript(true);
+    setDownloaded(true); // unlock the Continue button — copy is a valid path
     setTimeout(() => setCopiedScript(false), 2500);
     toast({
       title: "Script copied",

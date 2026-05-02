@@ -129,7 +129,9 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
     URL.revokeObjectURL(url);
   };
 
-  if (!isElite) {
+  // In sample mode we deliberately bypass the Elite paywall so a brand-new
+  // free user can still preview the Monthly Review experience.
+  if (!isElite && !sampleMode.active) {
     return (
       <Card className="border-border/50" data-testid="monthly-review-upgrade">
         <CardHeader className="pb-3">
