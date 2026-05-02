@@ -2,10 +2,19 @@ import { FileText } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { useTranslation } from "react-i18next";
 
+type TermsItem = { boldKey?: string; textKey: string };
+type TermsSection = {
+  titleKey: string;
+  bodyKey?: string;
+  items: TermsItem[];
+  boxed?: boolean;
+  contact?: boolean;
+};
+
 export default function Terms() {
   const { t } = useTranslation("common", { keyPrefix: "legal" });
 
-  const sections = [
+  const sections: TermsSection[] = [
     { titleKey: "termsS1Title", bodyKey: "termsS1Body", items: [
       { textKey: "termsS1Item1" }, { textKey: "termsS1Item2" }, { textKey: "termsS1Item3" }, { textKey: "termsS1Item4" },
     ]},

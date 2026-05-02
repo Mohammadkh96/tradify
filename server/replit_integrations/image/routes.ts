@@ -34,7 +34,10 @@ export function registerImageRoutes(app: Express): void {
         requestDuration: imgDuration,
       }).catch(err => console.error("[AI Cost Tracker] image_generation error:", err));
 
-      const imageData = response.data[0];
+      const imageData = response.data?.[0];
+      if (!imageData) {
+        return res.status(502).json({ error: "Image generation returned no data" });
+      }
       res.json({
         url: imageData.url,
         b64_json: imageData.b64_json,

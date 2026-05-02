@@ -68,7 +68,7 @@ const countries = [
 
 const timezones = Intl.supportedValuesOf('timeZone');
 
-function FoundingSuggestionsCard({ userId }: { userId: number }) {
+function FoundingSuggestionsCard({ userId }: { userId: string }) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [title, setTitle] = useState("");

@@ -561,7 +561,7 @@ async function generateReelScriptAsset(stage: FunnelStage, topic: string | undef
     type: "reel_script",
     stage: stage.id,
     platform: "tiktok",
-    content: result.fullScript || JSON.stringify(result, null, 2),
+    content: result.content || JSON.stringify(result, null, 2),
     title: result.hook || "Reel Script",
     metadata: {
       hook: result.hook,

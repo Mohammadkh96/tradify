@@ -162,7 +162,7 @@ export default function Journal() {
         netPl: typeof t.netPl === 'string' ? parseFloat(t.netPl) : (t.netPl || 0),
         closeTime: t.createdAt,
         mood: t.mood || null,
-        mistakeCategory: t.mistakeCategory || t.mistake_category || null,
+        mistakeCategory: t.mistakeCategory || null,
       }));
     
     const mt5 = (mt5History || []).map(t => {
@@ -202,7 +202,7 @@ export default function Journal() {
         sl: t.sl,
         tp: t.tp,
         mood: t.mood || null,
-        mistakeCategory: t.mistakeCategory || t.mistake_category || null,
+        mistakeCategory: t.mistakeCategory || null,
       };
     });
 

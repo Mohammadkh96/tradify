@@ -532,7 +532,7 @@ export async function checkAchievements(
 
   const mt5Trades = await db
     .select({
-      profit: mt5History.profit,
+      netPl: mt5History.netPl,
     })
     .from(mt5History)
     .where(eq(mt5History.userId, userId))
@@ -542,7 +542,7 @@ export async function checkAchievements(
   const allOutcomes = [
     ...journalTrades.map((t) => t.outcome?.toLowerCase()),
     ...mt5Trades.map((t) =>
-      t.profit && parseFloat(t.profit) > 0 ? "win" : "loss"
+      t.netPl && parseFloat(t.netPl) > 0 ? "win" : "loss"
     ),
   ];
 

@@ -7,7 +7,7 @@ import { z } from "zod";
 import tradersHubRouter from "./traders-hub";
 import { db, pool } from "./db";
 import * as schema from "@shared/schema";
-import { eq, or, desc, and, sql, ne } from "drizzle-orm";
+import { eq, or, desc, and, sql, ne, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -623,7 +623,6 @@ ${blogPosts.map(p => `  <url>
         `SELECT COUNT(*) as count FROM user_role WHERE founding_member = true AND role != 'OWNER'`
       );
       const isFoundingMember = parseInt(founderCount as string) < FOUNDING_MEMBER_CAP;
-      const earlyAccessRecord = null;
 
       const hashedPassword = await bcrypt.hash(password, 10);
       
@@ -676,17 +675,6 @@ ${blogPosts.map(p => `  <url>
         utmCampaign: utm_campaign || null,
         unsubscribeToken,
       }).returning();
-
-      // If early access signup exists, update it to link to the user (don't block registration)
-      if (earlyAccessRecord) {
-        db.update(schema.earlyAccessSignups)
-          .set({
-            status: "registered",
-            registeredUserId: normalizedEmail,
-          })
-          .where(eq(schema.earlyAccessSignups.id, earlyAccessRecord.id))
-          .catch(err => console.error("Failed to update early access record:", err));
-      }
 
       // Send verification email (don't await - run in background so registration doesn't fail if email fails)
       emailService.sendTransactionalEmail(newUser.userId, "email_verification", {
@@ -1410,12 +1398,12 @@ ${blogPosts.map(p => `  <url>
           pair: t.pair || "UNKNOWN",
           direction: t.direction || "Long",
           timeframe: t.timeframe || "Imported",
+          htfBias: t.htfBias || "Neutral",
           entryPrice: t.entryPrice || "",
-          exitPrice: t.exitPrice || "",
           riskReward: t.riskReward || "",
           netPl: t.netPl || "0",
           outcome: t.outcome || "Break-even",
-          notes: t.notes || "CSV Import",
+          notes: (t.notes || "CSV Import") + (t.exitPrice ? ` | Exit: ${t.exitPrice}` : ""),
         });
         imported.push(trade);
       }
@@ -1457,8 +1445,22 @@ ${blogPosts.map(p => `  <url>
       await db.delete(schema.hubComments).where(eq(schema.hubComments.userId, targetUserId));
       await db.delete(schema.hubReports).where(eq(schema.hubReports.userId, targetUserId));
       await db.delete(schema.hubPosts).where(eq(schema.hubPosts.userId, targetUserId));
-      await db.delete(schema.tradeRuleEvaluations).where(eq(schema.tradeRuleEvaluations.userId, targetUserId));
-      await db.delete(schema.strategyRules).where(eq(schema.strategyRules.userId, targetUserId));
+      const userStrategyIds = await db
+        .select({ id: schema.strategies.id })
+        .from(schema.strategies)
+        .where(eq(schema.strategies.userId, targetUserId));
+      const stratIds = userStrategyIds.map((s) => s.id);
+      const userComplianceIds = await db
+        .select({ id: schema.tradeComplianceResults.id })
+        .from(schema.tradeComplianceResults)
+        .where(eq(schema.tradeComplianceResults.userId, targetUserId));
+      const compIds = userComplianceIds.map((c) => c.id);
+      if (compIds.length > 0) {
+        await db.delete(schema.tradeRuleEvaluations).where(inArray(schema.tradeRuleEvaluations.complianceResultId, compIds));
+      }
+      if (stratIds.length > 0) {
+        await db.delete(schema.strategyRules).where(inArray(schema.strategyRules.strategyId, stratIds));
+      }
       await db.delete(schema.strategies).where(eq(schema.strategies.userId, targetUserId));
       await db.delete(schema.tradeComplianceResults).where(eq(schema.tradeComplianceResults.userId, targetUserId));
       await db.delete(schema.instrumentAnalyses).where(eq(schema.instrumentAnalyses.userId, targetUserId));
