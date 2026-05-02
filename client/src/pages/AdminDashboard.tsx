@@ -1,5 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, CheckCircle, LayoutDashboard, Activity, Plus, Key, Trash2, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil, Star, Wifi, WifiOff, Search, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, CheckCircle, LayoutDashboard, Activity, Plus, Key, Trash2, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil, Star, Wifi, WifiOff, Search, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, AlertTriangle, Tag, Download, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -622,6 +624,11 @@ export default function AdminDashboard() {
   const [planFilter, setPlanFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<string>("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [lifecycleFilter, setLifecycleFilter] = useState<string>("all");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [bulkTagInput, setBulkTagInput] = useState("");
 
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
@@ -668,6 +675,7 @@ export default function AdminDashboard() {
     const searchLower = searchEmail.toLowerCase();
     if (searchLower && !u.userId.toLowerCase().includes(searchLower) && !(u.fullName || "").toLowerCase().includes(searchLower)) return false;
     if (planFilter !== "all" && u.subscriptionTier !== planFilter) return false;
+    if (lifecycleFilter !== "all" && u.lifecycleStage !== lifecycleFilter) return false;
     if (dateFilter !== "all" && u.createdAt) {
       const createdAt = new Date(u.createdAt);
       const now = new Date();
@@ -705,6 +713,24 @@ export default function AdminDashboard() {
     onError: () => {
       toast({ variant: "destructive", title: "Error", description: "Failed to update founding member status." });
     },
+  });
+
+  const bulkActionMutation = useMutation({
+    mutationFn: async (payload: { action: string; userIds: string[]; tag?: string }) => {
+      const res = await apiRequest("POST", "/api/admin/users/bulk-action", payload);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Bulk action failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setSelectedRowIds(new Set());
+      setBulkTagInput("");
+      toast({ title: "Bulk action complete", description: `${vars.action.replace("_", " ")} applied to ${data.affected} users.` });
+    },
+    onError: (err: any) => toast({ variant: "destructive", title: "Bulk action failed", description: err.message }),
   });
 
   const grantProAdminMutation = useMutation({
@@ -1015,8 +1041,35 @@ export default function AdminDashboard() {
                 <CreditCard size={10} /> Paid Subscribers
               </div>
               <div className="text-3xl font-black text-blue-400">{paidCount}</div>
+              <div className="text-[10px] text-muted-foreground mt-1 font-mono">
+                ${allNonOwners.reduce((s, u) => s + (u.ltvEstimate || 0), 0).toLocaleString()} LTV
+              </div>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+          {([
+            { key: "NEW", label: "New", count: allNonOwners.filter(u => u.lifecycleStage === "NEW").length, cls: "border-cyan-500/30 text-cyan-400" },
+            { key: "ACTIVE", label: "Active", count: allNonOwners.filter(u => u.lifecycleStage === "ACTIVE").length, cls: "border-emerald-500/30 text-emerald-400" },
+            { key: "DORMANT", label: "Dormant", count: allNonOwners.filter(u => u.lifecycleStage === "DORMANT").length, cls: "border-amber-500/30 text-amber-400" },
+            { key: "AT_RISK", label: "At Risk", count: allNonOwners.filter(u => u.lifecycleStage === "AT_RISK").length, cls: "border-orange-500/30 text-orange-400" },
+            { key: "CHURNED", label: "Churned", count: allNonOwners.filter(u => u.lifecycleStage === "CHURNED").length, cls: "border-rose-500/30 text-rose-400" },
+            { key: "DEACTIVATED", label: "Off", count: allNonOwners.filter(u => u.lifecycleStage === "DEACTIVATED").length, cls: "border-border text-muted-foreground" },
+          ] as const).map(s => (
+            <button key={s.key}
+              onClick={() => setLifecycleFilter(lf => lf === s.key ? "all" : s.key)}
+              data-testid={`chip-lifecycle-${s.key.toLowerCase()}`}
+              className={cn(
+                "flex items-center justify-between gap-2 px-3 py-2 rounded-lg border bg-card hover:bg-muted/40 transition-colors",
+                s.cls,
+                lifecycleFilter === s.key && "ring-2 ring-emerald-500/40"
+              )}
+            >
+              <span className="text-[10px] font-black uppercase tracking-widest">{s.label}</span>
+              <span className="text-sm font-black tabular-nums">{s.count}</span>
+            </button>
+          ))}
         </div>
 
         <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
@@ -1044,6 +1097,20 @@ export default function AdminDashboard() {
               <SelectItem value="FREE">Free</SelectItem>
               <SelectItem value="PRO">Pro</SelectItem>
               <SelectItem value="ELITE">Elite</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
+            <SelectTrigger className="h-9 w-40 text-xs bg-muted border-border" data-testid="select-lifecycle-filter">
+              <SelectValue placeholder="Any Lifecycle" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any Lifecycle</SelectItem>
+              <SelectItem value="NEW">🌱 New</SelectItem>
+              <SelectItem value="ACTIVE">✅ Active</SelectItem>
+              <SelectItem value="DORMANT">😴 Dormant</SelectItem>
+              <SelectItem value="AT_RISK">⚠️ At Risk</SelectItem>
+              <SelectItem value="CHURNED">💀 Churned</SelectItem>
+              <SelectItem value="DEACTIVATED">🚫 Deactivated</SelectItem>
             </SelectContent>
           </Select>
           <div className="relative flex-1 min-w-[200px]">
@@ -1163,19 +1230,112 @@ export default function AdminDashboard() {
           </Card>
         )}
 
+        {selectedRowIds.size > 0 && (
+          <Card className="bg-emerald-500/10 border-emerald-500/40 border-2" data-testid="bulk-action-toolbar">
+            <CardContent className="p-3 flex flex-wrap items-center gap-2">
+              <Badge className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-widest" data-testid="text-selected-count">
+                {selectedRowIds.size} selected
+              </Badge>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase tracking-widest font-bold text-emerald-500 hover:bg-emerald-500/10"
+                onClick={() => bulkActionMutation.mutate({ action: "grant_pro", userIds: Array.from(selectedRowIds) })}
+                disabled={bulkActionMutation.isPending}
+                data-testid="button-bulk-grant-pro"
+              >
+                <Crown size={11} className="mr-1" /> Grant Pro
+              </Button>
+              <div className="flex items-center gap-1">
+                <Input
+                  value={bulkTagInput}
+                  onChange={e => setBulkTagInput(e.target.value)}
+                  placeholder="tag-name"
+                  className="h-7 w-32 text-[10px] bg-muted border-border"
+                  data-testid="input-bulk-tag"
+                  maxLength={32}
+                />
+                <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase tracking-widest font-bold text-blue-400 hover:bg-blue-500/10"
+                  onClick={() => bulkActionMutation.mutate({ action: "tag_add", userIds: Array.from(selectedRowIds), tag: bulkTagInput })}
+                  disabled={bulkActionMutation.isPending || !bulkTagInput.trim()}
+                  data-testid="button-bulk-tag"
+                >
+                  <Tag size={11} className="mr-1" /> Add Tag
+                </Button>
+              </div>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase tracking-widest font-bold text-rose-500 hover:bg-rose-500/10"
+                onClick={() => {
+                  if (confirm(`Deactivate ${selectedRowIds.size} users?`)) {
+                    bulkActionMutation.mutate({ action: "deactivate", userIds: Array.from(selectedRowIds) });
+                  }
+                }}
+                disabled={bulkActionMutation.isPending}
+                data-testid="button-bulk-deactivate"
+              >
+                <X size={11} className="mr-1" /> Deactivate
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  const selected = sortedUsers.filter(u => selectedRowIds.has(u.userId));
+                  const csv = [
+                    ["userId", "fullName", "tier", "lifecycle", "ltv", "country", "tradeCount", "ageDays", "inactiveDays", "tags"].join(","),
+                    ...selected.map(u => [u.userId, u.fullName || "", u.subscriptionTier, u.lifecycleStage, u.ltvEstimate, u.country || "", u.tradeCount, u.ageDays, u.inactiveDays, (u.adminTags || []).join("|")].map(v => {
+                      let s = String(v);
+                      if (/^[=+\-@]/.test(s)) s = "'" + s; // CSV formula injection guard
+                      return `"${s.replace(/"/g, '""')}"`;
+                    }).join(","))
+                  ].join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = `tradify-users-${Date.now()}.csv`; a.click();
+                  URL.revokeObjectURL(url);
+                  toast({ title: "Exported", description: `${selected.length} users exported as CSV.` });
+                }}
+                data-testid="button-bulk-export"
+              >
+                <Download size={11} className="mr-1" /> Export CSV
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase tracking-widest font-bold text-muted-foreground ml-auto"
+                onClick={() => setSelectedRowIds(new Set())}
+                data-testid="button-bulk-clear"
+              >
+                Clear
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="bg-card border-border overflow-hidden">
           <CardContent className="p-0">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow className="border-border">
-                  <TableHead className="pl-4">
+                  <TableHead className="pl-4 w-10">
+                    <Checkbox
+                      checked={sortedUsers.length > 0 && sortedUsers.every(u => selectedRowIds.has(u.userId))}
+                      onCheckedChange={(v) => {
+                        if (v) setSelectedRowIds(new Set(sortedUsers.map(u => u.userId)));
+                        else setSelectedRowIds(new Set());
+                      }}
+                      data-testid="checkbox-select-all"
+                    />
+                  </TableHead>
+                  <TableHead>
                     <button onClick={() => handleSort("name")} className="flex items-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:text-foreground cursor-pointer">
                       Member <SortIcon field="name" />
                     </button>
                   </TableHead>
                   <TableHead>
+                    <button onClick={() => handleSort("lifecycleStage")} className="flex items-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:text-foreground cursor-pointer">
+                      Lifecycle <SortIcon field="lifecycleStage" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
                     <button onClick={() => handleSort("plan")} className="flex items-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:text-foreground cursor-pointer">
                       Plan <SortIcon field="plan" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort("ltvEstimate")} className="flex items-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:text-foreground cursor-pointer">
+                      LTV <SortIcon field="ltvEstimate" />
                     </button>
                   </TableHead>
                   <TableHead>
@@ -1194,9 +1354,41 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedUsers.map((user) => (
-                  <TableRow key={user.id} className="border-border hover:bg-muted/40" data-testid={`row-user-${user.userId}`}>
-                    <TableCell className="pl-4">
+                {sortedUsers.map((user) => {
+                  const lifecycleCls: Record<string, string> = {
+                    NEW: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+                    ACTIVE: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+                    DORMANT: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+                    AT_RISK: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+                    CHURNED: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+                    DEACTIVATED: "bg-muted text-muted-foreground border-border",
+                  };
+                  const isSelected = selectedRowIds.has(user.userId);
+                  return (
+                  <TableRow key={user.id} className={cn("border-border hover:bg-muted/40 cursor-pointer", isSelected && "bg-emerald-500/5")}
+                    onClick={(e) => {
+                      // Only open drawer when clicking non-interactive areas
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button, [role="checkbox"], input, [role="combobox"], a')) return;
+                      setSelectedUserId(user.userId);
+                      setDrawerOpen(true);
+                    }}
+                    data-testid={`row-user-${user.userId}`}
+                  >
+                    <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(v) => {
+                          setSelectedRowIds(prev => {
+                            const next = new Set(prev);
+                            if (v) next.add(user.userId); else next.delete(user.userId);
+                            return next;
+                          });
+                        }}
+                        data-testid={`checkbox-row-${user.userId}`}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-3">
                         <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center text-xs font-black shrink-0", avatarColors[user.subscriptionTier] || avatarColors.FREE)}>
                           {getInitials(user.userId, user.fullName)}
@@ -1213,14 +1405,36 @@ export default function AdminDashboard() {
                           <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[160px]">
                             {user.fullName ? user.userId : ""}
                           </div>
+                          {(user.adminTags && user.adminTags.length > 0) && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {user.adminTags.slice(0, 3).map((t: string) => (
+                                <span key={t} className="text-[8px] px-1 py-0 rounded bg-blue-500/15 text-blue-400 font-bold uppercase tracking-wide" data-testid={`row-tag-${user.userId}-${t}`}>{t}</span>
+                              ))}
+                              {user.adminTags.length > 3 && <span className="text-[8px] text-muted-foreground">+{user.adminTags.length - 3}</span>}
+                            </div>
+                          )}
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={cn("text-[9px] font-black uppercase tracking-widest border", lifecycleCls[user.lifecycleStage] || lifecycleCls.ACTIVE)} data-testid={`badge-lifecycle-${user.userId}`}>
+                        {user.lifecycleStage === "AT_RISK" && <AlertTriangle size={9} className="mr-1" />}
+                        {user.lifecycleStage?.replace("_", " ") || "—"}
+                      </Badge>
+                      {user.inactiveDays > 14 && (
+                        <div className="text-[9px] text-muted-foreground mt-0.5">{user.inactiveDays}d quiet</div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={cn("text-[9px] font-black uppercase tracking-widest", planColors[user.subscriptionTier] || planColors.FREE)}>
                         {user.subscriptionTier === "ELITE" && <Crown size={9} className="mr-1" />}
                         {user.subscriptionTier}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className={cn("text-xs font-mono font-bold", user.ltvEstimate > 0 ? "text-emerald-400" : "text-muted-foreground/50")} data-testid={`text-ltv-${user.userId}`}>
+                        ${user.ltvEstimate || 0}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {user.mt5Connected ? (
@@ -1262,7 +1476,7 @@ export default function AdminDashboard() {
                         <span className="text-[10px] text-muted-foreground/40">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="pr-4">
+                    <TableCell className="pr-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
                         <Select 
                           value={user.subscriptionTier} 
@@ -1315,10 +1529,11 @@ export default function AdminDashboard() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
                 {sortedUsers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic text-sm">
+                    <TableCell colSpan={10} className="h-24 text-center text-muted-foreground italic text-sm">
                       No users match your filters.
                     </TableCell>
                   </TableRow>
@@ -1327,6 +1542,12 @@ export default function AdminDashboard() {
             </Table>
           </CardContent>
         </Card>
+
+        <UserDetailDrawer
+          userId={selectedUserId}
+          open={drawerOpen}
+          onOpenChange={(o) => { setDrawerOpen(o); if (!o) setSelectedUserId(null); }}
+        />
       </div>
     );
   }

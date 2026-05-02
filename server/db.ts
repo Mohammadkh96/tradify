@@ -65,6 +65,9 @@ export async function ensureSchemaColumns() {
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source TEXT;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS admin_notes TEXT;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS admin_tags TEXT[] DEFAULT '{}';
     `);
 
     // Create sent_emails table if not exists

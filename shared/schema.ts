@@ -137,6 +137,9 @@ export const userRole = pgTable("user_role", {
   emailUnsubscribed: boolean("email_unsubscribed").default(false),
   unsubscribeToken: text("unsubscribe_token"),
   language: text("language").default("en"),
+  lastLoginAt: timestamp("last_login_at"),
+  adminNotes: text("admin_notes"),
+  adminTags: text("admin_tags").array().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

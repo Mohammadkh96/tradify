@@ -957,6 +957,12 @@ ${blogPosts.map(p => `  <url>
       // Check if this is first login (for tour)
       const isFirstLogin = !user.hasSeenTour;
 
+      // Update last login timestamp (fire and forget)
+      db.update(schema.userRole)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(schema.userRole.userId, user.userId))
+        .catch(err => console.error("Failed to update lastLoginAt:", err));
+
       res.json({ ...user, isFirstLogin });
     } catch (error) {
       console.error("Login error:", error);
@@ -4307,8 +4313,171 @@ End with: "Review your charts for current market structure."`;
     const users = await db.select().from(schema.userRole);
     const mt5Result = await pool.query(`SELECT DISTINCT user_id FROM mt5_accounts`);
     const mt5UserIds = new Set((mt5Result.rows as any[]).map(r => r.user_id));
-    const enriched = users.map(u => ({ ...u, mt5Connected: mt5UserIds.has(u.userId) }));
+    const tradeCountResult = await pool.query(`SELECT user_id, COUNT(*) as count FROM trade_journal GROUP BY user_id`);
+    const tradeCounts = new Map((tradeCountResult.rows as any[]).map(r => [r.user_id, parseInt(r.count)]));
+
+    const TIER_PRICE: Record<string, number> = { FREE: 0, PRO: 29, ELITE: 99 };
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+
+    const enriched = users.map(u => {
+      const createdAt = u.createdAt ? new Date(u.createdAt).getTime() : now;
+      const lastLogin = u.lastLoginAt ? new Date(u.lastLoginAt).getTime() : createdAt;
+      const ageDays = Math.floor((now - createdAt) / DAY);
+      const inactiveDays = Math.floor((now - lastLogin) / DAY);
+      const tier = u.subscriptionTier || "FREE";
+      const isPaid = tier === "PRO" || tier === "ELITE";
+      const isCancelled = u.subscriptionStatus === "cancelled" || u.subscriptionStatus === "canceled";
+
+      // Lifecycle stage
+      let lifecycleStage: string;
+      if (u.role === "DEACTIVATED") lifecycleStage = "DEACTIVATED";
+      else if (isCancelled) lifecycleStage = "CHURNED";
+      else if (inactiveDays > 60) lifecycleStage = "CHURNED";
+      else if (inactiveDays > 30 && isPaid) lifecycleStage = "AT_RISK";
+      else if (inactiveDays > 14) lifecycleStage = "DORMANT";
+      else if (ageDays < 7) lifecycleStage = "NEW";
+      else lifecycleStage = "ACTIVE";
+
+      // LTV estimate: months_paid × tier_price (cap at age in months)
+      const monthsActive = Math.max(1, Math.floor(ageDays / 30));
+      const ltvEstimate = isPaid ? monthsActive * TIER_PRICE[tier] : 0;
+
+      return {
+        ...u,
+        mt5Connected: mt5UserIds.has(u.userId),
+        tradeCount: tradeCounts.get(u.userId) || 0,
+        lifecycleStage,
+        ltvEstimate,
+        inactiveDays,
+        ageDays,
+      };
+    });
     res.json(enriched);
+  });
+
+  // ── Admin CRM: User Detail Timeline ───────────────────────────────────────
+  app.get("/api/admin/users/:userId/timeline", requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = decodeURIComponent(req.params.userId);
+      const events: Array<{ type: string; at: string; label: string; meta?: any }> = [];
+
+      const [u] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, targetUserId)).limit(1);
+      if (!u) return res.status(404).json({ message: "User not found" });
+
+      if (u.createdAt) events.push({ type: "signup", at: u.createdAt.toISOString(), label: "Account created" });
+      if (u.lastLoginAt) events.push({ type: "login", at: u.lastLoginAt.toISOString(), label: "Last login" });
+      if (u.emailVerified && u.updatedAt) events.push({ type: "verified", at: u.updatedAt.toISOString(), label: "Email verified" });
+      if (u.foundingMember && u.createdAt) events.push({ type: "founding", at: u.createdAt.toISOString(), label: "Joined as founding member" });
+      if (u.subscriptionStatus === "active" && u.renewalDate) {
+        events.push({ type: "subscription", at: u.renewalDate.toISOString(), label: `${u.subscriptionTier} subscription renews`, meta: { tier: u.subscriptionTier, provider: u.subscriptionProvider } });
+      }
+
+      // Recent trades (last 10)
+      const recentTrades = await db.select({ id: schema.tradeJournal.id, pair: schema.tradeJournal.pair, outcome: schema.tradeJournal.outcome, netPl: schema.tradeJournal.netPl, createdAt: schema.tradeJournal.createdAt })
+        .from(schema.tradeJournal)
+        .where(eq(schema.tradeJournal.userId, targetUserId))
+        .orderBy(desc(schema.tradeJournal.createdAt))
+        .limit(10);
+      for (const t of recentTrades) {
+        if (t.createdAt) events.push({ type: "trade", at: t.createdAt.toISOString(), label: `Trade: ${t.pair} ${t.outcome}`, meta: { netPl: t.netPl } });
+      }
+
+      // Recent emails sent
+      try {
+        const emailRes = await pool.query(`SELECT subject, template_name, success, sent_at FROM sent_emails WHERE user_id = $1 OR recipient = $1 ORDER BY sent_at DESC LIMIT 15`, [targetUserId]);
+        for (const e of emailRes.rows as any[]) {
+          events.push({ type: "email", at: new Date(e.sent_at).toISOString(), label: `Email: ${e.subject}`, meta: { template: e.template_name, success: e.success } });
+        }
+      } catch {}
+
+      events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+      res.json({ user: u, events });
+    } catch (error) {
+      console.error("Timeline error:", error);
+      res.status(500).json({ message: "Failed to fetch timeline" });
+    }
+  });
+
+  // ── Admin CRM: Update notes ───────────────────────────────────────────────
+  app.patch("/api/admin/users/:userId/notes", requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = decodeURIComponent(req.params.userId);
+      const { notes } = req.body;
+      if (typeof notes !== "string") return res.status(400).json({ message: "notes must be a string" });
+      if (notes.length > 5000) return res.status(400).json({ message: "Notes too long (max 5000 chars)" });
+      await db.update(schema.userRole).set({ adminNotes: notes }).where(eq(schema.userRole.userId, targetUserId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update notes error:", error);
+      res.status(500).json({ message: "Failed to update notes" });
+    }
+  });
+
+  // ── Admin CRM: Update tags ────────────────────────────────────────────────
+  app.patch("/api/admin/users/:userId/tags", requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = decodeURIComponent(req.params.userId);
+      const { tags } = req.body;
+      if (!Array.isArray(tags) || !tags.every(t => typeof t === "string")) {
+        return res.status(400).json({ message: "tags must be a string array" });
+      }
+      const cleaned = tags.map(t => t.trim().toLowerCase().slice(0, 32)).filter(t => t.length > 0).slice(0, 20);
+      await db.update(schema.userRole).set({ adminTags: cleaned }).where(eq(schema.userRole.userId, targetUserId));
+      res.json({ success: true, tags: cleaned });
+    } catch (error) {
+      console.error("Update tags error:", error);
+      res.status(500).json({ message: "Failed to update tags" });
+    }
+  });
+
+  // ── Admin CRM: Bulk actions ───────────────────────────────────────────────
+  app.post("/api/admin/users/bulk-action", requireAdmin, async (req, res) => {
+    try {
+      const { action, userIds } = req.body;
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ message: "userIds required" });
+      }
+      if (userIds.length > 200) {
+        return res.status(400).json({ message: "Maximum 200 users per bulk action" });
+      }
+      const ids = userIds.filter((id: any) => typeof id === "string");
+
+      if (action === "grant_pro") {
+        await db.update(schema.userRole)
+          .set({ subscriptionTier: "PRO", subscriptionStatus: "active" })
+          .where(inArray(schema.userRole.userId, ids));
+        return res.json({ success: true, affected: ids.length });
+      }
+      if (action === "tag_add") {
+        const { tag } = req.body;
+        if (!tag || typeof tag !== "string") return res.status(400).json({ message: "tag required" });
+        const cleanTag = tag.trim().toLowerCase().slice(0, 32);
+        // Add tag to each user (read-modify-write per user since text[] append via Drizzle is awkward)
+        const targetUsers = await db.select({ userId: schema.userRole.userId, adminTags: schema.userRole.adminTags })
+          .from(schema.userRole)
+          .where(inArray(schema.userRole.userId, ids));
+        for (const u of targetUsers) {
+          const tags = u.adminTags || [];
+          if (!tags.includes(cleanTag)) {
+            await db.update(schema.userRole)
+              .set({ adminTags: [...tags, cleanTag].slice(0, 20) })
+              .where(eq(schema.userRole.userId, u.userId));
+          }
+        }
+        return res.json({ success: true, affected: targetUsers.length });
+      }
+      if (action === "deactivate") {
+        await db.update(schema.userRole)
+          .set({ role: "DEACTIVATED" })
+          .where(inArray(schema.userRole.userId, ids));
+        return res.json({ success: true, affected: ids.length });
+      }
+      return res.status(400).json({ message: `Unknown action: ${action}` });
+    } catch (error) {
+      console.error("Bulk action error:", error);
+      res.status(500).json({ message: "Failed to perform bulk action" });
+    }
   });
 
   app.get("/api/admin/utm-stats", requireAdmin, async (_req, res) => {
