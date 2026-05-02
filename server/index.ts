@@ -170,6 +170,17 @@ async function initializeApp() {
   } catch (err) {
     log(`Failed to arm backup scheduler: ${err}`, "backup");
   }
+
+  // Start daily risk-alert digest scheduler. Runs every 15 minutes; for each
+  // user with digest_enabled it checks whether their local time matches the
+  // configured digest hour (default 8am) and, if so, sends a single summary
+  // of the last 24h of risk alerts. Idempotent via per-day dedupe key.
+  try {
+    const { startDailyDigestScheduler } = await import("./dailyDigest");
+    startDailyDigestScheduler();
+  } catch (err) {
+    log(`Failed to arm daily digest scheduler: ${err}`, "digest");
+  }
 }
 
 // Start the application

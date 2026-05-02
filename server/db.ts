@@ -512,6 +512,7 @@ export async function ensureSchemaColumns() {
       ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS revenge_in_app BOOLEAN DEFAULT true;
       ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS overtrading_in_app BOOLEAN DEFAULT true;
       ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS strategy_deviation_in_app BOOLEAN DEFAULT true;
+      ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS digest_enabled BOOLEAN DEFAULT true;
     `);
 
     console.log('Schema columns verified');

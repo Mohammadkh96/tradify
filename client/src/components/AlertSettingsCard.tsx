@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Bell, AlertTriangle, Activity, Compass, TrendingDown, Save, Loader2 } from "lucide-react";
+import { Bell, AlertTriangle, Activity, Compass, TrendingDown, Save, Loader2, Mail } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -28,6 +28,7 @@ interface AlertPreferences {
   strategyDeviationInApp: boolean;
   strategyDeviationEmail: boolean;
   cooldownMinutes: number;
+  digestEnabled: boolean;
 }
 
 const DEFAULTS: AlertPreferences = {
@@ -47,6 +48,7 @@ const DEFAULTS: AlertPreferences = {
   strategyDeviationInApp: true,
   strategyDeviationEmail: false,
   cooldownMinutes: 60,
+  digestEnabled: true,
 };
 
 export function AlertSettingsCard() {
@@ -299,6 +301,33 @@ export function AlertSettingsCard() {
                   />
                 </div>
               )}
+            </section>
+
+            <Separator />
+
+            {/* DAILY DIGEST */}
+            <section className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex gap-3 min-w-0">
+                  <Mail className="h-4 w-4 mt-1 text-emerald-500 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <Label className="text-sm font-semibold block">
+                      {t("widgets.alerts.digest.label", "Daily digest email")}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t(
+                        "widgets.alerts.digest.desc",
+                        "Once a day, a calm summary of yesterday's risk events grouped by type and severity. Sent in your local morning. Independent of real-time alert emails.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={prefs.digestEnabled}
+                  onCheckedChange={(v) => update({ digestEnabled: v })}
+                  data-testid="switch-digest-enabled"
+                />
+              </div>
             </section>
 
             <Separator />

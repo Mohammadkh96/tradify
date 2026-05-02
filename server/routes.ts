@@ -8387,6 +8387,7 @@ Guidelines:
         strategyDeviationInApp: true,
         strategyDeviationEmail: false,
         cooldownMinutes: 60,
+        digestEnabled: true,
       };
       if (!row) return res.json(defaults);
       res.json({
@@ -8407,6 +8408,7 @@ Guidelines:
         strategyDeviationInApp: row.strategy_deviation_in_app ?? true,
         strategyDeviationEmail: row.strategy_deviation_email,
         cooldownMinutes: row.cooldown_minutes,
+        digestEnabled: row.digest_enabled ?? true,
       });
     } catch (err) {
       console.error("[AlertPrefs] get error:", err);
@@ -8445,6 +8447,7 @@ Guidelines:
         strategyDeviationInApp: b.strategyDeviationInApp !== false,
         strategyDeviationEmail: !!b.strategyDeviationEmail,
         cooldownMinutes: clampInt(b.cooldownMinutes, 60, 5, 1440),
+        digestEnabled: b.digestEnabled !== false,
       };
       if (vals.drawdownWarnThreshold >= vals.drawdownCriticalThreshold) {
         vals.drawdownWarnThreshold = Math.max(10, vals.drawdownCriticalThreshold - 10);
@@ -8453,8 +8456,8 @@ Guidelines:
         `INSERT INTO alert_preferences (
            user_id, drawdown_enabled, drawdown_in_app, drawdown_email, drawdown_warn_threshold, drawdown_critical_threshold,
            revenge_enabled, revenge_in_app, revenge_email, overtrading_enabled, overtrading_in_app, overtrading_email, overtrading_daily_cap,
-           strategy_deviation_enabled, strategy_deviation_in_app, strategy_deviation_email, cooldown_minutes, updated_at
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW())
+           strategy_deviation_enabled, strategy_deviation_in_app, strategy_deviation_email, cooldown_minutes, digest_enabled, updated_at
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,NOW())
          ON CONFLICT (user_id) DO UPDATE SET
            drawdown_enabled = EXCLUDED.drawdown_enabled,
            drawdown_in_app = EXCLUDED.drawdown_in_app,
@@ -8472,10 +8475,11 @@ Guidelines:
            strategy_deviation_in_app = EXCLUDED.strategy_deviation_in_app,
            strategy_deviation_email = EXCLUDED.strategy_deviation_email,
            cooldown_minutes = EXCLUDED.cooldown_minutes,
+           digest_enabled = EXCLUDED.digest_enabled,
            updated_at = NOW()`,
         [userId, vals.drawdownEnabled, vals.drawdownInApp, vals.drawdownEmail, vals.drawdownWarnThreshold, vals.drawdownCriticalThreshold,
          vals.revengeEnabled, vals.revengeInApp, vals.revengeEmail, vals.overtradingEnabled, vals.overtradingInApp, vals.overtradingEmail, vals.overtradingDailyCap,
-         vals.strategyDeviationEnabled, vals.strategyDeviationInApp, vals.strategyDeviationEmail, vals.cooldownMinutes]
+         vals.strategyDeviationEnabled, vals.strategyDeviationInApp, vals.strategyDeviationEmail, vals.cooldownMinutes, vals.digestEnabled]
       );
       res.json({ ok: true, ...vals, userId });
     } catch (err) {

@@ -814,6 +814,9 @@ export const alertPreferences = pgTable("alert_preferences", {
   strategyDeviationInApp: boolean("strategy_deviation_in_app").default(true),
   strategyDeviationEmail: boolean("strategy_deviation_email").default(false),
   cooldownMinutes: integer("cooldown_minutes").default(60),
+  // Once-a-day digest email summarizing yesterday's risk alerts.
+  // Independent of real-time per-alert emails.
+  digestEnabled: boolean("digest_enabled").default(true),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

@@ -1709,6 +1709,121 @@ export async function sendRiskAlertEmail(
   }
 }
 
+export interface DailyDigestEmailData {
+  date: string;
+  total: number;
+  groups: Array<{ type: string; severity: string; count: number }>;
+}
+
+const SEVERITY_LABEL: Record<string, string> = {
+  high: "Critical",
+  medium: "Warning",
+  low: "Info",
+};
+const SEVERITY_COLOR: Record<string, string> = {
+  high: "#EF4444",
+  medium: "#F59E0B",
+  low: "#3B82F6",
+};
+
+export async function sendDailyAlertDigestEmail(
+  userIdOrEmail: string,
+  data: DailyDigestEmailData,
+): Promise<boolean> {
+  try {
+    if (!SMTP_USER || !SMTP_APP_PASSWORD) return false;
+    if (await isUserUnsubscribed(userIdOrEmail)) {
+      console.log(`[DailyDigest] User ${userIdOrEmail} unsubscribed — skipping digest`);
+      return false;
+    }
+
+    const ctaUrl = `${APP_URL}/dashboard`;
+    const unsubUrl = await getUnsubscribeUrl(userIdOrEmail);
+
+    const rows = data.groups.map(g => {
+      const theme = ALERT_THEME[g.type] || { color: "#00D9A3", emoji: "🔔", label: g.type };
+      const sevColor = SEVERITY_COLOR[g.severity] || "#9CA3AF";
+      const sevLabel = SEVERITY_LABEL[g.severity] || g.severity;
+      return `
+        <tr>
+          <td style="padding: 12px 4px; border-bottom: 1px solid #1F2937;">
+            <table width="100%" role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-size: 14px; color: #ffffff; font-family: Arial, sans-serif;">
+                  <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${theme.color}; margin-right:10px; vertical-align:middle;"></span>
+                  <span style="vertical-align:middle;">${theme.emoji} ${theme.label}</span>
+                </td>
+                <td align="right" style="font-family: Arial, sans-serif; font-size: 12px; white-space: nowrap;">
+                  <span style="color: ${sevColor}; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-right: 12px;">${sevLabel}</span>
+                  <span style="color:#ffffff; font-weight: 700;">×${g.count}</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`;
+    }).join("");
+
+    const content = `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr><td style="padding-bottom: 8px;">
+          <span style="display: inline-block; background-color: #00D9A31A; color: #00D9A3; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 12px; border-radius: 4px; border: 1px solid #00D9A340;">
+            📬 Daily Risk Digest
+          </span>
+        </td></tr>
+        <tr><td style="padding-bottom: 16px;">
+          <h1 style="margin: 12px 0 0 0; font-size: 24px; font-weight: 800; color: #ffffff; line-height: 1.3; font-family: Arial, sans-serif;">
+            Risk recap — last 24 hours
+          </h1>
+          <p style="margin: 8px 0 0 0; font-size: 13px; color: #6B7280; font-family: Arial, sans-serif;">
+            ${data.date} · ${data.total} alert${data.total === 1 ? "" : "s"}
+          </p>
+        </td></tr>
+        <tr><td style="padding-bottom: 24px;">
+          <p style="margin: 0; font-size: 15px; color: #D1D5DB; line-height: 1.6; font-family: Arial, sans-serif;">
+            Here's a calm summary of every risk event your account triggered in the last 24 hours, grouped by type and severity. Use it as a once-a-day discipline check — no need to chase every notification individually.
+          </p>
+        </td></tr>
+        <tr><td style="padding-bottom: 24px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#0F172A; border:1px solid #1F2937; border-radius: 8px;">
+            ${rows}
+          </table>
+        </td></tr>
+        <tr><td style="padding-bottom: 24px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background-color: #00D9A3; border-radius: 6px;">
+                <a href="${ctaUrl}" style="display: inline-block; padding: 14px 32px; font-size: 13px; font-weight: 800; color: #0A0F1E; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; font-family: Arial, sans-serif;">
+                  Open Tradify →
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+        <tr><td style="border-top: 1px solid #1F2937; padding-top: 20px;">
+          <p style="margin: 0; font-size: 12px; color: #6B7280; line-height: 1.6; font-family: Arial, sans-serif;">
+            You're receiving this digest because it's enabled in your <a href="${APP_URL}/profile" style="color: #00D9A3; text-decoration: none;">Alert Settings</a>. You can switch off just the digest there without affecting real-time alerts.
+          </p>
+        </td></tr>
+      </table>`;
+
+    const subject = `📬 Risk recap (24h) — ${data.total} alert${data.total === 1 ? "" : "s"}`;
+    const html = wrapEmailBody(
+      content,
+      "Daily risk digest",
+      `Summary of ${data.total} risk alert${data.total === 1 ? "" : "s"} from the last 24 hours`,
+      unsubUrl,
+    );
+
+    return await sendEmail(userIdOrEmail, subject, html, true, {
+      "List-Unsubscribe": unsubUrl ? `<${unsubUrl}>` : "",
+      "X-Tradify-Alert-Type": "daily_digest",
+    });
+  } catch (err) {
+    console.error("[DailyDigest] send error:", err);
+    return false;
+  }
+}
+
 export const emailService = {
   sendTransactionalEmail,
   sendWelcomeEmail,
