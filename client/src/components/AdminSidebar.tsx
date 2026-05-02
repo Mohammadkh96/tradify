@@ -18,6 +18,7 @@ const adminNavItems = [
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/admin/costs", label: "Cost Intelligence", icon: DollarSign },
   { href: "/admin/analytics", label: "Growth Analytics", icon: TrendingUp },
+  { href: "/admin/backups", label: "Backups", icon: Database },
 ];
 
 interface MarketingSubGroup {

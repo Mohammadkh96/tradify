@@ -445,6 +445,23 @@ export async function ensureSchemaColumns() {
       );
     `);
 
+    // Create database_backups table (for daily Neon backup observability)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS database_backups (
+        id SERIAL PRIMARY KEY,
+        run_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        status TEXT NOT NULL,
+        storage_key TEXT,
+        size_bytes INTEGER,
+        duration_ms INTEGER,
+        is_monthly BOOLEAN DEFAULT false NOT NULL,
+        trigger TEXT DEFAULT 'scheduled' NOT NULL,
+        error_message TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_database_backups_run_at ON database_backups (run_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_database_backups_status ON database_backups (status);
+    `);
+
     console.log('Schema columns verified');
   } catch (error) {
     console.error('Schema migration error:', error);

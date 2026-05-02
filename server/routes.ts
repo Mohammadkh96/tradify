@@ -12,6 +12,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { emailService } from "./emailService";
+import { runBackup, getBackupStatus } from "./backup-service";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
@@ -1395,6 +1396,26 @@ ${blogPosts.map(p => `  <url>
     } catch (error) {
       console.error("Delete user error:", error);
       res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  app.get("/api/admin/backups/status", requireAdmin, async (_req, res) => {
+    try {
+      const status = await getBackupStatus();
+      res.json(status);
+    } catch (error: any) {
+      console.error("Backup status error:", error);
+      res.status(500).json({ message: "Failed to fetch backup status", error: error?.message });
+    }
+  });
+
+  app.post("/api/admin/backups/run", requireAdmin, async (_req, res) => {
+    try {
+      const result = await runBackup({ trigger: "manual" });
+      res.json(result);
+    } catch (error: any) {
+      console.error("Manual backup error:", error);
+      res.status(500).json({ message: "Backup invocation failed", error: error?.message });
     }
   });
 

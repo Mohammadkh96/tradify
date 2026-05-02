@@ -503,6 +503,57 @@ async function sendAdminSignupNotification(
   return sendEmail(ADMIN_EMAIL, subject, html);
 }
 
+async function sendBackupFailureAlertEmail(params: {
+  errorMessage: string;
+  attemptedAt: Date;
+  trigger: string;
+  consecutiveFailures: number;
+  storageKey?: string;
+}): Promise<boolean> {
+  const { errorMessage, attemptedAt, trigger, consecutiveFailures, storageKey } = params;
+  const safeError = escapeHtml(errorMessage.slice(0, 4000));
+  const escalated = consecutiveFailures >= 2;
+  const subject = escalated
+    ? `[ESCALATION] ${consecutiveFailures} consecutive Tradify backup failures`
+    : `[ALERT] Tradify database backup failed`;
+
+  const escalationBlock = escalated
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 0 0 16px 0;">
+         <tr><td style="background-color: #1F2937; padding: 16px; border-radius: 8px; border-left: 4px solid #EF4444;">
+           <p style="color: #ffffff; font-size: 14px; font-weight: bold; margin: 0 0 4px 0;">&#9888;&#65039; ${consecutiveFailures} consecutive failures</p>
+           <p style="color: #D1D5DB; font-size: 13px; margin: 0; line-height: 1.6;">No successful backup has been recorded in the last ${consecutiveFailures} attempts. The production Neon database is currently unprotected — investigate immediately.</p>
+         </td></tr>
+       </table>`
+    : "";
+
+  const content = `
+    <h1 style="color: #ffffff; font-size: 22px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">&#128737;&#65039; Database Backup Failed</h1>
+    <p style="color: #D1D5DB; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">A scheduled backup of the Tradify production database did not complete successfully. Recovery is at risk until this is resolved.</p>
+    ${escalationBlock}
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #131A2B; padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+      <tr><td style="padding-bottom: 12px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px;">Attempted</p>
+        <p style="margin: 0; font-size: 14px; color: #ffffff; font-family: monospace;">${attemptedAt.toISOString()}</p>
+      </td></tr>
+      <tr><td style="padding-bottom: 12px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px;">Trigger</p>
+        <p style="margin: 0; font-size: 14px; color: #ffffff; font-family: monospace;">${escapeHtml(trigger)}</p>
+      </td></tr>
+      <tr><td style="padding-bottom: 12px;">
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px;">Intended storage key</p>
+        <p style="margin: 0; font-size: 13px; color: #ffffff; font-family: monospace; word-break: break-all;">${escapeHtml(storageKey || "(not assigned)")}</p>
+      </td></tr>
+      <tr><td>
+        <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #6B7280; letter-spacing: 1px;">Error</p>
+        <pre style="margin: 0; font-size: 12px; color: #FCA5A5; background-color: #0A0F1E; padding: 12px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-family: monospace; line-height: 1.5;">${safeError}</pre>
+      </td></tr>
+    </table>
+    <p style="color: #9CA3AF; font-size: 13px; line-height: 1.6; margin: 16px 0 0 0;">Run <code style="background-color: #1F2937; padding: 2px 6px; border-radius: 4px; color: #00D9A3;">npx tsx scripts/backup-db.ts</code> on the server to retry manually, or visit the admin Database Backups panel.</p>`;
+
+  const html = wrapEmailBody(content, subject, "Tradify backup failure alert");
+  return sendEmail(ADMIN_EMAIL, subject, html);
+}
+
 function getEmailLogs(): EmailLog[] {
   return [...emailLogs];
 }
@@ -1535,6 +1586,7 @@ export const emailService = {
   sendContactFormAutoReply,
   sendEmailVerificationEmail,
   sendAdminSignupNotification,
+  sendBackupFailureAlertEmail,
   getEmailLogs,
   isEmailConfigured,
   queueLeadSequence,

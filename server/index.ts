@@ -159,6 +159,16 @@ async function initializeApp() {
       await emailService.processDripSequences();
     }, DRIP_INTERVAL_MS);
   }, 60 * 1000);
+
+  // Start daily database backup scheduler (runs at 03:30 UTC).
+  // Idempotent: subsequent calls become no-ops, and concurrent runs are
+  // guarded inside backup-service.runBackup().
+  try {
+    const { startBackupScheduler } = await import("./backup-service");
+    startBackupScheduler();
+  } catch (err) {
+    log(`Failed to arm backup scheduler: ${err}`, "backup");
+  }
 }
 
 // Start the application

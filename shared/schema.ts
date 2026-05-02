@@ -769,3 +769,21 @@ export const emailSequences = pgTable("email_sequences", {
 export const insertEmailSequenceSchema = createInsertSchema(emailSequences).omit({ id: true, createdAt: true });
 export type EmailSequence = typeof emailSequences.$inferSelect;
 export type InsertEmailSequence = z.infer<typeof insertEmailSequenceSchema>;
+
+// ==================== DATABASE BACKUPS ====================
+
+export const databaseBackups = pgTable("database_backups", {
+  id: serial("id").primaryKey(),
+  runAt: timestamp("run_at").defaultNow().notNull(),
+  status: text("status").notNull(), // 'success' | 'failure'
+  storageKey: text("storage_key"),
+  sizeBytes: integer("size_bytes"),
+  durationMs: integer("duration_ms"),
+  isMonthly: boolean("is_monthly").default(false).notNull(),
+  trigger: text("trigger").default("scheduled").notNull(), // 'scheduled' | 'manual'
+  errorMessage: text("error_message"),
+});
+
+export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups).omit({ id: true, runAt: true });
+export type DatabaseBackup = typeof databaseBackups.$inferSelect;
+export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;
