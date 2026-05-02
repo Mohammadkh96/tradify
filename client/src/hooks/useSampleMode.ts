@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useTrades } from "@/hooks/use-trades";
 
 /**
@@ -11,14 +12,22 @@ import { useTrades } from "@/hooks/use-trades";
  * deterministic sample dataset so the user can experience the product
  * before connecting MT5.
  *
- * The `forceOff` flag lets a user explicitly opt out (e.g. via a banner
- * "hide sample data" toggle) by writing to localStorage.
+ * The dismissal flag lets a user explicitly opt out (e.g. via a banner
+ * "hide sample data" toggle) by writing to localStorage. Dismissal fires
+ * a custom DOM event so every consumer of `useSampleMode` re-evaluates
+ * immediately without waiting for an unrelated re-render.
  */
 const LS_KEY = "tradify_sample_mode_dismissed";
+const DISMISS_EVENT = "tradify:sample-mode-changed";
 
 export function dismissSampleMode() {
   try {
     localStorage.setItem(LS_KEY, "1");
+  } catch {}
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(DISMISS_EVENT));
+    }
   } catch {}
 }
 
@@ -28,6 +37,28 @@ export function isSampleModeDismissed() {
   } catch {
     return false;
   }
+}
+
+/**
+ * Returns a boolean that flips whenever the sample-mode dismissal flag
+ * changes (via `dismissSampleMode()` or another tab via `storage` event).
+ * Used internally so consumers re-render immediately on dismissal.
+ */
+function useDismissedFlag(): boolean {
+  const [dismissed, setDismissed] = useState<boolean>(() => isSampleModeDismissed());
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => setDismissed(isSampleModeDismissed());
+    window.addEventListener(DISMISS_EVENT, handler);
+    window.addEventListener("storage", handler);
+    return () => {
+      window.removeEventListener(DISMISS_EVENT, handler);
+      window.removeEventListener("storage", handler);
+    };
+  }, []);
+
+  return dismissed;
 }
 
 export function useSampleMode(): {
@@ -47,10 +78,11 @@ export function useSampleMode(): {
   });
 
   const { data: trades, isLoading: tradesLoading, isError: tradesError } = useTrades();
+  const dismissed = useDismissedFlag();
 
   if (userLoading) return { active: false, reason: "loading" };
   if (!userId) return { active: false, reason: "no-user" };
-  if (isSampleModeDismissed()) return { active: false, reason: "dismissed" };
+  if (dismissed) return { active: false, reason: "dismissed" };
   // Wait until BOTH the trades query and the mt5 status query have resolved
   // so we never flash sample data over real content while loading.
   if (mt5Loading || tradesLoading) return { active: false, reason: "loading" };

@@ -470,12 +470,23 @@ export default function Journal() {
         <div className="space-y-3">
           {paginatedTrades.map((trade: any) => (
             <div key={trade.id} className="bg-card border border-border rounded-xl p-5 hover:border-emerald-500/30 transition-colors group relative">
-              <button 
-                onClick={() => deleteTrade.mutate(trade.id)}
-                className="absolute top-2 right-2 p-1.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500 hover:text-white z-10"
-              >
-                <Trash2 size={14} />
-              </button>
+              {!sampleMode.active && (
+                <button
+                  onClick={() => deleteTrade.mutate(trade.id)}
+                  className="absolute top-2 right-2 p-1.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500 hover:text-white z-10"
+                  data-testid={`button-delete-trade-${trade.id}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+              {sampleMode.active && (
+                <span
+                  className="absolute top-2 right-2 inline-flex items-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500"
+                  data-testid={`badge-sample-trade-${trade.id}`}
+                >
+                  Sample
+                </span>
+              )}
 
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -516,7 +527,11 @@ export default function Journal() {
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       <Select
                         value={trade.mood || ""}
-                        onValueChange={(val) => annotationMutation.mutate({ tradeId: trade.id, mood: val, source: trade.source })}
+                        disabled={sampleMode.active}
+                        onValueChange={(val) => {
+                          if (sampleMode.active) return;
+                          annotationMutation.mutate({ tradeId: trade.id, mood: val, source: trade.source });
+                        }}
                       >
                         <SelectTrigger className="h-6 w-auto min-w-[100px] text-[10px] border-border/50 bg-background/50 px-2 gap-1" data-testid={`select-mood-${trade.id}`}>
                           <Brain size={10} className="text-purple-400 shrink-0" />
@@ -532,7 +547,11 @@ export default function Journal() {
                       </Select>
                       <Select
                         value={trade.mistakeCategory || ""}
-                        onValueChange={(val) => annotationMutation.mutate({ tradeId: trade.id, mistakeCategory: val, source: trade.source })}
+                        disabled={sampleMode.active}
+                        onValueChange={(val) => {
+                          if (sampleMode.active) return;
+                          annotationMutation.mutate({ tradeId: trade.id, mistakeCategory: val, source: trade.source });
+                        }}
                       >
                         <SelectTrigger className="h-6 w-auto min-w-[110px] text-[10px] border-border/50 bg-background/50 px-2 gap-1" data-testid={`select-mistake-${trade.id}`}>
                           <AlertTriangle size={10} className="text-amber-400 shrink-0" />

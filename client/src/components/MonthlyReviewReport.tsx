@@ -367,7 +367,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
               </Select>
             )}
             
-            {data?.insightText && (
+            {data?.insightText && !sampleMode.active && (
               <>
                 <Button 
                   variant="outline" 
@@ -388,6 +388,15 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
                   Export
                 </Button>
               </>
+            )}
+            {sampleMode.active && (
+              <Badge
+                variant="outline"
+                className="text-[10px] border-emerald-500/40 text-emerald-500"
+                data-testid="badge-monthly-review-sample"
+              >
+                Sample
+              </Badge>
             )}
           </div>
         </div>
