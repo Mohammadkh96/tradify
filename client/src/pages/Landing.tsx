@@ -35,6 +35,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { CookieSettingsButton } from "@/components/CookieConsent";
@@ -65,6 +66,7 @@ function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: str
 }
 
 export default function Landing() {
+  const { t } = useTranslation();
   const [activeScreenshotTab, setActiveScreenshotTab] = useState(0);
   const [checklistEmail, setChecklistEmail] = useState("");
   const [checklistLoading, setChecklistLoading] = useState(false);
@@ -294,18 +296,15 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-8">
             <Flame size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Trading Discipline Platform</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500" data-testid="text-hero-tagline">{t("landing.heroTagline")}</span>
           </div>
           
-          <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]">
-            Your Rules.<br />
-            <span className="text-emerald-500">Enforced.</span>
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase mb-6 leading-[0.9]" data-testid="text-hero-title">
+            {t("landing.heroTitle")}
           </h1>
           
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Failing prop challenges. Breaking your own rules. Revenge trading after losses. 
-            TradifyApp enforces your discipline — auto-syncing every MT5 trade, tracking drawdown in real time, 
-            and catching mistakes before they cost you.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8" data-testid="text-hero-subtitle">
+            {t("landing.heroSubtitle")}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
@@ -324,18 +323,18 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <Link to="/signup" data-testid="link-hero-signup">
               <Button className="w-full sm:w-auto h-14 px-10 bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-emerald-400 shadow-xl shadow-emerald-500/20" data-testid="button-hero-signup">
-                Start Free - No Card Required
+                {t("landing.ctaPrimary")}
               </Button>
             </Link>
-            <Link to="/pricing" data-testid="link-hero-pricing">
-              <Button variant="outline" className="w-full sm:w-auto h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted" data-testid="button-hero-pricing">
-                View Plans
+            <Link to="/demo" data-testid="link-hero-demo">
+              <Button variant="outline" className="w-full sm:w-auto h-14 px-10 bg-transparent border-border text-muted-foreground font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-muted" data-testid="button-hero-demo">
+                {t("landing.ctaSecondary")}
               </Button>
             </Link>
           </div>
           
           <p className="text-xs text-muted-foreground mb-16">
-            Free forever plan available. No credit card needed. Set up in under 2 minutes.
+            {t("landing.freeForever")} · {t("landing.noCardRequired")}
           </p>
 
           <div className="max-w-5xl mx-auto" data-testid="hero-dashboard-preview">

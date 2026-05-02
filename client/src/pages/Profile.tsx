@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Users, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown, Lock, Eye, EyeOff, MessageSquare, Sparkles, Send } from "lucide-react";
+import { User, Users, Shield, CreditCard, Save, AlertTriangle, Globe, Clock, Phone, CheckCircle2, XCircle, ArrowRight, Loader2, Calendar, DollarSign, Crown, Lock, Eye, EyeOff, MessageSquare, Sparkles, Send, Languages } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { SUPPORTED_LANGUAGES } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -386,6 +388,66 @@ function ReferralCard() {
   );
 }
 
+function LanguageSection({ initial }: { initial: string }) {
+  const { t, i18n } = useTranslation();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = async (code: string) => {
+    setSaving(true);
+    try {
+      await i18n.changeLanguage(code);
+      try { localStorage.setItem("tradify_lang", code); } catch {}
+      await apiRequest("POST", "/api/user/language", { language: code });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: t("profile.languageSaved") });
+    } catch (e) {
+      toast({ title: "Error", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="bg-card border-border shadow-2xl overflow-hidden" data-testid="card-language">
+      <CardHeader className="border-b border-border bg-muted/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-500/10 rounded-lg">
+            <Languages size={20} className="text-emerald-500" />
+          </div>
+          <div>
+            <CardTitle className="text-foreground uppercase italic tracking-tight font-black">{t("profile.languageTitle")}</CardTitle>
+            <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">{t("profile.languageSubtitle")}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const active = (i18n.language || initial) === lang.code;
+            return (
+              <button
+                key={lang.code}
+                onClick={() => handleChange(lang.code)}
+                disabled={saving}
+                data-testid={`button-profile-language-${lang.code}`}
+                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${active ? "border-emerald-500 bg-emerald-500/10" : "border-border bg-background hover:border-emerald-500/50"}`}
+              >
+                <span className="text-2xl" aria-hidden>{lang.flag}</span>
+                <div className="text-left">
+                  <div className="text-sm font-bold text-foreground">{lang.native}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{lang.label}</div>
+                </div>
+                {active && <CheckCircle2 size={16} className="ml-auto text-emerald-500" />}
+              </button>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Profile() {
   const { toast } = useToast();
   const { data: user, isLoading } = useQuery<UserRole>({
@@ -588,6 +650,8 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
+          <LanguageSection initial={user?.language || "en"} />
 
           <Card className="bg-card border-border shadow-2xl overflow-hidden">
             <CardHeader className="border-b border-border bg-muted/20">

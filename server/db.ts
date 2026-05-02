@@ -62,6 +62,7 @@ export async function ensureSchemaColumns() {
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS email_unsubscribed BOOLEAN DEFAULT false;
       ALTER TABLE user_role ADD COLUMN IF NOT EXISTS unsubscribe_token TEXT;
+      ALTER TABLE user_role ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source TEXT;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
     `);

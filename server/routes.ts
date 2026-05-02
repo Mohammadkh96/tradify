@@ -326,14 +326,27 @@ Sitemap: https://tradifyapp.com/sitemap.xml`);
         { url: "/cookie-policy", priority: "0.3", changefreq: "yearly", lastmod: today },
       ];
 
+      const langs = ["en", "es", "fr", "de", "zh", "ar"];
+      const renderAlt = (path: string) =>
+        langs.map(l => `    <xhtml:link rel="alternate" hreflang="${l}" href="https://tradifyapp.com${path}?lang=${l}" />`).join("\n") +
+        `\n    <xhtml:link rel="alternate" hreflang="x-default" href="https://tradifyapp.com${path}" />`;
+
       let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${staticPages.map(p => `  <url>
     <loc>https://tradifyapp.com${p.url}</loc>
     <lastmod>${p.lastmod}</lastmod>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
+${renderAlt(p.url)}
   </url>`).join("\n")}
+  <url>
+    <loc>https://tradifyapp.com/demo</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+${renderAlt("/demo")}
+  </url>
 ${blogPosts.map(p => `  <url>
     <loc>https://tradifyapp.com/blog/${p.slug}</loc>
     <lastmod>${p.publishedAt ? new Date(p.publishedAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]}</lastmod>
@@ -973,6 +986,24 @@ ${blogPosts.map(p => `  <url>
     } catch (error) {
       console.error("Error fetching referral stats:", error);
       res.status(500).json({ message: "Failed to fetch referral stats" });
+    }
+  });
+
+  // Persist user language preference (i18n)
+  app.post("/api/user/language", requireAuth, async (req, res) => {
+    try {
+      const { language } = req.body || {};
+      const allowed = ["en", "es", "fr", "de", "zh", "ar"];
+      if (typeof language !== "string" || !allowed.includes(language)) {
+        return res.status(400).json({ message: "Unsupported language" });
+      }
+      await db.update(schema.userRole)
+        .set({ language })
+        .where(eq(schema.userRole.userId, req.session.userId!));
+      res.json({ success: true, language });
+    } catch (error) {
+      console.error("Error saving language:", error);
+      res.status(500).json({ message: "Failed to save language" });
     }
   });
 

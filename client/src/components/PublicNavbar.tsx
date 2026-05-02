@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import { TrendingUp, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface PublicNavbarProps {
   topOffset?: number;
@@ -11,13 +13,14 @@ interface PublicNavbarProps {
 
 export function PublicNavbar({ topOffset = 0 }: PublicNavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation();
 
   const navItems = [
-    { title: "Features", href: "/features" },
-    { title: "Pricing", href: "/pricing" },
-    { title: "How It Works", href: "/how-it-works" },
-    { title: "Resources", href: "/resources" },
-    { title: "Blog", href: "/blog" },
+    { title: t("nav.features"), href: "/features" },
+    { title: t("nav.pricing"), href: "/pricing" },
+    { title: t("nav.demo"), href: "/demo" },
+    { title: t("nav.howItWorks"), href: "/how-it-works" },
+    { title: t("nav.blog"), href: "/blog" },
   ];
 
   return (
@@ -26,7 +29,6 @@ export function PublicNavbar({ topOffset = 0 }: PublicNavbarProps) {
       style={{ top: topOffset }}
     >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        {/* Logo */}
         <Link to="/">
           <div className="flex items-center gap-3 cursor-pointer">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20">
@@ -36,7 +38,6 @@ export function PublicNavbar({ topOffset = 0 }: PublicNavbarProps) {
           </div>
         </Link>
 
-        {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <Link key={item.href} to={item.href}>
@@ -47,31 +48,30 @@ export function PublicNavbar({ topOffset = 0 }: PublicNavbarProps) {
           ))}
         </div>
 
-        {/* Auth & Toggle */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-4">
+          <LanguageSwitcher />
           <ThemeToggle />
           <Link to="/login">
-            <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-bold uppercase tracking-widest text-xs">
-              Login
+            <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-bold uppercase tracking-widest text-xs" data-testid="link-navbar-login">
+              {t("nav.login")}
             </Button>
           </Link>
           <Link to="/signup">
-            <Button className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold uppercase tracking-widest text-xs px-6">
-              Get Started
+            <Button className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold uppercase tracking-widest text-xs px-6" data-testid="link-navbar-signup">
+              {t("nav.getStarted")}
             </Button>
           </Link>
         </div>
 
-        {/* Mobile Toggle */}
-        <div className="md:hidden flex items-center gap-4">
+        <div className="md:hidden flex items-center gap-2">
+          <LanguageSwitcher variant="compact" />
           <ThemeToggle />
-          <button onClick={() => setIsOpen(!isOpen)} className="text-foreground">
+          <button onClick={() => setIsOpen(!isOpen)} className="text-foreground" data-testid="button-mobile-menu">
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <div className={cn(
         "md:hidden absolute top-20 left-0 w-full bg-background border-b border-border transition-all duration-300 overflow-hidden",
         isOpen ? "max-h-96" : "max-h-0"
@@ -87,12 +87,12 @@ export function PublicNavbar({ topOffset = 0 }: PublicNavbarProps) {
           <div className="pt-4 flex flex-col gap-3">
             <Link to="/login">
               <Button variant="outline" className="w-full font-bold uppercase tracking-widest text-xs">
-                Login
+                {t("nav.login")}
               </Button>
             </Link>
             <Link to="/signup">
               <Button className="w-full bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs">
-                Get Started
+                {t("nav.getStarted")}
               </Button>
             </Link>
           </div>

@@ -136,6 +136,7 @@ export const userRole = pgTable("user_role", {
   utmCampaign: text("utm_campaign"),
   emailUnsubscribed: boolean("email_unsubscribed").default(false),
   unsubscribeToken: text("unsubscribe_token"),
+  language: text("language").default("en"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
