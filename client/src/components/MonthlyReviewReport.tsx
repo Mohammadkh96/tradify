@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,9 +69,16 @@ const monthNames = ["January", "February", "March", "April", "May", "June",
                     "July", "August", "September", "October", "November", "December"];
 
 export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
+  const { t } = useTranslation();
   const { isElite } = usePlan();
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const sampleMode = useSampleMode();
+  const monthNamesT = [
+    t("widgets.monthly.month.january"), t("widgets.monthly.month.february"), t("widgets.monthly.month.march"),
+    t("widgets.monthly.month.april"), t("widgets.monthly.month.may"), t("widgets.monthly.month.june"),
+    t("widgets.monthly.month.july"), t("widgets.monthly.month.august"), t("widgets.monthly.month.september"),
+    t("widgets.monthly.month.october"), t("widgets.monthly.month.november"), t("widgets.monthly.month.december"),
+  ];
 
   const { data: availableMonths } = useQuery<{ availableMonths: AvailableMonth[] }>({
     queryKey: [`/api/monthly-review/${userId}/available`],
@@ -115,8 +123,8 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
   const handleExport = () => {
     if (!data?.insightText) return;
     
-    const monthName = monthNames[data.month - 1];
-    const content = `# Monthly Self-Review: ${monthName} ${data.year}\n\n${data.insightText}`;
+    const monthName = monthNamesT[data.month - 1];
+    const content = `# ${t("widgets.monthly.title")}: ${monthName} ${data.year}\n\n${data.insightText}`;
     
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
@@ -138,24 +146,24 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              Monthly Self-Review
+              {t("widgets.monthly.title")}
             </CardTitle>
             <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30" data-testid="badge-elite">
               <Lock className="h-3 w-3 mr-1" />
-              ELITE
+              {t("widgets.monthly.eliteBadge")}
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <Sparkles className="h-12 w-12 mx-auto mb-3 text-amber-500/50" />
-            <h3 className="text-lg font-semibold mb-2" data-testid="text-elite-title">Elite Feature</h3>
+            <h3 className="text-lg font-semibold mb-2" data-testid="text-elite-title">{t("widgets.monthly.eliteFeature")}</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto" data-testid="text-elite-description">
-              Get AI-generated monthly performance reviews that reflect on your trading journey, highlight improvements, and identify areas for growth.
+              {t("widgets.monthly.eliteDesc")}
             </p>
             <Link to="/profile">
               <Button variant="outline" data-testid="button-upgrade-elite">
-                Upgrade to Elite
+                {t("widgets.monthly.upgradeBtn")}
               </Button>
             </Link>
           </div>
@@ -170,7 +178,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Monthly Self-Review
+            {t("widgets.monthly.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -190,13 +198,13 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Monthly Self-Review
+            {t("widgets.monthly.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-amber-500" />
-            <p data-testid="text-error-message">Unable to load monthly review</p>
+            <p data-testid="text-error-message">{t("widgets.monthly.errorLoad")}</p>
           </div>
         </CardContent>
       </Card>
@@ -213,17 +221,17 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" data-testid="metrics-comparison">
         <div className="p-3 rounded-lg bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-1">Trades</p>
+          <p className="text-xs text-muted-foreground mb-1">{t("widgets.monthly.trades")}</p>
           <p className="text-lg font-bold" data-testid="text-trade-count">{current.tradeCount}</p>
           {previous.tradeCount > 0 && (
             <p className={`text-xs ${current.tradeCount > previous.tradeCount ? 'text-green-500' : current.tradeCount < previous.tradeCount ? 'text-red-500' : 'text-muted-foreground'}`} data-testid="text-trade-change">
-              {current.tradeCount > previous.tradeCount ? '+' : ''}{current.tradeCount - previous.tradeCount} vs prev
+              {current.tradeCount > previous.tradeCount ? '+' : ''}{current.tradeCount - previous.tradeCount} {t("widgets.monthly.vsPrev")}
             </p>
           )}
         </div>
         
         <div className="p-3 rounded-lg bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-1">Win Rate</p>
+          <p className="text-xs text-muted-foreground mb-1">{t("widgets.monthly.winRate")}</p>
           <p className="text-lg font-bold" data-testid="text-win-rate">{current.winRate.toFixed(1)}%</p>
           {previous.tradeCount > 0 && (
             <p className={`text-xs flex items-center gap-1 ${winRateChange > 0 ? 'text-green-500' : winRateChange < 0 ? 'text-red-500' : 'text-muted-foreground'}`} data-testid="text-winrate-change">
@@ -234,7 +242,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
         </div>
         
         <div className="p-3 rounded-lg bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-1">P&L</p>
+          <p className="text-xs text-muted-foreground mb-1">{t("widgets.monthly.pnl")}</p>
           <p className={`text-lg font-bold ${current.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`} data-testid="text-pnl">
             ${current.totalPnL.toFixed(2)}
           </p>
@@ -247,9 +255,9 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
         </div>
         
         <div className="p-3 rounded-lg bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-1">Profit Factor</p>
+          <p className="text-xs text-muted-foreground mb-1">{t("widgets.monthly.profitFactor")}</p>
           <p className="text-lg font-bold" data-testid="text-profit-factor">{current.profitFactor}</p>
-          <p className="text-xs text-muted-foreground" data-testid="text-prev-profit-factor">prev: {previous.profitFactor}</p>
+          <p className="text-xs text-muted-foreground" data-testid="text-prev-profit-factor">{t("widgets.monthly.prev")}: {previous.profitFactor}</p>
         </div>
       </div>
     );
@@ -345,7 +353,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Monthly Self-Review
+            {t("widgets.monthly.title")}
           </CardTitle>
           <div className="flex items-center gap-2">
             {availableMonths?.availableMonths && availableMonths.availableMonths.length > 0 && (
@@ -355,12 +363,12 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
               >
                 <SelectTrigger className="w-40" data-testid="select-month">
                   <Calendar className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Select month" />
+                  <SelectValue placeholder={t("widgets.monthly.selectMonth")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableMonths.availableMonths.map((m) => (
                     <SelectItem key={m.key} value={m.key} data-testid={`select-item-month-${m.key}`}>
-                      {monthNames[m.month - 1]} {m.year}
+                      {monthNamesT[m.month - 1]} {m.year}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -385,7 +393,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
                   data-testid="button-export-review"
                 >
                   <Download className="h-4 w-4 mr-1" />
-                  Export
+                  {t("widgets.monthly.export")}
                 </Button>
               </>
             )}
@@ -395,7 +403,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
                 className="text-[10px] border-emerald-500/40 text-emerald-500"
                 data-testid="badge-monthly-review-sample"
               >
-                Sample
+                {t("widgets.monthly.sample")}
               </Badge>
             )}
           </div>
@@ -410,9 +418,9 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
         ) : data?.hasData === false ? (
           <div className="text-center py-8 text-muted-foreground">
             <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm" data-testid="text-no-data">{data.message || "No data available for this month"}</p>
+            <p className="text-sm" data-testid="text-no-data">{data.message || t("widgets.monthly.noData")}</p>
             <p className="text-xs mt-2 opacity-75">
-              You need at least 5 trades in a month to generate a review
+              {t("widgets.monthly.minTrades")}
             </p>
           </div>
         ) : (
@@ -420,7 +428,7 @@ export function MonthlyReviewReport({ userId }: MonthlyReviewReportProps) {
             {data?.cached && (
               <Badge variant="outline" className="mb-4 text-xs" data-testid="badge-cached">
                 <Sparkles className="h-3 w-3 mr-1" />
-                Cached report from {data.month && monthNames[data.month - 1]} {data.year}
+                {t("widgets.monthly.cachedFrom")} {data.month && monthNamesT[data.month - 1]} {data.year}
               </Badge>
             )}
             

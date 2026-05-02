@@ -1,0 +1,44 @@
+{
+  "en": {
+    "asian": "Asian",
+    "london": "London",
+    "new_york": "New York",
+    "overlap_london_ny": "London/NY Overlap",
+    "off_hours": "Off Hours"
+  },
+  "es": {
+    "asian": "Asiática",
+    "london": "Londres",
+    "new_york": "Nueva York",
+    "overlap_london_ny": "Solapamiento Londres/NY",
+    "off_hours": "Horas Inactivas"
+  },
+  "fr": {
+    "asian": "Asiatique",
+    "london": "Londres",
+    "new_york": "New York",
+    "overlap_london_ny": "Chevauchement Londres/NY",
+    "off_hours": "Heures Creuses"
+  },
+  "de": {
+    "asian": "Asien",
+    "london": "London",
+    "new_york": "New York",
+    "overlap_london_ny": "London/NY Überlappung",
+    "off_hours": "Außerhalb der Handelszeiten"
+  },
+  "zh": {
+    "asian": "亚洲",
+    "london": "伦敦",
+    "new_york": "纽约",
+    "overlap_london_ny": "伦敦/纽约重叠",
+    "off_hours": "非交易时段"
+  },
+  "ar": {
+    "asian": "الآسيوية",
+    "london": "لندن",
+    "new_york": "نيويورك",
+    "overlap_london_ny": "تداخل لندن/نيويورك",
+    "off_hours": "خارج ساعات التداول"
+  }
+}

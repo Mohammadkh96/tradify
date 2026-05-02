@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
@@ -64,6 +65,7 @@ interface TimePatternsProps {
 }
 
 export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePatternsProps) {
+  const { t } = useTranslation();
   const { isElite } = usePlan();
 
   // Use separate query key segments to ensure proper cache invalidation
@@ -90,14 +92,14 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
 
   // Helper to get date range label
   const getDateRangeLabel = () => {
-    if (!dateFilter || dateFilter === "all") return "All Time";
-    if (dateFilter === "today") return "Today";
-    if (dateFilter === "week") return "This Week";
-    if (dateFilter === "month") return "This Month";
+    if (!dateFilter || dateFilter === "all") return t("widgets.time.allTime");
+    if (dateFilter === "today") return t("widgets.time.today");
+    if (dateFilter === "week") return t("widgets.time.thisWeek");
+    if (dateFilter === "month") return t("widgets.time.thisMonth");
     if (dateFilter === "custom" && startDate && endDate) {
       return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
     }
-    return "All Time";
+    return t("widgets.time.allTime");
   };
 
   if (!isElite) {
@@ -111,11 +113,11 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
               </div>
               <div>
                 <CardTitle className="text-foreground uppercase italic tracking-tight font-black flex items-center gap-2">
-                  Time Patterns
+                  {t("widgets.time.title")}
                   <Crown size={14} className="text-amber-500" />
                 </CardTitle>
                 <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                  Elite Feature
+                  {t("widgets.time.eliteFeature")}
                 </CardDescription>
               </div>
             </div>
@@ -127,14 +129,14 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
               <Crown size={32} className="text-amber-500" />
             </div>
             <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">
-              Unlock Time Patterns
+              {t("widgets.time.unlock")}
             </h3>
             <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
-              Discover your best trading days and hours. Identify patterns in your performance over time.
+              {t("widgets.time.unlockDesc")}
             </p>
             <Link to="/pricing">
               <Button className="bg-amber-500 text-slate-950 border-amber-500/50 font-black uppercase tracking-widest text-[10px]">
-                Upgrade to Elite
+                {t("widgets.time.upgradeBtn")}
               </Button>
             </Link>
           </div>
@@ -153,10 +155,10 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             </div>
             <div>
               <CardTitle className="text-foreground uppercase italic tracking-tight font-black">
-                Time Patterns
+                {t("widgets.time.title")}
               </CardTitle>
               <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                Loading time data...
+                {t("widgets.time.loading")}
               </CardDescription>
             </div>
           </div>
@@ -181,10 +183,10 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             </div>
             <div>
               <CardTitle className="text-foreground uppercase italic tracking-tight font-black">
-                Time Patterns
+                {t("widgets.time.title")}
               </CardTitle>
               <CardDescription className="text-destructive uppercase text-[10px] font-black tracking-widest">
-                Failed to load time patterns
+                {t("widgets.time.failedLoad")}
               </CardDescription>
             </div>
           </div>
@@ -203,10 +205,10 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             </div>
             <div>
               <CardTitle className="text-foreground uppercase italic tracking-tight font-black">
-                Time Patterns
+                {t("widgets.time.title")}
               </CardTitle>
               <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                No trade data available
+                {t("widgets.time.noDataDesc")}
               </CardDescription>
             </div>
           </div>
@@ -214,7 +216,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
         <CardContent className="pt-6">
           <div className="text-center py-8 text-muted-foreground">
             <Clock size={48} className="mx-auto mb-4 opacity-30" />
-            <p>Start trading to see time-based performance patterns</p>
+            <p>{t("widgets.time.startTrading")}</p>
           </div>
         </CardContent>
       </Card>
@@ -261,10 +263,10 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             </div>
             <div>
               <CardTitle className="text-foreground uppercase italic tracking-tight font-black">
-                Time Patterns
+                {t("widgets.time.title")}
               </CardTitle>
               <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                Performance by Day & Hour (UTC)
+                {t("widgets.time.perfByDayHour")}
               </CardDescription>
             </div>
           </div>
@@ -278,14 +280,14 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             {bestDay && (
               <div className="flex items-center gap-1.5">
                 <TrendingUp size={14} className="text-emerald-500" />
-                <span className="text-muted-foreground">Best Day:</span>
+                <span className="text-muted-foreground">{t("widgets.time.bestDayLabel")}:</span>
                 <span className="text-emerald-500 font-black">{bestDay}</span>
               </div>
             )}
             {bestHour && (
               <div className="flex items-center gap-1.5">
                 <Clock size={14} className="text-emerald-500" />
-                <span className="text-muted-foreground">Best Hour:</span>
+                <span className="text-muted-foreground">{t("widgets.time.bestHourLabel")}:</span>
                 <span className="text-emerald-500 font-black">{bestHour}</span>
               </div>
             )}
@@ -297,7 +299,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-black text-foreground uppercase tracking-tight">
               <BarChart3 size={16} className="text-cyan-500" />
-              P&L by Day of Week
+              {t("widgets.time.pnlByDay")}
             </div>
             <div className="h-56 bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
@@ -338,10 +340,10 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
                     }}
                     labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
-                    formatter={(value: number, name: string) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'P&L']}
+                    formatter={(value: number, name: string) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, t("widgets.time.pnl")]}
                     labelFormatter={(label) => {
                       const day = shortDayNames.find(d => d.shortName === label);
-                      return day ? `${day.dayName} (${day.trades} trades)` : label;
+                      return day ? `${day.dayName} (${day.trades} ${t("widgets.time.tradesShort")})` : label;
                     }}
                     cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                   />
@@ -358,7 +360,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-black text-foreground uppercase tracking-tight">
               <Hash size={16} className="text-cyan-500" />
-              Win Rate by Day
+              {t("widgets.time.winRateByDay")}
             </div>
             <div className="h-56 bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
@@ -396,7 +398,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
                     }}
                     labelStyle={{ fontWeight: 700, marginBottom: '4px', color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
-                    formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']}
+                    formatter={(value: number) => [`${value.toFixed(1)}%`, t("widgets.time.winRate")]}
                     labelFormatter={(label) => {
                       const day = shortDayNames.find(d => d.shortName === label);
                       return day ? `${day.dayName} (${day.wins}W / ${day.losses}L)` : label;
@@ -413,7 +415,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm font-black text-foreground uppercase tracking-tight">
             <Clock size={16} className="text-cyan-500" />
-            Hourly Performance Heatmap (UTC)
+            {t("widgets.time.heatmap")}
           </div>
           <div className="bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
             <div className="grid grid-cols-12 gap-1.5">
@@ -440,21 +442,21 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
                         <div className="font-black text-foreground mb-2 text-sm border-b border-border pb-2">{hourData.hourLabel} UTC</div>
                         <div className="space-y-1.5 text-muted-foreground">
                           <div className="flex justify-between gap-4">
-                            <span>Trades:</span>
+                            <span>{t("widgets.time.trades")}:</span>
                             <span className="text-foreground font-bold">{hourData.trades}</span>
                           </div>
                           <div className="flex justify-between gap-4">
-                            <span>P&L:</span>
+                            <span>{t("widgets.time.pnl")}:</span>
                             <span className={`font-bold ${hourData.pnl >= 0 ? "text-emerald-500" : "text-red-500"}`}>
                               ${hourData.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
                           <div className="flex justify-between gap-4">
-                            <span>Win Rate:</span>
+                            <span>{t("widgets.time.winRate")}:</span>
                             <span className="text-foreground font-bold">{hourData.winRate.toFixed(1)}%</span>
                           </div>
                           <div className="flex justify-between gap-4">
-                            <span>Avg P&L:</span>
+                            <span>{t("widgets.time.avgPnl")}:</span>
                             <span className={`font-bold ${hourData.avgPnl >= 0 ? "text-emerald-500" : "text-red-500"}`}>
                               ${hourData.avgPnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
@@ -469,15 +471,15 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             <div className="flex items-center justify-center gap-6 text-[10px] text-muted-foreground mt-4 pt-3 border-t border-border/30">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-md bg-muted/20 border border-border/30" />
-                <span className="font-medium">No trades</span>
+                <span className="font-medium">{t("widgets.time.noTrades")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-md bg-gradient-to-br from-emerald-400/60 to-emerald-600/60" />
-                <span className="font-medium">Profitable</span>
+                <span className="font-medium">{t("widgets.time.profitable")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-md bg-gradient-to-br from-red-400/60 to-red-600/60" />
-                <span className="font-medium">Loss</span>
+                <span className="font-medium">{t("widgets.time.loss")}</span>
               </div>
             </div>
           </div>
@@ -488,7 +490,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
               <div className="flex items-center gap-2 text-emerald-500 mb-1">
                 <TrendingUp size={14} />
-                <span className="text-[10px] uppercase tracking-widest font-black">Best Day</span>
+                <span className="text-[10px] uppercase tracking-widest font-black">{t("widgets.time.bestDay")}</span>
               </div>
               <div className="text-lg font-black text-foreground">{bestDay}</div>
             </div>
@@ -497,7 +499,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
               <div className="flex items-center gap-2 text-red-500 mb-1">
                 <TrendingDown size={14} />
-                <span className="text-[10px] uppercase tracking-widest font-black">Worst Day</span>
+                <span className="text-[10px] uppercase tracking-widest font-black">{t("widgets.time.worstDay")}</span>
               </div>
               <div className="text-lg font-black text-foreground">{worstDay}</div>
             </div>
@@ -506,7 +508,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
               <div className="flex items-center gap-2 text-emerald-500 mb-1">
                 <Clock size={14} />
-                <span className="text-[10px] uppercase tracking-widest font-black">Best Hour</span>
+                <span className="text-[10px] uppercase tracking-widest font-black">{t("widgets.time.bestHour")}</span>
               </div>
               <div className="text-lg font-black text-foreground">{bestHour} UTC</div>
             </div>
@@ -515,7 +517,7 @@ export function TimePatterns({ userId, dateFilter, startDate, endDate }: TimePat
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
               <div className="flex items-center gap-2 text-red-500 mb-1">
                 <Clock size={14} />
-                <span className="text-[10px] uppercase tracking-widest font-black">Worst Hour</span>
+                <span className="text-[10px] uppercase tracking-widest font-black">{t("widgets.time.worstHour")}</span>
               </div>
               <div className="text-lg font-black text-foreground">{worstHour} UTC</div>
             </div>

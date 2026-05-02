@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,9 +61,20 @@ const MOOD_COLORS: Record<string, string> = {
 };
 
 export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
+  const { t } = useTranslation();
   const { isPro, isElite } = usePlan();
   const hasPlan = isPro || isElite;
   const queryClient = useQueryClient();
+  const moodLabelsT: Record<string, string> = {
+    confident: t("widgets.psychology.mood.confident"),
+    calm: t("widgets.psychology.mood.calm"),
+    neutral: t("widgets.psychology.mood.neutral"),
+    anxious: t("widgets.psychology.mood.anxious"),
+    fearful: t("widgets.psychology.mood.fearful"),
+    greedy: t("widgets.psychology.mood.greedy"),
+    frustrated: t("widgets.psychology.mood.frustrated"),
+    revenge: t("widgets.psychology.mood.revenge"),
+  };
 
   const { data, isLoading, isFetching } = useQuery<PsychologyReviewData>({
     queryKey: [`/api/ai/psychology-review/${userId}`],
@@ -85,18 +97,18 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <Brain size={18} className="text-purple-500" />
-            AI Psychology Review
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] uppercase tracking-widest ml-2">Pro</Badge>
+            {t("widgets.psychology.title")}
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] uppercase tracking-widest ml-2">{t("widgets.psychology.proBadge")}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Lock className="text-muted-foreground/30 mb-3" size={32} />
-            <p className="text-sm font-bold text-foreground uppercase tracking-widest mb-1">Pro Feature</p>
-            <p className="text-xs text-muted-foreground mb-4">Unlock AI-powered psychology analysis to understand how your emotions impact trading results.</p>
+            <p className="text-sm font-bold text-foreground uppercase tracking-widest mb-1">{t("widgets.psychology.proFeature")}</p>
+            <p className="text-xs text-muted-foreground mb-4">{t("widgets.psychology.upgradeDesc")}</p>
             <Link to="/pricing">
               <Button variant="outline" data-testid="button-upgrade-psychology">
-                Upgrade to Pro
+                {t("widgets.psychology.upgradeBtn")}
               </Button>
             </Link>
           </div>
@@ -111,7 +123,7 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <Brain size={18} className="text-purple-500" />
-            AI Psychology Review
+            {t("widgets.psychology.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -133,7 +145,7 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <Brain size={18} className="text-purple-500" />
-            AI Psychology Review
+            {t("widgets.psychology.title")}
             <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[9px] uppercase tracking-widest">
               <Sparkles size={8} className="mr-1" /> AI
             </Badge>
@@ -154,9 +166,9 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
         {!hasReview ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <HeartPulse className="text-muted-foreground/30 mb-3" size={32} />
-            <p className="text-sm font-bold text-foreground mb-1">No Psychology Data Yet</p>
+            <p className="text-sm font-bold text-foreground mb-1">{t("widgets.psychology.noDataTitle")}</p>
             <p className="text-xs text-muted-foreground">
-              Tag your trades with mood and mistake categories in the Journal to unlock AI psychology insights.
+              {t("widgets.psychology.noDataDesc")}
             </p>
           </div>
         ) : (
@@ -164,11 +176,11 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
             {meta && (
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="bg-background rounded-lg p-3 text-center border border-border">
-                  <div className="text-[9px] text-muted-foreground uppercase font-bold mb-1">Trades Analyzed</div>
+                  <div className="text-[9px] text-muted-foreground uppercase font-bold mb-1">{t("widgets.psychology.tradesAnalyzed")}</div>
                   <div className="text-lg font-black text-foreground">{meta.totalTrades}</div>
                 </div>
                 <div className="bg-background rounded-lg p-3 text-center border border-border">
-                  <div className="text-[9px] text-muted-foreground uppercase font-bold mb-1">Mood Tagged</div>
+                  <div className="text-[9px] text-muted-foreground uppercase font-bold mb-1">{t("widgets.psychology.moodTagged")}</div>
                   <div className="text-lg font-black text-purple-400">
                     {meta.taggedMood}
                     <span className="text-[9px] text-muted-foreground font-normal ml-1">
@@ -177,7 +189,7 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
                   </div>
                 </div>
                 <div className="bg-background rounded-lg p-3 text-center border border-border">
-                  <div className="text-[9px] text-muted-foreground uppercase font-bold mb-1">Mistakes</div>
+                  <div className="text-[9px] text-muted-foreground uppercase font-bold mb-1">{t("widgets.psychology.mistakes")}</div>
                   <div className="text-lg font-black text-amber-400">
                     {meta.taggedMistake}
                   </div>
@@ -189,7 +201,7 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
               <div className="mb-4">
                 <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 flex items-center gap-1">
                   <HeartPulse size={10} />
-                  Mood Breakdown
+                  {t("widgets.psychology.moodBreakdown")}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(meta.moodStats)
@@ -199,9 +211,9 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
                       <div key={mood} className="bg-background/50 rounded-lg p-2 border border-border/50">
                         <div className="flex items-center justify-between">
                           <span className={cn("text-xs font-bold capitalize", MOOD_COLORS[mood] || "text-foreground")}>
-                            {MOOD_LABELS[mood] || mood}
+                            {moodLabelsT[mood] || mood}
                           </span>
-                          <span className="text-[9px] text-muted-foreground">{stats.count} trades</span>
+                          <span className="text-[9px] text-muted-foreground">{stats.count} {t("widgets.psychology.tradesShort")}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[9px] text-emerald-500 font-bold">{stats.wins}W</span>
@@ -223,7 +235,7 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
               <div className="mb-4">
                 <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 flex items-center gap-1">
                   <AlertTriangle size={10} />
-                  Top Mistakes by Impact
+                  {t("widgets.psychology.topMistakes")}
                 </div>
                 <div className="space-y-1.5">
                   {Object.entries(meta.mistakeStats)
@@ -231,7 +243,26 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
                     .slice(0, 4)
                     .map(([mistake, stats]) => (
                       <div key={mistake} className="flex items-center justify-between bg-background/50 rounded-lg px-3 py-2 border border-border/50">
-                        <span className="text-xs text-foreground capitalize">{mistake.replace(/_/g, " ")}</span>
+                        <span className="text-xs text-foreground capitalize">{(() => {
+                          const map: Record<string, string> = {
+                            none: "journal.mistakeNone",
+                            early_entry: "journal.mistakeEarlyEntry",
+                            late_entry: "journal.mistakeLateEntry",
+                            no_stop_loss: "journal.mistakeNoStopLoss",
+                            moved_stop_loss: "journal.mistakeMovedStopLoss",
+                            oversized: "journal.mistakeOversized",
+                            fomo: "journal.mistakeFomo",
+                            revenge_trade: "journal.mistakeRevenge",
+                            revenge_trading: "journal.mistakeRevenge",
+                            ignored_rules: "journal.mistakeIgnoredRules",
+                            poor_risk_reward: "journal.mistakePoorRR",
+                            early_exit: "journal.mistakeEarlyExit",
+                            overtrading: "journal.mistakeOvertrading",
+                            loss_chasing: "journal.mistakeFomo",
+                          };
+                          const key = map[mistake];
+                          return key ? t(key) : mistake.replace(/_/g, " ");
+                        })()}</span>
                         <div className="flex items-center gap-3">
                           <span className="text-[9px] text-muted-foreground">{stats.count}x</span>
                           <span className={cn(
@@ -253,7 +284,7 @@ export function PsychologyTradeReview({ userId }: PsychologyTradeReviewProps) {
 
             {meta?.generatedAt && (
               <div className="text-[9px] text-muted-foreground/50 text-right uppercase tracking-wider pt-2 border-t border-border/30">
-                Generated {new Date(meta.generatedAt).toLocaleDateString()} {data.cached ? "(cached)" : ""}
+                {t("widgets.psychology.generated")} {new Date(meta.generatedAt).toLocaleDateString()} {data.cached ? t("widgets.psychology.cached") : ""}
               </div>
             )}
           </div>

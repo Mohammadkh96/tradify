@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles, X, ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { hasEverHadSampleMode } from "@/hooks/useSampleMode";
 
 const LS_PREFIX = "tradify_first_sync_seen_";
 
@@ -35,26 +36,49 @@ export function FirstSyncMoment() {
   });
 
   const [open, setOpen] = useState(false);
+  // Track the previously observed status so we can detect a true
+  // non-CONNECTED → CONNECTED transition rather than firing for every
+  // connected user on mount.
+  const prevStatusRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     const status = mt5?.status ?? null;
+    if (status === null) return; // wait for the status query to resolve
+
+    const prev = prevStatusRef.current;
+    // First observation in this session — just record it. We don't fire
+    // for users who were already CONNECTED when the component mounted,
+    // because that's not a transition.
+    if (prev === null) {
+      prevStatusRef.current = status;
+      return;
+    }
+
+    // Update the ref for the next render before any early returns below.
+    prevStatusRef.current = status;
+
+    // Only a real offline → connected transition counts.
+    if (prev === "CONNECTED" || status !== "CONNECTED") return;
+
+    // Eligibility gate: the user must have actually been in sample mode
+    // at some point. This prevents the celebration from firing for users
+    // who never went through the activation funnel (e.g. existing users
+    // reconnecting after a brief MT5 outage).
+    if (!hasEverHadSampleMode(userId)) return;
+
     const lsKey = `${LS_PREFIX}${userId}`;
     let alreadySeen = false;
     try {
       alreadySeen = localStorage.getItem(lsKey) === "1";
     } catch {}
+    if (alreadySeen) return;
 
-    // The localStorage flag is the source of truth: if we've never shown the
-    // moment AND the user is currently connected, this is their first time
-    // seeing real data — show the celebration.
-    if (status === "CONNECTED" && !alreadySeen) {
-      setOpen(true);
-      trackEvent("aha_moment_shown", { userId });
-      try {
-        localStorage.setItem(lsKey, "1");
-      } catch {}
-    }
+    setOpen(true);
+    trackEvent("aha_moment_shown", { userId });
+    try {
+      localStorage.setItem(lsKey, "1");
+    } catch {}
   }, [mt5?.status, userId]);
 
   // When the modal opens, ask the existing OpenAI-backed behavioural pipeline

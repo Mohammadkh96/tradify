@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface SVGCandleData {
@@ -58,6 +59,7 @@ function ChartFrame({ candles, width, height, annotations }: {
 }
 
 export function MarketStructureDiagram() {
+  const { t } = useTranslation();
   const candles: SVGCandleData[] = [
     { o: 100, h: 103, l: 98, c: 102 },
     { o: 102, h: 105, l: 101, c: 104 },
@@ -78,8 +80,8 @@ export function MarketStructureDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Bullish Market Structure</h4>
-      <p className="text-xs text-muted-foreground mb-4">Higher Highs (HH) and Higher Lows (HL) define an uptrend</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.marketStructure.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.marketStructure.subtitle")}</p>
       <ChartFrame candles={candles} width={W} height={H} annotations={(minP, maxP) => {
         const hh1 = priceToY(110, minP, maxP, H);
         const hl1 = priceToY(106, minP, maxP, H);
@@ -105,13 +107,14 @@ export function MarketStructureDiagram() {
         );
       }} />
       <p className="text-[10px] text-muted-foreground mt-3 text-center italic">
-        A valid uptrend requires price to make consecutive higher highs and higher lows. A break of a higher low signals potential trend change.
+        {t("widgets.diagrams.marketStructure.footer")}
       </p>
     </div>
   );
 }
 
 export function OrderBlockDiagram() {
+  const { t } = useTranslation();
   const candles: SVGCandleData[] = [
     { o: 110, h: 112, l: 108, c: 111 },
     { o: 111, h: 114, l: 110, c: 113 },
@@ -132,8 +135,8 @@ export function OrderBlockDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Bullish Order Block</h4>
-      <p className="text-xs text-muted-foreground mb-4">Last bearish candle before an impulsive bullish move that breaks structure</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.orderBlock.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.orderBlock.subtitle")}</p>
       <ChartFrame candles={candles} width={W} height={H} annotations={(minP, maxP) => {
         const obTop = priceToY(115, minP, maxP, H);
         const obBot = priceToY(111, minP, maxP, H);
@@ -146,22 +149,23 @@ export function OrderBlockDiagram() {
             <rect x={10 + 7 * 16 - 4} y={mitTop} width={80} height={mitBot - mitTop} fill="#f59e0b" opacity={0.06} rx={2} />
             <line x1={10 + 3 * 16 + 16} y1={obTop} x2={10 + 10 * 16} y2={obTop} stroke="#f59e0b" strokeWidth={0.5} strokeDasharray="3,3" opacity={0.5} />
             <line x1={10 + 3 * 16 + 16} y1={obBot} x2={10 + 10 * 16} y2={obBot} stroke="#f59e0b" strokeWidth={0.5} strokeDasharray="3,3" opacity={0.5} />
-            <text x={10 + 10 * 16 + 4} y={(obTop + obBot) / 2 + 3} fill="#10b981" fontSize={8} fontWeight="bold">Mitigated</text>
+            <text x={10 + 10 * 16 + 4} y={(obTop + obBot) / 2 + 3} fill="#10b981" fontSize={8} fontWeight="bold">{t("widgets.diagrams.orderBlock.mitigated")}</text>
             <line x1={10 + 4 * 16 + 7} y1={priceToY(105, minP, maxP, H)} x2={10 + 4 * 16 + 7} y2={priceToY(115, minP, maxP, H)} stroke="#10b981" strokeWidth={1.5} markerEnd="url(#arrowG)" opacity={0.6} />
             <defs><marker id="arrowG" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#10b981" /></marker></defs>
           </g>
         );
       }} />
       <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-2 bg-amber-500/30 border border-amber-500 rounded-sm" /><span className="text-muted-foreground">Order Block zone</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-emerald-500" /><span className="text-muted-foreground">Impulse move</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-2 bg-amber-500/10 rounded-sm" /><span className="text-muted-foreground">Mitigation zone</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-2 bg-amber-500/30 border border-amber-500 rounded-sm" /><span className="text-muted-foreground">{t("widgets.diagrams.orderBlock.zoneLegend")}</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-emerald-500" /><span className="text-muted-foreground">{t("widgets.diagrams.orderBlock.impulseLegend")}</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-2 bg-amber-500/10 rounded-sm" /><span className="text-muted-foreground">{t("widgets.diagrams.orderBlock.mitigationLegend")}</span></div>
       </div>
     </div>
   );
 }
 
 export function FVGDiagram() {
+  const { t } = useTranslation();
   const candles: SVGCandleData[] = [
     { o: 100, h: 102, l: 98, c: 101 },
     { o: 101, h: 103, l: 100, c: 102 },
@@ -181,8 +185,8 @@ export function FVGDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Fair Value Gap (FVG)</h4>
-      <p className="text-xs text-muted-foreground mb-4">Imbalance created when Candle 3's low is above Candle 1's high</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.fvg.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.fvg.subtitle")}</p>
       <ChartFrame candles={candles} width={W} height={H} annotations={(minP, maxP) => {
         const c1High = priceToY(105, minP, maxP, H);
         const c3Low = priceToY(108, minP, maxP, H);
@@ -195,18 +199,19 @@ export function FVGDiagram() {
             <line x1={10 + 3 * 16} y1={c1High} x2={10 + 11 * 16} y2={c1High} stroke="#06b6d4" strokeWidth={0.5} strokeDasharray="3,3" opacity={0.4} />
             <line x1={10 + 5 * 16 + 14} y1={c3Low} x2={10 + 11 * 16} y2={c3Low} stroke="#06b6d4" strokeWidth={0.5} strokeDasharray="3,3" opacity={0.4} />
             <rect x={10 + 8 * 16} y={c1High} width={3 * 16} height={c3Low - c1High} fill="#06b6d4" opacity={0.06} rx={2} />
-            <text x={10 + 9 * 16} y={(c1High + c3Low) / 2 + 3} fill="#06b6d4" fontSize={7} fontWeight="bold">Fill zone</text>
+            <text x={10 + 9 * 16} y={(c1High + c3Low) / 2 + 3} fill="#06b6d4" fontSize={7} fontWeight="bold">{t("widgets.diagrams.fvg.fillZone")}</text>
           </g>
         );
       }} />
       <p className="text-[10px] text-muted-foreground mt-3 text-center italic">
-        Price often returns to fill the FVG before continuing in the original direction. The gap between C1 high and C3 low is the imbalance.
+        {t("widgets.diagrams.fvg.footer")}
       </p>
     </div>
   );
 }
 
 export function LiquiditySweepDiagram() {
+  const { t } = useTranslation();
   const candles: SVGCandleData[] = [
     { o: 105, h: 107, l: 103, c: 106 },
     { o: 106, h: 109, l: 105, c: 108 },
@@ -226,33 +231,34 @@ export function LiquiditySweepDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Liquidity Sweep (Stop Hunt)</h4>
-      <p className="text-xs text-muted-foreground mb-4">Institutional move above a swing high to trigger stop losses before reversing</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.liquidity.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.liquidity.subtitle")}</p>
       <ChartFrame candles={candles} width={W} height={H} annotations={(minP, maxP) => {
         const swingH = priceToY(112, minP, maxP, H);
         const sweepH = priceToY(114, minP, maxP, H);
         return (
           <g>
             <line x1={10} y1={swingH} x2={W - 10} y2={swingH} stroke="#ef4444" strokeWidth={1} strokeDasharray="5,3" opacity={0.6} />
-            <text x={12} y={swingH - 5} fill="#ef4444" fontSize={8} fontWeight="bold">Swing High (Liquidity)</text>
+            <text x={12} y={swingH - 5} fill="#ef4444" fontSize={8} fontWeight="bold">{t("widgets.diagrams.liquidity.swingHigh")}</text>
             <rect x={10 + 2 * 16 - 2} y={swingH - 2} width={6 * 16 + 4} height={4} fill="#ef4444" opacity={0.08} />
-            <text x={W - 70} y={swingH - 5} fill="#94a3b8" fontSize={7}>Stop losses above</text>
+            <text x={W - 70} y={swingH - 5} fill="#94a3b8" fontSize={7}>{t("widgets.diagrams.liquidity.stopsAbove")}</text>
             <line x1={10 + 7 * 16 + 7} y1={sweepH} x2={10 + 7 * 16 + 7} y2={swingH} stroke="#f59e0b" strokeWidth={2} opacity={0.7} />
-            <text x={10 + 7 * 16 + 12} y={sweepH + 3} fill="#f59e0b" fontSize={8} fontWeight="bold">Sweep</text>
+            <text x={10 + 7 * 16 + 12} y={sweepH + 3} fill="#f59e0b" fontSize={8} fontWeight="bold">{t("widgets.diagrams.liquidity.sweep")}</text>
             <line x1={10 + 8 * 16 + 7} y1={priceToY(111, minP, maxP, H)} x2={10 + 11 * 16 + 7} y2={priceToY(100, minP, maxP, H)} stroke="#ef4444" strokeWidth={1.5} opacity={0.5} />
-            <text x={10 + 10 * 16} y={priceToY(100, minP, maxP, H) + 12} fill="#ef4444" fontSize={8} fontWeight="bold">Reversal</text>
+            <text x={10 + 10 * 16} y={priceToY(100, minP, maxP, H) + 12} fill="#ef4444" fontSize={8} fontWeight="bold">{t("widgets.diagrams.liquidity.reversal")}</text>
           </g>
         );
       }} />
       <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
-        <div className="flex items-center gap-1.5"><div className="w-6 h-0.5 bg-red-500 border-dashed" style={{ borderTopWidth: 1, borderStyle: 'dashed' }} /><span className="text-muted-foreground">Liquidity level</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-amber-500/30 rounded-sm" /><span className="text-muted-foreground">Sweep wick above level</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-6 h-0.5 bg-red-500 border-dashed" style={{ borderTopWidth: 1, borderStyle: 'dashed' }} /><span className="text-muted-foreground">{t("widgets.diagrams.liquidity.levelLegend")}</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-amber-500/30 rounded-sm" /><span className="text-muted-foreground">{t("widgets.diagrams.liquidity.wickLegend")}</span></div>
       </div>
     </div>
   );
 }
 
 export function BOSCHoCHDiagram() {
+  const { t } = useTranslation();
   const bosCandles: SVGCandleData[] = [
     { o: 100, h: 103, l: 99, c: 102 },
     { o: 102, h: 105, l: 101, c: 104 },
@@ -276,56 +282,57 @@ export function BOSCHoCHDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">BOS vs CHoCH</h4>
-      <p className="text-xs text-muted-foreground mb-4">Break of Structure confirms trend; Change of Character signals reversal</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.bosChoch.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.bosChoch.subtitle")}</p>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <div className="text-center mb-2">
-            <span className="text-xs font-bold text-emerald-500">Break of Structure (BOS)</span>
+            <span className="text-xs font-bold text-emerald-500">{t("widgets.diagrams.bosChoch.bos")}</span>
           </div>
           <ChartFrame candles={bosCandles} width={W} height={H} annotations={(minP, maxP) => {
             const prevH = priceToY(106, minP, maxP, H);
             return (
               <g>
                 <line x1={10} y1={prevH} x2={W - 10} y2={prevH} stroke="#94a3b8" strokeWidth={1} strokeDasharray="4,3" opacity={0.5} />
-                <text x={12} y={prevH - 4} fill="#94a3b8" fontSize={7}>Prev High</text>
-                <text x={W / 2 - 25} y={H - 8} fill="#10b981" fontSize={8} fontWeight="bold">Trend continues</text>
+                <text x={12} y={prevH - 4} fill="#94a3b8" fontSize={7}>{t("widgets.diagrams.bosChoch.prevHigh")}</text>
+                <text x={W / 2 - 25} y={H - 8} fill="#10b981" fontSize={8} fontWeight="bold">{t("widgets.diagrams.bosChoch.trendContinues")}</text>
               </g>
             );
           }} />
         </div>
         <div>
           <div className="text-center mb-2">
-            <span className="text-xs font-bold text-rose-500">Change of Character (CHoCH)</span>
+            <span className="text-xs font-bold text-rose-500">{t("widgets.diagrams.bosChoch.choch")}</span>
           </div>
           <ChartFrame candles={chochCandles} width={W} height={H} annotations={(minP, maxP) => {
             const prevL = priceToY(109, minP, maxP, H);
             return (
               <g>
                 <line x1={10} y1={prevL} x2={W - 10} y2={prevL} stroke="#94a3b8" strokeWidth={1} strokeDasharray="4,3" opacity={0.5} />
-                <text x={12} y={prevL + 12} fill="#94a3b8" fontSize={7}>Prev Low</text>
-                <text x={W / 2 - 25} y={H - 8} fill="#ef4444" fontSize={8} fontWeight="bold">Trend reversal</text>
+                <text x={12} y={prevL + 12} fill="#94a3b8" fontSize={7}>{t("widgets.diagrams.bosChoch.prevLow")}</text>
+                <text x={W / 2 - 25} y={H - 8} fill="#ef4444" fontSize={8} fontWeight="bold">{t("widgets.diagrams.bosChoch.trendReversal")}</text>
               </g>
             );
           }} />
         </div>
       </div>
       <div className="mt-3 text-[10px] text-muted-foreground text-center italic">
-        BOS: Price breaks the previous swing high/low in the direction of the trend. CHoCH: Price breaks the previous swing high/low against the trend, signaling a shift.
+        {t("widgets.diagrams.bosChoch.footer")}
       </div>
     </div>
   );
 }
 
 export function CandlestickPatternsDiagram() {
+  const { t } = useTranslation();
   const W = 340;
   const H = 180;
 
   const patterns: { name: string; color: string; desc: string; candles: SVGCandleData[] }[] = [
-    { name: "Hammer", color: "#10b981", desc: "Bullish reversal at support", candles: [{ o: 105, h: 106, l: 98, c: 105.5 }] },
-    { name: "Shooting Star", color: "#ef4444", desc: "Bearish reversal at resistance", candles: [{ o: 103, h: 110, l: 102, c: 103.5 }] },
-    { name: "Bullish Engulfing", color: "#10b981", desc: "Strong bullish reversal", candles: [{ o: 106, h: 107, l: 103, c: 104 }, { o: 103, h: 109, l: 102, c: 108 }] },
-    { name: "Bearish Engulfing", color: "#ef4444", desc: "Strong bearish reversal", candles: [{ o: 104, h: 107, l: 103, c: 106 }, { o: 107, h: 108, l: 101, c: 102 }] },
+    { name: t("widgets.diagrams.candles.hammer"), color: "#10b981", desc: t("widgets.diagrams.candles.hammerDesc"), candles: [{ o: 105, h: 106, l: 98, c: 105.5 }] },
+    { name: t("widgets.diagrams.candles.shootingStar"), color: "#ef4444", desc: t("widgets.diagrams.candles.shootingStarDesc"), candles: [{ o: 103, h: 110, l: 102, c: 103.5 }] },
+    { name: t("widgets.diagrams.candles.bullishEngulfing"), color: "#10b981", desc: t("widgets.diagrams.candles.bullishEngulfingDesc"), candles: [{ o: 106, h: 107, l: 103, c: 104 }, { o: 103, h: 109, l: 102, c: 108 }] },
+    { name: t("widgets.diagrams.candles.bearishEngulfing"), color: "#ef4444", desc: t("widgets.diagrams.candles.bearishEngulfingDesc"), candles: [{ o: 104, h: 107, l: 103, c: 106 }, { o: 107, h: 108, l: 101, c: 102 }] },
   ];
 
   const patW = 60;
@@ -333,8 +340,8 @@ export function CandlestickPatternsDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Key Candlestick Patterns</h4>
-      <p className="text-xs text-muted-foreground mb-4">Single and multi-candle reversal patterns used for confirmation</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.candles.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.candles.subtitle")}</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {patterns.map((pat) => {
           const allH = pat.candles.map(c => c.h);
@@ -360,10 +367,11 @@ export function CandlestickPatternsDiagram() {
 }
 
 export function SessionsDiagram() {
+  const { t } = useTranslation();
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Trading Sessions (UTC)</h4>
-      <p className="text-xs text-muted-foreground mb-4">Major trading sessions and their overlap periods</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.sessions.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.sessions.subtitle")}</p>
       <svg viewBox="0 0 340 80" className="w-full" style={{ maxHeight: 80 }}>
         <rect x={10} y={15} width={320} height={30} fill="hsl(var(--muted))" rx={6} />
         <rect x={10} y={15} width={75} height={30} fill="#3b82f620" rx={6} />
@@ -383,13 +391,14 @@ export function SessionsDiagram() {
         <text x={265} y={60} fill="#9ca3af" fontSize={7}>21:00</text>
         <text x={320} y={60} fill="#9ca3af" fontSize={7} textAnchor="end">24:00</text>
         <line x1={145} y1={47} x2={205} y2={47} stroke="#a78bfa" strokeWidth={2} />
-        <text x={175} y={72} fill="#a78bfa" fontSize={7} fontWeight="bold" textAnchor="middle">Highest Volume</text>
+        <text x={175} y={72} fill="#a78bfa" fontSize={7} fontWeight="bold" textAnchor="middle">{t("widgets.diagrams.sessions.highestVolume")}</text>
       </svg>
     </div>
   );
 }
 
 export function RiskRewardDiagram() {
+  const { t } = useTranslation();
   const candles: SVGCandleData[] = [
     { o: 104, h: 105, l: 102, c: 103 },
     { o: 103, h: 104, l: 101, c: 102 },
@@ -406,8 +415,8 @@ export function RiskRewardDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Risk:Reward Ratio (1:3)</h4>
-      <p className="text-xs text-muted-foreground mb-4">Proper trade setup with defined stop loss and take profit levels</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.riskReward.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.riskReward.subtitle")}</p>
       <ChartFrame candles={candles} width={W} height={H} annotations={(minP, maxP) => {
         const entry = priceToY(101.5, minP, maxP, H);
         const sl = priceToY(100, minP, maxP, H);
@@ -415,26 +424,27 @@ export function RiskRewardDiagram() {
         return (
           <g>
             <line x1={10 + 3 * 16} y1={entry} x2={W - 10} y2={entry} stroke="#3b82f6" strokeWidth={1} strokeDasharray="5,3" />
-            <text x={W - 45} y={entry - 4} fill="#3b82f6" fontSize={8} fontWeight="bold">Entry</text>
+            <text x={W - 45} y={entry - 4} fill="#3b82f6" fontSize={8} fontWeight="bold">{t("widgets.diagrams.riskReward.entry")}</text>
             <rect x={10 + 3 * 16} y={entry} width={W - 20 - 3 * 16} height={sl - entry} fill="#ef4444" opacity={0.08} />
             <line x1={10 + 3 * 16} y1={sl} x2={W - 10} y2={sl} stroke="#ef4444" strokeWidth={1} strokeDasharray="5,3" />
             <text x={W - 55} y={sl + 12} fill="#ef4444" fontSize={8} fontWeight="bold">SL (-1R)</text>
             <rect x={10 + 3 * 16} y={tp} width={W - 20 - 3 * 16} height={entry - tp} fill="#10b981" opacity={0.08} />
             <line x1={10 + 3 * 16} y1={tp} x2={W - 10} y2={tp} stroke="#10b981" strokeWidth={1} strokeDasharray="5,3" />
             <text x={W - 60} y={tp - 4} fill="#10b981" fontSize={8} fontWeight="bold">TP (+3R)</text>
-            <text x={W - 55} y={(entry + sl) / 2 + 3} fill="#ef4444" fontSize={7}>Risk: $100</text>
-            <text x={W - 70} y={(tp + entry) / 2 + 3} fill="#10b981" fontSize={7}>Reward: $300</text>
+            <text x={W - 55} y={(entry + sl) / 2 + 3} fill="#ef4444" fontSize={7}>{t("widgets.diagrams.riskReward.risk")}</text>
+            <text x={W - 70} y={(tp + entry) / 2 + 3} fill="#10b981" fontSize={7}>{t("widgets.diagrams.riskReward.reward")}</text>
           </g>
         );
       }} />
       <p className="text-[10px] text-muted-foreground mt-3 text-center italic">
-        Minimum 1:2 R:R recommended. With 1:3 R:R, you only need a 25% win rate to break even.
+        {t("widgets.diagrams.riskReward.footer")}
       </p>
     </div>
   );
 }
 
 export function BreakerBlockDiagram() {
+  const { t } = useTranslation();
   const candles: SVGCandleData[] = [
     { o: 100, h: 103, l: 99, c: 102 },
     { o: 102, h: 106, l: 101, c: 105 },
@@ -454,29 +464,30 @@ export function BreakerBlockDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Breaker Block</h4>
-      <p className="text-xs text-muted-foreground mb-4">A failed order block that becomes support/resistance on the opposite side</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.breaker.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.breaker.subtitle")}</p>
       <ChartFrame candles={candles} width={W} height={H} annotations={(minP, maxP) => {
         const obTop = priceToY(109, minP, maxP, H);
         const obBot = priceToY(105, minP, maxP, H);
         return (
           <g>
             <rect x={10 + 2 * 16} y={obTop} width={20} height={obBot - obTop} fill="#ef4444" opacity={0.15} stroke="#ef4444" strokeWidth={1} strokeDasharray="3,2" rx={2} />
-            <text x={10 + 2 * 16} y={obTop - 4} fill="#ef4444" fontSize={7} fontWeight="bold">Failed OB</text>
+            <text x={10 + 2 * 16} y={obTop - 4} fill="#ef4444" fontSize={7} fontWeight="bold">{t("widgets.diagrams.breaker.failedOb")}</text>
             <line x1={10 + 4 * 16} y1={obBot} x2={10 + 11 * 16} y2={obBot} stroke="#8b5cf6" strokeWidth={1} strokeDasharray="4,3" opacity={0.6} />
             <rect x={10 + 9 * 16} y={obBot - 4} width={3 * 16} height={8} fill="#8b5cf6" opacity={0.15} rx={2} />
-            <text x={10 + 9.2 * 16} y={obBot + 14} fill="#8b5cf6" fontSize={8} fontWeight="bold">Breaker (Support)</text>
+            <text x={10 + 9.2 * 16} y={obBot + 14} fill="#8b5cf6" fontSize={8} fontWeight="bold">{t("widgets.diagrams.breaker.breakerSupport")}</text>
           </g>
         );
       }} />
       <p className="text-[10px] text-muted-foreground mt-3 text-center italic">
-        When an order block fails and price breaks through it, the zone flips polarity and becomes a breaker block.
+        {t("widgets.diagrams.breaker.footer")}
       </p>
     </div>
   );
 }
 
 export function InducementDiagram() {
+  const { t } = useTranslation();
   const candles: SVGCandleData[] = [
     { o: 105, h: 107, l: 104, c: 106 },
     { o: 106, h: 109, l: 105, c: 108 },
@@ -496,8 +507,8 @@ export function InducementDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Inducement</h4>
-      <p className="text-xs text-muted-foreground mb-4">Minor liquidity created to bait retail traders before sweeping the real target</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.inducement.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.inducement.subtitle")}</p>
       <ChartFrame candles={candles} width={W} height={H} annotations={(minP, maxP) => {
         const minorLow = priceToY(105, minP, maxP, H);
         const majorLow = priceToY(104, minP, maxP, H);
@@ -505,57 +516,59 @@ export function InducementDiagram() {
         return (
           <g>
             <line x1={10 + 1 * 16} y1={minorLow} x2={10 + 7 * 16} y2={minorLow} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3,2" opacity={0.6} />
-            <text x={10 + 1 * 16} y={minorLow + 12} fill="#f59e0b" fontSize={7} fontWeight="bold">Minor Low (Inducement)</text>
+            <text x={10 + 1 * 16} y={minorLow + 12} fill="#f59e0b" fontSize={7} fontWeight="bold">{t("widgets.diagrams.inducement.minorLow")}</text>
             <line x1={10 + 0 * 16} y1={majorLow} x2={10 + 8 * 16} y2={majorLow} stroke="#ef4444" strokeWidth={1} strokeDasharray="5,3" opacity={0.4} />
-            <text x={10} y={majorLow + 12} fill="#94a3b8" fontSize={7}>Real target level</text>
+            <text x={10} y={majorLow + 12} fill="#94a3b8" fontSize={7}>{t("widgets.diagrams.inducement.realTarget")}</text>
             <circle cx={10 + 7 * 16 + 7} cy={sweepLow} r={4} fill="none" stroke="#ef4444" strokeWidth={1.5} />
-            <text x={10 + 7 * 16 + 14} y={sweepLow + 3} fill="#ef4444" fontSize={7} fontWeight="bold">Swept</text>
+            <text x={10 + 7 * 16 + 14} y={sweepLow + 3} fill="#ef4444" fontSize={7} fontWeight="bold">{t("widgets.diagrams.inducement.swept")}</text>
           </g>
         );
       }} />
       <p className="text-[10px] text-muted-foreground mt-3 text-center italic">
-        Smart money creates minor swing points to induce retail entries, then sweeps below to collect liquidity before the real move.
+        {t("widgets.diagrams.inducement.footer")}
       </p>
     </div>
   );
 }
 
 export function MultiTimeframeDiagram() {
+  const { t } = useTranslation();
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Multi-Timeframe Analysis</h4>
-      <p className="text-xs text-muted-foreground mb-4">Top-down approach: Higher timeframe sets bias, lower timeframe provides entry</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.mtf.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.mtf.subtitle")}</p>
       <svg viewBox="0 0 340 160" className="w-full" style={{ maxHeight: 160 }}>
         <rect x={10} y={10} width={100} height={55} rx={6} fill="#10b98110" stroke="#10b981" strokeWidth={1} />
-        <text x={60} y={28} fill="#10b981" fontSize={9} fontWeight="bold" textAnchor="middle">HTF (4H/Daily)</text>
-        <text x={60} y={42} fill="#94a3b8" fontSize={7} textAnchor="middle">Trend Direction</text>
-        <text x={60} y={54} fill="#94a3b8" fontSize={7} textAnchor="middle">Key S/R Levels</text>
+        <text x={60} y={28} fill="#10b981" fontSize={9} fontWeight="bold" textAnchor="middle">{t("widgets.diagrams.mtf.htf")}</text>
+        <text x={60} y={42} fill="#94a3b8" fontSize={7} textAnchor="middle">{t("widgets.diagrams.mtf.htfRow1")}</text>
+        <text x={60} y={54} fill="#94a3b8" fontSize={7} textAnchor="middle">{t("widgets.diagrams.mtf.htfRow2")}</text>
 
         <rect x={120} y={10} width={100} height={55} rx={6} fill="#3b82f610" stroke="#3b82f6" strokeWidth={1} />
-        <text x={170} y={28} fill="#3b82f6" fontSize={9} fontWeight="bold" textAnchor="middle">MTF (1H)</text>
-        <text x={170} y={42} fill="#94a3b8" fontSize={7} textAnchor="middle">Market Structure</text>
-        <text x={170} y={54} fill="#94a3b8" fontSize={7} textAnchor="middle">POI Identification</text>
+        <text x={170} y={28} fill="#3b82f6" fontSize={9} fontWeight="bold" textAnchor="middle">{t("widgets.diagrams.mtf.mtf")}</text>
+        <text x={170} y={42} fill="#94a3b8" fontSize={7} textAnchor="middle">{t("widgets.diagrams.mtf.mtfRow1")}</text>
+        <text x={170} y={54} fill="#94a3b8" fontSize={7} textAnchor="middle">{t("widgets.diagrams.mtf.mtfRow2")}</text>
 
         <rect x={230} y={10} width={100} height={55} rx={6} fill="#f59e0b10" stroke="#f59e0b" strokeWidth={1} />
-        <text x={280} y={28} fill="#f59e0b" fontSize={9} fontWeight="bold" textAnchor="middle">LTF (5m/15m)</text>
-        <text x={280} y={42} fill="#94a3b8" fontSize={7} textAnchor="middle">Entry Trigger</text>
-        <text x={280} y={54} fill="#94a3b8" fontSize={7} textAnchor="middle">Risk Placement</text>
+        <text x={280} y={28} fill="#f59e0b" fontSize={9} fontWeight="bold" textAnchor="middle">{t("widgets.diagrams.mtf.ltf")}</text>
+        <text x={280} y={42} fill="#94a3b8" fontSize={7} textAnchor="middle">{t("widgets.diagrams.mtf.ltfRow1")}</text>
+        <text x={280} y={54} fill="#94a3b8" fontSize={7} textAnchor="middle">{t("widgets.diagrams.mtf.ltfRow2")}</text>
 
         <line x1={110} y1={37} x2={120} y2={37} stroke="#94a3b8" strokeWidth={1} markerEnd="url(#arrowMTF)" />
         <line x1={220} y1={37} x2={230} y2={37} stroke="#94a3b8" strokeWidth={1} markerEnd="url(#arrowMTF)" />
         <defs><marker id="arrowMTF" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8" /></marker></defs>
 
         <rect x={10} y={80} width={320} height={70} rx={6} fill="hsl(var(--muted))" opacity={0.3} />
-        <text x={20} y={97} fill="#94a3b8" fontSize={8} fontWeight="bold">Rule: Only take LTF entries that align with HTF bias</text>
-        <text x={20} y={112} fill="#94a3b8" fontSize={7}>1. HTF bullish trend = Only look for longs on LTF</text>
-        <text x={20} y={125} fill="#94a3b8" fontSize={7}>2. MTF identifies POI (order block, FVG) = Zone to watch</text>
-        <text x={20} y={138} fill="#94a3b8" fontSize={7}>3. LTF CHoCH/BOS at POI = Entry confirmation</text>
+        <text x={20} y={97} fill="#94a3b8" fontSize={8} fontWeight="bold">{t("widgets.diagrams.mtf.rule")}</text>
+        <text x={20} y={112} fill="#94a3b8" fontSize={7}>{t("widgets.diagrams.mtf.step1")}</text>
+        <text x={20} y={125} fill="#94a3b8" fontSize={7}>{t("widgets.diagrams.mtf.step2")}</text>
+        <text x={20} y={138} fill="#94a3b8" fontSize={7}>{t("widgets.diagrams.mtf.step3")}</text>
       </svg>
     </div>
   );
 }
 
 export function EntryModelDiagram() {
+  const { t } = useTranslation();
   const candles: SVGCandleData[] = [
     { o: 108, h: 109, l: 106, c: 107 },
     { o: 107, h: 108, l: 105, c: 106 },
@@ -575,8 +588,8 @@ export function EntryModelDiagram() {
 
   return (
     <div className="p-6 bg-muted/30 rounded-xl border border-border">
-      <h4 className="text-sm font-bold text-foreground mb-1">Optimal Trade Entry (OTE)</h4>
-      <p className="text-xs text-muted-foreground mb-4">Fibonacci retracement entry at the 0.618-0.786 zone during a pullback</p>
+      <h4 className="text-sm font-bold text-foreground mb-1">{t("widgets.diagrams.ote.title")}</h4>
+      <p className="text-xs text-muted-foreground mb-4">{t("widgets.diagrams.ote.subtitle")}</p>
       <ChartFrame candles={candles} width={W} height={H} annotations={(minP, maxP) => {
         const swingH = priceToY(109, minP, maxP, H);
         const swingL = priceToY(100, minP, maxP, H);
@@ -594,12 +607,12 @@ export function EntryModelDiagram() {
             <rect x={10 + 5 * 16} y={fib618} width={W - 20 - 5 * 16} height={fib786 - fib618} fill="#10b981" opacity={0.12} stroke="#10b981" strokeWidth={0.5} strokeDasharray="3,2" rx={2} />
             <text x={W - 75} y={fib618 - 3} fill="#10b981" fontSize={7} fontWeight="bold">0.618</text>
             <text x={W - 75} y={fib786 + 10} fill="#10b981" fontSize={7} fontWeight="bold">0.786</text>
-            <text x={10 + 6 * 16} y={(fib618 + fib786) / 2 + 3} fill="#10b981" fontSize={8} fontWeight="bold">OTE Zone</text>
+            <text x={10 + 6 * 16} y={(fib618 + fib786) / 2 + 3} fill="#10b981" fontSize={8} fontWeight="bold">{t("widgets.diagrams.ote.zone")}</text>
           </g>
         );
       }} />
       <p className="text-[10px] text-muted-foreground mt-3 text-center italic">
-        The Optimal Trade Entry zone (0.618-0.786 Fibonacci) offers the best risk-to-reward during pullbacks within a trend.
+        {t("widgets.diagrams.ote.footer")}
       </p>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Bell, AlertTriangle, Activity, Compass, TrendingDown, Save, Loader2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -49,6 +50,7 @@ const DEFAULTS: AlertPreferences = {
 };
 
 export function AlertSettingsCard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [prefs, setPrefs] = useState<AlertPreferences>(DEFAULTS);
   const [dirty, setDirty] = useState(false);
@@ -74,12 +76,12 @@ export function AlertSettingsCard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/alert-preferences"] });
       setDirty(false);
-      toast({ title: "Alert settings saved", description: "Your risk-alert preferences have been updated." });
+      toast({ title: t("widgets.alerts.toast.savedTitle"), description: t("widgets.alerts.toast.savedDesc") });
     },
     onError: (err: any) => {
       toast({
-        title: "Could not save settings",
-        description: err?.message || "Please try again.",
+        title: t("widgets.alerts.toast.errorTitle"),
+        description: err?.message || t("widgets.alerts.toast.errorDesc"),
         variant: "destructive",
       });
     },
@@ -90,17 +92,17 @@ export function AlertSettingsCard() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-primary" />
-          <CardTitle data-testid="text-alert-settings-title">Risk Alerts</CardTitle>
+          <CardTitle data-testid="text-alert-settings-title">{t("widgets.alerts.title")}</CardTitle>
         </div>
         <CardDescription>
-          Get warned in real time when your trading approaches drawdown limits or shows risky behavior. In-app and email channels.
+          {t("widgets.alerts.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground" data-testid="loading-alert-settings">
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
-            Loading preferences...
+            {t("widgets.alerts.loading")}
           </div>
         ) : (
           <>
@@ -110,9 +112,9 @@ export function AlertSettingsCard() {
                 <div className="flex gap-3 min-w-0">
                   <TrendingDown className="h-4 w-4 mt-1 text-amber-500 flex-shrink-0" />
                   <div className="min-w-0">
-                    <Label className="text-sm font-semibold block">Drawdown warnings</Label>
+                    <Label className="text-sm font-semibold block">{t("widgets.alerts.drawdown.label")}</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Daily and max drawdown limit warnings for prop firm challenges.
+                      {t("widgets.alerts.drawdown.desc")}
                     </p>
                   </div>
                 </div>
@@ -125,7 +127,7 @@ export function AlertSettingsCard() {
               {prefs.drawdownEnabled && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 ml-7">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Warn at</Label>
+                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.drawdown.warnAt")}</Label>
                     <div className="relative">
                       <Input
                         type="number"
@@ -140,7 +142,7 @@ export function AlertSettingsCard() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Critical at</Label>
+                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.drawdown.criticalAt")}</Label>
                     <div className="relative">
                       <Input
                         type="number"
@@ -155,13 +157,13 @@ export function AlertSettingsCard() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between sm:justify-start sm:gap-3 pt-5">
-                    <Label className="text-xs text-muted-foreground">In-app</Label>
+                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.inApp")}</Label>
                     <Switch
                       checked={prefs.drawdownInApp}
                       onCheckedChange={(v) => update({ drawdownInApp: v })}
                       data-testid="switch-drawdown-inapp"
                     />
-                    <Label className="text-xs text-muted-foreground ml-3">Email</Label>
+                    <Label className="text-xs text-muted-foreground ml-3">{t("widgets.alerts.email")}</Label>
                     <Switch
                       checked={prefs.drawdownEmail}
                       onCheckedChange={(v) => update({ drawdownEmail: v })}
@@ -180,9 +182,9 @@ export function AlertSettingsCard() {
                 <div className="flex gap-3 min-w-0">
                   <AlertTriangle className="h-4 w-4 mt-1 text-red-500 flex-shrink-0" />
                   <div className="min-w-0">
-                    <Label className="text-sm font-semibold block">Revenge trading</Label>
+                    <Label className="text-sm font-semibold block">{t("widgets.alerts.revenge.label")}</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Detects 3+ trades opened within 15 minutes after a loss.
+                      {t("widgets.alerts.revenge.desc")}
                     </p>
                   </div>
                 </div>
@@ -194,13 +196,13 @@ export function AlertSettingsCard() {
               </div>
               {prefs.revengeEnabled && (
                 <div className="ml-7 flex items-center justify-between sm:justify-start sm:gap-3">
-                  <Label className="text-xs text-muted-foreground">In-app</Label>
+                  <Label className="text-xs text-muted-foreground">{t("widgets.alerts.inApp")}</Label>
                   <Switch
                     checked={prefs.revengeInApp}
                     onCheckedChange={(v) => update({ revengeInApp: v })}
                     data-testid="switch-revenge-inapp"
                   />
-                  <Label className="text-xs text-muted-foreground ml-3">Email</Label>
+                  <Label className="text-xs text-muted-foreground ml-3">{t("widgets.alerts.email")}</Label>
                   <Switch
                     checked={prefs.revengeEmail}
                     onCheckedChange={(v) => update({ revengeEmail: v })}
@@ -218,9 +220,9 @@ export function AlertSettingsCard() {
                 <div className="flex gap-3 min-w-0">
                   <Activity className="h-4 w-4 mt-1 text-amber-500 flex-shrink-0" />
                   <div className="min-w-0">
-                    <Label className="text-sm font-semibold block">Overtrading</Label>
+                    <Label className="text-sm font-semibold block">{t("widgets.alerts.overtrading.label")}</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Alert when you exceed your daily trade cap.
+                      {t("widgets.alerts.overtrading.desc")}
                     </p>
                   </div>
                 </div>
@@ -233,7 +235,7 @@ export function AlertSettingsCard() {
               {prefs.overtradingEnabled && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 ml-7">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Daily cap</Label>
+                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.overtrading.dailyCap")}</Label>
                     <Input
                       type="number"
                       min={1}
@@ -244,13 +246,13 @@ export function AlertSettingsCard() {
                     />
                   </div>
                   <div className="flex items-center justify-between sm:justify-start sm:gap-3 pt-5">
-                    <Label className="text-xs text-muted-foreground">In-app</Label>
+                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.inApp")}</Label>
                     <Switch
                       checked={prefs.overtradingInApp}
                       onCheckedChange={(v) => update({ overtradingInApp: v })}
                       data-testid="switch-overtrading-inapp"
                     />
-                    <Label className="text-xs text-muted-foreground ml-3">Email</Label>
+                    <Label className="text-xs text-muted-foreground ml-3">{t("widgets.alerts.email")}</Label>
                     <Switch
                       checked={prefs.overtradingEmail}
                       onCheckedChange={(v) => update({ overtradingEmail: v })}
@@ -269,9 +271,9 @@ export function AlertSettingsCard() {
                 <div className="flex gap-3 min-w-0">
                   <Compass className="h-4 w-4 mt-1 text-blue-500 flex-shrink-0" />
                   <div className="min-w-0">
-                    <Label className="text-sm font-semibold block">Strategy deviation</Label>
+                    <Label className="text-sm font-semibold block">{t("widgets.alerts.strategy.label")}</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Notify when you trade symbols outside your active strategies.
+                      {t("widgets.alerts.strategy.desc")}
                     </p>
                   </div>
                 </div>
@@ -283,13 +285,13 @@ export function AlertSettingsCard() {
               </div>
               {prefs.strategyDeviationEnabled && (
                 <div className="ml-7 flex items-center justify-between sm:justify-start sm:gap-3">
-                  <Label className="text-xs text-muted-foreground">In-app</Label>
+                  <Label className="text-xs text-muted-foreground">{t("widgets.alerts.inApp")}</Label>
                   <Switch
                     checked={prefs.strategyDeviationInApp}
                     onCheckedChange={(v) => update({ strategyDeviationInApp: v })}
                     data-testid="switch-strategy-inapp"
                   />
-                  <Label className="text-xs text-muted-foreground ml-3">Email</Label>
+                  <Label className="text-xs text-muted-foreground ml-3">{t("widgets.alerts.email")}</Label>
                   <Switch
                     checked={prefs.strategyDeviationEmail}
                     onCheckedChange={(v) => update({ strategyDeviationEmail: v })}
@@ -304,9 +306,9 @@ export function AlertSettingsCard() {
             {/* COOLDOWN */}
             <section className="space-y-3">
               <div>
-                <Label className="text-sm font-semibold">Cooldown between repeat alerts</Label>
+                <Label className="text-sm font-semibold">{t("widgets.alerts.cooldown.label")}</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  How long to wait before the same alert can fire again. Prevents notification spam.
+                  {t("widgets.alerts.cooldown.desc")}
                 </p>
               </div>
               <div className="max-w-[200px]">
@@ -320,7 +322,7 @@ export function AlertSettingsCard() {
                     className="pr-16"
                     data-testid="input-cooldown-minutes"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">minutes</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{t("widgets.alerts.minutes")}</span>
                 </div>
               </div>
             </section>
@@ -333,7 +335,7 @@ export function AlertSettingsCard() {
                 className="gap-2"
               >
                 {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save preferences
+                {t("widgets.alerts.save")}
               </Button>
             </div>
           </>

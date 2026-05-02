@@ -19,6 +19,29 @@ import { useTrades } from "@/hooks/use-trades";
  */
 const LS_KEY = "tradify_sample_mode_dismissed";
 const DISMISS_EVENT = "tradify:sample-mode-changed";
+const EVER_ACTIVE_PREFIX = "tradify_sample_mode_ever_active_";
+
+/**
+ * Marks (per user) that sample mode was active at some point during the
+ * lifetime of this account. FirstSyncMoment uses this as an eligibility
+ * gate so the celebration only fires for users who actually came through
+ * the sample-mode → connected journey.
+ */
+export function markSampleModeEverActive(userId: string) {
+  if (!userId) return;
+  try {
+    localStorage.setItem(`${EVER_ACTIVE_PREFIX}${userId}`, "1");
+  } catch {}
+}
+
+export function hasEverHadSampleMode(userId: string): boolean {
+  if (!userId) return false;
+  try {
+    return localStorage.getItem(`${EVER_ACTIVE_PREFIX}${userId}`) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export function dismissSampleMode() {
   try {
@@ -125,5 +148,7 @@ export function useSampleMode(): {
   if (mt5Error || tradesError) return { active: false, reason: "loading" };
   if (mt5?.status === "CONNECTED") return { active: false, reason: "mt5-connected" };
   if (Array.isArray(trades) && trades.length > 0) return { active: false, reason: "has-trades" };
+  // Persist eligibility flag so FirstSyncMoment can gate on it later.
+  markSampleModeEverActive(userId);
   return { active: true, reason: "active" };
 }

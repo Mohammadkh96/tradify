@@ -53,7 +53,18 @@ const timezones = Intl.supportedValuesOf('timeZone');
 export default function Auth() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const [isLogin, setIsLogin] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !window.location.pathname.startsWith("/signup");
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (location.pathname === "/signup") setIsLogin(false);
+    if (location.pathname === "/login") setIsLogin(true);
+  }, [location.pathname]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -789,8 +800,10 @@ export default function Auth() {
 
             <div className="pt-6 border-t border-border text-center">
               <button 
+                type="button"
                 onClick={() => { setIsLogin(!isLogin); setAgreedToTerms(false); }}
                 className="text-muted-foreground hover:text-emerald-500 text-xs font-bold transition-colors"
+                data-testid="button-toggle-auth-mode"
               >
                 {isLogin ? t("auth.noAccount") : t("auth.hasAccount")}
               </button>

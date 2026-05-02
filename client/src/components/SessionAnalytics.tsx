@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
@@ -62,6 +63,7 @@ interface SessionAnalyticsProps {
 }
 
 export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: SessionAnalyticsProps) {
+  const { t } = useTranslation();
   const { isElite, canAccess } = usePlan();
 
   // Use separate query key segments to ensure proper cache invalidation
@@ -87,14 +89,14 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
 
   // Helper to get date range label
   const getDateRangeLabel = () => {
-    if (!dateFilter || dateFilter === "all") return "All Time";
-    if (dateFilter === "today") return "Today";
-    if (dateFilter === "week") return "This Week";
-    if (dateFilter === "month") return "This Month";
+    if (!dateFilter || dateFilter === "all") return t("widgets.session.allTime");
+    if (dateFilter === "today") return t("widgets.session.today");
+    if (dateFilter === "week") return t("widgets.session.thisWeek");
+    if (dateFilter === "month") return t("widgets.session.thisMonth");
     if (dateFilter === "custom" && startDate && endDate) {
       return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
     }
-    return "All Time";
+    return t("widgets.session.allTime");
   };
 
   if (!isElite) {
@@ -108,11 +110,11 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
               </div>
               <div>
                 <CardTitle className="text-foreground uppercase italic tracking-tight font-black flex items-center gap-2">
-                  Session Analytics
+                  {t("widgets.session.title")}
                   <Crown size={14} className="text-amber-500" />
                 </CardTitle>
                 <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                  Elite Feature
+                  {t("widgets.session.eliteFeature")}
                 </CardDescription>
               </div>
             </div>
@@ -124,14 +126,14 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
               <Crown size={32} className="text-amber-500" />
             </div>
             <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">
-              Unlock Session Analytics
+              {t("widgets.session.unlock")}
             </h3>
             <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
-              Analyze your trading performance by market session. Discover which sessions work best for your strategy.
+              {t("widgets.session.unlockDesc")}
             </p>
             <Link to="/pricing">
               <Button className="bg-amber-500 text-slate-950 border-amber-500/50 font-black uppercase tracking-widest text-[10px]">
-                Upgrade to Elite
+                {t("widgets.session.upgradeBtn")}
               </Button>
             </Link>
           </div>
@@ -150,10 +152,10 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
             </div>
             <div>
               <CardTitle className="text-foreground uppercase italic tracking-tight font-black">
-                Session Analytics
+                {t("widgets.session.title")}
               </CardTitle>
               <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                Loading session data...
+                {t("widgets.session.loading")}
               </CardDescription>
             </div>
           </div>
@@ -182,10 +184,10 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
             </div>
             <div>
               <CardTitle className="text-foreground uppercase italic tracking-tight font-black">
-                Session Analytics
+                {t("widgets.session.title")}
               </CardTitle>
               <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                Performance by market session
+                {t("widgets.session.perfBySession")}
               </CardDescription>
             </div>
           </div>
@@ -193,7 +195,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
         <CardContent className="pt-6">
           <div className="text-center py-8">
             <AlertTriangle size={32} className="text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground text-sm">Unable to load session data</p>
+            <p className="text-muted-foreground text-sm">{t("widgets.session.errorLoad")}</p>
           </div>
         </CardContent>
       </Card>
@@ -210,10 +212,10 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
             </div>
             <div>
               <CardTitle className="text-foreground uppercase italic tracking-tight font-black">
-                Session Analytics
+                {t("widgets.session.title")}
               </CardTitle>
               <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                Performance by market session
+                {t("widgets.session.perfBySession")}
               </CardDescription>
             </div>
           </div>
@@ -222,7 +224,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
           <div className="text-center py-8">
             <BarChart3 size={32} className="text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground text-sm">
-              No trade data available yet. Start trading to see session analytics.
+              {t("widgets.session.noData")}
             </p>
           </div>
         </CardContent>
@@ -233,20 +235,25 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
   const bestSessionData = data.sessions.find(s => s.session === data.bestSession);
   const worstSessionData = data.sessions.find(s => s.session === data.worstSession);
 
+  const sessionLabel = (session: string, fallback: string) =>
+    t(`widgets.sessionLabels.${session}`, { defaultValue: fallback });
+
   const pnlChartData = data.sessions.map(s => ({
-    name: s.displayName,
+    name: sessionLabel(s.session, s.displayName),
+    sessionKey: s.session,
     pnl: s.totalPnL,
     color: s.color,
   }));
 
   const winRateChartData = data.sessions.map(s => ({
-    name: s.displayName,
+    name: sessionLabel(s.session, s.displayName),
+    sessionKey: s.session,
     winRate: s.winRate,
     color: s.color,
   }));
 
   const radarData = data.sessions.map(s => ({
-    session: s.displayName,
+    session: sessionLabel(s.session, s.displayName),
     winRate: s.winRate,
     trades: (s.tradeCount / data.totalTrades) * 100,
     pnl: s.totalPnL > 0 ? Math.min(s.totalPnL, 100) : 0,
@@ -262,11 +269,11 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
             </div>
             <div>
               <CardTitle className="text-foreground uppercase italic tracking-tight font-black flex items-center gap-2">
-                Session Analytics
+                {t("widgets.session.title")}
                 <Crown size={14} className="text-amber-500" />
               </CardTitle>
               <CardDescription className="text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-70">
-                Performance by market session (UTC)
+                {t("widgets.session.perfBySessionUtc")}
               </CardDescription>
             </div>
           </div>
@@ -281,7 +288,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
               className="text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-muted/50 px-2 py-1 rounded"
               data-testid="session-analytics-trade-count"
             >
-              {data.totalTrades} trades
+              {data.totalTrades} {t("widgets.session.tradesShort")}
             </span>
           </div>
         </div>
@@ -292,7 +299,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
             <div className="flex items-center gap-2">
               <DollarSign size={14} className="text-amber-500" />
               <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                P&L by Session
+                {t("widgets.session.pnlBySession")}
               </h4>
             </div>
             <div className="h-56 bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
@@ -326,7 +333,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                   />
                   <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.4} strokeDasharray="3 3" />
                   <Tooltip 
-                    formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'P&L']}
+                    formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, t("widgets.session.pnl")]}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--popover))', 
                       border: '1px solid hsl(var(--border))',
@@ -357,7 +364,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
             <div className="flex items-center gap-2">
               <Percent size={14} className="text-amber-500" />
               <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                Win Rate by Session
+                {t("widgets.session.winRateBySession")}
               </h4>
             </div>
             <div className="h-56 bg-gradient-to-br from-background to-muted/20 rounded-xl border border-border/50 p-4 shadow-inner">
@@ -404,7 +411,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                   />
                   <ReferenceLine x={50} stroke="#f59e0b" strokeOpacity={0.5} strokeDasharray="5 5" label={{ value: '50%', position: 'top', fontSize: 9, fill: '#f59e0b' }} />
                   <Tooltip 
-                    formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']}
+                    formatter={(value: number) => [`${value.toFixed(1)}%`, t("widgets.session.winRate")]}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--popover))', 
                       border: '1px solid hsl(var(--border))',
@@ -421,14 +428,14 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                   <Bar dataKey="winRate" radius={[0, 6, 6, 0]} maxBarSize={28}>
                     {winRateChartData.map((entry, index) => {
                       const gradientMap: Record<string, string> = {
-                        'Asian': 'url(#winRateAsian)',
-                        'London': 'url(#winRateLondon)',
-                        'London/NY Overlap': 'url(#winRateOverlap)',
-                        'New York': 'url(#winRateNY)',
-                        'Off Hours': 'url(#winRateOff)'
+                        'asian': 'url(#winRateAsian)',
+                        'london': 'url(#winRateLondon)',
+                        'overlap_london_ny': 'url(#winRateOverlap)',
+                        'new_york': 'url(#winRateNY)',
+                        'off_hours': 'url(#winRateOff)'
                       };
                       return (
-                        <Cell key={`cell-${index}`} fill={gradientMap[entry.name] || entry.color} />
+                        <Cell key={`cell-${index}`} fill={gradientMap[entry.sessionKey] || entry.color} />
                       );
                     })}
                   </Bar>
@@ -453,12 +460,12 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
             >
               {session.session === data.bestSession && (
                 <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full shadow-lg">
-                  Best
+                  {t("widgets.session.best")}
                 </div>
               )}
               {session.session === data.worstSession && session.session !== data.bestSession && (
                 <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full shadow-lg">
-                  Needs Work
+                  {t("widgets.session.needsWork")}
                 </div>
               )}
               
@@ -472,18 +479,18 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                     className="text-[10px] font-black uppercase tracking-widest"
                     style={{ color: session.color }}
                   >
-                    {session.displayName}
+                    {sessionLabel(session.session, session.displayName)}
                   </span>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground uppercase font-medium">Trades</span>
+                  <span className="text-[9px] text-muted-foreground uppercase font-medium">{t("widgets.session.trades")}</span>
                   <span className="text-sm font-black text-foreground">{session.tradeCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground uppercase font-medium">Win Rate</span>
+                  <span className="text-[9px] text-muted-foreground uppercase font-medium">{t("widgets.session.winRate")}</span>
                   <span className={`text-sm font-black ${
                     session.winRate >= 50 ? 'text-emerald-500' : 'text-red-500'
                   }`}>
@@ -491,7 +498,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                  <span className="text-[9px] text-muted-foreground uppercase font-medium">P&L</span>
+                  <span className="text-[9px] text-muted-foreground uppercase font-medium">{t("widgets.session.pnl")}</span>
                   <span className={`text-sm font-black ${
                     session.totalPnL >= 0 ? 'text-emerald-500' : 'text-red-500'
                   }`}>
@@ -499,7 +506,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground uppercase font-medium">Avg P&L</span>
+                  <span className="text-[9px] text-muted-foreground uppercase font-medium">{t("widgets.session.avgPnl")}</span>
                   <span className={`text-xs font-bold ${
                     session.avgPnL >= 0 ? 'text-emerald-400' : 'text-red-400'
                   }`}>
@@ -519,10 +526,10 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                   <TrendingUp size={16} className="text-emerald-500" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Best Session</p>
-                  <p className="text-sm font-black text-emerald-500 uppercase">{bestSessionData.displayName}</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("widgets.session.bestSession")}</p>
+                  <p className="text-sm font-black text-emerald-500 uppercase">{sessionLabel(bestSessionData.session, bestSessionData.displayName)}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {bestSessionData.winRate.toFixed(1)}% win rate • ${bestSessionData.totalPnL.toFixed(2)} total
+                    {bestSessionData.winRate.toFixed(1)}% {t("widgets.session.winRateLower")} • ${bestSessionData.totalPnL.toFixed(2)} {t("widgets.session.total")}
                   </p>
                 </div>
               </div>
@@ -533,10 +540,10 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
                   <TrendingDown size={16} className="text-red-500" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Needs Work</p>
-                  <p className="text-sm font-black text-red-500 uppercase">{worstSessionData.displayName}</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t("widgets.session.needsWork")}</p>
+                  <p className="text-sm font-black text-red-500 uppercase">{sessionLabel(worstSessionData.session, worstSessionData.displayName)}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {worstSessionData.winRate.toFixed(1)}% win rate • ${worstSessionData.totalPnL.toFixed(2)} total
+                    {worstSessionData.winRate.toFixed(1)}% {t("widgets.session.winRateLower")} • ${worstSessionData.totalPnL.toFixed(2)} {t("widgets.session.total")}
                   </p>
                 </div>
               </div>
@@ -546,7 +553,7 @@ export function SessionAnalytics({ userId, dateFilter, startDate, endDate }: Ses
 
         <div className="pt-4 border-t border-border">
           <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
-            Session Times (UTC)
+            {t("widgets.session.sessionTimes")}
           </h4>
           <div className="flex flex-wrap gap-2">
             <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded">

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +77,7 @@ interface StrategyDeviationAnalysisProps {
 }
 
 export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisProps) {
+  const { t } = useTranslation();
   const { isElite } = usePlan();
   
   const { data, isLoading, error } = useQuery<StrategyDeviationData>({
@@ -91,24 +93,24 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              Strategy Deviation Analysis
+              {t("widgets.deviation.title")}
             </CardTitle>
             <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30">
               <Lock className="h-3 w-3 mr-1" />
-              ELITE
+              {t("widgets.deviation.eliteBadge")}
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <Shield className="h-12 w-12 mx-auto mb-3 text-amber-500/50" />
-            <h3 className="text-lg font-semibold mb-2">Elite Feature</h3>
+            <h3 className="text-lg font-semibold mb-2">{t("widgets.deviation.eliteFeature")}</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-              See how rule compliance impacts your trading performance. Compare compliant vs non-compliant trades and identify your most violated rules.
+              {t("widgets.deviation.eliteDesc")}
             </p>
             <Link to="/profile">
               <Button variant="outline" className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10">
-                Upgrade to Elite
+                {t("widgets.deviation.upgradeBtn")}
               </Button>
             </Link>
           </div>
@@ -123,7 +125,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            Strategy Deviation Analysis
+            {t("widgets.deviation.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -143,13 +145,13 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            Strategy Deviation Analysis
+            {t("widgets.deviation.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-amber-500" />
-            <p>Unable to load deviation analysis</p>
+            <p>{t("widgets.deviation.errorLoad")}</p>
           </div>
         </CardContent>
       </Card>
@@ -162,15 +164,15 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            Strategy Deviation Analysis
+            {t("widgets.deviation.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">{data?.message || "No validation data available"}</p>
+            <p className="text-sm">{data?.message || t("widgets.deviation.noData")}</p>
             <p className="text-xs mt-2 opacity-75">
-              Validate trades against your strategies to see how rule compliance affects performance
+              {t("widgets.deviation.noDataHint")}
             </p>
           </div>
         </CardContent>
@@ -186,10 +188,10 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            Strategy Deviation Analysis
+            {t("widgets.deviation.title")}
           </CardTitle>
           <Badge variant="outline" className="text-xs">
-            {summary?.totalEvaluatedTrades || 0} evaluated trades
+            {summary?.totalEvaluatedTrades || 0} {t("widgets.deviation.evaluatedTrades")}
           </Badge>
         </div>
       </CardHeader>
@@ -200,39 +202,39 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
               <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span className="text-xs text-muted-foreground">Compliant Trades</span>
+                  <span className="text-xs text-muted-foreground">{t("widgets.deviation.compliantTrades")}</span>
                 </div>
                 <p className="text-2xl font-bold text-green-500" data-testid="compliant-count">
                   {summary.compliantTrades.count}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Win Rate: {summary.compliantTrades.winRate.toFixed(1)}%
+                  {t("widgets.deviation.winRate")}: {summary.compliantTrades.winRate.toFixed(1)}%
                 </p>
               </div>
               
               <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-xs text-muted-foreground">Non-Compliant</span>
+                  <span className="text-xs text-muted-foreground">{t("widgets.deviation.nonCompliant")}</span>
                 </div>
                 <p className="text-2xl font-bold text-red-500" data-testid="non-compliant-count">
                   {summary.nonCompliantTrades.count}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Win Rate: {summary.nonCompliantTrades.winRate.toFixed(1)}%
+                  {t("widgets.deviation.winRate")}: {summary.nonCompliantTrades.winRate.toFixed(1)}%
                 </p>
               </div>
               
               <div className="p-4 rounded-lg bg-muted/30">
                 <div className="flex items-center gap-2 mb-2">
                   <BarChart3 className="h-4 w-4 text-primary" />
-                  <span className="text-xs text-muted-foreground">Compliance Rate</span>
+                  <span className="text-xs text-muted-foreground">{t("widgets.deviation.complianceRate")}</span>
                 </div>
                 <p className="text-2xl font-bold" data-testid="compliance-rate">
                   {summary.overallComplianceRate.toFixed(1)}%
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Overall adherence
+                  {t("widgets.deviation.overallAdherence")}
                 </p>
               </div>
               
@@ -243,7 +245,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-500" />
                   )}
-                  <span className="text-xs text-muted-foreground">Avg P&L Impact</span>
+                  <span className="text-xs text-muted-foreground">{t("widgets.deviation.avgPnlImpact")}</span>
                 </div>
                 <p className={`text-2xl font-bold ${
                   summary.performanceDifference.avgPnLDifference >= 0 ? "text-green-500" : "text-red-500"
@@ -252,7 +254,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                   ${summary.performanceDifference.avgPnLDifference.toFixed(2)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Compliant vs non-compliant
+                  {t("widgets.deviation.compliantVsNon")}
                 </p>
               </div>
             </div>
@@ -261,11 +263,11 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
               <div className="p-4 rounded-lg border border-border/50 bg-card/50">
                 <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  Compliant Trade Performance
+                  {t("widgets.deviation.compliantPerf")}
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Total P&L</p>
+                    <p className="text-xs text-muted-foreground">{t("widgets.deviation.totalPnl")}</p>
                     <p className={`text-lg font-mono font-bold ${
                       summary.compliantTrades.totalPnL >= 0 ? "text-green-500" : "text-red-500"
                     }`}>
@@ -273,7 +275,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Avg P&L</p>
+                    <p className="text-xs text-muted-foreground">{t("widgets.deviation.avgPnl")}</p>
                     <p className={`text-lg font-mono font-bold ${
                       summary.compliantTrades.avgPnL >= 0 ? "text-green-500" : "text-red-500"
                     }`}>
@@ -286,11 +288,11 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
               <div className="p-4 rounded-lg border border-border/50 bg-card/50">
                 <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                   <XCircle className="h-4 w-4 text-red-500" />
-                  Non-Compliant Trade Performance
+                  {t("widgets.deviation.nonCompliantPerf")}
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Total P&L</p>
+                    <p className="text-xs text-muted-foreground">{t("widgets.deviation.totalPnl")}</p>
                     <p className={`text-lg font-mono font-bold ${
                       summary.nonCompliantTrades.totalPnL >= 0 ? "text-green-500" : "text-red-500"
                     }`}>
@@ -298,7 +300,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Avg P&L</p>
+                    <p className="text-xs text-muted-foreground">{t("widgets.deviation.avgPnl")}</p>
                     <p className={`text-lg font-mono font-bold ${
                       summary.nonCompliantTrades.avgPnL >= 0 ? "text-green-500" : "text-red-500"
                     }`}>
@@ -315,7 +317,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
           <div className="space-y-3" data-testid="most-violated-rules">
             <h4 className="text-sm font-medium flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Most Violated Rules
+              {t("widgets.deviation.mostViolated")}
             </h4>
             <div className="space-y-2">
               {mostViolatedRules.slice(0, 5).map((rule, index) => (
@@ -331,12 +333,12 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                     <div>
                       <p className="text-sm font-medium">{rule.ruleLabel}</p>
                       <p className="text-xs text-muted-foreground">
-                        {rule.affectedTrades} trade{rule.affectedTrades !== 1 ? "s" : ""} affected
+                        {rule.affectedTrades} {rule.affectedTrades !== 1 ? t("widgets.deviation.tradesAffectedPlural") : t("widgets.deviation.tradesAffected")}
                       </p>
                     </div>
                   </div>
                   <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30">
-                    {rule.violationCount} violation{rule.violationCount !== 1 ? "s" : ""}
+                    {rule.violationCount} {rule.violationCount !== 1 ? t("widgets.deviation.violationMany") : t("widgets.deviation.violationOne")}
                   </Badge>
                 </div>
               ))}
@@ -348,7 +350,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
           <div className="space-y-3" data-testid="rule-performance-impact">
             <h4 className="text-sm font-medium flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />
-              Rule Performance Impact
+              {t("widgets.deviation.rulePerfImpact")}
             </h4>
             <div className="space-y-2">
               {rulePerformanceImpact.map((impact, index) => (
@@ -366,24 +368,24 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                         : "bg-red-500/10 text-red-400 border-red-500/30"
                       }
                     >
-                      {impact.performanceDifference > 0 ? "+" : ""}${impact.performanceDifference.toFixed(2)} when followed
+                      {impact.performanceDifference > 0 ? "+" : ""}${impact.performanceDifference.toFixed(2)} {t("widgets.deviation.whenFollowed")}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                     <div>
-                      <p className="text-muted-foreground">When Violated</p>
+                      <p className="text-muted-foreground">{t("widgets.deviation.whenViolated")}</p>
                       <p className={`font-mono ${impact.avgPnLWhenViolated >= 0 ? "text-green-500" : "text-red-500"}`}>
                         ${impact.avgPnLWhenViolated.toFixed(2)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">When Followed</p>
+                      <p className="text-muted-foreground">{t("widgets.deviation.whenFollowedLabel")}</p>
                       <p className={`font-mono ${impact.avgPnLWhenCompliant >= 0 ? "text-green-500" : "text-red-500"}`}>
                         ${impact.avgPnLWhenCompliant.toFixed(2)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Trades Violating</p>
+                      <p className="text-muted-foreground">{t("widgets.deviation.tradesViolating")}</p>
                       <p className="font-mono">{impact.tradesViolating}</p>
                     </div>
                   </div>
@@ -397,7 +399,7 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
           <div className="space-y-3" data-testid="strategy-breakdown">
             <h4 className="text-sm font-medium flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" />
-              Strategy Compliance Breakdown
+              {t("widgets.deviation.strategyBreakdown")}
             </h4>
             <div className="space-y-2">
               {strategyBreakdown.map((strategy) => (
@@ -417,24 +419,24 @@ export function StrategyDeviationAnalysis({ userId }: StrategyDeviationAnalysisP
                         : "bg-red-500/10 text-red-400 border-red-500/30"
                       }
                     >
-                      {strategy.complianceRate.toFixed(1)}% compliant
+                      {strategy.complianceRate.toFixed(1)}{t("widgets.deviation.compliantPct")}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div>
-                      <p className="text-muted-foreground">Evaluated</p>
+                      <p className="text-muted-foreground">{t("widgets.deviation.evaluated")}</p>
                       <p className="font-mono">{strategy.totalEvaluated}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Compliant</p>
+                      <p className="text-muted-foreground">{t("widgets.deviation.compliant")}</p>
                       <p className="font-mono text-green-500">{strategy.compliantCount}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Non-Compliant</p>
+                      <p className="text-muted-foreground">{t("widgets.deviation.nonCompliantShort")}</p>
                       <p className="font-mono text-red-500">{strategy.nonCompliantCount}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">P&L Diff</p>
+                      <p className="text-muted-foreground">{t("widgets.deviation.pnlDiff")}</p>
                       <p className={`font-mono ${
                         strategy.compliantPnL - strategy.nonCompliantPnL >= 0 ? "text-green-500" : "text-red-500"
                       }`}>
