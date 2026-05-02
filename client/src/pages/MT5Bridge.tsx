@@ -44,8 +44,8 @@ const STEP_META: Array<{ title: string; description: string }> = [
 
 function trackEvent(name: string, params?: Record<string, any>) {
   try {
-    if (typeof window !== "undefined" && (window as any).gtag) {
-      (window as any).gtag("event", name, params || {});
+    if (typeof window !== "undefined" && typeof window.gtag === "function") {
+      window.gtag("event", name, params || {});
     }
   } catch {}
 }

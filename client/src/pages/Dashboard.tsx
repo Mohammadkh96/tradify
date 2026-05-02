@@ -1,8 +1,6 @@
-import { useTrades } from "@/hooks/use-trades";
 import { usePlan } from "@/hooks/usePlan";
 import { useSampleMode } from "@/hooks/useSampleMode";
 import {
-  getSampleTrades,
   getSampleEquityCurve,
   getSampleMt5Status,
   getSampleTodayStats,
@@ -212,7 +210,7 @@ export default function Dashboard() {
   const dashConfig = useDashboardConfig();
   
   const { toast } = useToast();
-  const { data: realTrades, isLoading } = useTrades();
+  const isLoading = false;
   const { data: user } = useQuery<any>({ 
     queryKey: ["/api/user"],
     staleTime: 0,
@@ -241,7 +239,6 @@ export default function Dashboard() {
   // Sample mode kicks in when the user has no real trades and no live MT5
   // connection. We swap in deterministic demo data so the dashboard is alive.
   const sampleMode = useSampleMode();
-  const trades = sampleMode.active ? (getSampleTrades() as any) : realTrades;
   const mt5 = sampleMode.active
     ? { ...getSampleMt5Status(), status: "CONNECTED" }
     : realMt5;
@@ -414,8 +411,6 @@ export default function Dashboard() {
     }
   }, [userId]);
 
-  const allTrades = trades || [];
-  
   // Date filtering helper - define as a callback for useMemo to use
   const isWithinDateRange = (dateStr: string | Date | null) => {
     if (dateFilter === "all") return true;
