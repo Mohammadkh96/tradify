@@ -125,22 +125,16 @@ export default function Journal() {
     if (sampleMode.active) {
       return getSampleTrades().map((t) => ({
         id: t.id,
-        ticket: t.id,
-        pair: t.pair,
+        ticket: t.ticket,
+        pair: t.symbol,
         direction: t.direction,
         timeframe: "Sample",
         createdAt: t.openTime,
         closeTime: t.closeTime,
-        duration: Math.max(
-          0,
-          Math.floor(
-            (new Date(t.closeTime).getTime() - new Date(t.openTime).getTime()) /
-              1000,
-          ),
-        ),
-        outcome: t.netPl > 0 ? "Win" : t.netPl < 0 ? "Loss" : "Break-even",
+        duration: t.duration,
+        outcome: t.outcome,
         netPl: t.netPl,
-        riskReward: t.riskReward != null ? `1:${t.riskReward.toFixed(2)}` : "N/A",
+        riskReward: "N/A",
         notes: t.notes || "",
         tags: [] as string[],
         source: "Sample",
@@ -152,8 +146,8 @@ export default function Journal() {
         swap: 0,
         sl: null,
         tp: null,
-        mood: t.mood,
-        mistakeCategory: t.mistakeCategory,
+        mood: t.mood ?? null,
+        mistakeCategory: t.mistakeCategory ?? null,
       }));
     }
 

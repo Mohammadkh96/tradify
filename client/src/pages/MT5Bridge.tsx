@@ -142,6 +142,82 @@ function NavRow({
   );
 }
 
+/**
+ * Final wizard step. Shows the celebratory state and auto-redirects to the
+ * dashboard after a short pause so users land on real data without an extra
+ * click. The user can also click "Go to dashboard" immediately.
+ */
+function DoneStep({
+  mt5,
+  onGoNow,
+}: {
+  mt5: any;
+  onGoNow: () => void;
+}) {
+  const [secondsLeft, setSecondsLeft] = useState(5);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) {
+      onGoNow();
+      return;
+    }
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [secondsLeft, onGoNow]);
+
+  return (
+    <div className="text-center" data-testid="wizard-step-done">
+      <div className="mx-auto h-16 w-16 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center mb-4">
+        <Sparkles size={32} />
+      </div>
+      <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight italic mb-3">
+        You're live.
+      </h2>
+      <p className="text-muted-foreground mb-6">
+        Your MT5 account is connected. Every trade you close from here on lands in your journal automatically.
+      </p>
+
+      {mt5?.metrics && (
+        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto mb-6">
+          <div className="rounded-xl border border-border bg-background/40 p-3">
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Balance
+            </div>
+            <div className="text-lg font-black text-foreground mt-1">
+              ${parseFloat(mt5.metrics.balance).toLocaleString()}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border bg-background/40 p-3">
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Equity
+            </div>
+            <div className="text-lg font-black text-foreground mt-1">
+              ${parseFloat(mt5.metrics.equity).toLocaleString()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Button
+        onClick={onGoNow}
+        className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold uppercase tracking-widest gap-1.5"
+        data-testid="button-go-to-dashboard"
+      >
+        Go to dashboard
+        <ArrowRight size={14} />
+      </Button>
+      <div className="mt-4 text-xs text-muted-foreground" data-testid="text-auto-redirect">
+        Taking you to the dashboard in {secondsLeft}s…
+      </div>
+      <div className="mt-3">
+        <Badge variant="outline" className="text-[10px]">
+          Your sample data was just replaced with your real account
+        </Badge>
+      </div>
+    </div>
+  );
+}
+
 export default function MT5Bridge() {
   const [step, setStep] = useState<Step>(0);
   const [copied, setCopied] = useState(false);
