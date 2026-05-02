@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { usePlan } from "@/hooks/usePlan";
 import { useQuery } from "@tanstack/react-query";
 import { PLAN_CONFIGS, type BillingPeriod } from "@shared/plans";
@@ -10,36 +11,38 @@ import type { UserRole } from "@shared/schema";
 import { SEO } from "@/components/SEO";
 import { useState } from "react";
 
-const features = [
-  { name: "MT5 Multi-Account Sync", free: true, pro: true, elite: true },
-  { name: "Open Positions & Account Health", free: true, pro: true, elite: true },
-  { name: "Risk & Position Size Calculator", free: true, pro: true, elite: true },
-  { name: "Psychology & Mood Tracking", free: true, pro: true, elite: true },
-  { name: "CSV Trade Import", free: true, pro: true, elite: true },
-  { name: "Dashboard Customization", free: true, pro: true, elite: true },
-  { name: "1 Trading Strategy", free: true, pro: true, elite: true },
-  { name: "Trade History", free: "30 Days", pro: "6 Months", elite: "Unlimited" },
-  { name: "Education Access", free: "3 Lessons", pro: "Full Hub (20)", elite: "Full Hub (20)" },
-  { name: "Unlimited Trading Strategies", free: false, pro: true, elite: true },
-  { name: "Performance Intelligence Layer", free: false, pro: true, elite: true },
-  { name: "Full Equity Curve (All-Time)", free: false, pro: true, elite: true },
-  { name: "AI Instrument Analysis", free: false, pro: true, elite: true },
-  { name: "AI Psychology Review", free: false, pro: true, elite: true },
-  { name: "Prop Firm Challenge Tracker", free: false, pro: true, elite: true },
-  { name: "CSV Data Export", free: false, pro: true, elite: true },
-  { name: "PDF Report Generation", free: false, pro: true, elite: true },
-  { name: "AI Challenge Risk Warnings", free: false, pro: false, elite: true },
-  { name: "Session Performance Analytics", free: false, pro: false, elite: true },
-  { name: "Time Pattern Analysis", free: false, pro: false, elite: true },
-  { name: "Behavioral Risk Flags", free: false, pro: false, elite: true },
-  { name: "Strategy Deviation Analysis", free: false, pro: false, elite: true },
-  { name: "Monthly AI Performance Review", free: false, pro: false, elite: true },
-  { name: "Priority Support", free: false, pro: false, elite: true },
-  { name: "Elite Member Badge", free: false, pro: false, elite: true },
-];
-
 export default function Pricing() {
+  const { t } = useTranslation();
   const { isPro, isElite, isPaid, tier } = usePlan();
+
+  const features = [
+    { name: t("pricing.feat_mt5Sync"), free: true, pro: true, elite: true },
+    { name: t("pricing.feat_openPositions"), free: true, pro: true, elite: true },
+    { name: t("pricing.feat_riskCalc"), free: true, pro: true, elite: true },
+    { name: t("pricing.feat_psychology"), free: true, pro: true, elite: true },
+    { name: t("pricing.feat_csvImport"), free: true, pro: true, elite: true },
+    { name: t("pricing.feat_dashboardCustom"), free: true, pro: true, elite: true },
+    { name: t("pricing.feat_oneStrategy"), free: true, pro: true, elite: true },
+    { name: t("pricing.feat_tradeHistory"), free: t("pricing.feat_30days"), pro: t("pricing.feat_6months"), elite: t("pricing.feat_unlimited") },
+    { name: t("pricing.feat_education"), free: t("pricing.feat_3lessons"), pro: t("pricing.feat_fullHub"), elite: t("pricing.feat_fullHub") },
+    { name: t("pricing.feat_unlimitedStrategies"), free: false, pro: true, elite: true },
+    { name: t("pricing.feat_perfIntel"), free: false, pro: true, elite: true },
+    { name: t("pricing.feat_equityCurve"), free: false, pro: true, elite: true },
+    { name: t("pricing.feat_aiInstrument"), free: false, pro: true, elite: true },
+    { name: t("pricing.feat_aiPsych"), free: false, pro: true, elite: true },
+    { name: t("pricing.feat_propFirm"), free: false, pro: true, elite: true },
+    { name: t("pricing.feat_csvExport"), free: false, pro: true, elite: true },
+    { name: t("pricing.feat_pdfReport"), free: false, pro: true, elite: true },
+    { name: t("pricing.feat_aiRiskWarn"), free: false, pro: false, elite: true },
+    { name: t("pricing.feat_sessionAnalytics"), free: false, pro: false, elite: true },
+    { name: t("pricing.feat_timePattern"), free: false, pro: false, elite: true },
+    { name: t("pricing.feat_behavioralFlags"), free: false, pro: false, elite: true },
+    { name: t("pricing.feat_strategyDeviation"), free: false, pro: false, elite: true },
+    { name: t("pricing.feat_monthlyReview"), free: false, pro: false, elite: true },
+    { name: t("pricing.feat_prioritySupport"), free: false, pro: false, elite: true },
+    { name: t("pricing.feat_eliteBadge"), free: false, pro: false, elite: true },
+  ];
+
   const proConfig = PLAN_CONFIGS.PRO;
   const eliteConfig = PLAN_CONFIGS.ELITE;
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
@@ -116,19 +119,19 @@ export default function Pricing() {
       <main className="p-6 lg:p-10 max-w-6xl mx-auto">
         <header className="text-center mb-10">
           <p className="text-muted-foreground max-w-2xl mx-auto uppercase text-[10px] font-bold tracking-[0.2em] mb-4">
-            Not financial advice. Trading involves risk.
+            {t("pricing.disclaimer")}
           </p>
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase italic mb-4">
-            Simple Pricing. <span className="text-emerald-500">No Hype.</span>
+            {t("pricing.headerTitle")} <span className="text-emerald-500">{t("pricing.headerTitleHighlight")}</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Start free. Upgrade only when you need deeper insights to master your trading discipline.
+            {t("pricing.headerSubtitle")}
           </p>
           {isFoundingMember && (
             <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
               <Crown size={16} className="text-amber-500" />
               <span className="text-amber-500 font-bold text-sm uppercase tracking-widest">
-                Founding Member: 30% Lifetime Discount Applied
+                {t("pricing.foundingMemberBanner")}
               </span>
               <Sparkles size={14} className="text-amber-500" />
             </div>

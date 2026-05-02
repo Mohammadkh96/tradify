@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -30,28 +31,29 @@ import { TierBadge } from "./EliteBadge";
 import { FoundingMemberBadge } from "./FoundingMemberBadge";
 import { usePlan } from "@/hooks/usePlan";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/journal", label: "Journal", icon: HistoryIcon },
-  { href: "/prop-firm", label: "Prop Firm", icon: Trophy },
-  { href: "/mt5-bridge", label: "MT5 Bridge", icon: Zap },
-  { href: "/traders-hub", label: "Traders Hub", icon: Users },
-  { href: "/knowledge-base", label: "Education", icon: BookOpen },
-  { href: "/achievements", label: "Achievements", icon: Award },
-  { href: "/pricing", label: "Plans", icon: CreditCard },
-  { href: "/profile", label: "Profile", icon: User },
-];
-
-const strategiesSubNav = [
-  { href: "/strategies", label: "My Strategies", icon: FolderOpen },
-  { href: "/strategies/create", label: "Create Strategy", icon: Plus },
-  { href: "/strategies/validate", label: "Validate Trade", icon: ClipboardCheck },
-];
-
 export function Navigation() {
+  const { t } = useTranslation();
   const location = useLocation();
   const { toast } = useToast();
   const [strategiesExpanded, setStrategiesExpanded] = useState(() => location.pathname.startsWith("/strategies"));
+
+  const navItems = [
+    { href: "/dashboard", label: t("sidebar.dashboard"), testId: "dashboard", icon: LayoutDashboard },
+    { href: "/journal", label: t("sidebar.journal"), testId: "journal", icon: HistoryIcon },
+    { href: "/prop-firm", label: t("sidebar.propFirm"), testId: "prop-firm", icon: Trophy },
+    { href: "/mt5-bridge", label: t("sidebar.mt5Bridge"), testId: "mt5-bridge", icon: Zap },
+    { href: "/traders-hub", label: t("sidebar.tradersHub"), testId: "traders-hub", icon: Users },
+    { href: "/knowledge-base", label: t("sidebar.education"), testId: "education", icon: BookOpen },
+    { href: "/achievements", label: t("sidebar.achievements"), testId: "achievements", icon: Award },
+    { href: "/pricing", label: t("sidebar.plans"), testId: "plans", icon: CreditCard },
+    { href: "/profile", label: t("sidebar.profile"), testId: "profile", icon: User },
+  ];
+
+  const strategiesSubNav = [
+    { href: "/strategies", label: t("sidebar.myStrategies"), testId: "my-strategies", icon: FolderOpen },
+    { href: "/strategies/create", label: t("sidebar.createStrategy"), testId: "create-strategy", icon: Plus },
+    { href: "/strategies/validate", label: t("sidebar.validateTrade"), testId: "validate-trade", icon: ClipboardCheck },
+  ];
 
   useEffect(() => {
     if (location.pathname.startsWith("/strategies")) {
@@ -115,7 +117,7 @@ export function Navigation() {
           return (
             <Link key={item.href} to={item.href}>
               <div
-                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`nav-${item.testId}`}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
                   isActive 
@@ -155,7 +157,7 @@ export function Navigation() {
                   location.pathname.startsWith("/strategies") ? "text-emerald-500" : "text-slate-500 group-hover:text-slate-300"
                 )} 
               />
-              Strategies
+              {t("sidebar.strategies")}
             </div>
             {strategiesExpanded ? (
               <ChevronDown size={16} className="text-slate-500" />
@@ -173,7 +175,7 @@ export function Navigation() {
                 return (
                   <Link key={item.href} to={item.href}>
                     <div
-                      data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                      data-testid={`nav-${item.testId}`}
                       className={cn(
                         "flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
                         isActive 
@@ -204,7 +206,7 @@ export function Navigation() {
           return (
             <Link key={item.href} to={item.href}>
               <div
-                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`nav-${item.testId}`}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group",
                   isActive 
@@ -227,10 +229,11 @@ export function Navigation() {
 
         <button 
           onClick={handleLogout}
+          data-testid="button-sign-out"
           className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer group text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 mt-4 border border-transparent hover:border-rose-500/20"
         >
           <LogOut size={18} className="text-slate-500 group-hover:text-rose-500" />
-          Sign Out
+          {t("sidebar.signOut")}
         </button>
       </nav>
 
@@ -244,14 +247,14 @@ export function Navigation() {
         <div className="flex gap-2">
           <div className="flex-1 bg-secondary rounded-lg p-3 border border-border">
             <div className="flex items-center justify-between mb-1">
-              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-tight">MT5</h4>
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-tight">{t("sidebar.mt5")}</h4>
               <div className={cn(
                 "w-1.5 h-1.5 rounded-full",
                 isConnected ? "bg-emerald-500 animate-pulse" : "bg-destructive"
               )} />
             </div>
             <p className="text-[10px] text-foreground font-bold">
-              {isConnected ? "CONNECTED" : "OFFLINE"}
+              {isConnected ? t("sidebar.connected") : t("sidebar.offline")}
             </p>
           </div>
           {journalStreak > 0 && (
@@ -266,7 +269,7 @@ export function Navigation() {
             className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg px-3 transition-all flex flex-col items-center justify-center gap-0.5"
           >
             <Sparkles size={14} />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Tour</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider">{t("sidebar.tour")}</span>
           </button>
         </div>
       </div>
@@ -274,15 +277,16 @@ export function Navigation() {
   );
 }
 
-const mobileNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/journal", label: "Journal", icon: HistoryIcon },
-  { href: "/strategies", label: "Strategies", icon: Target },
-  { href: "/mt5-bridge", label: "MT5", icon: Zap },
-];
-
 export function MobileNav() {
+  const { t } = useTranslation();
   const location = useLocation();
+
+  const mobileNavItems = [
+    { href: "/dashboard", label: t("sidebar.dashboard"), testId: "dashboard", icon: LayoutDashboard },
+    { href: "/journal", label: t("sidebar.journal"), testId: "journal", icon: HistoryIcon },
+    { href: "/strategies", label: t("sidebar.strategies"), testId: "strategies", icon: Target },
+    { href: "/mt5-bridge", label: t("sidebar.mobileMt5"), testId: "mt5", icon: Zap },
+  ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background z-50 md:hidden flex justify-around p-3 pb-6">
@@ -293,7 +297,7 @@ export function MobileNav() {
         return (
           <Link key={item.href} to={item.href}>
             <div 
-              data-testid={`mobile-nav-${item.label.toLowerCase()}`}
+              data-testid={`mobile-nav-${item.testId}`}
               className={cn(
                 "flex flex-col items-center gap-1 cursor-pointer",
                 isActive ? "text-emerald-500" : "text-muted-foreground"
