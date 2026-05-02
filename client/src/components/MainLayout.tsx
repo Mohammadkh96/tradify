@@ -4,6 +4,7 @@ import { FloatingCalculator } from "./FloatingCalculator";
 import { ThemeToggle } from "./ThemeToggle";
 import { OnboardingTour } from "./OnboardingTour";
 import { FirstSyncMoment } from "./FirstSyncMoment";
+import { NotificationBell } from "./NotificationBell";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -16,6 +17,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <MobileNav />
       <main className="flex-1 md:ml-64 relative h-screen overflow-y-auto overflow-x-hidden pt-16 md:pt-0">
         <header className="absolute top-0 right-0 p-4 z-50 flex items-center gap-2">
+          <NotificationBell />
           <ThemeToggle />
         </header>
         {children}

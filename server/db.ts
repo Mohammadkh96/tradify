@@ -462,6 +462,58 @@ export async function ensureSchemaColumns() {
       CREATE INDEX IF NOT EXISTS idx_database_backups_status ON database_backups (status);
     `);
 
+    // Create notifications table (for risk alerts)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        severity TEXT NOT NULL DEFAULT 'medium',
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        payload JSONB DEFAULT '{}'::jsonb,
+        link_url TEXT,
+        channel_in_app BOOLEAN DEFAULT true,
+        channel_email BOOLEAN DEFAULT false,
+        email_sent BOOLEAN DEFAULT false,
+        read_at TIMESTAMP,
+        dedupe_key TEXT,
+        cooldown_until TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications (user_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_notifications_dedupe ON notifications (user_id, dedupe_key);
+      CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications (user_id) WHERE read_at IS NULL;
+    `);
+
+    // Create alert_preferences table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS alert_preferences (
+        user_id TEXT PRIMARY KEY,
+        drawdown_enabled BOOLEAN DEFAULT true,
+        drawdown_in_app BOOLEAN DEFAULT true,
+        drawdown_email BOOLEAN DEFAULT true,
+        drawdown_warn_threshold INTEGER DEFAULT 70,
+        drawdown_critical_threshold INTEGER DEFAULT 90,
+        revenge_enabled BOOLEAN DEFAULT true,
+        revenge_in_app BOOLEAN DEFAULT true,
+        revenge_email BOOLEAN DEFAULT true,
+        overtrading_enabled BOOLEAN DEFAULT true,
+        overtrading_in_app BOOLEAN DEFAULT true,
+        overtrading_email BOOLEAN DEFAULT false,
+        overtrading_daily_cap INTEGER DEFAULT 10,
+        strategy_deviation_enabled BOOLEAN DEFAULT true,
+        strategy_deviation_in_app BOOLEAN DEFAULT true,
+        strategy_deviation_email BOOLEAN DEFAULT false,
+        cooldown_minutes INTEGER DEFAULT 60,
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+      ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS drawdown_in_app BOOLEAN DEFAULT true;
+      ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS revenge_in_app BOOLEAN DEFAULT true;
+      ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS overtrading_in_app BOOLEAN DEFAULT true;
+      ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS strategy_deviation_in_app BOOLEAN DEFAULT true;
+    `);
+
     console.log('Schema columns verified');
   } catch (error) {
     console.error('Schema migration error:', error);

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AdminAlertVolumeWidget } from "@/components/AdminAlertVolumeWidget";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -803,6 +804,8 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <AdminAlertVolumeWidget />
 
         <Card className="bg-card border-border" data-testid="card-utm-attribution">
           <CardHeader className="pb-4">

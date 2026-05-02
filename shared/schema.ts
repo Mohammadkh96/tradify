@@ -770,6 +770,57 @@ export const insertEmailSequenceSchema = createInsertSchema(emailSequences).omit
 export type EmailSequence = typeof emailSequences.$inferSelect;
 export type InsertEmailSequence = z.infer<typeof insertEmailSequenceSchema>;
 
+// ==================== RISK ALERTS ====================
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  type: text("type").notNull(), // daily_dd_warn, daily_dd_critical, max_dd_warn, max_dd_critical, revenge_trade, overtrading, strategy_deviation
+  severity: text("severity").notNull().default("medium"), // low, medium, high
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().default({}),
+  linkUrl: text("link_url"),
+  channelInApp: boolean("channel_in_app").default(true),
+  channelEmail: boolean("channel_email").default(false),
+  emailSent: boolean("email_sent").default(false),
+  readAt: timestamp("read_at"),
+  dedupeKey: text("dedupe_key"),
+  cooldownUntil: timestamp("cooldown_until"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+export const alertPreferences = pgTable("alert_preferences", {
+  userId: text("user_id").primaryKey(),
+  // Per-type master toggle (off = neither in-app nor email)
+  drawdownEnabled: boolean("drawdown_enabled").default(true),
+  // Channel toggles (require master enabled)
+  drawdownInApp: boolean("drawdown_in_app").default(true),
+  drawdownEmail: boolean("drawdown_email").default(true),
+  drawdownWarnThreshold: integer("drawdown_warn_threshold").default(70), // percent of limit
+  drawdownCriticalThreshold: integer("drawdown_critical_threshold").default(90),
+  revengeEnabled: boolean("revenge_enabled").default(true),
+  revengeInApp: boolean("revenge_in_app").default(true),
+  revengeEmail: boolean("revenge_email").default(true),
+  overtradingEnabled: boolean("overtrading_enabled").default(true),
+  overtradingInApp: boolean("overtrading_in_app").default(true),
+  overtradingEmail: boolean("overtrading_email").default(false),
+  overtradingDailyCap: integer("overtrading_daily_cap").default(10),
+  strategyDeviationEnabled: boolean("strategy_deviation_enabled").default(true),
+  strategyDeviationInApp: boolean("strategy_deviation_in_app").default(true),
+  strategyDeviationEmail: boolean("strategy_deviation_email").default(false),
+  cooldownMinutes: integer("cooldown_minutes").default(60),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAlertPreferencesSchema = createInsertSchema(alertPreferences).omit({ updatedAt: true });
+export type AlertPreferences = typeof alertPreferences.$inferSelect;
+export type InsertAlertPreferences = z.infer<typeof insertAlertPreferencesSchema>;
+
 // ==================== DATABASE BACKUPS ====================
 
 export const databaseBackups = pgTable("database_backups", {

@@ -35,6 +35,7 @@ import { SiPaypal } from "react-icons/si";
 import { Link } from "wouter";
 import { TierBadge } from "@/components/EliteBadge";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
+import { AlertSettingsCard } from "@/components/AlertSettingsCard";
 
 const countries = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
@@ -734,6 +735,8 @@ export default function Profile() {
           </Card>
 
           <EmailPreferencesCard />
+
+          <AlertSettingsCard />
 
           <Card className="bg-card border-destructive/20 shadow-2xl">
             <CardHeader className="border-b border-border bg-destructive/5">

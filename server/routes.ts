@@ -1687,6 +1687,43 @@ ${blogPosts.map(p => `  <url>
         console.error("[MT5 Sync] Prop firm auto-sync error (non-fatal):", propFirmErr);
       }
 
+      // 6. Real-time risk alert evaluation (non-blocking, never throws)
+      try {
+        const { evaluateAlertsAfterSync } = await import("./alertEngine");
+        // Pull today's history (closed trades) for behavioral evaluation. Use the freshly-synced
+        // EA payload when present, otherwise fall back to the DB snapshot.
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        let historyForEval = (historyData && Array.isArray(historyData)) ? historyData : [];
+        if (historyForEval.length === 0) {
+          try {
+            const rows = await pool.query(
+              `SELECT ticket, open_time, close_time, profit, net_pl, gross_pl, volume, symbol
+               FROM mt5_history WHERE user_id = $1 AND mt5_account_id = $2 AND close_time >= $3`,
+              [userId, accountId, today]
+            );
+            historyForEval = rows.rows.map((r: any) => ({
+              ticket: r.ticket,
+              openTime: r.open_time,
+              closeTime: r.close_time,
+              profit: r.profit,
+              netPl: r.net_pl,
+              grossPl: r.gross_pl,
+              volume: r.volume,
+              symbol: r.symbol,
+            }));
+          } catch {}
+        }
+        evaluateAlertsAfterSync({
+          userId,
+          accountId,
+          balance: parseFloat(String(balance || 0)),
+          equity: parseFloat(String(equity || 0)),
+          todayHistory: historyForEval,
+        }).catch(err => console.error("[MT5 Sync] Alert engine error (non-fatal):", err));
+      } catch (alertErr) {
+        console.error("[MT5 Sync] Alert engine import error (non-fatal):", alertErr);
+      }
+
       // Tell the EA how many trades we have — EA can compare and resend if needed
       let serverTradeCount = 0;
       let requestFullHistory = false;
@@ -8189,6 +8226,271 @@ Guidelines:
 
   app.get("/api/achievements/definitions", async (_req, res) => {
     res.json(ACHIEVEMENTS);
+  });
+
+  // ==================== RISK ALERTS / NOTIFICATIONS (Task 34) ====================
+
+  app.get("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const unreadOnly = req.query.unread === "1" || req.query.unread === "true";
+      const limit = Math.min(parseInt(String(req.query.limit || "50")) || 50, 200);
+
+      // Bell list and unread count are STRICTLY in-app channel only —
+      // notifications persisted as email-only (channel_in_app = false) must
+      // never appear in the in-app notification center.
+      let where = `user_id = $1 AND channel_in_app = true`;
+      const params: any[] = [userId];
+      if (unreadOnly) where += ` AND read_at IS NULL`;
+
+      const rows = await pool.query(
+        `SELECT id, type, severity, title, body, payload, link_url, channel_in_app, channel_email,
+                email_sent, read_at, dedupe_key, created_at
+         FROM notifications WHERE ${where}
+         ORDER BY created_at DESC LIMIT ${limit}`,
+        params
+      );
+      const unreadCountRow = await pool.query(
+        `SELECT COUNT(*)::int AS c FROM notifications
+         WHERE user_id = $1 AND channel_in_app = true AND read_at IS NULL`,
+        [userId]
+      );
+      res.json({
+        notifications: rows.rows.map((r: any) => ({
+          id: r.id,
+          type: r.type,
+          severity: r.severity,
+          title: r.title,
+          body: r.body,
+          payload: r.payload || {},
+          linkUrl: r.link_url,
+          channelInApp: r.channel_in_app,
+          channelEmail: r.channel_email,
+          emailSent: r.email_sent,
+          readAt: r.read_at,
+          createdAt: r.created_at,
+        })),
+        unreadCount: unreadCountRow.rows[0]?.c ?? 0,
+      });
+    } catch (err) {
+      console.error("[Notifications] list error:", err);
+      res.status(500).json({ message: "Failed to load notifications" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const id = parseInt(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+      // Only operate on in-app notifications.
+      await pool.query(
+        `UPDATE notifications SET read_at = COALESCE(read_at, NOW())
+         WHERE id = $1 AND user_id = $2 AND channel_in_app = true`,
+        [id, userId]
+      );
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[Notifications] read error:", err);
+      res.status(500).json({ message: "Failed to mark notification read" });
+    }
+  });
+
+  app.post("/api/notifications/mark-all-read", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      // Only mark in-app notifications as read; email-only ones are not
+      // surfaced in the bell, so they must remain untouched here.
+      await pool.query(
+        `UPDATE notifications SET read_at = NOW()
+         WHERE user_id = $1 AND channel_in_app = true AND read_at IS NULL`,
+        [userId]
+      );
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[Notifications] mark-all-read error:", err);
+      res.status(500).json({ message: "Failed to mark all read" });
+    }
+  });
+
+  app.get("/api/alert-preferences", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const r = await pool.query(`SELECT * FROM alert_preferences WHERE user_id = $1`, [userId]);
+      const row = r.rows[0];
+      const defaults = {
+        userId,
+        drawdownEnabled: true,
+        drawdownInApp: true,
+        drawdownEmail: true,
+        drawdownWarnThreshold: 70,
+        drawdownCriticalThreshold: 90,
+        revengeEnabled: true,
+        revengeInApp: true,
+        revengeEmail: true,
+        overtradingEnabled: true,
+        overtradingInApp: true,
+        overtradingEmail: false,
+        overtradingDailyCap: 10,
+        strategyDeviationEnabled: true,
+        strategyDeviationInApp: true,
+        strategyDeviationEmail: false,
+        cooldownMinutes: 60,
+      };
+      if (!row) return res.json(defaults);
+      res.json({
+        userId: row.user_id,
+        drawdownEnabled: row.drawdown_enabled,
+        drawdownInApp: row.drawdown_in_app ?? true,
+        drawdownEmail: row.drawdown_email,
+        drawdownWarnThreshold: row.drawdown_warn_threshold,
+        drawdownCriticalThreshold: row.drawdown_critical_threshold,
+        revengeEnabled: row.revenge_enabled,
+        revengeInApp: row.revenge_in_app ?? true,
+        revengeEmail: row.revenge_email,
+        overtradingEnabled: row.overtrading_enabled,
+        overtradingInApp: row.overtrading_in_app ?? true,
+        overtradingEmail: row.overtrading_email,
+        overtradingDailyCap: row.overtrading_daily_cap,
+        strategyDeviationEnabled: row.strategy_deviation_enabled,
+        strategyDeviationInApp: row.strategy_deviation_in_app ?? true,
+        strategyDeviationEmail: row.strategy_deviation_email,
+        cooldownMinutes: row.cooldown_minutes,
+      });
+    } catch (err) {
+      console.error("[AlertPrefs] get error:", err);
+      res.status(500).json({ message: "Failed to load alert preferences" });
+    }
+  });
+
+  app.put("/api/alert-preferences", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const b = req.body || {};
+      const clampPct = (v: any, d: number) => {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return d;
+        return Math.max(10, Math.min(100, Math.round(n)));
+      };
+      const clampInt = (v: any, d: number, min: number, max: number) => {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return d;
+        return Math.max(min, Math.min(max, Math.round(n)));
+      };
+      const vals = {
+        drawdownEnabled: b.drawdownEnabled !== false,
+        drawdownInApp: b.drawdownInApp !== false,
+        drawdownEmail: b.drawdownEmail !== false,
+        drawdownWarnThreshold: clampPct(b.drawdownWarnThreshold, 70),
+        drawdownCriticalThreshold: clampPct(b.drawdownCriticalThreshold, 90),
+        revengeEnabled: b.revengeEnabled !== false,
+        revengeInApp: b.revengeInApp !== false,
+        revengeEmail: b.revengeEmail !== false,
+        overtradingEnabled: b.overtradingEnabled !== false,
+        overtradingInApp: b.overtradingInApp !== false,
+        overtradingEmail: !!b.overtradingEmail,
+        overtradingDailyCap: clampInt(b.overtradingDailyCap, 10, 1, 100),
+        strategyDeviationEnabled: b.strategyDeviationEnabled !== false,
+        strategyDeviationInApp: b.strategyDeviationInApp !== false,
+        strategyDeviationEmail: !!b.strategyDeviationEmail,
+        cooldownMinutes: clampInt(b.cooldownMinutes, 60, 5, 1440),
+      };
+      if (vals.drawdownWarnThreshold >= vals.drawdownCriticalThreshold) {
+        vals.drawdownWarnThreshold = Math.max(10, vals.drawdownCriticalThreshold - 10);
+      }
+      await pool.query(
+        `INSERT INTO alert_preferences (
+           user_id, drawdown_enabled, drawdown_in_app, drawdown_email, drawdown_warn_threshold, drawdown_critical_threshold,
+           revenge_enabled, revenge_in_app, revenge_email, overtrading_enabled, overtrading_in_app, overtrading_email, overtrading_daily_cap,
+           strategy_deviation_enabled, strategy_deviation_in_app, strategy_deviation_email, cooldown_minutes, updated_at
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW())
+         ON CONFLICT (user_id) DO UPDATE SET
+           drawdown_enabled = EXCLUDED.drawdown_enabled,
+           drawdown_in_app = EXCLUDED.drawdown_in_app,
+           drawdown_email = EXCLUDED.drawdown_email,
+           drawdown_warn_threshold = EXCLUDED.drawdown_warn_threshold,
+           drawdown_critical_threshold = EXCLUDED.drawdown_critical_threshold,
+           revenge_enabled = EXCLUDED.revenge_enabled,
+           revenge_in_app = EXCLUDED.revenge_in_app,
+           revenge_email = EXCLUDED.revenge_email,
+           overtrading_enabled = EXCLUDED.overtrading_enabled,
+           overtrading_in_app = EXCLUDED.overtrading_in_app,
+           overtrading_email = EXCLUDED.overtrading_email,
+           overtrading_daily_cap = EXCLUDED.overtrading_daily_cap,
+           strategy_deviation_enabled = EXCLUDED.strategy_deviation_enabled,
+           strategy_deviation_in_app = EXCLUDED.strategy_deviation_in_app,
+           strategy_deviation_email = EXCLUDED.strategy_deviation_email,
+           cooldown_minutes = EXCLUDED.cooldown_minutes,
+           updated_at = NOW()`,
+        [userId, vals.drawdownEnabled, vals.drawdownInApp, vals.drawdownEmail, vals.drawdownWarnThreshold, vals.drawdownCriticalThreshold,
+         vals.revengeEnabled, vals.revengeInApp, vals.revengeEmail, vals.overtradingEnabled, vals.overtradingInApp, vals.overtradingEmail, vals.overtradingDailyCap,
+         vals.strategyDeviationEnabled, vals.strategyDeviationInApp, vals.strategyDeviationEmail, vals.cooldownMinutes]
+      );
+      res.json({ ok: true, ...vals, userId });
+    } catch (err) {
+      console.error("[AlertPrefs] put error:", err);
+      res.status(500).json({ message: "Failed to save alert preferences" });
+    }
+  });
+
+  app.get("/api/admin/alert-volume", requireAdmin, async (_req, res) => {
+    try {
+      const totals = await pool.query(`
+        SELECT
+          COUNT(*)::int AS total_24h,
+          COUNT(*) FILTER (WHERE read_at IS NULL)::int AS unread_24h,
+          COUNT(*) FILTER (WHERE email_sent)::int AS emailed_24h,
+          COUNT(DISTINCT user_id)::int AS users_24h
+        FROM notifications
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+      `);
+      const byType = await pool.query(`
+        SELECT type, COUNT(*)::int AS count
+        FROM notifications
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+        GROUP BY type ORDER BY count DESC
+      `);
+      const bySeverity = await pool.query(`
+        SELECT severity, COUNT(*)::int AS count
+        FROM notifications
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+        GROUP BY severity
+      `);
+      const last7 = await pool.query(`
+        SELECT DATE_TRUNC('day', created_at)::date AS day, COUNT(*)::int AS count
+        FROM notifications
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY day ORDER BY day
+      `);
+      const topUsers = await pool.query(`
+        SELECT user_id,
+               COUNT(*)::int AS total,
+               COUNT(*) FILTER (WHERE severity = 'high')::int AS high,
+               COUNT(*) FILTER (WHERE read_at IS NULL)::int AS unread,
+               MAX(created_at) AS last_alert_at
+        FROM notifications
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY user_id
+        ORDER BY total DESC
+        LIMIT 10
+      `);
+      res.json({
+        totals: totals.rows[0] || { total_24h: 0, unread_24h: 0, emailed_24h: 0, users_24h: 0 },
+        byType: byType.rows,
+        bySeverity: bySeverity.rows,
+        last7Days: last7.rows.map((r: any) => ({ day: r.day, count: r.count })),
+        topUsers: topUsers.rows.map((r: any) => ({
+          userId: r.user_id,
+          total: r.total,
+          high: r.high,
+          unread: r.unread,
+          lastAlertAt: r.last_alert_at,
+        })),
+      });
+    } catch (err) {
+      console.error("[AlertVolume] error:", err);
+      res.status(500).json({ message: "Failed to load alert volume" });
+    }
   });
 
   return httpServer;

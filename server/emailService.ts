@@ -1575,6 +1575,95 @@ async function processDripSequences(): Promise<void> {
   }
 }
 
+// ==================== RISK ALERT EMAILS ====================
+
+interface RiskAlertEmailData {
+  type: string;
+  severity: "low" | "medium" | "high";
+  title: string;
+  body: string;
+  linkUrl?: string;
+  payload?: Record<string, any>;
+}
+
+const ALERT_THEME: Record<string, { color: string; emoji: string; label: string }> = {
+  daily_dd_critical:    { color: "#EF4444", emoji: "🛑", label: "Daily Drawdown — Critical" },
+  daily_dd_warn:        { color: "#F59E0B", emoji: "⚠️", label: "Daily Drawdown — Warning" },
+  max_dd_critical:      { color: "#EF4444", emoji: "🛑", label: "Max Drawdown — Critical" },
+  max_dd_warn:          { color: "#F59E0B", emoji: "⚠️", label: "Max Drawdown — Warning" },
+  revenge_trade:        { color: "#EF4444", emoji: "🚨", label: "Revenge Trading Detected" },
+  overtrading:          { color: "#F59E0B", emoji: "📊", label: "Overtrading Alert" },
+  strategy_deviation:   { color: "#3B82F6", emoji: "🧭", label: "Strategy Deviation" },
+};
+
+export async function sendRiskAlertEmail(
+  userIdOrEmail: string,
+  alert: RiskAlertEmailData
+): Promise<boolean> {
+  try {
+    if (!SMTP_USER || !SMTP_APP_PASSWORD) return false;
+    // Critical risk alerts (drawdown breach imminent, revenge trading) are
+    // account-protecting transactional notices — they intentionally bypass
+    // the marketing unsubscribe so the user is never silently denied a
+    // notification that could prevent a blown challenge.
+    const isCriticalSafety = alert.severity === "high";
+    if (!isCriticalSafety && await isUserUnsubscribed(userIdOrEmail)) {
+      console.log(`[RiskAlert] User ${userIdOrEmail} is unsubscribed — skipping non-critical email (${alert.type})`);
+      return false;
+    }
+
+    const theme = ALERT_THEME[alert.type] || { color: "#00D9A3", emoji: "🔔", label: "Tradify Alert" };
+    const ctaUrl = alert.linkUrl ? `${APP_URL}${alert.linkUrl}` : `${APP_URL}/dashboard`;
+    const unsubUrl = await getUnsubscribeUrl(userIdOrEmail);
+
+    const content = `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr><td style="padding-bottom: 8px;">
+          <span style="display: inline-block; background-color: ${theme.color}1A; color: ${theme.color}; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 12px; border-radius: 4px; border: 1px solid ${theme.color}40;">
+            ${theme.emoji} ${theme.label}
+          </span>
+        </td></tr>
+        <tr><td style="padding-bottom: 16px;">
+          <h1 style="margin: 12px 0 0 0; font-size: 24px; font-weight: 800; color: #ffffff; line-height: 1.3; font-family: Arial, sans-serif;">
+            ${alert.title}
+          </h1>
+        </td></tr>
+        <tr><td style="padding-bottom: 24px;">
+          <p style="margin: 0; font-size: 15px; color: #D1D5DB; line-height: 1.6; font-family: Arial, sans-serif;">
+            ${alert.body}
+          </p>
+        </td></tr>
+        <tr><td style="padding-bottom: 24px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background-color: #00D9A3; border-radius: 6px;">
+                <a href="${ctaUrl}" style="display: inline-block; padding: 14px 32px; font-size: 13px; font-weight: 800; color: #0A0F1E; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; font-family: Arial, sans-serif;">
+                  Open Tradify →
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+        <tr><td style="border-top: 1px solid #1F2937; padding-top: 20px;">
+          <p style="margin: 0; font-size: 12px; color: #6B7280; line-height: 1.6; font-family: Arial, sans-serif;">
+            You're receiving this because you've enabled risk alerts for your TradifyApp account. You can adjust which alerts you receive — or turn email alerts off entirely — from your <a href="${APP_URL}/profile" style="color: #00D9A3; text-decoration: none;">Alert Settings</a>.
+          </p>
+        </td></tr>
+      </table>`;
+
+    const subject = `${theme.emoji} ${alert.title}`;
+    const html = wrapEmailBody(content, alert.title, alert.body.slice(0, 120), unsubUrl);
+
+    return await sendEmail(userIdOrEmail, subject, html, true, {
+      "List-Unsubscribe": unsubUrl ? `<${unsubUrl}>` : "",
+      "X-Tradify-Alert-Type": alert.type,
+    });
+  } catch (err) {
+    console.error("[RiskAlert] sendRiskAlertEmail error:", err);
+    return false;
+  }
+}
+
 export const emailService = {
   sendTransactionalEmail,
   sendWelcomeEmail,
@@ -1587,6 +1676,7 @@ export const emailService = {
   sendEmailVerificationEmail,
   sendAdminSignupNotification,
   sendBackupFailureAlertEmail,
+  sendRiskAlertEmail,
   getEmailLogs,
   isEmailConfigured,
   queueLeadSequence,
