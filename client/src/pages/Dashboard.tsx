@@ -576,11 +576,35 @@ export default function Dashboard() {
                   <LayoutDashboard className="text-emerald-500" />
                   {t("dashboard.title")}
                 </h1>
+                {sampleMode.active && (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-500"
+                    data-testid="badge-sample-mode"
+                    title="You're viewing sample data. Connect MT5 to see your own."
+                  >
+                    <Sparkles size={11} className="text-amber-500" />
+                    Sample data
+                  </span>
+                )}
                 {user?.foundingMember && <FoundingMemberBadge size="md" />}
               </div>
               <p className="text-muted-foreground text-sm mt-1">{t("dashboard.subtitle")}</p>
             </div>
-            {mt5?.status === "CONNECTED" ? (
+            {sampleMode.active ? (
+              <div
+                className="flex items-center gap-4 bg-card border border-amber-500/40 rounded-full px-5 py-2.5 backdrop-blur-sm shrink-0"
+                data-testid="status-pill-sample"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                  <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">Sample mode</span>
+                </div>
+                <div className="w-px h-5 bg-border" />
+                <div className="text-[10px] text-muted-foreground font-mono font-bold uppercase">
+                  Demo data
+                </div>
+              </div>
+            ) : mt5?.status === "CONNECTED" ? (
               <div className="flex items-center gap-4 bg-card border border-border rounded-full px-5 py-2.5 backdrop-blur-sm shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
