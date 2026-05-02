@@ -15,6 +15,7 @@ Key capabilities include:
 - Tiered subscription model (Free, Pro, Elite) with feature gating.
 - Prop Firm Challenge Tracker with AI Risk Analysis for Elite users.
 - Lead magnets including a Pre-Trade Checklist and Prop Firm Challenge Calculator with UTM attribution tracking.
+- Database Backups admin (`/admin/backups`): daily Neon snapshots to object storage, weekly restore-verification, and a One-Click Restore panel — admins can download any backup (`GET /api/admin/backups/:id/download`, fail-closed audit-logged as `BACKUP_DOWNLOAD` in `admin_audit_log`) and follow copy-paste psql commands to restore into a scratch database.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

@@ -12,7 +12,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { emailService } from "./emailService";
-import { runBackup, getBackupStatus, verifyLatestBackup } from "./backup-service";
+import { runBackup, getBackupStatus, verifyLatestBackup, downloadBackupById } from "./backup-service";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
@@ -1426,6 +1426,47 @@ ${blogPosts.map(p => `  <url>
     } catch (error: any) {
       console.error("Manual verify error:", error);
       res.status(500).json({ message: "Verification invocation failed", error: error?.message });
+    }
+  });
+
+  app.get("/api/admin/backups/:id/download", requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid backup id" });
+      }
+      const result = await downloadBackupById(id);
+      if (!result) {
+        return res.status(404).json({ message: "Backup not found or has no storage key" });
+      }
+      const filename = result.storageKey.split("/").pop() || `backup-${id}.sql.gz`;
+      // Fail-closed audit: a full-DB export must never leave the server without a durable audit row.
+      try {
+        await db.insert(schema.adminAuditLog).values({
+          adminId: String(req.session.userId!),
+          actionType: "BACKUP_DOWNLOAD",
+          targetUserId: String(req.session.userId!),
+          details: {
+            backupId: id,
+            storageKey: result.storageKey,
+            sizeBytes: result.bytes.length,
+            filename,
+          },
+        });
+      } catch (auditErr: any) {
+        console.error("[backup] CRITICAL: audit log insert failed, refusing download:", auditErr);
+        return res.status(500).json({
+          message: "Audit logging failed — download refused for compliance.",
+          error: auditErr?.message,
+        });
+      }
+      res.setHeader("Content-Type", "application/gzip");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", String(result.bytes.length));
+      res.end(result.bytes);
+    } catch (error: any) {
+      console.error("Backup download error:", error);
+      res.status(500).json({ message: "Backup download failed", error: error?.message });
     }
   });
 

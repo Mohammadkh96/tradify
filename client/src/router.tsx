@@ -521,7 +521,6 @@ function AppRoutes() {
       <Route path="/admin/suggestions" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/access" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/subscriptions" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/mt5" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/audit-logs" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/costs" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/blog" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

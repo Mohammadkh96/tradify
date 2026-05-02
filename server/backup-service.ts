@@ -724,6 +724,30 @@ async function verifyLatestBackupLocked(): Promise<VerifyResult> {
   return { backupId: latest.id, status, message, storageKey: latest.storageKey };
 }
 
+export async function downloadBackupById(
+  id: number,
+): Promise<{ storageKey: string; bytes: Buffer } | null> {
+  const [row] = await db
+    .select()
+    .from(databaseBackups)
+    .where(eq(databaseBackups.id, id))
+    .limit(1);
+
+  if (!row || !row.storageKey) {
+    return null;
+  }
+
+  const client = getStorageClient();
+  const dl = await client.downloadAsBytes(row.storageKey);
+  if (!dl.ok || !dl.value || !dl.value[0]) {
+    throw new Error(
+      `Object storage download failed: ${dl.error?.message ?? "no payload"}`,
+    );
+  }
+
+  return { storageKey: row.storageKey, bytes: dl.value[0] as Buffer };
+}
+
 // ==================== SCHEDULERS ====================
 
 /**

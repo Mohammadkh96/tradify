@@ -1,7 +1,8 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Database, RefreshCw, CheckCircle2, AlertTriangle, Clock, HardDrive, Calendar, PlayCircle, ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
+import { Database, RefreshCw, CheckCircle2, AlertTriangle, Clock, HardDrive, Calendar, PlayCircle, ShieldCheck, ShieldAlert, ShieldQuestion, Download, Copy, Terminal, AlertOctagon } from "lucide-react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,53 @@ function formatRelative(iso: string): string {
 
 export default function DatabaseBackups() {
   const { toast } = useToast();
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  async function handleDownload(row: BackupRow) {
+    if (!row.storageKey) return;
+    setDownloadingId(row.id);
+    try {
+      const res = await fetch(`/api/admin/backups/${row.id}/download`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      const filename = row.storageKey.split("/").pop() || `backup-${row.id}.sql.gz`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "Backup downloaded", description: `${filename} (${formatBytes(blob.size)})` });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: err?.message || "Unknown error",
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text).then(
+      () => toast({ title: `${label} copied`, description: "Pasted to clipboard." }),
+      () =>
+        toast({
+          variant: "destructive",
+          title: "Copy failed",
+          description: "Select the command manually.",
+        }),
+    );
+  }
+
   const { data, isLoading, refetch, isFetching } = useQuery<BackupStatusResponse>({
     queryKey: ["/api/admin/backups/status"],
     refetchInterval: 60_000,
@@ -401,6 +449,7 @@ export default function DatabaseBackups() {
                 <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Duration</TableHead>
                 <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Verified</TableHead>
                 <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Storage Key</TableHead>
+                <TableHead className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest text-right">Download</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -441,11 +490,27 @@ export default function DatabaseBackups() {
                   <TableCell className="text-[10px] font-mono text-muted-foreground break-all max-w-xs">
                     {row.storageKey || (row.errorMessage ? <span className="text-rose-400">{row.errorMessage.slice(0, 80)}</span> : "—")}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {row.storageKey ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownload(row)}
+                        disabled={downloadingId === row.id}
+                        data-testid={`button-download-backup-${row.id}`}
+                      >
+                        <Download size={12} />
+                        {downloadingId === row.id ? "..." : "Download"}
+                      </Button>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
               {(data?.recent?.length ?? 0) === 0 && (
                 <TableRow className="border-border">
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic text-sm border-0">
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground italic text-sm border-0">
                     No backup runs recorded yet.
                   </TableCell>
                 </TableRow>
@@ -455,10 +520,103 @@ export default function DatabaseBackups() {
         </CardContent>
       </Card>
 
-      <p className="text-xs text-muted-foreground italic">
-        Restoring a backup is intentionally a manual, server-side operation. See{" "}
-        <code className="bg-muted px-1.5 py-0.5 rounded">docs/BACKUP_RESTORE.md</code> for the procedure.
-      </p>
+      {/* Restore instructions */}
+      <Card className="bg-card border-border" data-testid="card-restore-instructions">
+        <CardHeader>
+          <CardTitle className="text-sm font-bold uppercase tracking-widest text-foreground flex items-center gap-2">
+            <Terminal size={14} className="text-emerald-500" /> One-Click Restore
+          </CardTitle>
+          <CardDescription>
+            Download any backup above, then paste these commands into a server shell to restore. Restoring is intentionally manual — never automated against the live database.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 flex items-start gap-3" data-testid="warning-restore-destructive">
+            <AlertOctagon size={18} className="text-rose-500 shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed">
+              <p className="font-bold text-rose-500 uppercase tracking-wider">Destructive operation</p>
+              <p className="text-muted-foreground">
+                Restoring overwrites every row in the target database. Always restore into a <strong>scratch / staging</strong> database first, validate the data, and only then promote it. Never run these commands against the live <code className="bg-muted px-1 rounded">DATABASE_URL</code> without an extra signed approval.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">1. Verify the download</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px]"
+                onClick={() =>
+                  copyToClipboard(
+                    `gunzip -t backup.sql.gz && echo "OK: archive is valid"`,
+                    "Verify command",
+                  )
+                }
+                data-testid="button-copy-verify-cmd"
+              >
+                <Copy size={11} /> Copy
+              </Button>
+            </div>
+            <pre className="text-xs font-mono bg-muted/50 p-3 rounded-md text-emerald-400 overflow-x-auto">
+{`gunzip -t backup.sql.gz && echo "OK: archive is valid"`}
+            </pre>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">2. Restore into a scratch database</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px]"
+                onClick={() =>
+                  copyToClipboard(
+                    `# Replace SCRATCH_DATABASE_URL with a NON-PRODUCTION database\ngunzip -c backup.sql.gz | psql "$SCRATCH_DATABASE_URL"`,
+                    "Restore command",
+                  )
+                }
+                data-testid="button-copy-restore-cmd"
+              >
+                <Copy size={11} /> Copy
+              </Button>
+            </div>
+            <pre className="text-xs font-mono bg-muted/50 p-3 rounded-md text-emerald-400 overflow-x-auto">
+{`# Replace SCRATCH_DATABASE_URL with a NON-PRODUCTION database
+gunzip -c backup.sql.gz | psql "$SCRATCH_DATABASE_URL"`}
+            </pre>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">3. Sanity-check restored data</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px]"
+                onClick={() =>
+                  copyToClipboard(
+                    `psql "$SCRATCH_DATABASE_URL" -c "SELECT COUNT(*) AS users FROM users; SELECT COUNT(*) AS trades FROM trades; SELECT MAX(created_at) AS most_recent_user FROM users;"`,
+                    "Sanity-check command",
+                  )
+                }
+                data-testid="button-copy-sanity-cmd"
+              >
+                <Copy size={11} /> Copy
+              </Button>
+            </div>
+            <pre className="text-xs font-mono bg-muted/50 p-3 rounded-md text-emerald-400 overflow-x-auto">
+{`psql "$SCRATCH_DATABASE_URL" -c "SELECT COUNT(*) AS users FROM users; SELECT COUNT(*) AS trades FROM trades; SELECT MAX(created_at) AS most_recent_user FROM users;"`}
+            </pre>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground italic pt-2 border-t border-border">
+            Each download is logged to the admin audit log with the operator's user id. See{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded">docs/BACKUP_RESTORE.md</code> for the full promote-to-prod procedure.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

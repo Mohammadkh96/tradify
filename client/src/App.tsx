@@ -412,9 +412,6 @@ function Router() {
       <Route path="/admin/subscriptions">
         {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
       </Route>
-      <Route path="/admin/mt5">
-        {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
-      </Route>
       <Route path="/admin/audit-logs">
         {() => !isAdmin ? <Redirect to="/" /> : <AdminDashboard />}
       </Route>
