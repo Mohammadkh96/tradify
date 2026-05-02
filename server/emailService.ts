@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { and, count, eq, lte, ne } from "drizzle-orm";
+import { and, count, eq, gte, lte, ne } from "drizzle-orm";
 import { openai } from "./replit_integrations/audio/index";
 
 // Use process.cwd() for path resolution (works in both ESM and CJS)
@@ -1236,6 +1236,341 @@ async function queueInsightsNewsletterSequence(userId: string): Promise<void> {
   }
 }
 
+// ==================== LIFECYCLE TRACKS (#12) ====================
+// first_trade — fired ~1h after a user logs their first journal entry.
+// Goal: convert "I tried it once" into a journaling habit.
+const FIRST_TRADE_INTERVALS_HOURS = [1, 48, 5 * 24];
+const FIRST_TRADE_TOTAL_STEPS = 3;
+
+// first_payout — fired when a user's prop firm challenge transitions to payout.
+const FIRST_PAYOUT_INTERVALS_HOURS = [0, 7 * 24];
+const FIRST_PAYOUT_TOTAL_STEPS = 2;
+
+// at_risk — fired by the inactivity detector (no trades / no journal in 14d).
+const AT_RISK_INTERVALS_DAYS = [0, 4, 10];
+const AT_RISK_TOTAL_STEPS = 3;
+const AT_RISK_INACTIVITY_DAYS = 14;
+
+// win_back — fired when subscription is cancelled (user keeps access until period end).
+const WIN_BACK_INTERVALS_DAYS = [7, 21, 60];
+const WIN_BACK_TOTAL_STEPS = 3;
+
+function buildFirstTradeEmail(step: number, userName: string, unsubscribeUrl?: string): { subject: string; html: string } | null {
+  const dashUrl = `${APP_URL}/dashboard`;
+  const journalUrl = `${APP_URL}/trades`;
+  const analyticsUrl = `${APP_URL}/analytics`;
+  const emails: Array<{ subject: string; body: string }> = [
+    {
+      subject: 'First trade logged — here\'s what happens next',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">Hey ${userName}, your first trade is in.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">Step 1 — The journaling habit</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">One trade isn't a sample size. But it's the start of one.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">The traders who get the most from TradifyApp do one thing: they log every trade the same day, with two fields filled — <strong style="color: #ffffff;">emotional state at entry</strong> and <strong style="color: #ffffff;">whether the trade matched their setup</strong>.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">That's it. Two checkboxes. The data compounds.</p>
+        ${dripCta('Open Your Journal →', journalUrl)}
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">In two days I'll send you what to look for once you have ten trades logged. Patterns start appearing earlier than most traders think.</p>
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+    {
+      subject: 'Patterns appear at 10 trades (not 100)',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">Patterns show up faster than you'd think.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">Step 2 — Reading your own data</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">A common myth: you need 100+ trades before journaling tells you anything useful. Not true.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">By trade 10, three signals usually emerge:</p>
+        <ol style="margin: 0 0 20px 0; padding: 0 0 0 20px; color: #D1D5DB;">
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Time-of-day edge</strong> — your win rate is rarely flat across sessions.</li>
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Setup quality drift</strong> — the % of trades that didn't match your defined setup.</li>
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Emotional state correlation</strong> — your best and worst trades cluster around specific feelings.</li>
+        </ol>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">TradifyApp's Analytics view shows all three the moment you cross 10 logged trades.</p>
+        ${dripCta('See What Your Data Says →', analyticsUrl)}
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+    {
+      subject: 'The one journal field 90% of traders skip',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">The field most traders skip — and shouldn't.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">Step 3 — The compounding question</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">After every trade, ask one question and write the honest answer:</p>
+        <div style="background-color: #0d1117; border-left: 3px solid #00D9A3; padding: 16px 20px; margin: 20px 0; border-radius: 0 6px 6px 0;">
+          <p style="margin: 0; font-size: 17px; color: #ffffff; line-height: 1.7; font-weight: 700;">"Would I take this trade again tomorrow, exactly as I executed it?"</p>
+        </div>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If yes — even on a loser — your process is intact. If no — even on a winner — you got lucky and you know it.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">This single question separates traders who improve from traders who plateau. It works because it strips out P&L bias and forces you to evaluate the decision.</p>
+        ${dripCta('Add It To Your Next Trade →', journalUrl)}
+        <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">— The Tradify team. Hit reply anytime if a feature would help you.</p>
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+  ];
+  const entry = emails[step];
+  if (!entry) return null;
+  return { subject: entry.subject, html: wrapEmailBody(entry.body, entry.subject, entry.subject, unsubscribeUrl) };
+}
+
+function buildFirstPayoutEmail(step: number, userName: string, unsubscribeUrl?: string): { subject: string; html: string } | null {
+  const dashUrl = `${APP_URL}/dashboard`;
+  const propUrl = `${APP_URL}/prop-firms`;
+  const emails: Array<{ subject: string; body: string }> = [
+    {
+      subject: '🎉 First payout cleared — protect what you just built',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">${userName}, you got the first payout.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">Milestone — and inflection point</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Genuinely well done. The first payout is the moment a prop firm account stops feeling like a video game and starts feeling like a business.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">It's also the moment most traders quietly start over-trading. The "house money" instinct kicks in. Position sizes creep up. Rules get bent "just this once."</p>
+        <div style="background-color: #0d1117; border-left: 3px solid #f59e0b; padding: 16px 20px; margin: 20px 0; border-radius: 0 6px 6px 0;">
+          <p style="margin: 0; font-size: 15px; color: #D1D5DB; line-height: 1.7;"><strong style="color: #ffffff;">The data is brutal:</strong> a meaningful share of payout-eligible accounts are breached within 4 weeks of the first payout. Not because the strategy stopped working — because the trader did.</p>
+        </div>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">My suggestion: this week, change <strong style="color: #ffffff;">nothing</strong>. Same setups, same size, same session length. Use TradifyApp's session-rule lock to make it impossible to drift.</p>
+        ${dripCta('Lock In Your Current Rules →', dashUrl)}
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">In a week I'll send you the framework for whether to compound on the same account or scale out across accounts. It's a real decision and it has wrong answers.</p>
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+    {
+      subject: 'Compound on one account or scale across many?',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">Compound or scale — the framework.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">Post-payout decision</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">After the first payout, every funded trader hits the same fork:</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;"><strong style="color: #ffffff;">Path A — Compound the same account.</strong> Larger size on a familiar firm, familiar rules, familiar drawdown math. Higher mental load per trade. One bad day hurts more.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;"><strong style="color: #ffffff;">Path B — Scale across accounts.</strong> Multiple smaller accounts, possibly different firms. Diversification of rules and reset cycles. Higher operational complexity. Lower per-trade pressure.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">A simple rule of thumb: if your largest single-day loss in the last 30 days exceeded 30% of your daily limit, choose Path B. Your tolerance for size hasn't caught up to your strategy yet.</p>
+        ${dripCta('Compare Firms Side-by-Side →', propUrl)}
+        <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">TradifyApp's prop firm tracker handles multi-account view in the Pro tier — every account on one screen with per-firm rule monitoring.</p>
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+  ];
+  const entry = emails[step];
+  if (!entry) return null;
+  return { subject: entry.subject, html: wrapEmailBody(entry.body, entry.subject, entry.subject, unsubscribeUrl) };
+}
+
+function buildAtRiskEmail(step: number, userName: string, unsubscribeUrl?: string): { subject: string; html: string } | null {
+  const dashUrl = `${APP_URL}/dashboard`;
+  const checklistUrl = `${APP_URL}/checklist`;
+  const emails: Array<{ subject: string; body: string }> = [
+    {
+      subject: 'Haven\'t seen you trade in 2 weeks',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">${userName} — quick check-in.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">No pressure — genuinely curious</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Your TradifyApp account hasn't seen activity in about two weeks. Three things this could mean — none of them are wrong:</p>
+        <ol style="margin: 0 0 20px 0; padding: 0 0 0 20px; color: #D1D5DB;">
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">You're <strong style="color: #ffffff;">deliberately stepping back</strong> after a rough patch — smartest thing many traders ever do.</li>
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">You're <strong style="color: #ffffff;">trading on a different platform</strong> and forgot to keep journaling here.</li>
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;">You <strong style="color: #ffffff;">tried it and the workflow didn't click</strong>. That's useful feedback.</li>
+        </ol>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Whichever it is, no email from a tool is going to make you trade. But if it's #2 or #3, I'd love to know — hit reply.</p>
+        ${dripCta('Open Dashboard →', dashUrl)}
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+    {
+      subject: 'The discipline reset — one focused week',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">If you want back in — one focused week.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">A simple restart protocol</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Coming back to trading after a break is harder than starting cold. The temptation is to "make up for lost time." Don't.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">A protocol that works for most traders we talk to:</p>
+        <ol style="margin: 0 0 20px 0; padding: 0 0 0 20px; color: #D1D5DB;">
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Day 1–3:</strong> watch your charts, take zero trades. Re-anchor your setups.</li>
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Day 4–5:</strong> trade <em>half</em> your normal size, full rules, journal everything.</li>
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Day 6–7:</strong> review what your data says, only then return to normal sizing.</li>
+        </ol>
+        ${dripCta('Reload Your Pre-Session Checklist →', checklistUrl)}
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+    {
+      subject: 'One last note from us',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">Last note — and then we'll be quiet.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">No more re-engagement emails after this</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If trading isn't where you are right now — totally fair. Markets will be there.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If you do come back, your account, your rules, and your journal history are exactly where you left them. Free, no time limit.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">After this email I'll stop the inactivity check-ins. You'll still get product updates and risk alerts if you've enabled them.</p>
+        ${dripCta('Take One Look →', dashUrl)}
+        <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">— Tradify team</p>
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+  ];
+  const entry = emails[step];
+  if (!entry) return null;
+  return { subject: entry.subject, html: wrapEmailBody(entry.body, entry.subject, entry.subject, unsubscribeUrl) };
+}
+
+function buildWinBackEmail(step: number, userName: string, unsubscribeUrl?: string): { subject: string; html: string } | null {
+  const pricingUrl = `${APP_URL}/pricing`;
+  const changelogUrl = `${APP_URL}/changelog`;
+  const replyTo = 'reply';
+  const emails: Array<{ subject: string; body: string }> = [
+    {
+      subject: 'You cancelled — what could have been better?',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">${userName} — one quick question.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">Sorry to see you go</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">No pitch in this email. Just one question: what was missing?</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If you hit reply with even a one-line answer — pricing, missing feature, didn't fit your workflow, switched platforms, took a break from trading — it goes directly to the team. Every cancellation reason gets read and triaged.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">The honest, slightly-uncomfortable answers are the ones that change the product fastest.</p>
+        <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">— The Tradify team. Just hit reply.</p>
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+    {
+      subject: 'What we shipped since you left',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">Three weeks. Here's what's new.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">No pressure — just a heads-up</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">A few things landed since you cancelled — sharing in case any of them was your blocker:</p>
+        <ul style="margin: 0 0 20px 0; padding: 0 0 0 20px; color: #D1D5DB;">
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Live push alerts</strong> — drawdown and revenge-trade warnings now arrive in real time, not on a delay.</li>
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Per-firm trackers</strong> — every major prop firm with live rule monitoring against your equity curve.</li>
+          <li style="margin-bottom: 10px; font-size: 16px; line-height: 1.7;"><strong style="color: #ffffff;">Behavioral risk engine</strong> — pattern detection across overtrading, position size creep, and session-time drift.</li>
+        </ul>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">Your account is still there. If you want to take another look:</p>
+        ${dripCta('See What\'s New →', changelogUrl)}
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+    {
+      subject: 'Last note — 50% off if you want back in',
+      body: `
+        <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: bold; color: #ffffff;">A standing offer — and then we're done.</h1>
+        <p style="margin: 0 0 24px 0; font-size: 14px; color: #00D9A3; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">Final win-back email</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">If TradifyApp didn't fit before but you've been thinking about coming back: <strong style="color: #ffffff;">use code RETURN50 for 50% off the first 3 months</strong> on any plan.</p>
+        <p style="margin: 0 0 16px 0; font-size: 16px; color: #D1D5DB; line-height: 1.7;">No expiration on this email — the code is valid whenever you're ready. After this message we won't email you about subscription stuff again.</p>
+        ${dripCta('Restart at 50% Off →', pricingUrl)}
+        <p style="margin: 32px 0 0 0; font-size: 13px; color: #9CA3AF; line-height: 1.6; border-top: 1px solid #1F2937; padding-top: 16px; font-style: italic;">Either way — wishing you good trading. — Tradify team</p>
+        ${dripFooterNote(true, unsubscribeUrl)}`,
+    },
+  ];
+  const entry = emails[step];
+  if (!entry) return null;
+  return { subject: entry.subject, html: wrapEmailBody(entry.body, entry.subject, entry.subject, unsubscribeUrl) };
+}
+
+async function queueFirstTradeSequence(userId: string): Promise<void> {
+  try {
+    const [existing] = await db.select({ id: schema.emailSequences.id })
+      .from(schema.emailSequences)
+      .where(and(eq(schema.emailSequences.userId, userId), eq(schema.emailSequences.track, 'first_trade')))
+      .limit(1);
+    if (existing) return;
+    const sendAt = new Date(Date.now() + FIRST_TRADE_INTERVALS_HOURS[0] * 60 * 60 * 1000);
+    await db.insert(schema.emailSequences).values({ userId, track: 'first_trade', currentStep: 0, nextSendAt: sendAt, completed: false });
+    console.log(`[DRIP] Queued first_trade for ${userId}`);
+  } catch (err) {
+    console.error('[DRIP] queueFirstTradeSequence error:', err);
+  }
+}
+
+async function queueFirstPayoutSequence(userId: string): Promise<void> {
+  try {
+    const [existing] = await db.select({ id: schema.emailSequences.id })
+      .from(schema.emailSequences)
+      .where(and(eq(schema.emailSequences.userId, userId), eq(schema.emailSequences.track, 'first_payout')))
+      .limit(1);
+    if (existing) return;
+    const sendAt = new Date(Date.now() + FIRST_PAYOUT_INTERVALS_HOURS[0] * 60 * 60 * 1000);
+    await db.insert(schema.emailSequences).values({ userId, track: 'first_payout', currentStep: 0, nextSendAt: sendAt, completed: false });
+    console.log(`[DRIP] Queued first_payout for ${userId}`);
+  } catch (err) {
+    console.error('[DRIP] queueFirstPayoutSequence error:', err);
+  }
+}
+
+async function queueAtRiskSequence(userId: string): Promise<void> {
+  try {
+    const [existing] = await db.select({ id: schema.emailSequences.id })
+      .from(schema.emailSequences)
+      .where(and(eq(schema.emailSequences.userId, userId), eq(schema.emailSequences.track, 'at_risk'), eq(schema.emailSequences.completed, false)))
+      .limit(1);
+    if (existing) return;
+    const sendAt = new Date(Date.now() + AT_RISK_INTERVALS_DAYS[0] * 24 * 60 * 60 * 1000);
+    await db.insert(schema.emailSequences).values({ userId, track: 'at_risk', currentStep: 0, nextSendAt: sendAt, completed: false });
+    console.log(`[DRIP] Queued at_risk for ${userId}`);
+  } catch (err) {
+    console.error('[DRIP] queueAtRiskSequence error:', err);
+  }
+}
+
+async function queueWinBackSequence(userId: string): Promise<void> {
+  try {
+    await cancelActiveTrack(userId, 'win_back');
+    // Re-check after cancellation — guards against rapid concurrent cancels
+    // creating duplicate active rows. cancelActiveTrack only sets completed=true
+    // on rows that were active, so an active row created between the cancel
+    // and the insert would be missed without this guard.
+    const [existing] = await db.select({ id: schema.emailSequences.id })
+      .from(schema.emailSequences)
+      .where(and(
+        eq(schema.emailSequences.userId, userId),
+        eq(schema.emailSequences.track, 'win_back'),
+        eq(schema.emailSequences.completed, false),
+      ))
+      .limit(1);
+    if (existing) return;
+    const sendAt = new Date(Date.now() + WIN_BACK_INTERVALS_DAYS[0] * 24 * 60 * 60 * 1000);
+    await db.insert(schema.emailSequences).values({ userId, track: 'win_back', currentStep: 0, nextSendAt: sendAt, completed: false });
+    console.log(`[DRIP] Queued win_back for ${userId}`);
+  } catch (err) {
+    console.error('[DRIP] queueWinBackSequence error:', err);
+  }
+}
+
+// At-risk detector — scans FREE/PRO users with no journal activity for
+// AT_RISK_INACTIVITY_DAYS days and queues the at_risk track. Runs on the
+// same schedule as processDripSequences. ELITE users skip this — they
+// already get touchpoints via elite_retention.
+async function scanForAtRiskUsers(): Promise<void> {
+  try {
+    const { sql } = await import("drizzle-orm");
+    const cutoff = new Date(Date.now() - AT_RISK_INACTIVITY_DAYS * 24 * 60 * 60 * 1000);
+    const candidates = await db.select({
+      userId: schema.userRole.userId,
+      tier: schema.userRole.subscriptionTier,
+      createdAt: schema.userRole.createdAt,
+    })
+      .from(schema.userRole)
+      .where(and(
+        ne(schema.userRole.role, 'OWNER'),
+        ne(schema.userRole.role, 'ADMIN'),
+        lte(schema.userRole.createdAt, cutoff),
+      ));
+
+    let queued = 0;
+    for (const u of candidates) {
+      const tier = (u.tier || 'FREE').toUpperCase();
+      if (tier === 'ELITE') continue;
+      const [latestTrade] = await db.select({ createdAt: schema.tradeJournal.createdAt })
+        .from(schema.tradeJournal)
+        .where(eq(schema.tradeJournal.userId, u.userId))
+        .orderBy(sql`${schema.tradeJournal.createdAt} DESC`)
+        .limit(1);
+      const lastActivity = latestTrade?.createdAt ? new Date(latestTrade.createdAt) : (u.createdAt ? new Date(u.createdAt) : null);
+      if (!lastActivity) continue;
+      if (lastActivity > cutoff) continue;
+      const [existing] = await db.select({ id: schema.emailSequences.id })
+        .from(schema.emailSequences)
+        .where(and(eq(schema.emailSequences.userId, u.userId), eq(schema.emailSequences.track, 'at_risk'), eq(schema.emailSequences.completed, false)))
+        .limit(1);
+      if (existing) continue;
+      const [recentAtRisk] = await db.select({ id: schema.emailSequences.id, nextSendAt: schema.emailSequences.nextSendAt })
+        .from(schema.emailSequences)
+        .where(and(eq(schema.emailSequences.userId, u.userId), eq(schema.emailSequences.track, 'at_risk')))
+        .orderBy(sql`${schema.emailSequences.nextSendAt} DESC`)
+        .limit(1);
+      if (recentAtRisk?.nextSendAt) {
+        const daysSince = (Date.now() - new Date(recentAtRisk.nextSendAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSince < 90) continue;
+      }
+      await queueAtRiskSequence(u.userId);
+      queued++;
+    }
+    if (queued > 0) console.log(`[DRIP] Queued at_risk for ${queued} inactive users`);
+  } catch (err) {
+    console.error('[DRIP] scanForAtRiskUsers error:', err);
+  }
+}
+
 async function backfillUnsubscribeTokens(): Promise<void> {
   try {
     const { isNull } = await import("drizzle-orm");
@@ -1610,6 +1945,106 @@ async function processDripSequences(): Promise<void> {
           await db.update(schema.emailSequences)
             .set({ currentStep: willCycle ? 0 : nextStep, nextSendAt, completed: false })
             .where(eq(schema.emailSequences.id, seq.id));
+
+        } else if (seq.track === 'first_trade') {
+          if (!seq.userId) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const [user] = await db.select({ userId: schema.userRole.userId, fullName: schema.userRole.fullName })
+            .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
+          if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const userName = user.fullName || seq.userId.split('@')[0];
+          const unsubUrl = await getUnsubscribeUrl(seq.userId);
+          const emailData = buildFirstTradeEmail(seq.currentStep, userName, unsubUrl);
+          if (!emailData) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const headers: Record<string, string> = {};
+          if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          console.log(`[DRIP] first_trade step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          const nextStep = seq.currentStep + 1;
+          const isLastStep = nextStep >= FIRST_TRADE_TOTAL_STEPS;
+          const nextHours = FIRST_TRADE_INTERVALS_HOURS[nextStep] ?? 24;
+          await db.update(schema.emailSequences)
+            .set({ currentStep: nextStep, nextSendAt: new Date(Date.now() + nextHours * 60 * 60 * 1000), completed: isLastStep })
+            .where(eq(schema.emailSequences.id, seq.id));
+
+        } else if (seq.track === 'first_payout') {
+          if (!seq.userId) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const [user] = await db.select({ userId: schema.userRole.userId, fullName: schema.userRole.fullName })
+            .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
+          if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const userName = user.fullName || seq.userId.split('@')[0];
+          const unsubUrl = await getUnsubscribeUrl(seq.userId);
+          const emailData = buildFirstPayoutEmail(seq.currentStep, userName, unsubUrl);
+          if (!emailData) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const headers: Record<string, string> = {};
+          if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          console.log(`[DRIP] first_payout step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          const nextStep = seq.currentStep + 1;
+          const isLastStep = nextStep >= FIRST_PAYOUT_TOTAL_STEPS;
+          const nextHours = FIRST_PAYOUT_INTERVALS_HOURS[nextStep] ?? 24;
+          await db.update(schema.emailSequences)
+            .set({ currentStep: nextStep, nextSendAt: new Date(Date.now() + nextHours * 60 * 60 * 1000), completed: isLastStep })
+            .where(eq(schema.emailSequences.id, seq.id));
+
+        } else if (seq.track === 'at_risk') {
+          if (!seq.userId) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const [user] = await db.select({ userId: schema.userRole.userId, fullName: schema.userRole.fullName })
+            .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
+          if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          // Stop the sequence the moment the user comes back: if any trade
+          // was journaled in the last 7 days, mark this track complete.
+          const recentCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          const [recentTrade] = await db.select({ id: schema.tradeJournal.id })
+            .from(schema.tradeJournal)
+            .where(and(eq(schema.tradeJournal.userId, seq.userId), gte(schema.tradeJournal.createdAt, recentCutoff)))
+            .limit(1);
+          if (recentTrade) {
+            await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id));
+            console.log(`[DRIP] at_risk cancelled — ${seq.userId} returned to journaling`);
+            continue;
+          }
+          const userName = user.fullName || seq.userId.split('@')[0];
+          const unsubUrl = await getUnsubscribeUrl(seq.userId);
+          const emailData = buildAtRiskEmail(seq.currentStep, userName, unsubUrl);
+          if (!emailData) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const headers: Record<string, string> = {};
+          if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          console.log(`[DRIP] at_risk step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          const nextStep = seq.currentStep + 1;
+          const isLastStep = nextStep >= AT_RISK_TOTAL_STEPS;
+          const nextDays = AT_RISK_INTERVALS_DAYS[nextStep] ?? 7;
+          await db.update(schema.emailSequences)
+            .set({ currentStep: nextStep, nextSendAt: new Date(Date.now() + nextDays * 24 * 60 * 60 * 1000), completed: isLastStep })
+            .where(eq(schema.emailSequences.id, seq.id));
+
+        } else if (seq.track === 'win_back') {
+          if (!seq.userId) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const [user] = await db.select({ userId: schema.userRole.userId, fullName: schema.userRole.fullName, subscriptionTier: schema.userRole.subscriptionTier, subscriptionStatus: schema.userRole.subscriptionStatus })
+            .from(schema.userRole).where(eq(schema.userRole.userId, seq.userId)).limit(1);
+          if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          // If the user resubscribed (back to active PRO/ELITE), kill the win-back.
+          const tier = (user.subscriptionTier || 'FREE').toUpperCase();
+          const status = (user.subscriptionStatus || '').toLowerCase();
+          if ((tier === 'PRO' || tier === 'ELITE') && (status === 'active' || status === '')) {
+            await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id));
+            console.log(`[DRIP] win_back cancelled — ${seq.userId} reactivated`);
+            continue;
+          }
+          const userName = user.fullName || seq.userId.split('@')[0];
+          const unsubUrl = await getUnsubscribeUrl(seq.userId);
+          const emailData = buildWinBackEmail(seq.currentStep, userName, unsubUrl);
+          if (!emailData) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
+          const headers: Record<string, string> = {};
+          if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          console.log(`[DRIP] win_back step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          const nextStep = seq.currentStep + 1;
+          const isLastStep = nextStep >= WIN_BACK_TOTAL_STEPS;
+          const nextDays = WIN_BACK_INTERVALS_DAYS[nextStep] ?? 30;
+          await db.update(schema.emailSequences)
+            .set({ currentStep: nextStep, nextSendAt: new Date(Date.now() + nextDays * 24 * 60 * 60 * 1000), completed: isLastStep })
+            .where(eq(schema.emailSequences.id, seq.id));
         }
       } catch (seqErr) {
         console.error(`[DRIP] Error processing sequence ${seq.id}:`, seqErr);
@@ -1846,6 +2281,11 @@ export const emailService = {
   queueProToEliteSequence,
   queueEliteRetentionSequence,
   queueInsightsNewsletterSequence,
+  queueFirstTradeSequence,
+  queueFirstPayoutSequence,
+  queueAtRiskSequence,
+  queueWinBackSequence,
+  scanForAtRiskUsers,
   cancelActiveTrack,
   processDripSequences,
   backfillEmailSequences,

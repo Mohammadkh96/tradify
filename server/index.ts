@@ -160,6 +160,19 @@ async function initializeApp() {
     }, DRIP_INTERVAL_MS);
   }, 60 * 1000);
 
+  // #12 at_risk detector — scans for inactive users (no journal entries
+  // in 14d) every 6 hours and queues the at_risk track. ELITE users are
+  // skipped (they get touchpoints via elite_retention).
+  const AT_RISK_SCAN_INTERVAL_MS = 6 * 60 * 60 * 1000;
+  setTimeout(async () => {
+    log("Running initial at_risk scan...", "drip");
+    await emailService.scanForAtRiskUsers();
+    setInterval(async () => {
+      log("Running at_risk scan...", "drip");
+      await emailService.scanForAtRiskUsers();
+    }, AT_RISK_SCAN_INTERVAL_MS);
+  }, 120 * 1000);
+
   // Start daily database backup scheduler (runs at 03:30 UTC).
   // Idempotent: subsequent calls become no-ops, and concurrent runs are
   // guarded inside backup-service.runBackup().

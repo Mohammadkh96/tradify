@@ -1247,7 +1247,14 @@ ${blogPosts.map(p => `  <url>
         subscriptionStatus: 'cancelled',
         // Keep subscriptionTier as PRO - user retains access until billing period ends
       });
-      
+
+      // #12 win_back lifecycle: kill any active retention/upsell drips
+      // (they're misaligned now) and queue the win-back sequence. The
+      // first email lands 7 days after cancellation.
+      emailService.cancelActiveTrack(userId, 'pro_to_elite').catch(() => {});
+      emailService.cancelActiveTrack(userId, 'elite_retention').catch(() => {});
+      emailService.queueWinBackSequence(userId).catch(e => console.error('[DRIP] queueWinBack after cancel:', e));
+
       res.json({ success: true, message: "Subscription cancelled successfully" });
     } catch (error: any) {
       console.error("Cancel subscription error:", error);
@@ -1292,6 +1299,9 @@ ${blogPosts.map(p => `  <url>
         updateStreak(uid, "trading").catch(() => {});
         checkAchievements(uid).catch(() => {});
       } catch {}
+      // #12 first_trade lifecycle: queue once per user; queueFirstTradeSequence
+      // is idempotent (early-return if a row already exists for this track).
+      emailService.queueFirstTradeSequence(req.session.userId!).catch(e => console.error('[DRIP] queueFirstTrade after create:', e));
 
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -6647,6 +6657,19 @@ Guidelines:
         .where(eq(schema.propFirmChallenges.id, challengeId))
         .returning();
       res.json(updated);
+
+      // #12 first_payout lifecycle: trigger when a challenge transitions to
+      // a funded/passed/payout-eligible state. The queue function is
+      // idempotent (checks for any existing first_payout row) so users with
+      // multiple challenges only get the milestone email once ever.
+      try {
+        const newStatus = (data.status || '').toString().toLowerCase();
+        const oldStatus = (existing.status || '').toString().toLowerCase();
+        const PAYOUT_STATES = new Set(['funded', 'passed', 'payout', 'paid_out', 'withdrawn']);
+        if (newStatus && newStatus !== oldStatus && PAYOUT_STATES.has(newStatus)) {
+          emailService.queueFirstPayoutSequence(req.session.userId!).catch(e => console.error('[DRIP] queueFirstPayout after challenge update:', e));
+        }
+      } catch {}
     } catch (error) {
       console.error("Error updating challenge:", error);
       res.status(500).json({ message: "Failed to update challenge" });
