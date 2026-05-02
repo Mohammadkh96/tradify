@@ -327,7 +327,7 @@ export async function registerRoutes(
     const svg = renderOgSvg({
       eyebrow: "PROP FIRM TRACKERS",
       title: "Every Prop Firm",
-      subtitle: "Live rule monitoring for FTMO, MFF, FundedNext, Topstep & more.",
+      subtitle: "Live rule monitoring for FTMO, The5ers, FundedNext, Topstep, Funding Pips, Alpha Capital & more.",
     });
     res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");

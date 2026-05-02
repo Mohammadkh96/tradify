@@ -28,7 +28,7 @@ const tools = [
     href: "/prop-firms",
     icon: Trophy,
     title: "Prop Firm Trackers",
-    body: "Live challenge trackers for FTMO, MyFundedFX, FundedNext, Topstep, Apex and more. Every rule, every account size.",
+    body: "Live challenge trackers for FTMO, The5ers, FundedNext, Topstep, Funding Pips, Alpha Capital, E8, Lux and more. Every rule, every account size.",
     cta: "Pick your firm",
     testid: "card-tool-prop-firms",
     accent: "amber",

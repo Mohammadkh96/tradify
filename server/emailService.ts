@@ -637,7 +637,7 @@ NOT a journal. NOT a trade log. An enforcement layer.
 
 FREE plan: MT5 auto-sync via connector EA (read-only, installs in 3 min), trade history (30-day), basic analytics, psychology tracking, CSV import, risk calculators, 3 education lessons, basic rule validation.
 
-PRO plan ($29/month): Everything in Free + unlimited trade history, advanced analytics (win rate by session/day/instrument/setup), unlimited rule engine, multi-account MT5 tracking, full 19-lesson education hub, monthly AI self-review report, Prop Firm Challenge Tracker (FTMO / MyFundedFX / The Funded Trader / custom), AI instrument analysis, priority support.
+PRO plan ($29/month): Everything in Free + unlimited trade history, advanced analytics (win rate by session/day/instrument/setup), unlimited rule engine, multi-account MT5 tracking, full 19-lesson education hub, monthly AI self-review report, Prop Firm Challenge Tracker (FTMO / The5ers / FundedNext / Funding Pips / Alpha Capital / Topstep / E8 / Lux / custom), AI instrument analysis, priority support.
 
 ELITE plan ($59/month): Everything in Pro + behavioral risk flags, session analytics deep-dive, AI challenge risk warnings, strategy deviation analysis, monthly AI review reports with coaching recommendations.
 
@@ -1836,7 +1836,7 @@ async function processDripSequences(): Promise<void> {
             'Advanced analytics: your win rate by session, day, and setup',
             'Unlimited rule engine — building a complete trading plan',
             'Multi-account MT5 tracking — managing multiple challenges',
-            'Prop Firm Challenge Tracker with FTMO and MyFundedFX',
+            'Prop Firm Challenge Tracker with FTMO, The5ers, FundedNext, Funding Pips, Alpha Capital, Topstep, E8, Lux + custom presets',
             'AI instrument analysis and what it tells you',
             'Full 19-lesson education hub — structured trading knowledge',
             'Why Elite is the next step: behavioral risk and AI coaching',

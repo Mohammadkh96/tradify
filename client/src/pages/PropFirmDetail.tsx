@@ -127,6 +127,21 @@ export default function PropFirmDetail() {
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mb-8">{firm.tagline} TradifyApp tracks every {firm.name} rule live so you always know exactly where you stand.</p>
 
+          {firm.defunct && (
+            <div
+              className="mb-8 p-4 rounded-xl border border-rose-500/30 bg-rose-500/5"
+              data-testid={`banner-defunct-${firm.slug}`}
+            >
+              <div className="flex items-start gap-3">
+                <AlertTriangle size={18} className="text-rose-500 mt-0.5 shrink-0" />
+                <div>
+                  <div className="text-xs font-black uppercase tracking-widest text-rose-500 mb-1">No longer operating</div>
+                  <p className="text-sm text-muted-foreground">{firm.defunctNote}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <Link to="/signup?utm_source=propfirm&utm_medium=organic&utm_campaign=tracker_page&utm_content=primary" data-testid="link-firm-signup">
               <Button className="w-full sm:w-auto h-14 px-10 bg-amber-500 text-slate-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-amber-400 shadow-xl shadow-amber-500/20" data-testid="button-firm-signup">

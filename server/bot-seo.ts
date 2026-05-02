@@ -81,7 +81,7 @@ const STATIC_PAGES: Record<string, PageMeta> = {
   },
   "/prop-firm-tracker": {
     title: "Prop Firm Challenge Tracker - Track Drawdowns & Profit Targets in Real Time | TradifyApp",
-    description: "Never fail a prop firm challenge again. TradifyApp tracks your drawdown limits, profit targets, consistency scores, and days remaining in real time. Supports FTMO, MFF, TFT & custom configs.",
+    description: "Never fail a prop firm challenge again. TradifyApp tracks your drawdown limits, profit targets, consistency scores, and days remaining in real time. Supports FTMO, The5ers, FundedNext, Topstep, Funding Pips, Alpha Capital, E8, Lux & custom configs.",
     canonical: `${BASE_URL}/prop-firm-tracker`,
   },
   "/mt5-trading-analytics": {

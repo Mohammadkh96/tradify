@@ -11,7 +11,7 @@ export default function PropFirmsIndex() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-emerald-500/30">
       <SEO
-        title="Prop Firm Trackers — Live Rule Monitoring for FTMO, MFF, FundedNext & More | TradifyApp"
+        title="Prop Firm Trackers — Live Rule Monitoring for FTMO, The5ers, FundedNext, Topstep, Funding Pips, Alpha Capital & More | TradifyApp"
         description="Live challenge trackers for every major prop firm. Real-time drawdown, consistency, and profit-target monitoring. Pick your firm and start free."
         canonical="https://tradifyapp.com/prop-firms"
         ogImage="https://tradifyapp.com/api/og/prop-firms.svg"
