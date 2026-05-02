@@ -8329,6 +8329,57 @@ Guidelines:
     }
   });
 
+  // SSE stream of new notifications for the authenticated user.
+  app.get("/api/notifications/stream", requireAuth, async (req, res) => {
+    const userId = req.session.userId!;
+    const { notificationBus } = await import("./notificationBus");
+    type NotificationEvent = import("./notificationBus").NotificationEvent;
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    const send = (event: string, data: unknown) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    send("hello", { ok: true, ts: Date.now() });
+
+    const onNotification = ({ userId: targetId, notification: n }: NotificationEvent) => {
+      if (targetId !== userId) return;
+      if (n.channelInApp === false) return;
+      send("notification", {
+        id: n.id,
+        type: n.type,
+        severity: n.severity,
+        title: n.title,
+        body: n.body,
+        payload: n.payload || {},
+        linkUrl: n.linkUrl,
+        channelInApp: n.channelInApp,
+        channelEmail: n.channelEmail,
+        emailSent: n.emailSent,
+        readAt: n.readAt,
+        createdAt: n.createdAt,
+      });
+    };
+    notificationBus.on("notification", onNotification);
+
+    // Heartbeat defeats proxy idle timeouts.
+    const heartbeat = setInterval(() => {
+      res.write(`: ping ${Date.now()}\n\n`);
+    }, 25_000);
+
+    req.on("close", () => {
+      clearInterval(heartbeat);
+      notificationBus.off("notification", onNotification);
+      res.end();
+    });
+  });
+
   app.post("/api/notifications/:id/read", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;

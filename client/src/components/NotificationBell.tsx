@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell, AlertTriangle, AlertCircle, TrendingDown, Activity, Compass, Check, CheckCheck } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -55,11 +55,66 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
 
+  // SSE drives updates; polling is a slow fallback only when disconnected.
+  const [streamConnected, setStreamConnected] = useState(false);
+
   const { data } = useQuery<NotificationsResponse>({
     queryKey: ["/api/notifications"],
-    refetchInterval: 30_000,
+    refetchInterval: streamConnected ? false : 60_000,
     refetchOnWindowFocus: true,
   });
+
+  const reconnectAttemptsRef = useRef(0);
+  useEffect(() => {
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const connect = () => {
+      if (cancelled) return;
+      try {
+        es = new EventSource("/api/notifications/stream", { withCredentials: true });
+      } catch {
+        scheduleReconnect();
+        return;
+      }
+
+      es.addEventListener("hello", () => {
+        reconnectAttemptsRef.current = 0;
+        setStreamConnected(true);
+        // Catch up on anything we missed while disconnected.
+        queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      });
+
+      es.addEventListener("notification", () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      });
+
+      es.onerror = () => {
+        setStreamConnected(false);
+        if (es) {
+          es.close();
+          es = null;
+        }
+        scheduleReconnect();
+      };
+    };
+
+    const scheduleReconnect = () => {
+      if (cancelled) return;
+      const attempt = Math.min(reconnectAttemptsRef.current++, 6);
+      const delay = Math.min(1000 * 2 ** attempt, 30_000);
+      reconnectTimer = setTimeout(connect, delay);
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (es) es.close();
+    };
+  }, []);
 
   const markRead = useMutation({
     mutationFn: async (id: number) => {

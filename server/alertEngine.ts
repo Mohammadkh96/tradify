@@ -2,6 +2,7 @@ import { db, pool } from "./db";
 import * as schema from "@shared/schema";
 import { eq, and, desc, gte, sql } from "drizzle-orm";
 import { sendRiskAlertEmail } from "./emailService";
+import { notificationBus } from "./notificationBus";
 
 // ==================== PURE HELPERS (testable, no DB) ====================
 
@@ -292,6 +293,10 @@ async function emitAlert(userId: string, ev: AlertEvent): Promise<void> {
   // protecting notice. The transactional flag is honored downstream.
   const notif = await persistAlert(userId, ev, ev.inAppEligible, ev.emailEligible);
   if (!notif) return;
+
+  if (ev.inAppEligible) {
+    notificationBus.publish({ userId, notification: notif });
+  }
 
   if (ev.emailEligible) {
     sendRiskAlertEmail(userId, {
