@@ -9,6 +9,13 @@ import de from "@/locales/de/common.json";
 import zh from "@/locales/zh/common.json";
 import ar from "@/locales/ar/common.json";
 
+import enPropfirm from "@/locales/en/propfirm.json";
+import esPropfirm from "@/locales/es/propfirm.json";
+import frPropfirm from "@/locales/fr/propfirm.json";
+import dePropfirm from "@/locales/de/propfirm.json";
+import zhPropfirm from "@/locales/zh/propfirm.json";
+import arPropfirm from "@/locales/ar/propfirm.json";
+
 export const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English", native: "English", flag: "🇺🇸", dir: "ltr" },
   { code: "es", label: "Spanish", native: "Español", flag: "🇪🇸", dir: "ltr" },
@@ -37,12 +44,12 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { common: en },
-      es: { common: es },
-      fr: { common: fr },
-      de: { common: de },
-      zh: { common: zh },
-      ar: { common: ar },
+      en: { common: en, propfirm: enPropfirm },
+      es: { common: es, propfirm: esPropfirm },
+      fr: { common: fr, propfirm: frPropfirm },
+      de: { common: de, propfirm: dePropfirm },
+      zh: { common: zh, propfirm: zhPropfirm },
+      ar: { common: ar, propfirm: arPropfirm },
     },
     fallbackLng: "en",
     defaultNS: "common",
