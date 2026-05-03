@@ -107,13 +107,14 @@ export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Prom
   try {
     const { rows } = await pool.query<CandidateRow>(`
       SELECT ur.user_id,
-             ur.email,
+             ur.user_id AS email,
              COALESCE(ap.weekly_digest_enabled, true) AS weekly_digest_enabled,
              COALESCE(ap.weekly_digest_email, true) AS weekly_digest_email,
              ur.timezone
       FROM user_role ur
       LEFT JOIN alert_preferences ap ON ap.user_id = ur.user_id
-      WHERE ur.email IS NOT NULL
+      WHERE ur.user_id LIKE '%@%'
+        AND COALESCE(ur.email_unsubscribed, false) = false
         AND EXISTS (
           SELECT 1 FROM trade_journal tj
           WHERE tj.user_id = ur.user_id AND tj.created_at >= NOW() - INTERVAL '7 days'

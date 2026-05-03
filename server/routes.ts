@@ -26,6 +26,7 @@ const chartUpload = multer({
   },
 });
 import { runBackup, getBackupStatus, verifyLatestBackup, downloadBackupById } from "./backup-service";
+import { registerStripeWebhook, registerStripeRoutes } from "./stripeCheckout";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
@@ -487,6 +488,9 @@ ${blogPosts.map(p => `  <url>
   }));
 
   // Add body parser limits for MT5 payloads
+  // Stripe webhook MUST be registered BEFORE express.json — needs raw body
+  // for signature verification. Uses express.raw() at route level.
+  registerStripeWebhook(app);
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   
@@ -1182,6 +1186,9 @@ ${blogPosts.map(p => `  <url>
   });
 
   // PayPal Subscription endpoints
+  // Stripe subscription routes (parallel processor to PayPal)
+  registerStripeRoutes(app, requireAuth);
+
   app.post("/api/paypal/subscribe", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;

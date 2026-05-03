@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2, Crown, Star, Sparkles, GraduationCap } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
+import StripeSubscribeButton from "@/components/StripeSubscribeButton";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -35,6 +36,8 @@ export default function Checkout() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const subscriptionStatus = params.get('subscription');
+    const processor = params.get('processor');
+    const stripeSessionId = params.get('session_id');
     let tier = params.get('tier') as PlanTier;
     if (!tier) {
       tier = (sessionStorage.getItem('pending_paypal_tier') as PlanTier) || 'PRO';
@@ -43,8 +46,34 @@ export default function Checkout() {
     if (!subscriptionId) {
       subscriptionId = sessionStorage.getItem('pending_paypal_subscription_id');
     }
-    
+
     const activateSubscription = async () => {
+      // Stripe success path — webhook usually handles activation, but we
+      // verify the session here too so the user sees the upgrade immediately.
+      if (subscriptionStatus === 'success' && processor === 'stripe' && stripeSessionId && !isActivating) {
+        setIsActivating(true);
+        try {
+          const res = await apiRequest("POST", "/api/stripe/subscription/activate", { sessionId: stripeSessionId });
+          const result = await res.json();
+          const tierName = tier === 'COACH' ? 'Coach' : tier === 'ELITE' ? t('tierElite') : t('tierPro');
+          if (result.success) {
+            const purchaseValue = tier === 'COACH' ? 99.00 : tier === 'ELITE' ? 59.00 : 29.00;
+            trackFBEvent('Purchase', { value: purchaseValue, currency: 'USD' });
+            toast({ title: t('toastActivated'), description: t('toastActivatedDesc', { tier: tierName }) });
+          } else {
+            toast({ title: t('toastPending'), description: t('toastPendingDesc') });
+          }
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        } catch (err) {
+          console.error("Stripe activation error:", err);
+          toast({ title: t('toastProcessing'), description: t('toastProcessingDescAlt') });
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        } finally {
+          setIsActivating(false);
+        }
+        window.history.replaceState({}, '', '/checkout');
+        return;
+      }
       if (subscriptionStatus === 'success' && subscriptionId && !isActivating) {
         setIsActivating(true);
         sessionStorage.removeItem('pending_paypal_subscription_id');
@@ -304,6 +333,13 @@ export default function Checkout() {
                   </div>
 
                   <PayPalSubscriptionButton tier={selectedTier} period={billingPeriod} />
+
+                  <div className="relative my-1">
+                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/60" /></div>
+                    <div className="relative flex justify-center"><span className="px-2 bg-background text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('orPayWithCard') || 'or'}</span></div>
+                  </div>
+
+                  <StripeSubscribeButton tier={selectedTier} period={billingPeriod} />
 
                   {!isUpgradingToElite && (
                     <div className="flex gap-2 justify-center">
