@@ -2226,6 +2226,23 @@ export default function PropFirmTracker() {
     sampleMode.active && (!challenges || challenges.length === 0);
   const sampleChallenge = showSampleChallenge ? getSamplePropFirm() : null;
 
+  if (view === "create") {
+    return (
+      <div className="p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="font-black text-2xl tracking-tighter uppercase italic">{t("newChallengeHeading")}</h1>
+            <p className="text-muted-foreground text-sm">{t("selectPropFirmPresetDesc")}</p>
+          </div>
+          <Button data-testid="button-back-to-list-create" variant="ghost" onClick={() => setView("list")}>{t("backToList")}</Button>
+        </div>
+        <Card>
+          <CardContent className="p-6">Create challenge form is loading…</CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {sampleMode.active && (
