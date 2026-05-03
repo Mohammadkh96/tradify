@@ -2263,9 +2263,46 @@ async function sendCustomEmail(to: string, subject: string, html: string): Promi
   return sendEmail(to, subject, html);
 }
 
+async function sendCoachInviteEmail(studentEmail: string, coachName: string): Promise<boolean> {
+  const safeCoach = String(coachName || "Your coach").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c] || c));
+  const content = `
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">You've been invited as a student &#127891;</h1>
+        <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;"><strong style="color:#A78BFA;">${safeCoach}</strong> has invited you to be their coaching student on ${APP_NAME}.</p>
+        <p style="color: #D1D5DB; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">If you accept, your coach will be able to <strong>read your trade journal</strong> and leave <strong>per-trade written feedback</strong>. They cannot see your password, payment info, or your account settings. You can revoke access at any time.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+          <tr><td style="background-color: #8B5CF6; border-radius: 8px;"><a href="${APP_URL}/dashboard" style="display: inline-block; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px;">Review the invite</a></td></tr>
+        </table>
+        <p style="color: #9CA3AF; font-size: 12px; line-height: 1.6; margin: 16px 0 0 0;">You'll see Accept / Decline buttons on your dashboard.</p>`;
+  const html = wrapEmailBody(content, `Coach invite from ${safeCoach}`, `${safeCoach} invited you to be their coaching student`);
+  return sendEmail(studentEmail, `${safeCoach} invited you as a student on ${APP_NAME}`, html);
+}
+
+async function sendCoachFeedbackEmail(studentEmail: string, coachName: string, snippet: string, tradeId: number | null): Promise<boolean> {
+  const escape = (s: string) => String(s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c] || c));
+  const safeCoach = escape(coachName || "Your coach");
+  const safeSnippet = escape(snippet.slice(0, 280));
+  const tradeLine = tradeId ? `<p style="color:#9CA3AF;font-size:12px;margin:0 0 12px 0;">On trade #${tradeId}</p>` : "";
+  const content = `
+        <h1 style="color: #ffffff; font-size: 24px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">New feedback from your coach</h1>
+        <p style="color: #D1D5DB; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;"><strong style="color:#A78BFA;">${safeCoach}</strong> just left you new feedback.</p>
+        ${tradeLine}
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 16px 0 24px 0;">
+          <tr><td style="background-color:#131A2B;padding:16px;border-radius:8px;border-left:3px solid #8B5CF6;">
+            <p style="color:#E5E7EB;font-size:14px;line-height:1.6;margin:0;white-space:pre-wrap;">${safeSnippet}${snippet.length > 280 ? "…" : ""}</p>
+          </td></tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 8px 0;">
+          <tr><td style="background-color:#8B5CF6;border-radius:8px;"><a href="${APP_URL}/dashboard" style="display:inline-block;color:#ffffff;padding:12px 28px;text-decoration:none;font-weight:bold;font-size:14px;">View on dashboard</a></td></tr>
+        </table>`;
+  const html = wrapEmailBody(content, `New coach feedback`, `New feedback from ${safeCoach}`);
+  return sendEmail(studentEmail, `New feedback from ${safeCoach}`, html);
+}
+
 export const emailService = {
   sendTransactionalEmail,
   sendCustomEmail,
+  sendCoachInviteEmail,
+  sendCoachFeedbackEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendAdminCreatedUserEmail,

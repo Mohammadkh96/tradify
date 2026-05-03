@@ -9237,6 +9237,14 @@ Guidelines:
           [coachId, studentId]
         );
       }
+      // Fire-and-forget invite email
+      try {
+        const coachRow = await pool.query(`SELECT username, full_name, email FROM user_role WHERE user_id = $1 LIMIT 1`, [coachId]);
+        const coachName = coachRow.rows[0]?.username || coachRow.rows[0]?.full_name || coachRow.rows[0]?.email || "Your coach";
+        emailService.sendCoachInviteEmail(email, coachName).catch((e: any) => console.error("[Coach] invite email:", e?.message));
+      } catch (e: any) {
+        console.error("[Coach] invite email lookup:", e?.message);
+      }
       res.json({ ok: true, studentId });
     } catch (err) {
       console.error("[Coach] invite error:", err);
@@ -9271,7 +9279,8 @@ Guidelines:
       );
       if (!link.rows.length) return res.status(403).json({ message: "Not your active student" });
       const r = await pool.query(
-        `SELECT id, pair, direction, timeframe, entry_price, stop_loss, take_profit, outcome, profit_loss, notes, created_at
+        `SELECT id, pair, direction, timeframe, entry_price, stop_loss, take_profit, outcome,
+                net_pl AS profit_loss, notes, mood, is_rule_compliant, created_at
          FROM trade_journal WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100`,
         [studentId]
       );
@@ -9322,6 +9331,20 @@ Guidelines:
         `INSERT INTO coach_feedback (coach_id, student_id, trade_id, content) VALUES ($1, $2, $3, $4) RETURNING *`,
         [coachId, studentId, tradeId, content]
       );
+      // Fire-and-forget feedback email to student
+      try {
+        const [coachRow, studentRow] = await Promise.all([
+          pool.query(`SELECT username, full_name FROM user_role WHERE user_id = $1 LIMIT 1`, [coachId]),
+          pool.query(`SELECT email FROM user_role WHERE user_id = $1 LIMIT 1`, [studentId]),
+        ]);
+        const coachName = coachRow.rows[0]?.username || coachRow.rows[0]?.full_name || "Your coach";
+        const studentEmail = studentRow.rows[0]?.email;
+        if (studentEmail) {
+          emailService.sendCoachFeedbackEmail(studentEmail, coachName, content, tradeId).catch((e: any) => console.error("[Coach] feedback email:", e?.message));
+        }
+      } catch (e: any) {
+        console.error("[Coach] feedback email lookup:", e?.message);
+      }
       res.json(r.rows[0]);
     } catch (err) {
       console.error("[Coach] post feedback error:", err);
