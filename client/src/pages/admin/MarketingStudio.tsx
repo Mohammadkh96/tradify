@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Image as ImageIcon, Film, Loader2, Download, Wand2, Calendar, Target, TrendingUp } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Film, Loader2, Download, Wand2, Calendar, Target, TrendingUp, MessageSquare, Megaphone, Video, Copy } from "lucide-react";
 
 interface PlanCampaign {
   name: string;
@@ -63,15 +63,17 @@ export default function MarketingStudio() {
         </header>
 
         <Tabs defaultValue="plan" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-xl">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="plan" data-testid="tab-plan"><Target className="h-4 w-4 mr-2" />Plan</TabsTrigger>
             <TabsTrigger value="photos" data-testid="tab-photos"><ImageIcon className="h-4 w-4 mr-2" />Photos</TabsTrigger>
             <TabsTrigger value="videos" data-testid="tab-videos"><Film className="h-4 w-4 mr-2" />Videos</TabsTrigger>
+            <TabsTrigger value="copy" data-testid="tab-copy"><Megaphone className="h-4 w-4 mr-2" />Posts & Ads</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plan"><PlanTab /></TabsContent>
           <TabsContent value="photos"><PhotosTab /></TabsContent>
           <TabsContent value="videos"><VideosTab /></TabsContent>
+          <TabsContent value="copy"><CopyTab /></TabsContent>
         </Tabs>
       </div>
     </AdminLayout>
@@ -357,6 +359,229 @@ function PhotosTab() {
             </Card>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ============== POSTS & ADS TAB ==============
+function CopyTab() {
+  return (
+    <Tabs defaultValue="post" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="post" data-testid="subtab-post"><MessageSquare className="h-4 w-4 mr-2" />Social post</TabsTrigger>
+        <TabsTrigger value="reel" data-testid="subtab-reel"><Video className="h-4 w-4 mr-2" />Reel script</TabsTrigger>
+        <TabsTrigger value="ad" data-testid="subtab-ad"><Megaphone className="h-4 w-4 mr-2" />Ad copy (5-7 variations)</TabsTrigger>
+      </TabsList>
+      <TabsContent value="post"><SocialPostPanel /></TabsContent>
+      <TabsContent value="reel"><ReelScriptPanel /></TabsContent>
+      <TabsContent value="ad"><AdCopyPanel /></TabsContent>
+    </Tabs>
+  );
+}
+
+function CopyBtn({ text, testId }: { text: string; testId: string }) {
+  const { toast } = useToast();
+  return (
+    <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(text); toast({ title: "Copied" }); }} data-testid={testId}>
+      <Copy className="h-3 w-3 mr-1.5" />Copy
+    </Button>
+  );
+}
+
+function SocialPostPanel() {
+  const { toast } = useToast();
+  const [platform, setPlatform] = useState("instagram");
+  const [contentType, setContentType] = useState("educational tip");
+  const [topic, setTopic] = useState("");
+  const [result, setResult] = useState<any>(null);
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/marketing/generate/post", { platform, contentType, topic: topic || undefined });
+      return res.json();
+    },
+    onSuccess: (d) => { setResult(d); toast({ title: "Post generated" }); },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="grid lg:grid-cols-[420px_1fr] gap-6">
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-emerald-500" />Social post</CardTitle><CardDescription>Generate ready-to-post social copy.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5"><Label>Platform</Label>
+            <Select value={platform} onValueChange={setPlatform}>
+              <SelectTrigger data-testid="select-post-platform"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="instagram">Instagram</SelectItem>
+                <SelectItem value="facebook">Facebook</SelectItem>
+                <SelectItem value="twitter">X / Twitter</SelectItem>
+                <SelectItem value="linkedin">LinkedIn</SelectItem>
+                <SelectItem value="tiktok">TikTok</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5"><Label>Content type</Label>
+            <Select value={contentType} onValueChange={setContentType}>
+              <SelectTrigger data-testid="select-post-type"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="educational tip">Educational tip</SelectItem>
+                <SelectItem value="feature highlight">Feature highlight</SelectItem>
+                <SelectItem value="testimonial">Testimonial</SelectItem>
+                <SelectItem value="promotional">Promotional</SelectItem>
+                <SelectItem value="behind the scenes">Behind the scenes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5"><Label>Topic (optional)</Label>
+            <Textarea value={topic} onChange={(e) => setTopic(e.target.value)} rows={3} placeholder="Leave blank for AI to choose" data-testid="input-post-topic" />
+          </div>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold" data-testid="button-generate-post">
+            {mut.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating…</> : <><Sparkles className="h-4 w-4 mr-2" />Generate post</>}
+          </Button>
+        </CardContent>
+      </Card>
+      <div>
+        {!result && !mut.isPending && (<Card className="border-dashed"><CardContent className="py-16 text-center text-slate-500"><MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" /><p className="text-sm">Generated post will appear here.</p></CardContent></Card>)}
+        {mut.isPending && (<Card><CardContent className="py-12 text-center text-slate-400"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-emerald-500" /></CardContent></Card>)}
+        {result && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Generated post</CardTitle>
+                <CopyBtn text={`${result.caption || ""}\n\n${result.hashtags || ""}`} testId="button-copy-post" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {result.hook && (<div><div className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold mb-1">Hook</div><p className="text-slate-200" data-testid="text-post-hook">{result.hook}</p></div>)}
+              <div><div className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold mb-1">Caption</div><p className="text-slate-300 whitespace-pre-wrap" data-testid="text-post-caption">{result.caption}</p></div>
+              {result.cta && (<div><div className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold mb-1">CTA</div><p className="text-slate-300">{result.cta}</p></div>)}
+              {result.hashtags && (<div><div className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold mb-1">Hashtags</div><p className="text-emerald-400 text-xs break-words">{result.hashtags}</p></div>)}
+              {result.bestPostingTime && (<div className="text-xs text-slate-500"><strong>Best time:</strong> {result.bestPostingTime}</div>)}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReelScriptPanel() {
+  const { toast } = useToast();
+  const [goal, setGoal] = useState("Drive sign-ups for free trial");
+  const [topic, setTopic] = useState("");
+  const [result, setResult] = useState<any>(null);
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/marketing/generate/reel-script", { goal, topic: topic || undefined });
+      return res.json();
+    },
+    onSuccess: (d) => { setResult(d); toast({ title: "Reel script generated" }); },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="grid lg:grid-cols-[420px_1fr] gap-6">
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Video className="h-5 w-5 text-emerald-500" />Reel / Short script</CardTitle><CardDescription>Hook → Problem → Solution → CTA, with visual cues.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5"><Label>Goal</Label><Input value={goal} onChange={(e) => setGoal(e.target.value)} data-testid="input-reel-goal" /></div>
+          <div className="space-y-1.5"><Label>Topic (optional)</Label><Textarea value={topic} onChange={(e) => setTopic(e.target.value)} rows={3} data-testid="input-reel-topic" /></div>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold" data-testid="button-generate-reel">
+            {mut.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating…</> : <><Sparkles className="h-4 w-4 mr-2" />Generate reel script</>}
+          </Button>
+        </CardContent>
+      </Card>
+      <div>
+        {!result && !mut.isPending && (<Card className="border-dashed"><CardContent className="py-16 text-center text-slate-500"><Video className="h-12 w-12 mx-auto mb-3 opacity-30" /><p className="text-sm">Reel script will appear here.</p></CardContent></Card>)}
+        {mut.isPending && (<Card><CardContent className="py-12 text-center text-slate-400"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-emerald-500" /></CardContent></Card>)}
+        {result && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Reel script</CardTitle>
+                <CopyBtn text={`HOOK: ${result.hook}\n\nPROBLEM: ${result.problem}\n\nSOLUTION: ${result.solution}\n\nCTA: ${result.cta}\n\nVISUALS: ${result.visualDirections}`} testId="button-copy-reel" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {[
+                { k: "Hook", v: result.hook, tid: "text-reel-hook" },
+                { k: "Problem", v: result.problem, tid: "text-reel-problem" },
+                { k: "Solution", v: result.solution, tid: "text-reel-solution" },
+                { k: "CTA", v: result.cta, tid: "text-reel-cta" },
+                { k: "Visual directions", v: result.visualDirections, tid: "text-reel-visuals" },
+              ].map((row) => row.v ? (
+                <div key={row.k}>
+                  <div className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold mb-1">{row.k}</div>
+                  <p className="text-slate-300 whitespace-pre-wrap" data-testid={row.tid}>{row.v}</p>
+                </div>
+              ) : null)}
+              {Array.isArray(result.hookVariations) && result.hookVariations.length > 0 && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold mb-1">Hook variations</div>
+                  <ul className="list-disc list-inside text-slate-300 space-y-1">
+                    {result.hookVariations.map((h: string, i: number) => <li key={i}>{h}</li>)}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdCopyPanel() {
+  const { toast } = useToast();
+  const [campaignGoal, setCampaignGoal] = useState("Drive free signups for trading journal");
+  const [audience, setAudience] = useState("Retail forex/CFD traders, prop firm challenge takers, ages 22-45");
+  const [result, setResult] = useState<any>(null);
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/marketing/generate/ad-copy", { campaignGoal, audience });
+      return res.json();
+    },
+    onSuccess: (d) => { setResult(d); toast({ title: "Ad copy generated", description: `${(d.variations || []).length} variations` }); },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="grid lg:grid-cols-[420px_1fr] gap-6">
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Megaphone className="h-5 w-5 text-emerald-500" />Meta ad copy</CardTitle><CardDescription>5-7 variations using AIDA, PAS, Hook-Story-Offer, etc.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5"><Label>Campaign goal</Label><Textarea value={campaignGoal} onChange={(e) => setCampaignGoal(e.target.value)} rows={3} data-testid="input-ad-goal" /></div>
+          <div className="space-y-1.5"><Label>Audience</Label><Textarea value={audience} onChange={(e) => setAudience(e.target.value)} rows={3} data-testid="input-ad-audience" /></div>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold" data-testid="button-generate-ad">
+            {mut.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating…</> : <><Sparkles className="h-4 w-4 mr-2" />Generate ad variations</>}
+          </Button>
+        </CardContent>
+      </Card>
+      <div className="space-y-3">
+        {!result && !mut.isPending && (<Card className="border-dashed"><CardContent className="py-16 text-center text-slate-500"><Megaphone className="h-12 w-12 mx-auto mb-3 opacity-30" /><p className="text-sm">Ad variations will appear here.</p></CardContent></Card>)}
+        {mut.isPending && (<Card><CardContent className="py-12 text-center text-slate-400"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-emerald-500" /></CardContent></Card>)}
+        {result?.variations?.map((v: any, i: number) => (
+          <Card key={i} data-testid={`card-ad-variation-${i}`}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">{v.framework || `Variation ${i + 1}`}</Badge>
+                <CopyBtn text={`${v.headline}\n${v.primaryText}\n${v.description}\nCTA: ${v.cta}`} testId={`button-copy-ad-${i}`} />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div><div className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold">Headline</div><p className="font-bold text-white">{v.headline}</p></div>
+              <div><div className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold">Primary text</div><p className="text-slate-300 whitespace-pre-wrap">{v.primaryText}</p></div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {v.description && <div><div className="text-slate-500 font-bold">Description</div><p className="text-slate-300">{v.description}</p></div>}
+                {v.cta && <div><div className="text-slate-500 font-bold">CTA</div><p className="text-emerald-400">{v.cta}</p></div>}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
