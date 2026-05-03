@@ -832,7 +832,7 @@ export default function PropFirmTracker() {
       formWarnings.push({ level: "warning", message: t("warnEndDateShort", { days: daysBetween, max: formData.maxTradingDays }) });
     }
   }
-  const hasBlockingError = formWarnings.some((w) => w.level === "error");
+  const blockingWarning = formWarnings.find((w) => w.level === "error");
 
   function handleCreateSubmit() {
     const missing: string[] = [];
@@ -847,7 +847,7 @@ export default function PropFirmTracker() {
       toast({ title: t("missingFields"), description: t("missingFieldsDesc", { fields: missing.join(", ") }), variant: "destructive" });
       return;
     }
-    if (hasBlockingError) {
+    if (blockingWarning) {
       toast({ title: t("cannotCreate"), description: t("cannotCreateDesc"), variant: "destructive" });
       return;
     }
@@ -1332,7 +1332,7 @@ export default function PropFirmTracker() {
             <Button
               data-testid="button-create-challenge"
               onClick={handleCreateSubmit}
-              disabled={createMutation.isPending || hasBlockingError}
+              disabled={createMutation.isPending}
             >
               {createMutation.isPending && <Loader2 className="animate-spin" />}
               {t("createChallenge")}
