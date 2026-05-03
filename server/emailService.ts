@@ -2259,8 +2259,13 @@ export async function sendDailyAlertDigestEmail(
   }
 }
 
+async function sendCustomEmail(to: string, subject: string, html: string): Promise<boolean> {
+  return sendEmail(to, subject, html);
+}
+
 export const emailService = {
   sendTransactionalEmail,
+  sendCustomEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendAdminCreatedUserEmail,

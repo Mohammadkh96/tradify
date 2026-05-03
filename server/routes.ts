@@ -9,6 +9,7 @@ import { db, pool } from "./db";
 import * as schema from "@shared/schema";
 import { eq, or, desc, and, sql, ne, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { emailService } from "./emailService";
@@ -4329,6 +4330,17 @@ End with: "Review your charts for current market structure."`;
       const tier = u.subscriptionTier || "FREE";
       const isPaid = tier === "PRO" || tier === "ELITE" || tier === "COACH";
       const isCancelled = u.subscriptionStatus === "cancelled" || u.subscriptionStatus === "canceled";
+      const tradeCount = tradeCounts.get(u.userId) || 0;
+      const mt5Connected = mt5UserIds.has(u.userId);
+
+      // Health score (0-100): verified +15, mt5 +20, paid +30, recent login +20, has trades +15
+      let healthScore = 0;
+      if (u.emailVerified) healthScore += 15;
+      if (mt5Connected) healthScore += 20;
+      if (isPaid && !isCancelled) healthScore += 30;
+      if (inactiveDays <= 7) healthScore += 20;
+      else if (inactiveDays <= 30) healthScore += 10;
+      if (tradeCount > 0) healthScore += 15;
 
       // Lifecycle stage
       let lifecycleStage: string;
@@ -4346,12 +4358,13 @@ End with: "Review your charts for current market structure."`;
 
       return {
         ...u,
-        mt5Connected: mt5UserIds.has(u.userId),
-        tradeCount: tradeCounts.get(u.userId) || 0,
+        mt5Connected,
+        tradeCount,
         lifecycleStage,
         ltvEstimate,
         inactiveDays,
         ageDays,
+        healthScore,
       };
     });
     res.json(enriched);
@@ -4429,6 +4442,177 @@ End with: "Review your charts for current market structure."`;
     } catch (error) {
       console.error("Update tags error:", error);
       res.status(500).json({ message: "Failed to update tags" });
+    }
+  });
+
+  // ── Admin CRM: Tag autocomplete suggestions ───────────────────────────────
+  app.get("/api/admin/tags/suggestions", requireAdmin, async (_req, res) => {
+    try {
+      const result = await pool.query(
+        `SELECT tag, COUNT(*)::int AS count
+         FROM (SELECT UNNEST(admin_tags) AS tag FROM user_role WHERE admin_tags IS NOT NULL) t
+         WHERE tag IS NOT NULL AND tag <> ''
+         GROUP BY tag
+         ORDER BY count DESC, tag ASC
+         LIMIT 50`
+      );
+      res.json(result.rows.map((r: any) => ({ tag: r.tag, count: r.count })));
+    } catch (error) {
+      console.error("Tag suggestions error:", error);
+      res.status(500).json({ message: "Failed to fetch tag suggestions" });
+    }
+  });
+
+  // ── Admin CRM: Platform-wide activity feed ────────────────────────────────
+  app.get("/api/admin/activity", requireAdmin, async (req, res) => {
+    try {
+      const days = Math.min(30, Math.max(1, parseInt(String(req.query.days || "7")) || 7));
+      const interval = `${days} days`;
+      const events: Array<{ type: string; userId: string; name?: string; at: string; meta?: any }> = [];
+
+      const [signups, upgrades, cancels, foundings, recentEmails] = await Promise.all([
+        pool.query(`SELECT user_id, full_name, created_at FROM user_role WHERE created_at > NOW() - INTERVAL '${interval}' ORDER BY created_at DESC LIMIT 100`),
+        pool.query(`SELECT user_id, full_name, subscription_tier, subscription_provider, updated_at FROM user_role WHERE subscription_tier IN ('PRO','ELITE','COACH') AND (subscription_status = 'ACTIVE' OR subscription_status = 'active' OR subscription_status = 'founding_member_access') AND updated_at > NOW() - INTERVAL '${interval}' ORDER BY updated_at DESC LIMIT 100`),
+        pool.query(`SELECT user_id, full_name, subscription_tier, updated_at FROM user_role WHERE (subscription_status = 'cancelled' OR subscription_status = 'canceled') AND updated_at > NOW() - INTERVAL '${interval}' ORDER BY updated_at DESC LIMIT 100`),
+        pool.query(`SELECT user_id, full_name, created_at FROM user_role WHERE founding_member = true AND created_at > NOW() - INTERVAL '${interval}' ORDER BY created_at DESC LIMIT 50`),
+        pool.query(`SELECT recipient AS user_id, subject, template_name, sent_at FROM sent_emails WHERE sent_at > NOW() - INTERVAL '${interval}' AND success = true ORDER BY sent_at DESC LIMIT 100`),
+      ]);
+
+      for (const r of signups.rows as any[]) events.push({ type: 'signup', userId: r.user_id, name: r.full_name, at: r.created_at });
+      for (const r of upgrades.rows as any[]) events.push({ type: 'upgrade', userId: r.user_id, name: r.full_name, at: r.updated_at, meta: { tier: r.subscription_tier, provider: r.subscription_provider } });
+      for (const r of cancels.rows as any[]) events.push({ type: 'cancel', userId: r.user_id, name: r.full_name, at: r.updated_at, meta: { tier: r.subscription_tier } });
+      for (const r of foundings.rows as any[]) events.push({ type: 'founding', userId: r.user_id, name: r.full_name, at: r.created_at });
+      for (const r of recentEmails.rows as any[]) events.push({ type: 'email', userId: r.user_id, at: r.sent_at, meta: { subject: r.subject, template: r.template_name } });
+
+      events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+      res.json({ days, events: events.slice(0, 200) });
+    } catch (error) {
+      console.error("Activity feed error:", error);
+      res.status(500).json({ message: "Failed to fetch activity feed" });
+    }
+  });
+
+  // ── Admin CRM: Quick actions on a single user ─────────────────────────────
+  // Generalized grant-tier (replaces grant-pro for COACH/ELITE/PRO)
+  app.post("/api/admin/users/:userId/grant-tier", requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = decodeURIComponent(req.params.userId);
+      const { tier } = req.body as { tier?: string };
+      const upper = String(tier || "").toUpperCase();
+      if (!["PRO", "ELITE", "COACH", "FREE"].includes(upper)) {
+        return res.status(400).json({ message: "tier must be one of FREE, PRO, ELITE, COACH" });
+      }
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, targetUserId)).limit(1);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const isPaidGrant = upper !== "FREE";
+      await db.update(schema.userRole).set({
+        subscriptionTier: upper,
+        subscriptionStatus: isPaidGrant ? "founding_member_access" : "free",
+        updatedAt: new Date(),
+      }).where(eq(schema.userRole.userId, targetUserId));
+      await db.insert(schema.adminAuditLog).values({
+        adminId: req.session.userId!,
+        actionType: `ADMIN_GRANT_${upper}`,
+        targetUserId,
+        details: { previousTier: user.subscriptionTier, newTier: upper },
+      });
+      res.json({ success: true, tier: upper });
+    } catch (error) {
+      console.error("Grant tier error:", error);
+      res.status(500).json({ message: "Failed to grant tier" });
+    }
+  });
+
+  // Cancel subscription (admin override) — flips status to cancelled, keeps access until renewal
+  app.post("/api/admin/users/:userId/cancel-subscription", requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = decodeURIComponent(req.params.userId);
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, targetUserId)).limit(1);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      // Try PayPal cancel if subscription exists
+      if (user.paypalSubscriptionId) {
+        try {
+          const { paypalService } = await import("./paypalService");
+          await paypalService.cancelSubscription(user.paypalSubscriptionId, "Cancelled by admin");
+        } catch (e) {
+          console.warn("[admin-cancel] PayPal cancel failed (continuing with local cancel):", e);
+        }
+      }
+      await db.update(schema.userRole).set({
+        subscriptionStatus: "cancelled",
+        updatedAt: new Date(),
+      }).where(eq(schema.userRole.userId, targetUserId));
+      await db.insert(schema.adminAuditLog).values({
+        adminId: req.session.userId!,
+        actionType: "ADMIN_CANCEL_SUBSCRIPTION",
+        targetUserId,
+        details: { paypalSubscriptionId: user.paypalSubscriptionId, previousStatus: user.subscriptionStatus },
+      });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Admin cancel subscription error:", error);
+      res.status(500).json({ message: "Failed to cancel subscription" });
+    }
+  });
+
+  // Send a one-off custom email from admin
+  app.post("/api/admin/users/:userId/send-email", requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = decodeURIComponent(req.params.userId);
+      const { subject, body } = req.body as { subject?: string; body?: string };
+      if (typeof subject !== "string" || typeof body !== "string" || !subject.trim() || !body.trim()) {
+        return res.status(400).json({ message: "subject and body are required" });
+      }
+      if (subject.length > 200) return res.status(400).json({ message: "Subject too long" });
+      if (body.length > 20000) return res.status(400).json({ message: "Body too long" });
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, targetUserId)).limit(1);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const escapeHtml = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+      const html = `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#111;">
+        <h2 style="margin-top:0;">${escapeHtml(subject)}</h2>
+        <div style="white-space:pre-wrap;line-height:1.6;font-size:14px;">${escapeHtml(body)}</div>
+        <hr style="margin:24px 0;border:none;border-top:1px solid #eee;" />
+        <p style="font-size:11px;color:#888;">Sent by Tradify support · You can reply to this email directly.</p>
+      </div>`;
+      const ok = await emailService.sendCustomEmail(targetUserId, subject, html);
+      await db.insert(schema.adminAuditLog).values({
+        adminId: req.session.userId!,
+        actionType: "ADMIN_SEND_EMAIL",
+        targetUserId,
+        details: { subject, success: ok },
+      });
+      res.json({ success: ok });
+    } catch (error) {
+      console.error("Admin send email error:", error);
+      res.status(500).json({ message: "Failed to send email" });
+    }
+  });
+
+  // Trigger password reset email for a user
+  app.post("/api/admin/users/:userId/send-password-reset", requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = decodeURIComponent(req.params.userId);
+      const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, targetUserId)).limit(1);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      await db.update(schema.userRole).set({
+        passwordResetToken: token,
+        passwordResetExpiry: expiry,
+      }).where(eq(schema.userRole.userId, targetUserId));
+      const baseUrl = process.env.APP_URL || `https://tradifyapp.com`;
+      const resetLink = `${baseUrl}/reset-password?token=${token}`;
+      await emailService.sendPasswordResetEmail(targetUserId, user.fullName || targetUserId, resetLink);
+      await db.insert(schema.adminAuditLog).values({
+        adminId: req.session.userId!,
+        actionType: "ADMIN_TRIGGER_PASSWORD_RESET",
+        targetUserId,
+        details: {},
+      });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Admin password reset error:", error);
+      res.status(500).json({ message: "Failed to trigger password reset" });
     }
   });
 
