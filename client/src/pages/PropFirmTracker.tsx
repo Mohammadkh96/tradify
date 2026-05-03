@@ -883,6 +883,11 @@ export default function PropFirmTracker() {
     setView("detail");
   }
 
+  const sampleMode = useSampleMode();
+  const showSampleChallenge =
+    sampleMode.active && (!challenges || challenges.length === 0);
+  const sampleChallenge = showSampleChallenge ? getSamplePropFirm() : null;
+
   if (view === "create") {
     return (
       <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -2220,11 +2225,6 @@ export default function PropFirmTracker() {
       </>
     );
   }
-
-  const sampleMode = useSampleMode();
-  const showSampleChallenge =
-    sampleMode.active && (!challenges || challenges.length === 0);
-  const sampleChallenge = showSampleChallenge ? getSamplePropFirm() : null;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
