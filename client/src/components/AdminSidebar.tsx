@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, CreditCard, Shield, LogOut, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, Library, Palette, DollarSign, ChevronDown, Calendar, TrendingUp, Database, Award, Activity } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Shield, LogOut, Crown, Sparkles, MessageSquare, FileText, Megaphone, PenTool, Target, Library, Palette, DollarSign, ChevronDown, Calendar, TrendingUp, Database, Award, Activity, Wand2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
@@ -33,6 +33,7 @@ const marketingSubGroups: MarketingSubGroup[] = [
     label: "",
     items: [
       { href: "/admin/marketing", label: "Dashboard", icon: Megaphone },
+      { href: "/admin/marketing/studio", label: "Studio (All-in-One)", icon: Wand2 },
       { href: "/admin/marketing/content-studio", label: "Content Studio", icon: PenTool },
       { href: "/admin/marketing/content-library", label: "Library & Calendar", icon: Calendar },
       { href: "/admin/marketing/meta-ads", label: "Meta Ads", icon: Target },

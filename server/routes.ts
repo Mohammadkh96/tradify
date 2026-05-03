@@ -9038,6 +9038,83 @@ Guidelines:
 
   app.use("/api/admin/marketing/funnel/file", express.static(pathNode.join(process.cwd(), "public", "generated")));
 
+  // ========== MARKETING STUDIO (All-in-One) ==========
+  app.post("/api/admin/marketing/studio/plan", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        goal: z.string().min(3),
+        audience: z.string().min(3),
+        timeframe: z.string().min(1),
+        budget: z.string().min(1),
+        channels: z.string().min(1),
+      });
+      const input = schema.parse(req.body);
+      const { generateMarketingPlan } = await import("./marketing-studio");
+      const plan = await generateMarketingPlan(input);
+      res.json(plan);
+    } catch (error: any) {
+      if (error?.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      console.error("Studio plan error:", error);
+      res.status(500).json({ message: error?.message || "Failed to generate plan" });
+    }
+  });
+
+  app.post("/api/admin/marketing/studio/photo", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        prompt: z.string().min(5),
+        aspectRatio: z.enum(["1:1", "4:5", "9:16", "16:9"]).default("1:1"),
+        photoStyle: z.string().optional(),
+      });
+      const { prompt, aspectRatio, photoStyle } = schema.parse(req.body);
+      const orientationMap: Record<string, string> = { "1:1": "square", "4:5": "portrait", "9:16": "portrait", "16:9": "landscape" };
+      const photoOrientation = orientationMap[aspectRatio] || "square";
+      const { generateSingleAsset } = await import("./funnel-generator");
+      const asset = await generateSingleAsset({
+        type: "stock_photo",
+        stage: "awareness",
+        topic: prompt,
+        platform: "instagram",
+        imageStyle: photoStyle || "premium photography",
+        aspectRatio,
+        photoOrientation,
+        photoStyle,
+      });
+      res.json(asset);
+    } catch (error: any) {
+      if (error?.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      console.error("Studio photo error:", error);
+      res.status(500).json({ message: error?.message || "Failed to generate photo" });
+    }
+  });
+
+  app.post("/api/admin/marketing/studio/video", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        topic: z.string().min(5),
+        aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
+        videoDuration: z.number().int().min(4).max(20).default(8),
+        platform: z.string().default("instagram"),
+      });
+      const { topic, aspectRatio, videoDuration, platform } = schema.parse(req.body);
+      const { generateSingleAsset } = await import("./funnel-generator");
+      const asset = await generateSingleAsset({
+        type: "video_reel",
+        stage: "awareness",
+        topic,
+        platform,
+        imageStyle: "cinematic premium",
+        aspectRatio,
+        videoDuration,
+      });
+      res.json(asset);
+    } catch (error: any) {
+      if (error?.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      console.error("Studio video error:", error);
+      res.status(500).json({ message: error?.message || "Failed to generate video" });
+    }
+  });
+
   app.get("/api/admin/marketing/funnel/stages", requireAdmin, (_req: Request, res: Response) => {
     res.json(FUNNEL_STAGES);
   });

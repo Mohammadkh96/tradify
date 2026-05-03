@@ -32,6 +32,12 @@ import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import MarketingDashboard from "@/pages/admin/MarketingDashboard";
 import MarketingBrandSettings from "@/pages/admin/MarketingBrandSettings";
+import MarketingStudio from "@/pages/admin/MarketingStudio";
+import ContentStudio from "@/pages/admin/ContentStudio";
+import MetaAdsStrategist from "@/pages/admin/MetaAdsStrategist";
+import ContentLibrary from "@/pages/admin/ContentLibrary";
+import MarketingCampaigns from "@/pages/admin/MarketingCampaigns";
+import FunnelGenerator from "@/pages/admin/FunnelGenerator";
 import GrowthAnalytics from "@/pages/admin/GrowthAnalytics";
 import DatabaseBackups from "@/pages/admin/DatabaseBackups";
 import { PublicNavbar } from "@/components/PublicNavbar";
@@ -549,12 +555,13 @@ function AppRoutes() {
       <Route path="/admin/costs" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/blog" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/marketing" element={<AdminRoute><MarketingDashboard /></AdminRoute>} />
-      <Route path="/admin/marketing/content-studio" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/marketing/meta-ads" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/marketing/campaigns" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/marketing/content-library" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/marketing/studio" element={<AdminRoute><MarketingStudio /></AdminRoute>} />
+      <Route path="/admin/marketing/content-studio" element={<AdminRoute><ContentStudio /></AdminRoute>} />
+      <Route path="/admin/marketing/meta-ads" element={<AdminRoute><MetaAdsStrategist /></AdminRoute>} />
+      <Route path="/admin/marketing/campaigns" element={<AdminRoute><MarketingCampaigns /></AdminRoute>} />
+      <Route path="/admin/marketing/content-library" element={<AdminRoute><ContentLibrary /></AdminRoute>} />
       <Route path="/admin/marketing/brand-settings" element={<AdminRoute><MarketingBrandSettings /></AdminRoute>} />
-      <Route path="/admin/marketing/funnel" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/marketing/funnel" element={<AdminRoute><FunnelGenerator /></AdminRoute>} />
       <Route path="/admin/analytics" element={<AdminRoute><GrowthAnalytics /></AdminRoute>} />
       <Route path="/admin/backups" element={<AdminRoute><DatabaseBackups /></AdminRoute>} />
       
