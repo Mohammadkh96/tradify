@@ -30,6 +30,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import MarketingDashboard from "@/pages/admin/MarketingDashboard";
 import MarketingBrandSettings from "@/pages/admin/MarketingBrandSettings";
 import GrowthAnalytics from "@/pages/admin/GrowthAnalytics";
+import Affiliates from "@/pages/admin/Affiliates";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Terms from "@/pages/Terms";
@@ -444,6 +445,9 @@ function Router() {
 
       <Route path="/admin/analytics">
         {() => !isAdmin ? <Redirect to="/" /> : <GrowthAnalytics />}
+      </Route>
+      <Route path="/admin/affiliates">
+        {() => !isAdmin ? <Redirect to="/" /> : <Affiliates />}
       </Route>
       
       <Route path="/" component={Landing} />

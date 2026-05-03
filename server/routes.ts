@@ -4432,6 +4432,77 @@ End with: "Review your charts for current market structure."`;
     }
   });
 
+  // ── Admin Affiliates: payout view + CSV export ────────────────────────────
+  // Commission rule: $10 USD per active paid (PRO/ELITE/COACH) referral.
+  const AFFILIATE_COMMISSION_USD = 10;
+  async function computeAffiliatePayouts() {
+    const rows = await pool.query(
+      `SELECT
+         ref.user_id           AS referrer_email,
+         ref.referral_code     AS referral_code,
+         COUNT(rd.id)          AS referral_count,
+         SUM(CASE WHEN rd.subscription_tier IN ('PRO','ELITE','COACH')
+                   AND (rd.subscription_status = 'ACTIVE' OR rd.subscription_status = 'active')
+                  THEN 1 ELSE 0 END) AS paid_count
+       FROM user_role ref
+       LEFT JOIN user_role rd ON rd.referred_by = ref.referral_code
+       WHERE ref.referral_code IS NOT NULL
+       GROUP BY ref.user_id, ref.referral_code
+       HAVING COUNT(rd.id) > 0
+       ORDER BY paid_count DESC, referral_count DESC`
+    );
+    return rows.rows.map((r: any) => {
+      const paid = parseInt(r.paid_count || "0");
+      return {
+        referrerEmail: r.referrer_email,
+        referralCode: r.referral_code,
+        referralCount: parseInt(r.referral_count || "0"),
+        paidCount: paid,
+        commissionOwedUsd: (paid * AFFILIATE_COMMISSION_USD).toFixed(2),
+      };
+    });
+  }
+
+  app.get("/api/admin/affiliates", requireAdmin, async (_req, res) => {
+    try {
+      const payouts = await computeAffiliatePayouts();
+      const totalCommission = payouts.reduce((s, p) => s + parseFloat(p.commissionOwedUsd), 0);
+      res.json({
+        commissionPerReferralUsd: AFFILIATE_COMMISSION_USD,
+        totalAffiliates: payouts.length,
+        totalPaidReferrals: payouts.reduce((s, p) => s + p.paidCount, 0),
+        totalCommissionOwedUsd: totalCommission.toFixed(2),
+        affiliates: payouts,
+      });
+    } catch (error) {
+      console.error("Affiliate payouts error:", error);
+      res.status(500).json({ message: "Failed to compute affiliate payouts" });
+    }
+  });
+
+  app.get("/api/admin/affiliates.csv", requireAdmin, async (_req, res) => {
+    try {
+      const payouts = await computeAffiliatePayouts();
+      const esc = (v: any) => {
+        let s = String(v ?? "");
+        // CSV-injection guard: neutralize formula-trigger prefixes
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const header = "referrer_email,referral_code,referral_count,paid_count,commission_owed_usd";
+      const lines = payouts.map(p =>
+        [p.referrerEmail, p.referralCode, p.referralCount, p.paidCount, p.commissionOwedUsd].map(esc).join(",")
+      );
+      const csv = [header, ...lines].join("\n");
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="affiliate-payouts-${new Date().toISOString().slice(0, 10)}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Affiliate CSV error:", error);
+      res.status(500).json({ message: "Failed to export CSV" });
+    }
+  });
+
   // ── Admin CRM: Bulk actions ───────────────────────────────────────────────
   app.post("/api/admin/users/bulk-action", requireAdmin, async (req, res) => {
     try {
