@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, ExternalLink, ShieldCheck, AlertCircle, CheckCircle2, Crown, Star, Sparkles, GraduationCap } from "lucide-react";
 import { SiPaypal } from "react-icons/si";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
-import StripeSubscribeButton from "@/components/StripeSubscribeButton";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -333,13 +332,6 @@ export default function Checkout() {
                   </div>
 
                   <PayPalSubscriptionButton tier={selectedTier} period={billingPeriod} />
-
-                  <div className="relative my-1">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/60" /></div>
-                    <div className="relative flex justify-center"><span className="px-2 bg-background text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('orPayWithCard') || 'or'}</span></div>
-                  </div>
-
-                  <StripeSubscribeButton tier={selectedTier} period={billingPeriod} />
 
                   {!isUpgradingToElite && (
                     <div className="flex gap-2 justify-center">
