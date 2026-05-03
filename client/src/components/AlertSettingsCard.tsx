@@ -131,45 +131,47 @@ export function AlertSettingsCard() {
                 />
               </div>
               {prefs.drawdownEnabled && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 ml-7">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.drawdown.warnAt")}</Label>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        min={10}
-                        max={99}
-                        value={prefs.drawdownWarnThreshold}
-                        onChange={(e) => update({ drawdownWarnThreshold: Number(e.target.value) })}
-                        className="pr-7"
-                        data-testid="input-drawdown-warn"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                <div className="ml-7 space-y-3">
+                  <div className="grid grid-cols-2 gap-3 max-w-xs">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">{t("widgets.alerts.drawdown.warnAt")}</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min={10}
+                          max={99}
+                          value={prefs.drawdownWarnThreshold}
+                          onChange={(e) => update({ drawdownWarnThreshold: Number(e.target.value) })}
+                          className="pr-7"
+                          data-testid="input-drawdown-warn"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">{t("widgets.alerts.drawdown.criticalAt")}</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min={20}
+                          max={100}
+                          value={prefs.drawdownCriticalThreshold}
+                          onChange={(e) => update({ drawdownCriticalThreshold: Number(e.target.value) })}
+                          className="pr-7"
+                          data-testid="input-drawdown-critical"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.drawdown.criticalAt")}</Label>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        min={20}
-                        max={100}
-                        value={prefs.drawdownCriticalThreshold}
-                        onChange={(e) => update({ drawdownCriticalThreshold: Number(e.target.value) })}
-                        className="pr-7"
-                        data-testid="input-drawdown-critical"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between sm:justify-start sm:gap-3 pt-5">
+                  <div className="flex items-center gap-4">
                     <Label className="text-xs text-muted-foreground">{t("widgets.alerts.inApp")}</Label>
                     <Switch
                       checked={prefs.drawdownInApp}
                       onCheckedChange={(v) => update({ drawdownInApp: v })}
                       data-testid="switch-drawdown-inapp"
                     />
-                    <Label className="text-xs text-muted-foreground ml-3">{t("widgets.alerts.email")}</Label>
+                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.email")}</Label>
                     <Switch
                       checked={prefs.drawdownEmail}
                       onCheckedChange={(v) => update({ drawdownEmail: v })}
@@ -201,14 +203,14 @@ export function AlertSettingsCard() {
                 />
               </div>
               {prefs.revengeEnabled && (
-                <div className="ml-7 flex items-center justify-between sm:justify-start sm:gap-3">
+                <div className="ml-7 flex items-center gap-4">
                   <Label className="text-xs text-muted-foreground">{t("widgets.alerts.inApp")}</Label>
                   <Switch
                     checked={prefs.revengeInApp}
                     onCheckedChange={(v) => update({ revengeInApp: v })}
                     data-testid="switch-revenge-inapp"
                   />
-                  <Label className="text-xs text-muted-foreground ml-3">{t("widgets.alerts.email")}</Label>
+                  <Label className="text-xs text-muted-foreground">{t("widgets.alerts.email")}</Label>
                   <Switch
                     checked={prefs.revengeEmail}
                     onCheckedChange={(v) => update({ revengeEmail: v })}
@@ -239,8 +241,8 @@ export function AlertSettingsCard() {
                 />
               </div>
               {prefs.overtradingEnabled && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 ml-7">
-                  <div className="space-y-1.5">
+                <div className="ml-7 space-y-3">
+                  <div className="space-y-1.5 max-w-[160px]">
                     <Label className="text-xs text-muted-foreground">{t("widgets.alerts.overtrading.dailyCap")}</Label>
                     <Input
                       type="number"
@@ -251,14 +253,14 @@ export function AlertSettingsCard() {
                       data-testid="input-overtrading-cap"
                     />
                   </div>
-                  <div className="flex items-center justify-between sm:justify-start sm:gap-3 pt-5">
+                  <div className="flex items-center gap-4">
                     <Label className="text-xs text-muted-foreground">{t("widgets.alerts.inApp")}</Label>
                     <Switch
                       checked={prefs.overtradingInApp}
                       onCheckedChange={(v) => update({ overtradingInApp: v })}
                       data-testid="switch-overtrading-inapp"
                     />
-                    <Label className="text-xs text-muted-foreground ml-3">{t("widgets.alerts.email")}</Label>
+                    <Label className="text-xs text-muted-foreground">{t("widgets.alerts.email")}</Label>
                     <Switch
                       checked={prefs.overtradingEmail}
                       onCheckedChange={(v) => update({ overtradingEmail: v })}
@@ -290,14 +292,14 @@ export function AlertSettingsCard() {
                 />
               </div>
               {prefs.strategyDeviationEnabled && (
-                <div className="ml-7 flex items-center justify-between sm:justify-start sm:gap-3">
+                <div className="ml-7 flex items-center gap-4">
                   <Label className="text-xs text-muted-foreground">{t("widgets.alerts.inApp")}</Label>
                   <Switch
                     checked={prefs.strategyDeviationInApp}
                     onCheckedChange={(v) => update({ strategyDeviationInApp: v })}
                     data-testid="switch-strategy-inapp"
                   />
-                  <Label className="text-xs text-muted-foreground ml-3">{t("widgets.alerts.email")}</Label>
+                  <Label className="text-xs text-muted-foreground">{t("widgets.alerts.email")}</Label>
                   <Switch
                     checked={prefs.strategyDeviationEmail}
                     onCheckedChange={(v) => update({ strategyDeviationEmail: v })}
