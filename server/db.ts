@@ -28,10 +28,18 @@ if (!connectionString) {
 const isNeon = !!process.env.NEON_DATABASE_URL;
 console.log(`Using ${isNeon ? 'Neon' : 'Replit'} PostgreSQL database`);
 
-// Neon requires SSL
-export const pool = new Pool({ 
+// Neon requires SSL. Pool sized for high concurrency — defaults are too small.
+// For 10k+ concurrent users you also need to scale Neon compute units; the
+// pool just controls how many connections THIS process holds open at once.
+const POOL_MAX = Number(process.env.DB_POOL_MAX || 50);
+const POOL_IDLE_MS = Number(process.env.DB_POOL_IDLE_MS || 30_000);
+const POOL_CONN_TIMEOUT_MS = Number(process.env.DB_POOL_CONN_TIMEOUT_MS || 10_000);
+export const pool = new Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  max: POOL_MAX,
+  idleTimeoutMillis: POOL_IDLE_MS,
+  connectionTimeoutMillis: POOL_CONN_TIMEOUT_MS,
 });
 export const db = drizzle(pool, { schema });
 
@@ -545,7 +553,63 @@ export async function ensureSchemaColumns() {
       ALTER TABLE alert_preferences ADD COLUMN IF NOT EXISTS digest_enabled BOOLEAN DEFAULT true;
     `);
 
-    console.log('Schema columns verified');
+    // Performance indexes for high-concurrency hot paths.
+    // Each runs in its own statement so a missing column on one table can't
+    // abort the rest of the batch. All idempotent (IF NOT EXISTS).
+    const PERF_INDEXES: { name: string; sql: string }[] = [
+      // Auth & user lookups (login by email is the hottest read)
+      { name: "idx_user_role_email_lower", sql: `CREATE INDEX IF NOT EXISTS idx_user_role_email_lower ON user_role (LOWER(user_id))` },
+      { name: "idx_user_role_referral", sql: `CREATE INDEX IF NOT EXISTS idx_user_role_referral ON user_role (referral_code) WHERE referral_code IS NOT NULL` },
+      { name: "idx_user_role_pwreset", sql: `CREATE INDEX IF NOT EXISTS idx_user_role_pwreset ON user_role (password_reset_token) WHERE password_reset_token IS NOT NULL` },
+      { name: "idx_user_role_emailverify", sql: `CREATE INDEX IF NOT EXISTS idx_user_role_emailverify ON user_role (email_verification_token) WHERE email_verification_token IS NOT NULL` },
+      // Trade journal: paginated by user, ordered by time
+      { name: "idx_trade_journal_user_created", sql: `CREATE INDEX IF NOT EXISTS idx_trade_journal_user_created ON trade_journal (user_id, created_at DESC)` },
+      // MT5 reads
+      { name: "idx_mt5_history_user_close", sql: `CREATE INDEX IF NOT EXISTS idx_mt5_history_user_close ON mt5_history (user_id, close_time DESC)` },
+      { name: "idx_mt5_data_user", sql: `CREATE INDEX IF NOT EXISTS idx_mt5_data_user ON mt5_data (user_id)` },
+      { name: "idx_mt5_accounts_user", sql: `CREATE INDEX IF NOT EXISTS idx_mt5_accounts_user ON mt5_accounts (user_id)` },
+      { name: "idx_daily_equity_user_date", sql: `CREATE INDEX IF NOT EXISTS idx_daily_equity_user_date ON daily_equity_snapshots (user_id, date DESC)` },
+      // Coach module
+      { name: "idx_coach_request_student", sql: `CREATE INDEX IF NOT EXISTS idx_coach_request_student ON coach_request (student_id, status)` },
+      { name: "idx_coach_request_coach", sql: `CREATE INDEX IF NOT EXISTS idx_coach_request_coach ON coach_request (coach_id, status)` },
+      { name: "idx_coach_profile_available", sql: `CREATE INDEX IF NOT EXISTS idx_coach_profile_available ON coach_profile (available) WHERE available = true` },
+      // Hub / community
+      { name: "idx_hub_posts_created", sql: `CREATE INDEX IF NOT EXISTS idx_hub_posts_created ON hub_posts (created_at DESC)` },
+      { name: "idx_hub_posts_user", sql: `CREATE INDEX IF NOT EXISTS idx_hub_posts_user ON hub_posts (user_id)` },
+      { name: "idx_hub_comments_post", sql: `CREATE INDEX IF NOT EXISTS idx_hub_comments_post ON hub_comments (post_id, created_at)` },
+      // Strategies & rules
+      { name: "idx_strategies_user", sql: `CREATE INDEX IF NOT EXISTS idx_strategies_user ON strategies (user_id)` },
+      { name: "idx_strategy_rules_strategy", sql: `CREATE INDEX IF NOT EXISTS idx_strategy_rules_strategy ON strategy_rules (strategy_id)` },
+      { name: "idx_compliance_results_trade", sql: `CREATE INDEX IF NOT EXISTS idx_compliance_results_trade ON trade_compliance_results (trade_id)` },
+      { name: "idx_rule_evaluations_trade", sql: `CREATE INDEX IF NOT EXISTS idx_rule_evaluations_trade ON trade_rule_evaluations (trade_id)` },
+      // AI usage / insights
+      { name: "idx_ai_insight_logs_user_created", sql: `CREATE INDEX IF NOT EXISTS idx_ai_insight_logs_user_created ON ai_insight_logs (user_id, created_at DESC)` },
+      { name: "idx_ai_usage_user_created", sql: `CREATE INDEX IF NOT EXISTS idx_ai_usage_user_created ON ai_usage_logs (user_id, created_at DESC)` },
+      { name: "idx_ai_usage_feature", sql: `CREATE INDEX IF NOT EXISTS idx_ai_usage_feature ON ai_usage_logs (feature, created_at DESC)` },
+      // Email & comms
+      { name: "idx_sent_emails_user_sent", sql: `CREATE INDEX IF NOT EXISTS idx_sent_emails_user_sent ON sent_emails (user_id, sent_at DESC)` },
+      { name: "idx_email_sequences_pending", sql: `CREATE INDEX IF NOT EXISTS idx_email_sequences_pending ON email_sequences (next_send_at) WHERE completed = false` },
+      // Achievements / streaks
+      { name: "idx_user_achievements_user", sql: `CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements (user_id)` },
+      { name: "idx_user_streaks_user_type", sql: `CREATE INDEX IF NOT EXISTS idx_user_streaks_user_type ON user_streaks (user_id, streak_type)` },
+      // Prop firm
+      { name: "idx_propfirm_user_status", sql: `CREATE INDEX IF NOT EXISTS idx_propfirm_user_status ON prop_firm_challenges (user_id, status)` },
+      { name: "idx_propfirm_stats_challenge_date", sql: `CREATE INDEX IF NOT EXISTS idx_propfirm_stats_challenge_date ON prop_firm_daily_stats (challenge_id, date DESC)` },
+      // Marketing leads / signups
+      { name: "idx_leads_email", sql: `CREATE INDEX IF NOT EXISTS idx_leads_email ON leads (email)` },
+      { name: "idx_early_access_email", sql: `CREATE INDEX IF NOT EXISTS idx_early_access_email ON early_access_signups (email)` },
+    ];
+    let idxOk = 0, idxFail = 0;
+    for (const { name, sql } of PERF_INDEXES) {
+      try {
+        await pool.query(sql);
+        idxOk++;
+      } catch (e: any) {
+        idxFail++;
+        console.warn(`[Indexes] skipped ${name}: ${e?.message || e}`);
+      }
+    }
+    console.log(`Schema columns verified (perf indexes: ${idxOk} created/exist, ${idxFail} skipped)`);
   } catch (error) {
     console.error('Schema migration error:', error);
   }

@@ -121,9 +121,15 @@ export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Prom
         )
     `);
 
-    for (const row of rows) {
-      checked++;
-      if (row.weekly_digest_enabled === false || row.weekly_digest_email === false) { skipped++; continue; }
+    // Bounded-concurrency sweep. Atomic dedupe-claim ordering preserved exactly:
+    // every worker still does claim-INSERT FIRST, send second, mark-sent third.
+    // p-limit only changes how many workers run in parallel.
+    const pLimit = (await import("p-limit")).default;
+    const limit = pLimit(Number(process.env.DIGEST_CONCURRENCY || 10));
+    const counters = { sent: 0, skipped: 0 };
+
+    await Promise.all(rows.map((row) => limit(async () => {
+      if (row.weekly_digest_enabled === false || row.weekly_digest_email === false) { counters.skipped++; return; }
 
       const tz = row.timezone || "UTC";
       let local;
@@ -131,7 +137,7 @@ export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Prom
       catch { local = getLocalDateAndHourAndDow("UTC"); }
 
       // Sundays only at configured hour
-      if (!opts.force && (local.dow !== 0 || local.hour !== DIGEST_HOUR)) { skipped++; continue; }
+      if (!opts.force && (local.dow !== 0 || local.hour !== DIGEST_HOUR)) { counters.skipped++; return; }
 
       // Per-week dedupe via local date. We CLAIM the dedupe key atomically
       // BEFORE sending the email — this prevents (a) double-send when the
@@ -140,7 +146,7 @@ export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Prom
       // partial unique index uq_notifications_dedupe on (user_id, type, dedupe_key).
       const dedupeKey = `weekly_digest:${local.date}`;
       const stats = await computeWeeklyStats(row.user_id);
-      if (!stats) { skipped++; continue; }
+      if (!stats) { counters.skipped++; return; }
 
       const claim = await pool.query(
         `INSERT INTO notifications
@@ -156,15 +162,21 @@ export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Prom
           dedupeKey,
         ],
       );
-      if ((claim.rowCount ?? 0) === 0) { skipped++; continue; }
+      if ((claim.rowCount ?? 0) === 0) { counters.skipped++; return; }
 
       const ok = await sendWeeklyPerformanceDigestEmail(row.email!, stats);
       if (ok) {
         await pool.query(`UPDATE notifications SET email_sent = true WHERE id = $1`, [claim.rows[0].id]).catch(() => {});
+        counters.sent++;
+      } else {
+        // Email failed but we keep the marker — better to skip a week than spam.
+        // Counted as skipped so observability reflects actual delivery, not claims.
+        counters.skipped++;
       }
-      // Even if email fails, we keep the marker — better to skip a week than spam.
-      sent++;
-    }
+    })));
+    checked = rows.length;
+    sent = counters.sent;
+    skipped = counters.skipped;
   } catch (e) {
     console.error("[WeeklyDigest] sweep error:", e);
   }

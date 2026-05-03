@@ -60,23 +60,29 @@ export async function runDailyDigestSweep(opts: { force?: boolean } = {}): Promi
       GROUP BY n.user_id, ap.digest_enabled
     `, [RISK_ALERT_TYPES]);
 
-    for (const row of rows) {
-      checked++;
-      if (row.digest_enabled === false) { skipped++; continue; }
+    // Process users concurrently with bounded parallelism. Serial loop would
+    // take O(N * (DB+SMTP) latency) — at 10k users that's hours. With limit=10
+    // we cap connection-pool / SMTP burst while still going ~10x faster.
+    const pLimit = (await import("p-limit")).default;
+    const limit = pLimit(Number(process.env.DIGEST_CONCURRENCY || 10));
+    const counters = { sent: 0, skipped: 0 };
+
+    await Promise.all(rows.map((row) => limit(async () => {
+      if (row.digest_enabled === false) { counters.skipped++; return; }
 
       const tz = row.timezone || "UTC";
       let local;
       try { local = getLocalDateAndHour(tz); }
       catch { local = getLocalDateAndHour("UTC"); }
 
-      if (!opts.force && local.hour !== DIGEST_HOUR) { skipped++; continue; }
+      if (!opts.force && local.hour !== DIGEST_HOUR) { counters.skipped++; return; }
 
       const dedupeKey = `digest:${local.date}`;
       const dup = await pool.query(
         `SELECT 1 FROM notifications WHERE user_id = $1 AND type = 'daily_digest' AND dedupe_key = $2 LIMIT 1`,
         [row.user_id, dedupeKey],
       );
-      if ((dup.rowCount ?? 0) > 0) { skipped++; continue; }
+      if ((dup.rowCount ?? 0) > 0) { counters.skipped++; return; }
 
       const agg = await pool.query<{ type: string; severity: string; count: string }>(`
         SELECT type, severity, COUNT(*)::int AS count
@@ -88,9 +94,9 @@ export async function runDailyDigestSweep(opts: { force?: boolean } = {}): Promi
         ORDER BY type, severity
       `, [row.user_id, RISK_ALERT_TYPES]);
 
-      if ((agg.rowCount ?? 0) === 0) { skipped++; continue; }
+      if ((agg.rowCount ?? 0) === 0) { counters.skipped++; return; }
 
-      const groups = agg.rows.map(r => ({ type: r.type, severity: r.severity, count: Number(r.count) }));
+      const groups = agg.rows.map((r) => ({ type: r.type, severity: r.severity, count: Number(r.count) }));
       const total = groups.reduce((s, g) => s + g.count, 0);
 
       const ok = await sendDailyAlertDigestEmail(row.user_id, {
@@ -99,7 +105,7 @@ export async function runDailyDigestSweep(opts: { force?: boolean } = {}): Promi
         groups,
       });
 
-      if (!ok) { skipped++; continue; }
+      if (!ok) { counters.skipped++; return; }
 
       try {
         await pool.query(
@@ -118,8 +124,11 @@ export async function runDailyDigestSweep(opts: { force?: boolean } = {}): Promi
         console.error("[DailyDigest] failed to record digest marker:", e);
       }
 
-      sent++;
-    }
+      counters.sent++;
+    })));
+    checked = rows.length;
+    sent = counters.sent;
+    skipped = counters.skipped;
   } catch (e) {
     console.error("[DailyDigest] sweep error:", e);
   }

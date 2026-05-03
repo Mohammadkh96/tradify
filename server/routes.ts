@@ -28,6 +28,7 @@ const chartUpload = multer({
 import { runBackup, getBackupStatus, verifyLatestBackup, downloadBackupById } from "./backup-service";
 import { registerStripeWebhook, registerStripeRoutes } from "./stripeCheckout";
 import { openai } from "./replit_integrations/audio/index";
+import { authLimiter, passwordResetLimiter, aiLimiter, uploadLimiter, earlyAccessLimiter } from "./rateLimit";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
 import { trackAIUsage, calculateCost, estimateTokensFromText } from "./ai-cost-tracker";
@@ -495,7 +496,7 @@ ${blogPosts.map(p => `  <url>
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   
   // Early Access Signup Endpoint
-  app.post("/api/early-access/signup", async (req, res) => {
+  app.post("/api/early-access/signup", earlyAccessLimiter, async (req, res) => {
     try {
       const { email, fullName } = req.body;
       
@@ -620,7 +621,7 @@ ${blogPosts.map(p => `  <url>
   });
 
   // Registration Endpoint
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", authLimiter, async (req, res) => {
     try {
       const { email, password, fullName, country, phoneNumber, timezone, utm_source, utm_campaign } = req.body;
       
@@ -933,7 +934,7 @@ ${blogPosts.map(p => `  <url>
   });
 
   // Login Endpoint
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authLimiter, async (req, res) => {
     try {
       const { email, password } = req.body;
       const normalizedEmail = email.toLowerCase();
@@ -988,7 +989,7 @@ ${blogPosts.map(p => `  <url>
   });
 
   // Reset password endpoint for first-time users
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", passwordResetLimiter, async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -1411,7 +1412,7 @@ ${blogPosts.map(p => `  <url>
   // Stores in object storage at trade-charts/{userId}/{tradeId}-{ts}.{ext},
   // saves the storage key to trade_journal.chart_url. Read-back goes through
   // GET /api/trades/:id/chart so access is auth-checked (object storage is private).
-  app.post("/api/trades/:id/chart", requireAuth, chartUpload.single("chart"), async (req, res) => {
+  app.post("/api/trades/:id/chart", uploadLimiter, requireAuth, chartUpload.single("chart"), async (req, res) => {
     try {
       const tradeId = Number(req.params.id);
       if (!Number.isFinite(tradeId)) return res.status(400).json({ message: "Invalid trade id" });
@@ -3678,7 +3679,7 @@ Respond with ONLY a JSON object: {"tags": ["tag one", "tag two", ...]}`;
     }
   });
 
-  app.get("/api/ai/insights/:userId", requireAuth, async (req, res) => {
+  app.get("/api/ai/insights/:userId", aiLimiter, requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
       const { timeframe = "recent" } = req.query;
@@ -3775,7 +3776,7 @@ Output exactly 1-3 bullet points.`;
 
   // ENHANCED AI PSYCHOLOGY REVIEW - Pro+ feature
   // Analyzes trading psychology patterns: mood-outcome correlations, mistake impact
-  app.get("/api/ai/psychology-review/:userId", requireAuth, async (req, res) => {
+  app.get("/api/ai/psychology-review/:userId", aiLimiter, requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
       const { period = "30", force } = req.query;
@@ -4393,7 +4394,7 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
   });
 
   // Generate AI analysis for a specific instrument (PRO only)
-  app.post("/api/ai/instrument-analysis/:userId", requireAuth, async (req, res) => {
+  app.post("/api/ai/instrument-analysis/:userId", aiLimiter, requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
       const { symbol } = req.body;
@@ -5994,7 +5995,7 @@ End with: "Review your charts for current market structure."`;
     }
   });
 
-  app.post("/api/auth/reset-password-with-token", async (req, res) => {
+  app.post("/api/auth/reset-password-with-token", passwordResetLimiter, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
 
