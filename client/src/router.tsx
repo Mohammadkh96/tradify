@@ -26,6 +26,8 @@ import PropFirmTracker from "@/pages/PropFirmTracker";
 import Achievements from "@/pages/Achievements";
 import Auth from "@/pages/Auth";
 import EarlyAccess from "@/pages/EarlyAccess";
+import Coaches from "@/pages/Coaches";
+import CoachDashboard from "@/pages/CoachDashboard";
 import { MainLayout } from "@/components/MainLayout";
 import { AdminLayout } from "@/components/AdminLayout";
 import MarketingDashboard from "@/pages/admin/MarketingDashboard";
@@ -531,6 +533,8 @@ function AppRoutes() {
       <Route path="/traders-hub" element={<ProtectedRoute><TradersHub /></ProtectedRoute>} />
       <Route path="/prop-firm" element={<ProtectedRoute><PropFirmTracker /></ProtectedRoute>} />
       <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
+      <Route path="/coaches" element={<ProtectedRoute><Coaches /></ProtectedRoute>} />
+      <Route path="/coach" element={<ProtectedRoute><CoachDashboard /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<AdminRoute><Navigate to="/admin/overview" replace /></AdminRoute>} />

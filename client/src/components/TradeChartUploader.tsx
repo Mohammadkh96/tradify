@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Image as ImageIcon, Upload, X, Maximize2, Pencil, Eraser, Save, Trash2, Undo } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 type Stroke = { color: string; width: number; points: { x: number; y: number }[] };
 type Annotations = { strokes: Stroke[] } | null;
@@ -30,6 +31,7 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
   const svgRef = useRef<SVGSVGElement | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation("common", { keyPrefix: "journal" });
 
   useEffect(() => {
     setStrokes(initialAnnotations?.strokes || []);
@@ -40,11 +42,11 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
   async function handleFile(file: File) {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast({ variant: "destructive", title: "File too large", description: "Charts must be under 5MB." });
+      toast({ variant: "destructive", title: t("chart.fileTooLarge"), description: t("chart.fileTooLargeDesc") });
       return;
     }
     if (!/^image\/(png|jpeg|jpg|webp)$/.test(file.type)) {
-      toast({ variant: "destructive", title: "Unsupported format", description: "Use PNG, JPG, or WebP." });
+      toast({ variant: "destructive", title: t("chart.unsupportedFormat"), description: t("chart.unsupportedFormatDesc") });
       return;
     }
     setUploading(true);
@@ -54,27 +56,27 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
       const res = await fetch(`/api/trades/${tradeId}/chart`, { method: "POST", body: fd, credentials: "include" });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        throw new Error(j.message || "Upload failed");
+        throw new Error(j.message || t("chart.uploadFailed"));
       }
       setBust(Date.now());
       queryClient.invalidateQueries({ queryKey: ["/api/trades"] });
-      toast({ title: "Chart uploaded", description: "Your annotated chart is attached to this trade." });
+      toast({ title: t("chart.uploaded"), description: t("chart.uploadedDesc") });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Upload failed", description: e.message || "Try again." });
+      toast({ variant: "destructive", title: t("chart.uploadFailed"), description: e.message || t("chart.uploadFailedDesc") });
     } finally {
       setUploading(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm("Remove this chart?")) return;
+    if (!confirm(t("chart.removeConfirm"))) return;
     try {
       const res = await fetch(`/api/trades/${tradeId}/chart`, { method: "DELETE", credentials: "include" });
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) throw new Error(t("chart.deleteFailed"));
       queryClient.invalidateQueries({ queryKey: ["/api/trades"] });
-      toast({ title: "Chart removed" });
+      toast({ title: t("chart.removed") });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Delete failed", description: e.message });
+      toast({ variant: "destructive", title: t("chart.deleteFailed"), description: e.message });
     }
   }
 
@@ -112,12 +114,12 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ annotations: { strokes } }),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) throw new Error(t("chart.saveFailed"));
       queryClient.invalidateQueries({ queryKey: ["/api/trades"] });
-      toast({ title: "Annotations saved" });
+      toast({ title: t("annotateSaved") });
       setAnnotateMode(false);
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Save failed", description: e.message });
+      toast({ variant: "destructive", title: t("chart.saveFailed"), description: e.message });
     } finally {
       setSaving(false);
     }
@@ -153,14 +155,14 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
             className="block w-16 h-12 rounded border border-border overflow-hidden bg-muted hover:border-emerald-500/50 transition-colors"
             data-testid={`button-view-chart-${tradeId}`}
           >
-            <img src={src} alt="trade chart" className="w-full h-full object-cover" />
+            <img src={src} alt={t("chart.altThumb")} className="w-full h-full object-cover" />
           </button>
           <div className="absolute -top-1.5 -right-1.5 flex gap-0.5 opacity-0 group-hover/chart:opacity-100 transition-opacity">
             <button
               type="button"
               onClick={() => setLightbox(true)}
               className="p-0.5 bg-background/90 border border-border rounded text-muted-foreground hover:text-emerald-500"
-              title="Expand"
+              title={t("chart.expand")}
             >
               <Maximize2 size={10} />
             </button>
@@ -169,7 +171,7 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
                 type="button"
                 onClick={handleDelete}
                 className="p-0.5 bg-background/90 border border-border rounded text-muted-foreground hover:text-rose-500"
-                title="Remove chart"
+                title={t("chart.removeChart")}
                 data-testid={`button-delete-chart-${tradeId}`}
               >
                 <X size={10} />
@@ -194,7 +196,7 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
                     annotateMode ? "bg-emerald-500 text-slate-950" : "bg-white/10 text-white hover:bg-white/20")}
                   data-testid={`button-annotate-toggle-${tradeId}`}
                 >
-                  <Pencil size={12} />{annotateMode ? "Drawing" : "Annotate"}
+                  <Pencil size={12} />{annotateMode ? t("annotateDrawing") : t("annotate")}
                 </button>
               )}
               {annotateMode && (
@@ -217,24 +219,24 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
                     value={width}
                     onChange={(e) => setWidth(Number(e.target.value))}
                     className="w-20"
-                    title="Stroke width"
+                    title={t("chart.strokeWidth")}
                   />
                   <button
                     type="button"
                     onClick={() => setStrokes(s => s.slice(0, -1))}
                     disabled={!strokes.length}
                     className="p-1.5 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
-                    title="Undo last stroke"
+                    title={t("chart.undoStroke")}
                     data-testid={`button-annotate-undo-${tradeId}`}
                   >
                     <Undo size={14} />
                   </button>
                   <button
                     type="button"
-                    onClick={() => { if (confirm("Clear all annotations?")) setStrokes([]); }}
+                    onClick={() => { if (confirm(t("annotateClearConfirm"))) setStrokes([]); }}
                     disabled={!strokes.length}
                     className="p-1.5 rounded-full bg-white/10 text-white hover:bg-rose-500/30 disabled:opacity-40"
-                    title="Clear all"
+                    title={t("chart.clearAll")}
                     data-testid={`button-annotate-clear-${tradeId}`}
                   >
                     <Trash2 size={14} />
@@ -246,7 +248,7 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
                     className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
                     data-testid={`button-annotate-save-${tradeId}`}
                   >
-                    <Save size={12} />{saving ? "Saving…" : "Save"}
+                    <Save size={12} />{saving ? t("annotateSaving") : t("annotateSave")}
                   </button>
                 </>
               )}
@@ -254,7 +256,7 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
                 type="button"
                 onClick={() => { setAnnotateMode(false); setLightbox(false); }}
                 className="p-1.5 rounded-full bg-white/10 text-white hover:bg-white/20 ml-2"
-                title="Close"
+                title={t("chart.close")}
               >
                 <X size={14} />
               </button>
@@ -262,7 +264,7 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
 
             {/* Image + svg overlay */}
             <div className="relative max-w-full max-h-[80vh]">
-              <img src={src} alt="trade chart full" className="max-w-full max-h-[80vh] rounded shadow-2xl block" draggable={false} />
+              <img src={src} alt={t("chart.altFull")} className="max-w-full max-h-[80vh] rounded shadow-2xl block" draggable={false} />
               <svg
                 ref={svgRef}
                 viewBox="0 0 100 100"
@@ -320,7 +322,7 @@ export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotat
         data-testid={`button-upload-chart-${tradeId}`}
       >
         {uploading ? <Upload size={10} className="animate-pulse" /> : <ImageIcon size={10} />}
-        {uploading ? "Uploading..." : "Add chart"}
+        {uploading ? t("chart.uploading") : t("chart.addChart")}
       </button>
     </>
   );

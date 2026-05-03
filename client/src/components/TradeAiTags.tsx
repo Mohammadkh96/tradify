@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ export function TradeAiTags({ tradeId, tags, disabled }: Props) {
   const [local, setLocal] = useState<string[] | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const current = local ?? (Array.isArray(tags) ? tags : []);
 
@@ -29,9 +31,9 @@ export function TradeAiTags({ tradeId, tags, disabled }: Props) {
       const j = await res.json();
       setLocal(j.tags || []);
       queryClient.invalidateQueries({ queryKey: ["/api/trades"] });
-      toast({ title: "AI tags generated", description: `${(j.tags || []).length} pattern${(j.tags || []).length === 1 ? "" : "s"} identified.` });
+      toast({ title: t("journal.aiTagsToastTitle"), description: t("journal.aiTagsToastDesc", { count: (j.tags || []).length }) });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Couldn't generate tags", description: e.message });
+      toast({ variant: "destructive", title: t("journal.aiTagsToastTitle"), description: e.message });
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,7 @@ export function TradeAiTags({ tradeId, tags, disabled }: Props) {
           data-testid={`button-generate-ai-tags-${tradeId}`}
         >
           {loading ? <Loader2 size={9} className="animate-spin" /> : <Sparkles size={9} />}
-          {loading ? "Analyzing…" : current.length ? "Regenerate" : "AI tags"}
+          {loading ? t("journal.aiTagsAnalyzing") : current.length ? t("journal.aiTagsRegenerate") : t("journal.aiTags")}
         </button>
       )}
     </div>

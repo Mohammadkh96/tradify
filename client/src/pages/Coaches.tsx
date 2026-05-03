@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +50,7 @@ type CoachProfile = {
 
 export default function CoachesPage() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [contactCoach, setContactCoach] = useState<CoachEntry | null>(null);
   const [contactMessage, setContactMessage] = useState("");
 
@@ -68,11 +70,11 @@ export default function CoachesPage() {
     mutationFn: async () => apiRequest("POST", `/api/coaches/${contactCoach!.userId}/request`, { message: contactMessage }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/coaches/me/requests"] });
-      toast({ title: "Request sent", description: `Your request to ${contactCoach?.displayName} is pending.` });
+      toast({ title: t("coaches.toastSent"), description: t("coaches.toastSentDesc", { name: contactCoach?.displayName }) });
       setContactCoach(null);
       setContactMessage("");
     },
-    onError: (e: any) => toast({ variant: "destructive", title: "Couldn't send", description: e.message }),
+    onError: (e: any) => toast({ variant: "destructive", title: t("coaches.toastSent"), description: e.message }),
   });
 
   const respond = useMutation({
@@ -90,25 +92,23 @@ export default function CoachesPage() {
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter italic text-foreground flex items-center gap-3">
             <GraduationCap className="h-10 w-10 text-emerald-500" />
-            Coaches
+            {t("coaches.title")}
           </h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl">
-            Browse traders who offer 1:1 coaching, send a request, or list yourself if you coach.
-          </p>
+          <p className="text-muted-foreground mt-2 max-w-2xl">{t("coaches.subtitle")}</p>
         </div>
 
         <Tabs defaultValue="directory" className="w-full">
           <TabsList>
-            <TabsTrigger value="directory" data-testid="tab-coaches-directory">Directory</TabsTrigger>
+            <TabsTrigger value="directory" data-testid="tab-coaches-directory">{t("coaches.tabDirectory")}</TabsTrigger>
             <TabsTrigger value="requests" data-testid="tab-coaches-requests">
-              My requests
+              {t("coaches.tabRequests")}
               {(requests?.incoming.filter(r => r.status === "pending").length || 0) > 0 && (
                 <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-[10px]">
                   {requests!.incoming.filter(r => r.status === "pending").length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="listing" data-testid="tab-coaches-listing">My listing</TabsTrigger>
+            <TabsTrigger value="listing" data-testid="tab-coaches-listing">{t("coaches.tabListing")}</TabsTrigger>
           </TabsList>
 
           {/* DIRECTORY */}
@@ -117,7 +117,7 @@ export default function CoachesPage() {
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : directory.length === 0 ? (
               <Card><CardContent className="text-center py-16 text-muted-foreground">
-                No coaches listed yet. Be the first — open the <strong>My listing</strong> tab.
+                {t("coaches.emptyDirectory")}
               </CardContent></Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -131,10 +131,10 @@ export default function CoachesPage() {
                           </div>
                           {c.displayName}
                         </CardTitle>
-                        {c.available && <Badge className="bg-emerald-500 text-slate-950 hover:bg-emerald-500">Available</Badge>}
+                        {c.available && <Badge className="bg-emerald-500 text-slate-950 hover:bg-emerald-500">{t("coaches.available")}</Badge>}
                       </div>
                       {c.experienceYears != null && (
-                        <CardDescription className="flex items-center gap-1 text-xs"><Briefcase size={12} />{c.experienceYears} years experience</CardDescription>
+                        <CardDescription className="flex items-center gap-1 text-xs"><Briefcase size={12} />{t("coaches.yearsExperience", { count: c.experienceYears })}</CardDescription>
                       )}
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col gap-3">
@@ -148,14 +148,14 @@ export default function CoachesPage() {
                       )}
                       <div className="flex items-center justify-between mt-auto pt-3">
                         {c.hourlyRate != null ? (
-                          <div className="text-sm font-bold text-foreground flex items-center gap-1"><DollarSign size={14} className="text-emerald-500" />{c.hourlyRate} {c.currency}/hr</div>
-                        ) : <span className="text-xs text-muted-foreground italic">Rate on request</span>}
+                          <div className="text-sm font-bold text-foreground flex items-center gap-1"><DollarSign size={14} className="text-emerald-500" />{c.hourlyRate} {c.currency}{t("coaches.perHour")}</div>
+                        ) : <span className="text-xs text-muted-foreground italic">{t("coaches.rateOnRequest")}</span>}
                         <Button
                           size="sm"
                           className="bg-emerald-500 hover:bg-emerald-600 gap-1"
                           onClick={() => setContactCoach(c)}
                           data-testid={`button-contact-coach-${c.userId}`}
-                        ><Send size={12} />Contact</Button>
+                        ><Send size={12} />{t("coaches.contact")}</Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -168,12 +168,12 @@ export default function CoachesPage() {
           <TabsContent value="requests" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><UserPlus className="h-4 w-4" />Incoming requests</CardTitle>
-                <CardDescription>People asking to be coached by you.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2"><UserPlus className="h-4 w-4" />{t("coaches.incomingTitle")}</CardTitle>
+                <CardDescription>{t("coaches.incomingDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {(requests?.incoming || []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">No incoming requests yet.</p>
+                  <p className="text-sm text-muted-foreground text-center py-6">{t("coaches.noIncoming")}</p>
                 ) : (
                   <div className="space-y-3">
                     {requests!.incoming.map(r => (
@@ -191,10 +191,10 @@ export default function CoachesPage() {
                         {r.status === "pending" && (
                           <div className="flex gap-2 shrink-0">
                             <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 gap-1" onClick={() => respond.mutate({ id: r.id, action: "accept" })} data-testid={`button-accept-${r.id}`}>
-                              <Check size={14} />Accept
+                              <Check size={14} />{t("coaches.accept")}
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => respond.mutate({ id: r.id, action: "decline" })} data-testid={`button-decline-${r.id}`}>
-                              <X size={14} />Decline
+                              <X size={14} />{t("coaches.decline")}
                             </Button>
                           </div>
                         )}
@@ -207,12 +207,12 @@ export default function CoachesPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" />Sent requests</CardTitle>
-                <CardDescription>Coaches you've reached out to.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" />{t("coaches.outgoingTitle")}</CardTitle>
+                <CardDescription>{t("coaches.outgoingDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {(requests?.outgoing || []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">You haven't contacted any coaches yet.</p>
+                  <p className="text-sm text-muted-foreground text-center py-6">{t("coaches.noOutgoing")}</p>
                 ) : (
                   <div className="space-y-2">
                     {requests!.outgoing.map(r => (
@@ -241,21 +241,21 @@ export default function CoachesPage() {
       <Dialog open={!!contactCoach} onOpenChange={(o) => { if (!o) { setContactCoach(null); setContactMessage(""); } }}>
         <DialogContent data-testid="dialog-contact-coach">
           <DialogHeader>
-            <DialogTitle>Contact {contactCoach?.displayName}</DialogTitle>
-            <DialogDescription>Tell them what you're working on, your trading focus, and what you're hoping a coach can help with.</DialogDescription>
+            <DialogTitle>{t("coaches.contactDialogTitle", { name: contactCoach?.displayName })}</DialogTitle>
+            <DialogDescription>{t("coaches.contactDialogDesc")}</DialogDescription>
           </DialogHeader>
           <Textarea
             value={contactMessage}
             onChange={(e) => setContactMessage(e.target.value)}
-            placeholder="Hi! I trade XAUUSD on M15…"
+            placeholder={t("coaches.contactPlaceholder")}
             rows={5}
             data-testid="textarea-contact-message"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setContactCoach(null)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setContactCoach(null)}>{t("coaches.cancel")}</Button>
             <Button className="bg-emerald-500 hover:bg-emerald-600" onClick={() => sendRequest.mutate()} disabled={sendRequest.isPending} data-testid="button-send-request">
               {sendRequest.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-              Send request
+              {t("coaches.send")}
             </Button>
           </div>
         </DialogContent>
@@ -266,6 +266,7 @@ export default function CoachesPage() {
 
 function CoachProfileForm({ profile }: { profile: CoachProfile | null }) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [form, setForm] = useState(() => ({
     displayName: profile?.displayName || "",
     bio: profile?.bio || "",
@@ -291,58 +292,58 @@ function CoachProfileForm({ profile }: { profile: CoachProfile | null }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/coaches/me/profile"] });
       queryClient.invalidateQueries({ queryKey: ["/api/coaches/directory"] });
-      toast({ title: "Listing saved", description: form.available ? "You're visible in the directory." : "You're listed but hidden from the directory." });
+      toast({ title: t("coaches.toastSaved"), description: form.available ? t("coaches.toastSavedVisible") : t("coaches.toastSavedHidden") });
     },
-    onError: (e: any) => toast({ variant: "destructive", title: "Couldn't save", description: e.message }),
+    onError: (e: any) => toast({ variant: "destructive", title: t("coaches.toastSaved"), description: e.message }),
   });
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your coach listing</CardTitle>
-        <CardDescription>Fill this out to appear in the directory. You can hide your listing anytime.</CardDescription>
+        <CardTitle>{t("coaches.listingTitle")}</CardTitle>
+        <CardDescription>{t("coaches.listingDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="displayName">Display name *</Label>
+            <Label htmlFor="displayName">{t("coaches.displayName")} *</Label>
             <Input id="displayName" value={form.displayName} onChange={(e) => setForm(f => ({ ...f, displayName: e.target.value }))} data-testid="input-coach-name" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="experience">Years of experience</Label>
+            <Label htmlFor="experience">{t("coaches.experienceLabel")}</Label>
             <Input id="experience" type="number" min={0} max={80} value={form.experienceYears} onChange={(e) => setForm(f => ({ ...f, experienceYears: e.target.value }))} data-testid="input-coach-experience" />
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea id="bio" rows={4} value={form.bio} onChange={(e) => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Background, style, what you focus on with students…" data-testid="textarea-coach-bio" />
+          <Label htmlFor="bio">{t("coaches.bio")}</Label>
+          <Textarea id="bio" rows={4} value={form.bio} onChange={(e) => setForm(f => ({ ...f, bio: e.target.value }))} placeholder={t("coaches.bioPlaceholder")} data-testid="textarea-coach-bio" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="specialties">Specialties (comma separated)</Label>
-          <Input id="specialties" value={form.specialties} onChange={(e) => setForm(f => ({ ...f, specialties: e.target.value }))} placeholder="ICT, Smart Money, Forex, Indices, Risk management" data-testid="input-coach-specialties" />
+          <Label htmlFor="specialties">{t("coaches.specialties")}</Label>
+          <Input id="specialties" value={form.specialties} onChange={(e) => setForm(f => ({ ...f, specialties: e.target.value }))} placeholder={t("coaches.specialtiesPlaceholder")} data-testid="input-coach-specialties" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="rate">Hourly rate</Label>
+            <Label htmlFor="rate">{t("coaches.rate")}</Label>
             <Input id="rate" type="number" min={0} value={form.hourlyRate} onChange={(e) => setForm(f => ({ ...f, hourlyRate: e.target.value }))} data-testid="input-coach-rate" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="currency">Currency</Label>
+            <Label htmlFor="currency">{t("coaches.currency")}</Label>
             <Input id="currency" value={form.currency} maxLength={4} onChange={(e) => setForm(f => ({ ...f, currency: e.target.value.toUpperCase() }))} data-testid="input-coach-currency" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="contact">Contact email</Label>
+            <Label htmlFor="contact">{t("coaches.contactEmail")}</Label>
             <Input id="contact" type="email" value={form.contactEmail} onChange={(e) => setForm(f => ({ ...f, contactEmail: e.target.value }))} data-testid="input-coach-email" />
           </div>
         </div>
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-3">
             <Switch checked={form.available} onCheckedChange={(v) => setForm(f => ({ ...f, available: v }))} data-testid="switch-coach-available" />
-            <Label className="cursor-pointer">Visible in directory</Label>
+            <Label className="cursor-pointer">{t("coaches.visible")}</Label>
           </div>
           <Button onClick={() => save.mutate()} disabled={save.isPending || !form.displayName.trim()} className="bg-emerald-500 hover:bg-emerald-600" data-testid="button-save-coach-profile">
             {save.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Save listing
+            {t("coaches.saveListing")}
           </Button>
         </div>
       </CardContent>
