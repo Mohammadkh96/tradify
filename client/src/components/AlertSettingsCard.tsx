@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Bell, AlertTriangle, Activity, Compass, TrendingDown, Save, Loader2, Mail } from "lucide-react";
+import { Bell, AlertTriangle, Activity, Compass, TrendingDown, Save, Loader2, Mail, CalendarDays } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -29,6 +29,8 @@ interface AlertPreferences {
   strategyDeviationEmail: boolean;
   cooldownMinutes: number;
   digestEnabled: boolean;
+  weeklyDigestEnabled: boolean;
+  weeklyDigestEmail: boolean;
 }
 
 const DEFAULTS: AlertPreferences = {
@@ -49,6 +51,8 @@ const DEFAULTS: AlertPreferences = {
   strategyDeviationEmail: false,
   cooldownMinutes: 60,
   digestEnabled: true,
+  weeklyDigestEnabled: true,
+  weeklyDigestEmail: true,
 };
 
 export function AlertSettingsCard() {
@@ -328,6 +332,43 @@ export function AlertSettingsCard() {
                   data-testid="switch-digest-enabled"
                 />
               </div>
+            </section>
+
+            <Separator />
+
+            {/* WEEKLY PERFORMANCE DIGEST */}
+            <section className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex gap-3 min-w-0">
+                  <CalendarDays className="h-4 w-4 mt-1 text-emerald-500 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <Label className="text-sm font-semibold block">
+                      {t("widgets.alerts.weeklyDigest.label", "Weekly performance digest")}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t(
+                        "widgets.alerts.weeklyDigest.desc",
+                        "Every Sunday morning, a snapshot of last week: trades, win rate, P/L, best/worst trade, rule-compliance and one insight.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={prefs.weeklyDigestEnabled}
+                  onCheckedChange={(v) => update({ weeklyDigestEnabled: v })}
+                  data-testid="switch-weekly-digest-enabled"
+                />
+              </div>
+              {prefs.weeklyDigestEnabled && (
+                <div className="ml-7 flex items-center justify-between sm:justify-start sm:gap-3">
+                  <Label className="text-xs text-muted-foreground">{t("widgets.alerts.email")}</Label>
+                  <Switch
+                    checked={prefs.weeklyDigestEmail}
+                    onCheckedChange={(v) => update({ weeklyDigestEmail: v })}
+                    data-testid="switch-weekly-digest-email"
+                  />
+                </div>
+              )}
             </section>
 
             <Separator />

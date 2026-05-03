@@ -23,6 +23,7 @@ import Checkout from "@/pages/Checkout";
 import TradersHub from "@/pages/TradersHub";
 import Achievements from "@/pages/Achievements";
 import CoachDashboard from "@/pages/CoachDashboard";
+import Coaches from "@/pages/Coaches";
 import Auth from "@/pages/Auth";
 import EarlyAccess from "@/pages/EarlyAccess";
 import { MainLayout } from "@/components/MainLayout";
@@ -400,6 +401,9 @@ function Router() {
       </Route>
       <Route path="/coach">
         {() => !isUserLoggedIn ? <Redirect to="/login" /> : <CoachDashboard />}
+      </Route>
+      <Route path="/coaches">
+        {() => !isUserLoggedIn ? <Redirect to="/login" /> : <Coaches />}
       </Route>
       
       {/* Admin Routes */}

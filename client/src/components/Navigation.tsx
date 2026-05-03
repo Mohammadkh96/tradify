@@ -48,6 +48,7 @@ export function Navigation() {
     { href: "/knowledge-base", label: t("sidebar.education"), testId: "education", icon: BookOpen },
     { href: "/achievements", label: t("sidebar.achievements"), testId: "achievements", icon: Award },
     ...(isCoach ? [{ href: "/coach", label: "Coach", testId: "coach", icon: GraduationCap }] : []),
+    { href: "/coaches", label: "Find Coach", testId: "coaches", icon: Users },
     { href: "/pricing", label: t("sidebar.plans"), testId: "plans", icon: CreditCard },
     { href: "/profile", label: t("sidebar.profile"), testId: "profile", icon: User },
   ];

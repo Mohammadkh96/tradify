@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import CsvImportDialog from "@/components/CsvImportDialog";
 import { TradeChartUploader } from "@/components/TradeChartUploader";
+import { TradeAiTags } from "@/components/TradeAiTags";
 import { useSampleMode } from "@/hooks/useSampleMode";
 import { getSampleTrades } from "@/lib/sampleData";
 import { SampleDataBanner } from "@/components/SampleDataBanner";
@@ -569,6 +570,12 @@ export default function Journal() {
                       <TradeChartUploader
                         tradeId={trade.id}
                         hasChart={!!trade.chartUrl}
+                        disabled={sampleMode.active}
+                        initialAnnotations={trade.chartAnnotations || null}
+                      />
+                      <TradeAiTags
+                        tradeId={trade.id}
+                        tags={trade.aiTags}
                         disabled={sampleMode.active}
                       />
                     </div>

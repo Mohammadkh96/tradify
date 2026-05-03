@@ -22,6 +22,7 @@ import { MonthlyReviewReport } from "@/components/MonthlyReviewReport";
 import { PdfExportButton } from "@/components/PdfExportButton";
 import DashboardCustomizer, { useDashboardConfig } from "@/components/DashboardCustomizer";
 import { PsychologyTradeReview } from "@/components/PsychologyTradeReview";
+import TradingHeatmap from "@/components/TradingHeatmap";
 import { 
   Activity, 
   Wallet,
@@ -1283,6 +1284,12 @@ export default function Dashboard() {
 
         {dashConfig.widgets.achievements !== false && (
           <AchievementsWidget />
+        )}
+
+        {dashConfig.widgets.heatmap !== false && (
+          <div className="mb-8">
+            <TradingHeatmap />
+          </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

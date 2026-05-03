@@ -30,6 +30,12 @@ export const tradeJournal = pgTable("trade_journal", {
   mood: text("mood"),
   mistakeCategory: text("mistake_category"),
   chartUrl: text("chart_url"),
+  // AI-suggested tags (e.g., ["FOMO entry", "early exit", "trend continuation"]).
+  // Generated on demand from notes + outcome. Stored as string[].
+  aiTags: jsonb("ai_tags").default([]),
+  // Drawing annotations layered on top of the chart image.
+  // Schema: { strokes: [{ color, width, points: [{x,y}] }], shapes: [...] }
+  chartAnnotations: jsonb("chart_annotations"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -173,6 +179,40 @@ export type InsertCoachStudent = z.infer<typeof insertCoachStudentSchema>;
 export const insertCoachFeedbackSchema = createInsertSchema(coachFeedback).omit({ id: true, createdAt: true });
 export type CoachFeedback = typeof coachFeedback.$inferSelect;
 export type InsertCoachFeedback = z.infer<typeof insertCoachFeedbackSchema>;
+
+// Public coach directory listing — coaches opt in by creating a profile.
+export const coachProfile = pgTable("coach_profile", {
+  userId: text("user_id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  bio: text("bio"),
+  specialties: jsonb("specialties").default([]),
+  hourlyRate: integer("hourly_rate"),
+  currency: text("currency").default("USD"),
+  available: boolean("available").default(true),
+  contactEmail: text("contact_email"),
+  experienceYears: integer("experience_years"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCoachProfileSchema = createInsertSchema(coachProfile).omit({ createdAt: true, updatedAt: true });
+export type CoachProfile = typeof coachProfile.$inferSelect;
+export type InsertCoachProfile = z.infer<typeof insertCoachProfileSchema>;
+
+// Student → coach contact request from the directory.
+export const coachRequest = pgTable("coach_request", {
+  id: serial("id").primaryKey(),
+  coachId: text("coach_id").notNull(),
+  studentId: text("student_id").notNull(),
+  message: text("message"),
+  status: text("status").notNull().default("pending"), // pending | accepted | declined
+  createdAt: timestamp("created_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+});
+
+export const insertCoachRequestSchema = createInsertSchema(coachRequest).omit({ id: true, createdAt: true, respondedAt: true });
+export type CoachRequest = typeof coachRequest.$inferSelect;
+export type InsertCoachRequest = z.infer<typeof insertCoachRequestSchema>;
 
 export const signalProviderProfile = pgTable("signal_provider_profile", {
   id: serial("id").primaryKey(),
@@ -850,6 +890,9 @@ export const alertPreferences = pgTable("alert_preferences", {
   // Once-a-day digest email summarizing yesterday's risk alerts.
   // Independent of real-time per-alert emails.
   digestEnabled: boolean("digest_enabled").default(true),
+  // Weekly performance digest — Sunday 9am local. Master + email channel.
+  weeklyDigestEnabled: boolean("weekly_digest_enabled").default(true),
+  weeklyDigestEmail: boolean("weekly_digest_email").default(true),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

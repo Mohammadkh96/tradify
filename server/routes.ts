@@ -2456,6 +2456,287 @@ ${blogPosts.map(p => `  <url>
     }
   });
 
+  // ── AI tagging for a trade ──────────────────────────────────────────────
+  // Generates short discipline-oriented tags from notes, outcome, and rule
+  // compliance. Stored on trade_journal.ai_tags as a string[].
+  app.post("/api/trades/:id/ai-tags", requireAuth, async (req, res) => {
+    try {
+      const tradeId = Number(req.params.id);
+      const userId = req.session.userId!;
+      const trade = await storage.getTrade(tradeId);
+      if (!trade) return res.status(404).json({ message: "Trade not found" });
+      if (trade.userId !== userId) return res.status(403).json({ message: "Access denied" });
+      const prompt = `You analyze a single trade for behavioral and execution patterns. Return 3-6 SHORT tags (2-4 words each), lowercase, no punctuation, that describe the BEHAVIOR or PATTERN — not the outcome. Focus on discipline, emotion, setup type, mistake category if any.
+Trade:
+- Pair: ${trade.pair} ${trade.direction} ${trade.timeframe}
+- Outcome: ${trade.outcome} ${trade.netPl ? `(net ${trade.netPl})` : ""}
+- HTF bias: ${trade.htfBias} (${trade.htfBiasClear ? "clear" : "unclear"})
+- Structure: ${trade.structureState}, zone ${trade.zoneValidity}, liquidity ${trade.liquidityStatus}
+- Rule compliant: ${trade.isRuleCompliant ? "yes" : `no (${trade.violationReason || "n/a"})`}
+- Mood: ${trade.mood || "n/a"}
+- Mistake: ${trade.mistakeCategory || "n/a"}
+- Notes: ${trade.notes || "(none)"}
+Respond with ONLY a JSON object: {"tags": ["tag one", "tag two", ...]}`;
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a trading discipline coach. Return only valid JSON." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.4,
+        max_tokens: 200,
+      });
+      const raw = response.choices[0]?.message?.content || "{}";
+      let tags: string[] = [];
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.tags)) {
+          tags = parsed.tags.filter((t: any) => typeof t === "string").map((t: string) => t.toLowerCase().slice(0, 40)).slice(0, 8);
+        }
+      } catch {}
+      await db.update(schema.tradeJournal)
+        .set({ aiTags: tags } as any)
+        .where(and(eq(schema.tradeJournal.id, tradeId), eq(schema.tradeJournal.userId, userId)));
+      res.json({ tags });
+    } catch (err: any) {
+      console.error("[AI-Tags] error:", err);
+      res.status(500).json({ message: err?.message || "Failed to generate tags" });
+    }
+  });
+
+  // ── Chart annotations save ──────────────────────────────────────────────
+  app.put("/api/trades/:id/chart-annotations", requireAuth, async (req, res) => {
+    try {
+      const tradeId = Number(req.params.id);
+      const userId = req.session.userId!;
+      const trade = await storage.getTrade(tradeId);
+      if (!trade) return res.status(404).json({ message: "Trade not found" });
+      if (trade.userId !== userId) return res.status(403).json({ message: "Access denied" });
+      const annotations = req.body?.annotations ?? null;
+      // Cap payload size — strokes can grow unbounded.
+      const json = JSON.stringify(annotations || null);
+      if (json.length > 200_000) return res.status(413).json({ message: "Annotation payload too large" });
+      await db.update(schema.tradeJournal)
+        .set({ chartAnnotations: annotations } as any)
+        .where(and(eq(schema.tradeJournal.id, tradeId), eq(schema.tradeJournal.userId, userId)));
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[Annotations] error:", err);
+      res.status(500).json({ message: "Failed to save annotations" });
+    }
+  });
+
+  // ── Coach directory ─────────────────────────────────────────────────────
+  app.get("/api/coaches/directory", requireAuth, async (_req, res) => {
+    try {
+      const r = await pool.query(
+        `SELECT user_id, display_name, bio, specialties, hourly_rate, currency, available, experience_years
+         FROM coach_profile WHERE available = TRUE ORDER BY updated_at DESC LIMIT 200`
+      );
+      res.json(r.rows.map(row => ({
+        userId: row.user_id,
+        displayName: row.display_name,
+        bio: row.bio,
+        specialties: row.specialties || [],
+        hourlyRate: row.hourly_rate,
+        currency: row.currency,
+        available: row.available,
+        experienceYears: row.experience_years,
+      })));
+    } catch (err) {
+      console.error("[CoachDir] list error:", err);
+      res.status(500).json({ message: "Failed to load directory" });
+    }
+  });
+
+  app.get("/api/coaches/me/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const r = await pool.query(`SELECT * FROM coach_profile WHERE user_id = $1`, [userId]);
+      if (!r.rows[0]) return res.json(null);
+      const row = r.rows[0];
+      res.json({
+        userId: row.user_id,
+        displayName: row.display_name,
+        bio: row.bio,
+        specialties: row.specialties || [],
+        hourlyRate: row.hourly_rate,
+        currency: row.currency,
+        available: row.available,
+        contactEmail: row.contact_email,
+        experienceYears: row.experience_years,
+      });
+    } catch (err) {
+      console.error("[CoachDir] me error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
+  app.put("/api/coaches/me/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const b = req.body || {};
+      const displayName = String(b.displayName || "").trim().slice(0, 80);
+      if (!displayName) return res.status(400).json({ message: "Display name required" });
+      const bio = b.bio ? String(b.bio).slice(0, 2000) : null;
+      const specialties = Array.isArray(b.specialties) ? b.specialties.slice(0, 12).map((s: any) => String(s).slice(0, 40)) : [];
+      const hourlyRate = b.hourlyRate != null && b.hourlyRate !== "" ? Math.max(0, Math.min(99999, Math.round(Number(b.hourlyRate)))) : null;
+      const currency = String(b.currency || "USD").toUpperCase().slice(0, 4);
+      const available = b.available !== false;
+      const contactEmail = b.contactEmail ? String(b.contactEmail).slice(0, 200) : null;
+      const experienceYears = b.experienceYears != null && b.experienceYears !== "" ? Math.max(0, Math.min(80, Math.round(Number(b.experienceYears)))) : null;
+      await pool.query(
+        `INSERT INTO coach_profile (user_id, display_name, bio, specialties, hourly_rate, currency, available, contact_email, experience_years, updated_at)
+         VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,NOW())
+         ON CONFLICT (user_id) DO UPDATE SET
+           display_name = EXCLUDED.display_name,
+           bio = EXCLUDED.bio,
+           specialties = EXCLUDED.specialties,
+           hourly_rate = EXCLUDED.hourly_rate,
+           currency = EXCLUDED.currency,
+           available = EXCLUDED.available,
+           contact_email = EXCLUDED.contact_email,
+           experience_years = EXCLUDED.experience_years,
+           updated_at = NOW()`,
+        [userId, displayName, bio, JSON.stringify(specialties), hourlyRate, currency, available, contactEmail, experienceYears]
+      );
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[CoachDir] put profile error:", err);
+      res.status(500).json({ message: "Failed to save profile" });
+    }
+  });
+
+  app.post("/api/coaches/:coachId/request", requireAuth, async (req, res) => {
+    try {
+      const studentId = req.session.userId!;
+      const coachId = String(req.params.coachId);
+      if (coachId === studentId) return res.status(400).json({ message: "Cannot request yourself" });
+      const message = req.body?.message ? String(req.body.message).slice(0, 2000) : null;
+      const c = await pool.query(`SELECT user_id FROM coach_profile WHERE user_id = $1 AND available = TRUE`, [coachId]);
+      if (!c.rows[0]) return res.status(404).json({ message: "Coach not found or unavailable" });
+      const existing = await pool.query(
+        `SELECT id FROM coach_request WHERE coach_id = $1 AND student_id = $2 AND status = 'pending' LIMIT 1`,
+        [coachId, studentId]
+      );
+      if (existing.rows[0]) return res.status(409).json({ message: "You already have a pending request with this coach" });
+      try {
+        const r = await pool.query(
+          `INSERT INTO coach_request (coach_id, student_id, message, status) VALUES ($1,$2,$3,'pending') RETURNING id`,
+          [coachId, studentId, message]
+        );
+        res.status(201).json({ id: r.rows[0].id });
+      } catch (e: any) {
+        // Race with another concurrent insert hitting UNIQUE(coach,student,status).
+        if (e?.code === "23505") {
+          return res.status(409).json({ message: "You already have a pending request with this coach" });
+        }
+        throw e;
+      }
+    } catch (err) {
+      console.error("[CoachDir] request error:", err);
+      res.status(500).json({ message: "Failed to send request" });
+    }
+  });
+
+  app.get("/api/coaches/me/requests", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const incoming = await pool.query(
+        `SELECT id, coach_id, student_id, message, status, created_at, responded_at
+         FROM coach_request WHERE coach_id = $1 ORDER BY created_at DESC LIMIT 100`, [userId]
+      );
+      const outgoing = await pool.query(
+        `SELECT cr.id, cr.coach_id, cr.student_id, cr.message, cr.status, cr.created_at, cr.responded_at, cp.display_name AS coach_name
+         FROM coach_request cr LEFT JOIN coach_profile cp ON cp.user_id = cr.coach_id
+         WHERE cr.student_id = $1 ORDER BY cr.created_at DESC LIMIT 100`, [userId]
+      );
+      res.json({
+        incoming: incoming.rows.map(r => ({ id: r.id, coachId: r.coach_id, studentId: r.student_id, message: r.message, status: r.status, createdAt: r.created_at, respondedAt: r.responded_at })),
+        outgoing: outgoing.rows.map(r => ({ id: r.id, coachId: r.coach_id, studentId: r.student_id, coachName: r.coach_name, message: r.message, status: r.status, createdAt: r.created_at, respondedAt: r.responded_at })),
+      });
+    } catch (err) {
+      console.error("[CoachDir] requests error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
+  app.post("/api/coaches/requests/:id/respond", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const id = Number(req.params.id);
+      const action = String(req.body?.action || "");
+      if (action !== "accept" && action !== "decline") return res.status(400).json({ message: "Invalid action" });
+      const r = await pool.query(`SELECT * FROM coach_request WHERE id = $1`, [id]);
+      const reqRow = r.rows[0];
+      if (!reqRow) return res.status(404).json({ message: "Request not found" });
+      if (reqRow.coach_id !== userId) return res.status(403).json({ message: "Access denied" });
+      if (reqRow.status !== "pending") return res.status(400).json({ message: "Request already resolved" });
+      const newStatus = action === "accept" ? "accepted" : "declined";
+      await pool.query(`UPDATE coach_request SET status = $1, responded_at = NOW() WHERE id = $2`, [newStatus, id]);
+      if (action === "accept") {
+        // Wire the existing coach↔student relationship. If a prior row exists
+        // (e.g. previously removed/declined), re-activate it instead of leaving
+        // the student stranded with status 'accepted' but no usable link.
+        try {
+          const upd = await pool.query(
+            `UPDATE coach_student SET status = 'active', accepted_at = NOW(), removed_at = NULL
+             WHERE coach_id = $1 AND student_id = $2`,
+            [reqRow.coach_id, reqRow.student_id]
+          );
+          if (upd.rowCount === 0) {
+            await pool.query(
+              `INSERT INTO coach_student (coach_id, student_id, status, accepted_at)
+               VALUES ($1, $2, 'active', NOW())`,
+              [reqRow.coach_id, reqRow.student_id]
+            );
+          }
+        } catch (e) {
+          console.error("[CoachDir] coach_student wire failed:", e);
+        }
+      }
+      res.json({ ok: true, status: newStatus });
+    } catch (err) {
+      console.error("[CoachDir] respond error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
+  // Trading heatmap — 7x24 grid of {trades, wins, netPl} by local DOW × hour.
+  app.get("/api/analytics/heatmap", requireAuth, async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+      const userId = req.session.userId!;
+      const rangeDays = Math.max(7, Math.min(365, Number(req.query.days) || 90));
+      const r = await pool.query(
+        `SELECT outcome, net_pl, created_at
+         FROM trade_journal
+         WHERE user_id = $1 AND created_at >= NOW() - ($2::int * INTERVAL '1 day')`,
+        [userId, rangeDays]
+      );
+      const grid: { trades: number; wins: number; netPl: number }[][] = Array.from(
+        { length: 7 },
+        () => Array.from({ length: 24 }, () => ({ trades: 0, wins: 0, netPl: 0 }))
+      );
+      for (const row of r.rows) {
+        const d = row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
+        if (isNaN(d.getTime())) continue;
+        const dow = d.getDay();
+        const hour = d.getHours();
+        const cell = grid[dow][hour];
+        cell.trades += 1;
+        if (String(row.outcome || "").toLowerCase() === "win") cell.wins += 1;
+        const pl = parseFloat(row.net_pl);
+        if (Number.isFinite(pl)) cell.netPl += pl;
+      }
+      res.json({ grid, totalTrades: r.rows.length, rangeDays });
+    } catch (err) {
+      console.error("[Heatmap] error:", err);
+      res.status(500).json({ message: "Failed to compute heatmap" });
+    }
+  });
+
   // Session Performance Analytics (ELITE ONLY)
   app.get("/api/session-analytics/:userId", requireAuth, async (req, res) => {
     // Prevent browser caching for dynamic analytics data
@@ -9071,6 +9352,8 @@ Guidelines:
         strategyDeviationEmail: false,
         cooldownMinutes: 60,
         digestEnabled: true,
+        weeklyDigestEnabled: true,
+        weeklyDigestEmail: true,
       };
       if (!row) return res.json(defaults);
       res.json({
@@ -9092,6 +9375,8 @@ Guidelines:
         strategyDeviationEmail: row.strategy_deviation_email,
         cooldownMinutes: row.cooldown_minutes,
         digestEnabled: row.digest_enabled ?? true,
+        weeklyDigestEnabled: row.weekly_digest_enabled ?? true,
+        weeklyDigestEmail: row.weekly_digest_email ?? true,
       });
     } catch (err) {
       console.error("[AlertPrefs] get error:", err);
@@ -9131,6 +9416,8 @@ Guidelines:
         strategyDeviationEmail: !!b.strategyDeviationEmail,
         cooldownMinutes: clampInt(b.cooldownMinutes, 60, 5, 1440),
         digestEnabled: b.digestEnabled !== false,
+        weeklyDigestEnabled: b.weeklyDigestEnabled !== false,
+        weeklyDigestEmail: b.weeklyDigestEmail !== false,
       };
       if (vals.drawdownWarnThreshold >= vals.drawdownCriticalThreshold) {
         vals.drawdownWarnThreshold = Math.max(10, vals.drawdownCriticalThreshold - 10);
@@ -9139,8 +9426,8 @@ Guidelines:
         `INSERT INTO alert_preferences (
            user_id, drawdown_enabled, drawdown_in_app, drawdown_email, drawdown_warn_threshold, drawdown_critical_threshold,
            revenge_enabled, revenge_in_app, revenge_email, overtrading_enabled, overtrading_in_app, overtrading_email, overtrading_daily_cap,
-           strategy_deviation_enabled, strategy_deviation_in_app, strategy_deviation_email, cooldown_minutes, digest_enabled, updated_at
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,NOW())
+           strategy_deviation_enabled, strategy_deviation_in_app, strategy_deviation_email, cooldown_minutes, digest_enabled, weekly_digest_enabled, weekly_digest_email, updated_at
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,NOW())
          ON CONFLICT (user_id) DO UPDATE SET
            drawdown_enabled = EXCLUDED.drawdown_enabled,
            drawdown_in_app = EXCLUDED.drawdown_in_app,
@@ -9159,10 +9446,13 @@ Guidelines:
            strategy_deviation_email = EXCLUDED.strategy_deviation_email,
            cooldown_minutes = EXCLUDED.cooldown_minutes,
            digest_enabled = EXCLUDED.digest_enabled,
+           weekly_digest_enabled = EXCLUDED.weekly_digest_enabled,
+           weekly_digest_email = EXCLUDED.weekly_digest_email,
            updated_at = NOW()`,
         [userId, vals.drawdownEnabled, vals.drawdownInApp, vals.drawdownEmail, vals.drawdownWarnThreshold, vals.drawdownCriticalThreshold,
          vals.revengeEnabled, vals.revengeInApp, vals.revengeEmail, vals.overtradingEnabled, vals.overtradingInApp, vals.overtradingEmail, vals.overtradingDailyCap,
-         vals.strategyDeviationEnabled, vals.strategyDeviationInApp, vals.strategyDeviationEmail, vals.cooldownMinutes, vals.digestEnabled]
+         vals.strategyDeviationEnabled, vals.strategyDeviationInApp, vals.strategyDeviationEmail, vals.cooldownMinutes, vals.digestEnabled,
+         vals.weeklyDigestEnabled, vals.weeklyDigestEmail]
       );
       res.json({ ok: true, ...vals, userId });
     } catch (err) {

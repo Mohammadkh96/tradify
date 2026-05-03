@@ -5,6 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { OnboardingTour } from "./OnboardingTour";
 import { FirstSyncMoment } from "./FirstSyncMoment";
 import { NotificationBell } from "./NotificationBell";
+import QuickAddTradeFab from "./QuickAddTradeFab";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -23,6 +24,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         {children}
       </main>
       <FloatingCalculator />
+      <QuickAddTradeFab />
       <OnboardingTour />
       <FirstSyncMoment />
     </div>

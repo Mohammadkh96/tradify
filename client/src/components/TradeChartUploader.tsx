@@ -1,22 +1,39 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Image as ImageIcon, Upload, X, Maximize2 } from "lucide-react";
+import { Image as ImageIcon, Upload, X, Maximize2, Pencil, Eraser, Save, Trash2, Undo } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+type Stroke = { color: string; width: number; points: { x: number; y: number }[] };
+type Annotations = { strokes: Stroke[] } | null;
+
+const COLORS = ["#10b981", "#ef4444", "#f59e0b", "#3b82f6", "#ffffff", "#000000"];
 
 type Props = {
   tradeId: number;
   hasChart: boolean;
   disabled?: boolean;
+  initialAnnotations?: Annotations;
 };
 
-export function TradeChartUploader({ tradeId, hasChart, disabled }: Props) {
+export function TradeChartUploader({ tradeId, hasChart, disabled, initialAnnotations }: Props) {
   const [uploading, setUploading] = useState(false);
   const [lightbox, setLightbox] = useState(false);
   const [bust, setBust] = useState(0);
+  const [annotateMode, setAnnotateMode] = useState(false);
+  const [strokes, setStrokes] = useState<Stroke[]>(() => initialAnnotations?.strokes || []);
+  const [color, setColor] = useState(COLORS[0]);
+  const [width, setWidth] = useState(3);
+  const [drawing, setDrawing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  useEffect(() => {
+    setStrokes(initialAnnotations?.strokes || []);
+  }, [initialAnnotations, lightbox]);
 
   const src = `/api/trades/${tradeId}/chart?v=${bust}`;
 
@@ -61,6 +78,71 @@ export function TradeChartUploader({ tradeId, hasChart, disabled }: Props) {
     }
   }
 
+  function svgPoint(e: React.PointerEvent<SVGSVGElement>) {
+    const svg = svgRef.current;
+    if (!svg) return { x: 0, y: 0 };
+    const rect = svg.getBoundingClientRect();
+    return { x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 };
+  }
+
+  function onPointerDown(e: React.PointerEvent<SVGSVGElement>) {
+    if (!annotateMode) return;
+    e.preventDefault();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    setDrawing(true);
+    setStrokes(s => [...s, { color, width, points: [svgPoint(e)] }]);
+  }
+  function onPointerMove(e: React.PointerEvent<SVGSVGElement>) {
+    if (!drawing || !annotateMode) return;
+    const p = svgPoint(e);
+    setStrokes(s => {
+      if (!s.length) return s;
+      const last = s[s.length - 1];
+      return [...s.slice(0, -1), { ...last, points: [...last.points, p] }];
+    });
+  }
+  function onPointerUp() { setDrawing(false); }
+
+  async function saveAnnotations() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/trades/${tradeId}/chart-annotations`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ annotations: { strokes } }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      queryClient.invalidateQueries({ queryKey: ["/api/trades"] });
+      toast({ title: "Annotations saved" });
+      setAnnotateMode(false);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Save failed", description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function strokeToPath(s: Stroke): string {
+    if (!s.points.length) return "";
+    return s.points.reduce((acc, p, i) => {
+      const x = Number.isFinite(p.x) ? p.x : 0;
+      const y = Number.isFinite(p.y) ? p.y : 0;
+      return acc + (i === 0 ? `M${x},${y}` : ` L${x},${y}`);
+    }, "");
+  }
+
+  // Restrict colors to hex / known palette — JSONB is user-controlled so the
+  // raw string can't be trusted in an SVG stroke attribute.
+  function safeColor(c: string): string {
+    if (typeof c !== "string") return "#10b981";
+    return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : "#10b981";
+  }
+  function safeWidth(w: number): number {
+    const n = Number(w);
+    return Number.isFinite(n) ? Math.max(1, Math.min(20, n)) : 3;
+  }
+
   if (hasChart) {
     return (
       <>
@@ -98,18 +180,118 @@ export function TradeChartUploader({ tradeId, hasChart, disabled }: Props) {
 
         {lightbox && (
           <div
-            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 cursor-zoom-out"
-            onClick={() => setLightbox(false)}
+            className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-4"
+            onClick={(e) => { if (!annotateMode && e.target === e.currentTarget) setLightbox(false); }}
             data-testid={`lightbox-chart-${tradeId}`}
           >
-            <img src={src} alt="trade chart full" className="max-w-full max-h-full rounded shadow-2xl" />
-            <button
-              type="button"
-              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"
-              onClick={(e) => { e.stopPropagation(); setLightbox(false); }}
-            >
-              <X size={20} />
-            </button>
+            {/* Toolbar */}
+            <div className="flex items-center gap-2 mb-3 bg-black/60 border border-white/10 rounded-full px-3 py-2 backdrop-blur-sm flex-wrap justify-center">
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => setAnnotateMode(a => !a)}
+                  className={cn("inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-colors",
+                    annotateMode ? "bg-emerald-500 text-slate-950" : "bg-white/10 text-white hover:bg-white/20")}
+                  data-testid={`button-annotate-toggle-${tradeId}`}
+                >
+                  <Pencil size={12} />{annotateMode ? "Drawing" : "Annotate"}
+                </button>
+              )}
+              {annotateMode && (
+                <>
+                  <div className="flex items-center gap-1">
+                    {COLORS.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setColor(c)}
+                        className={cn("w-5 h-5 rounded-full border-2", color === c ? "border-emerald-400" : "border-white/20")}
+                        style={{ background: c }}
+                        title={c}
+                      />
+                    ))}
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={10}
+                    value={width}
+                    onChange={(e) => setWidth(Number(e.target.value))}
+                    className="w-20"
+                    title="Stroke width"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setStrokes(s => s.slice(0, -1))}
+                    disabled={!strokes.length}
+                    className="p-1.5 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
+                    title="Undo last stroke"
+                    data-testid={`button-annotate-undo-${tradeId}`}
+                  >
+                    <Undo size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { if (confirm("Clear all annotations?")) setStrokes([]); }}
+                    disabled={!strokes.length}
+                    className="p-1.5 rounded-full bg-white/10 text-white hover:bg-rose-500/30 disabled:opacity-40"
+                    title="Clear all"
+                    data-testid={`button-annotate-clear-${tradeId}`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveAnnotations}
+                    disabled={saving}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+                    data-testid={`button-annotate-save-${tradeId}`}
+                  >
+                    <Save size={12} />{saving ? "Saving…" : "Save"}
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => { setAnnotateMode(false); setLightbox(false); }}
+                className="p-1.5 rounded-full bg-white/10 text-white hover:bg-white/20 ml-2"
+                title="Close"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Image + svg overlay */}
+            <div className="relative max-w-full max-h-[80vh]">
+              <img src={src} alt="trade chart full" className="max-w-full max-h-[80vh] rounded shadow-2xl block" draggable={false} />
+              <svg
+                ref={svgRef}
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className={cn("absolute inset-0 w-full h-full", annotateMode ? "cursor-crosshair touch-none" : "pointer-events-none")}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerLeave={onPointerUp}
+                data-testid={`svg-annotations-${tradeId}`}
+              >
+                {strokes.map((s, i) => {
+                  const w = safeWidth(s.width);
+                  return (
+                    <path
+                      key={i}
+                      d={strokeToPath(s)}
+                      stroke={safeColor(s.color)}
+                      strokeWidth={w / 4}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      vectorEffect="non-scaling-stroke"
+                      style={{ strokeWidth: `${w}px` }}
+                    />
+                  );
+                })}
+              </svg>
+            </div>
           </div>
         )}
       </>
