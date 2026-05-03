@@ -29,6 +29,7 @@ export const tradeJournal = pgTable("trade_journal", {
   matchedSetup: text("matched_setup"),
   mood: text("mood"),
   mistakeCategory: text("mistake_category"),
+  chartUrl: text("chart_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

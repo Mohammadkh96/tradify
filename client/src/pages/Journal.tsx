@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import CsvImportDialog from "@/components/CsvImportDialog";
+import { TradeChartUploader } from "@/components/TradeChartUploader";
 import { useSampleMode } from "@/hooks/useSampleMode";
 import { getSampleTrades } from "@/lib/sampleData";
 import { SampleDataBanner } from "@/components/SampleDataBanner";
@@ -565,6 +566,11 @@ export default function Journal() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <TradeChartUploader
+                        tradeId={trade.id}
+                        hasChart={!!trade.chartUrl}
+                        disabled={sampleMode.active}
+                      />
                     </div>
                   </div>
                 </div>

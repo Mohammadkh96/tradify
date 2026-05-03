@@ -2298,11 +2298,65 @@ async function sendCoachFeedbackEmail(studentEmail: string, coachName: string, s
   return sendEmail(studentEmail, `New feedback from ${safeCoach}`, html);
 }
 
+export async function sendWeeklyPerformanceDigestEmail(
+  email: string,
+  s: {
+    total: number; wins: number; losses: number; winRate: number;
+    netPl: number; bestTrade: { pair: string; pl: number } | null;
+    worstTrade: { pair: string; pl: number } | null;
+    ruleComplianceRate: number; insight: string; weekLabel: string;
+  },
+): Promise<boolean> {
+  const escape = (v: string) => v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] || c));
+  const plColor = s.netPl >= 0 ? "#10B981" : "#F43F5E";
+  const plSign = s.netPl >= 0 ? "+" : "";
+  const stat = (label: string, value: string, color = "#E5E7EB") => `
+    <td style="padding:14px 12px;background:#0F172A;border-radius:10px;text-align:center;">
+      <div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;font-weight:bold;">${label}</div>
+      <div style="font-size:22px;color:${color};font-weight:900;margin-top:6px;">${value}</div>
+    </td>`;
+  const bestRow = s.bestTrade
+    ? `<tr><td style="padding:6px 0;color:#94A3B8;font-size:13px;">Best trade</td><td style="padding:6px 0;text-align:right;font-weight:bold;color:#10B981;">${escape(s.bestTrade.pair)} ${plSign}${s.bestTrade.pl >= 0 ? "+" : ""}${s.bestTrade.pl.toFixed(2)}</td></tr>`
+    : "";
+  const worstRow = s.worstTrade
+    ? `<tr><td style="padding:6px 0;color:#94A3B8;font-size:13px;">Worst trade</td><td style="padding:6px 0;text-align:right;font-weight:bold;color:#F43F5E;">${escape(s.worstTrade.pair)} ${s.worstTrade.pl >= 0 ? "+" : ""}${s.worstTrade.pl.toFixed(2)}</td></tr>`
+    : "";
+
+  const content = `
+    <h1 style="margin:0 0 6px 0;color:#FFFFFF;font-size:24px;font-weight:900;">Your week in trading</h1>
+    <p style="margin:0 0 24px 0;color:#94A3B8;font-size:13px;">${escape(s.weekLabel)}</p>
+    <table role="presentation" cellpadding="0" cellspacing="8" border="0" width="100%" style="margin-bottom:20px;">
+      <tr>
+        ${stat("Trades", String(s.total))}
+        ${stat("Win rate", `${s.winRate.toFixed(0)}%`)}
+      </tr>
+      <tr>
+        ${stat("Net P/L", `${plSign}${s.netPl.toFixed(2)}`, plColor)}
+        ${stat("Rule compliance", `${s.ruleComplianceRate.toFixed(0)}%`)}
+      </tr>
+    </table>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0F172A;border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+      ${bestRow}
+      ${worstRow}
+      <tr><td style="padding:6px 0;color:#94A3B8;font-size:13px;">Wins / Losses</td><td style="padding:6px 0;text-align:right;color:#E5E7EB;font-weight:bold;">${s.wins} / ${s.losses}</td></tr>
+    </table>
+    <div style="background:linear-gradient(135deg,#1E293B,#0F172A);border-left:4px solid #00D9A3;padding:16px 18px;border-radius:8px;margin-bottom:24px;">
+      <div style="font-size:11px;color:#00D9A3;font-weight:bold;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Insight of the week</div>
+      <div style="color:#E5E7EB;font-size:14px;line-height:1.5;">${escape(s.insight)}</div>
+    </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+      <tr><td style="background-color:#00D9A3;border-radius:8px;"><a href="${APP_URL}/journal" style="display:inline-block;color:#0A0F1E;padding:13px 30px;text-decoration:none;font-weight:bold;font-size:14px;">Open my journal</a></td></tr>
+    </table>`;
+  const html = wrapEmailBody(content, "Your weekly trading digest", `Week ${s.weekLabel}: ${s.total} trades, ${s.winRate.toFixed(0)}% win rate`);
+  return sendEmail(email, `Your week in trading — ${s.weekLabel}`, html);
+}
+
 export const emailService = {
   sendTransactionalEmail,
   sendCustomEmail,
   sendCoachInviteEmail,
   sendCoachFeedbackEmail,
+  sendWeeklyPerformanceDigestEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendAdminCreatedUserEmail,

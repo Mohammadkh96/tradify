@@ -13,6 +13,18 @@ import crypto from "crypto";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { emailService } from "./emailService";
+import multer from "multer";
+import { buildChartKey, uploadChart, downloadChart, deleteChart, extFromMime, mimeFromKey } from "./tradeChartStorage";
+
+const chartUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = ["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(file.mimetype);
+    if (ok) cb(null, true);
+    else cb(new Error("Only PNG, JPG, or WebP images are allowed") as any, false);
+  },
+});
 import { runBackup, getBackupStatus, verifyLatestBackup, downloadBackupById } from "./backup-service";
 import { openai } from "./replit_integrations/audio/index";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
@@ -1385,6 +1397,67 @@ ${blogPosts.map(p => `  <url>
     } catch (error) {
       console.error("Error saving dashboard config:", error);
       res.status(500).json({ message: "Failed to save dashboard config" });
+    }
+  });
+
+  // Trade chart upload — POST multipart, max 5MB, png/jpg/webp.
+  // Stores in object storage at trade-charts/{userId}/{tradeId}-{ts}.{ext},
+  // saves the storage key to trade_journal.chart_url. Read-back goes through
+  // GET /api/trades/:id/chart so access is auth-checked (object storage is private).
+  app.post("/api/trades/:id/chart", requireAuth, chartUpload.single("chart"), async (req, res) => {
+    try {
+      const tradeId = Number(req.params.id);
+      if (!Number.isFinite(tradeId)) return res.status(400).json({ message: "Invalid trade id" });
+      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+      const userId = req.session.userId!;
+      const trade = await storage.getTrade(tradeId);
+      if (!trade) return res.status(404).json({ message: "Trade not found" });
+      if (trade.userId !== userId) return res.status(403).json({ message: "Access denied" });
+
+      // Best-effort delete previous chart if present
+      if (trade.chartUrl) { deleteChart(trade.chartUrl).catch(() => {}); }
+
+      const ext = extFromMime(req.file.mimetype);
+      const key = buildChartKey(userId, tradeId, ext);
+      await uploadChart(key, req.file.buffer);
+      await storage.updateTrade(tradeId, { chartUrl: key } as any);
+      res.json({ chartUrl: key });
+    } catch (err: any) {
+      console.error("[TradeChart] upload error:", err);
+      res.status(500).json({ message: err?.message || "Upload failed" });
+    }
+  });
+
+  app.get("/api/trades/:id/chart", requireAuth, async (req, res) => {
+    try {
+      const tradeId = Number(req.params.id);
+      if (!Number.isFinite(tradeId)) return res.status(400).json({ message: "Invalid trade id" });
+      const trade = await storage.getTrade(tradeId);
+      if (!trade) return res.status(404).json({ message: "Trade not found" });
+      if (trade.userId !== req.session.userId) return res.status(403).json({ message: "Access denied" });
+      if (!trade.chartUrl) return res.status(404).json({ message: "No chart" });
+      const buf = await downloadChart(trade.chartUrl);
+      res.setHeader("Content-Type", mimeFromKey(trade.chartUrl));
+      res.setHeader("Cache-Control", "private, max-age=3600");
+      res.send(buf);
+    } catch (err: any) {
+      console.error("[TradeChart] read error:", err);
+      res.status(500).json({ message: "Failed to load chart" });
+    }
+  });
+
+  app.delete("/api/trades/:id/chart", requireAuth, async (req, res) => {
+    try {
+      const tradeId = Number(req.params.id);
+      const trade = await storage.getTrade(tradeId);
+      if (!trade) return res.status(404).json({ message: "Trade not found" });
+      if (trade.userId !== req.session.userId) return res.status(403).json({ message: "Access denied" });
+      if (trade.chartUrl) await deleteChart(trade.chartUrl).catch(() => {});
+      await storage.updateTrade(tradeId, { chartUrl: null } as any);
+      res.status(204).send();
+    } catch (err: any) {
+      console.error("[TradeChart] delete error:", err);
+      res.status(500).json({ message: "Delete failed" });
     }
   });
 

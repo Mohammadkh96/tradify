@@ -554,6 +554,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTrade(id: number): Promise<void> {
+    // Best-effort cleanup of attached chart in object storage before DB delete.
+    try {
+      const [row] = await db.select({ chartUrl: tradeJournal.chartUrl }).from(tradeJournal).where(eq(tradeJournal.id, id));
+      if (row?.chartUrl) {
+        const { deleteChart } = await import("./tradeChartStorage");
+        deleteChart(row.chartUrl).catch(() => {});
+      }
+    } catch { /* ignore — never block trade deletion on storage hiccup */ }
     await db.delete(tradeJournal).where(eq(tradeJournal.id, id));
   }
 

@@ -194,6 +194,16 @@ async function initializeApp() {
   } catch (err) {
     log(`Failed to arm daily digest scheduler: ${err}`, "digest");
   }
+
+  // Weekly performance digest scheduler. Runs every 30 minutes; sends a per-user
+  // performance summary on Sundays at the user's local 9am (configurable via
+  // WEEKLY_DIGEST_LOCAL_HOUR). Per-week dedupe via notifications.dedupe_key.
+  try {
+    const { startWeeklyDigestScheduler } = await import("./weeklyDigest");
+    startWeeklyDigestScheduler();
+  } catch (err) {
+    log(`Failed to arm weekly digest scheduler: ${err}`, "digest");
+  }
 }
 
 // Start the application
