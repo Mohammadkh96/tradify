@@ -4540,12 +4540,12 @@ End with: "Review your charts for current market structure."`;
         // Use updated_at for paid stage — approximates actual conversion/upgrade time
         pool.query(
           `SELECT COUNT(*) AS count FROM user_role
-           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE') AND updated_at >= $1`,
+           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE','COACH') AND updated_at >= $1`,
           [since]
         ),
         pool.query(
           `SELECT COUNT(*) AS count FROM user_role
-           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')`
+           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE','COACH')`
         ),
       ]);
 
@@ -4599,7 +4599,7 @@ End with: "Review your charts for current market structure."`;
         pool.query(
           `SELECT DATE(updated_at)::text AS day, COUNT(*) AS count
            FROM user_role
-           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+           WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE','COACH')
              AND updated_at >= NOW() - INTERVAL '1 day' * $1
            GROUP BY DATE(updated_at) ORDER BY DATE(updated_at)`,
           [days]
@@ -4654,7 +4654,7 @@ End with: "Review your charts for current market structure."`;
         pool.query(
           `SELECT COALESCE(utm_source,'direct') AS source, COALESCE(utm_campaign,'') AS campaign,
                   COUNT(*) AS signups,
-                  SUM(CASE WHEN subscription_tier IN ('PRO','ELITE') THEN 1 ELSE 0 END) AS paid
+                  SUM(CASE WHEN subscription_tier IN ('PRO','ELITE','COACH') THEN 1 ELSE 0 END) AS paid
            FROM user_role WHERE role = 'TRADER' AND created_at >= $1
            GROUP BY COALESCE(utm_source,'direct'), COALESCE(utm_campaign,'')`,
           [since]
@@ -4717,7 +4717,7 @@ End with: "Review your charts for current market structure."`;
            FROM leads l
            INNER JOIN user_role ur ON LOWER(ur.user_id) = LOWER(l.email)
            WHERE l.source = 'checklist' AND l.created_at >= $1
-             AND ur.subscription_tier IN ('PRO','ELITE')`,
+             AND ur.subscription_tier IN ('PRO','ELITE','COACH')`,
           [since]
         ),
         pool.query(
@@ -4725,7 +4725,7 @@ End with: "Review your charts for current market structure."`;
            FROM leads l
            INNER JOIN user_role ur ON LOWER(ur.user_id) = LOWER(l.email)
            WHERE l.source = 'calculator' AND l.created_at >= $1
-             AND ur.subscription_tier IN ('PRO','ELITE')`,
+             AND ur.subscription_tier IN ('PRO','ELITE','COACH')`,
           [since]
         ),
       ]);
@@ -4771,13 +4771,13 @@ End with: "Review your charts for current market structure."`;
       const [totalsRes, newWeekRes, newMonthRes, churnedMonthRes] = await Promise.all([
         pool.query(
           `SELECT subscription_tier, COUNT(*) AS count
-           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE','COACH')
            GROUP BY subscription_tier`
         ),
         // new paid this week — use updated_at as proxy for conversion time
         pool.query(
           `SELECT subscription_tier, COUNT(*) AS count
-           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE','COACH')
              AND updated_at >= $1
            GROUP BY subscription_tier`,
           [weekAgo]
@@ -4785,7 +4785,7 @@ End with: "Review your charts for current market structure."`;
         // new paid this month
         pool.query(
           `SELECT subscription_tier, COUNT(*) AS count
-           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE')
+           FROM user_role WHERE role = 'TRADER' AND subscription_tier IN ('PRO','ELITE','COACH')
              AND updated_at >= $1
            GROUP BY subscription_tier`,
           [monthAgo]
@@ -4806,22 +4806,27 @@ End with: "Review your charts for current market structure."`;
 
       const proTotal = getPlanCount(totalsRes.rows, "PRO");
       const eliteTotal = getPlanCount(totalsRes.rows, "ELITE");
+      const coachTotal = getPlanCount(totalsRes.rows, "COACH");
       const proNewWeek = getPlanCount(newWeekRes.rows, "PRO");
       const eliteNewWeek = getPlanCount(newWeekRes.rows, "ELITE");
+      const coachNewWeek = getPlanCount(newWeekRes.rows, "COACH");
       const proNewMonth = getPlanCount(newMonthRes.rows, "PRO");
       const eliteNewMonth = getPlanCount(newMonthRes.rows, "ELITE");
+      const coachNewMonth = getPlanCount(newMonthRes.rows, "COACH");
       const churnedMonth = parseInt(churnedMonthRes.rows[0].count);
 
-      const PRO_PRICE = 19;
-      const ELITE_PRICE = 39;
-      const mrrEstimate = proTotal * PRO_PRICE + eliteTotal * ELITE_PRICE;
+      const PRO_PRICE = 29;
+      const ELITE_PRICE = 59;
+      const COACH_PRICE = 99;
+      const mrrEstimate = proTotal * PRO_PRICE + eliteTotal * ELITE_PRICE + coachTotal * COACH_PRICE;
 
       res.json({
         pro: { total: proTotal, newThisWeek: proNewWeek, newThisMonth: proNewMonth },
         elite: { total: eliteTotal, newThisWeek: eliteNewWeek, newThisMonth: eliteNewMonth },
-        totalPaid: proTotal + eliteTotal,
-        newPaidThisWeek: proNewWeek + eliteNewWeek,
-        newPaidThisMonth: proNewMonth + eliteNewMonth,
+        coach: { total: coachTotal, newThisWeek: coachNewWeek, newThisMonth: coachNewMonth },
+        totalPaid: proTotal + eliteTotal + coachTotal,
+        newPaidThisWeek: proNewWeek + eliteNewWeek + coachNewWeek,
+        newPaidThisMonth: proNewMonth + eliteNewMonth + coachNewMonth,
         churnedThisMonth: churnedMonth,
         mrrEstimate,
       });
@@ -5025,7 +5030,7 @@ End with: "Review your charts for current market structure."`;
       const normalizedEmail = email.toLowerCase().trim();
 
       // Validate subscription tier
-      const validTiers = ["FREE", "PRO", "ELITE"];
+      const validTiers = ["FREE", "PRO", "ELITE", "COACH"];
       const tier = validTiers.includes(subscriptionTier?.toUpperCase()) 
         ? subscriptionTier.toUpperCase() 
         : "FREE";
@@ -8030,8 +8035,10 @@ Guidelines:
       const allTimeSpend = sumCost(allTimeLogs);
 
       const allUsers = await storage.getAllUsers();
-      const activeProUsers = allUsers.filter(u => u.subscriptionTier === "PRO" && (u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "active"));
-      const activeEliteUsers = allUsers.filter(u => u.subscriptionTier === "ELITE" && (u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "active"));
+      const isActiveSub = (u: any) => u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "active";
+      const activeProUsers = allUsers.filter(u => u.subscriptionTier === "PRO" && isActiveSub(u));
+      const activeEliteUsers = allUsers.filter(u => u.subscriptionTier === "ELITE" && isActiveSub(u));
+      const activeCoachUsers = allUsers.filter(u => u.subscriptionTier === "COACH" && isActiveSub(u));
 
       let monthlyRevenue = 0;
       for (const u of activeProUsers) {
@@ -8039,6 +8046,9 @@ Guidelines:
       }
       for (const u of activeEliteUsers) {
         monthlyRevenue += u.billingPeriod === "annual" ? 49.17 : 59;
+      }
+      for (const u of activeCoachUsers) {
+        monthlyRevenue += u.billingPeriod === "annual" ? 82.50 : 99;
       }
 
       const profitMargin = monthlyRevenue - monthSpend;
@@ -8196,7 +8206,7 @@ Guidelines:
   app.get("/api/admin/costs/per-user-tier", requireAdmin, async (_req, res) => {
     try {
       const allUsers = await storage.getAllUsers();
-      const tierCounts: Record<string, number> = { FREE: 0, PRO: 0, ELITE: 0 };
+      const tierCounts: Record<string, number> = { FREE: 0, PRO: 0, ELITE: 0, COACH: 0 };
       for (const u of allUsers) {
         const t = (u.subscriptionTier || "FREE").toUpperCase();
         if (t in tierCounts) tierCounts[t]++;
@@ -8227,6 +8237,7 @@ Guidelines:
       const isActive = (u: any) => u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "active";
       const proUsers = allUsers.filter(u => u.subscriptionTier === "PRO" && isActive(u));
       const eliteUsers = allUsers.filter(u => u.subscriptionTier === "ELITE" && isActive(u));
+      const coachUsers = allUsers.filter(u => u.subscriptionTier === "COACH" && isActive(u));
 
       let proRevenue = 0;
       for (const u of proUsers) {
@@ -8236,13 +8247,19 @@ Guidelines:
       for (const u of eliteUsers) {
         eliteRevenue += u.billingPeriod === "annual" ? 49.17 : 59;
       }
+      let coachRevenue = 0;
+      for (const u of coachUsers) {
+        coachRevenue += u.billingPeriod === "annual" ? 82.50 : 99;
+      }
 
       res.json({
-        estimatedMonthlyRevenue: (proRevenue + eliteRevenue).toFixed(2),
+        estimatedMonthlyRevenue: (proRevenue + eliteRevenue + coachRevenue).toFixed(2),
         proUsers: proUsers.length,
         eliteUsers: eliteUsers.length,
+        coachUsers: coachUsers.length,
         proRevenue: proRevenue.toFixed(2),
         eliteRevenue: eliteRevenue.toFixed(2),
+        coachRevenue: coachRevenue.toFixed(2),
       });
     } catch (error) {
       console.error("Revenue estimate error:", error);
@@ -8376,6 +8393,7 @@ Guidelines:
       const freeUsers = allUsers.filter(u => !u.subscriptionTier || u.subscriptionTier === "FREE").length;
       const proUsers = allUsers.filter(u => u.subscriptionTier === "PRO").length;
       const eliteUsers = allUsers.filter(u => u.subscriptionTier === "ELITE").length;
+      const coachUsers = allUsers.filter(u => u.subscriptionTier === "COACH").length;
 
       res.json({
         totalContent: allContent.length,
@@ -8391,7 +8409,8 @@ Guidelines:
           freeUsers,
           proUsers,
           eliteUsers,
-          conversionRate: totalUsers > 0 ? ((proUsers + eliteUsers) / totalUsers * 100).toFixed(1) : "0",
+          coachUsers,
+          conversionRate: totalUsers > 0 ? ((proUsers + eliteUsers + coachUsers) / totalUsers * 100).toFixed(1) : "0",
         },
       });
     } catch (error) {

@@ -109,8 +109,8 @@ export class PayPalService {
   private async createBillingPlan(productId: string, tier: PlanTier): Promise<string> {
     const accessToken = await this.getAccessToken();
     const price = PLAN_PRICES[tier];
-    const planName = tier === 'ELITE' ? 'Tradify Elite Monthly' : 'Tradify Pro Monthly';
-    const planDesc = tier === 'ELITE' ? 'Monthly subscription to Tradify Elite' : 'Monthly subscription to Tradify Pro';
+    const planName = tier === 'COACH' ? 'Tradify Coach Monthly' : tier === 'ELITE' ? 'Tradify Elite Monthly' : 'Tradify Pro Monthly';
+    const planDesc = tier === 'COACH' ? 'Monthly subscription to Tradify Coach' : tier === 'ELITE' ? 'Monthly subscription to Tradify Elite' : 'Monthly subscription to Tradify Pro';
     
     const response = await fetch(`${PAYPAL_BASE_URL}/v1/billing/plans`, {
       method: 'POST',
@@ -377,7 +377,7 @@ export class PayPalService {
         emailService.cancelActiveTrack(userId, 'free_user').catch(() => {});
         emailService.cancelActiveTrack(userId, 'free_ongoing').catch(() => {});
         emailService.cancelActiveTrack(userId, 'pro_to_elite').catch(() => {});
-        if (determinedTier === 'ELITE') {
+        if (determinedTier === 'ELITE' || determinedTier === 'COACH') {
           emailService.queueEliteRetentionSequence(userId).catch(e => console.error('[DRIP] queueEliteRetention:', e));
         } else {
           emailService.queueProToEliteSequence(userId).catch(e => console.error('[DRIP] queueProToElite:', e));
@@ -428,7 +428,7 @@ export class PayPalService {
       emailService.cancelActiveTrack(customId, 'free_user').catch(() => {});
       emailService.cancelActiveTrack(customId, 'free_ongoing').catch(() => {});
       emailService.cancelActiveTrack(customId, 'pro_to_elite').catch(() => {});
-      if (tier === 'ELITE') {
+      if (tier === 'ELITE' || tier === 'COACH') {
         emailService.queueEliteRetentionSequence(customId).catch(e => console.error('[DRIP] queueEliteRetention webhook:', e));
       } else {
         emailService.queueProToEliteSequence(customId).catch(e => console.error('[DRIP] queueProToElite webhook:', e));
