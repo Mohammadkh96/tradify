@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Shield, ShieldAlert, Users, CreditCard, Zap, CheckCircle, LayoutDashboard, Activity, Plus, Key, Trash2, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil, Star, Wifi, WifiOff, Search, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, AlertTriangle, Tag, Download, X } from "lucide-react";
+import { Shield, ShieldAlert, Users, CreditCard, Zap, CheckCircle, LayoutDashboard, Activity, Plus, Key, Trash2, UserPlus, Crown, Sparkles, MessageSquare, ExternalLink, FileText, Pencil, Star, Wifi, WifiOff, Search, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, AlertTriangle, Tag, Download, X, GraduationCap } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
 import { cn } from "@/lib/utils";
@@ -808,6 +808,18 @@ export default function AdminDashboard() {
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <GraduationCap size={12} /> Active Coach
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-black text-violet-500" data-testid="stat-active-coach">
+                {users?.filter(u => u.subscriptionTier === "COACH").length || 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Zap size={12} /> MT5 Connectors
               </CardTitle>
             </CardHeader>
@@ -919,15 +931,17 @@ export default function AdminDashboard() {
     const today = startOfDay(new Date());
     const newToday = allNonOwners.filter(u => u.createdAt && new Date(u.createdAt) >= today).length;
     const mt5Connected = allNonOwners.filter(u => u.mt5Connected).length;
-    const paidCount = allNonOwners.filter(u => u.subscriptionTier === "PRO" || u.subscriptionTier === "ELITE").length;
+    const paidCount = allNonOwners.filter(u => u.subscriptionTier === "PRO" || u.subscriptionTier === "ELITE" || u.subscriptionTier === "COACH").length;
 
     const planColors: Record<string, string> = {
+      COACH: "bg-violet-500 text-white",
       ELITE: "bg-amber-500 text-slate-950",
       PRO: "bg-blue-500 text-white",
       FREE: "bg-muted text-muted-foreground",
     };
 
     const avatarColors: Record<string, string> = {
+      COACH: "bg-violet-500/20 text-violet-400 border border-violet-500/30",
       ELITE: "bg-amber-500/20 text-amber-500 border border-amber-500/30",
       PRO: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
       FREE: "bg-muted text-muted-foreground border border-border",
@@ -1097,6 +1111,7 @@ export default function AdminDashboard() {
               <SelectItem value="FREE">Free</SelectItem>
               <SelectItem value="PRO">Pro</SelectItem>
               <SelectItem value="ELITE">Elite</SelectItem>
+              <SelectItem value="COACH">Coach</SelectItem>
             </SelectContent>
           </Select>
           <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>

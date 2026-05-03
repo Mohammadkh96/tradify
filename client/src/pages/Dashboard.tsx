@@ -11,6 +11,7 @@ import {
 } from "@/lib/sampleData";
 import { SampleDataBanner } from "@/components/SampleDataBanner";
 import { MyCoachBanner } from "@/components/MyCoachBanner";
+import { CoachQuickAccessCard } from "@/components/CoachQuickAccessCard";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { StatCard } from "@/components/StatCard";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
@@ -336,7 +337,7 @@ export default function Dashboard() {
     ? getSampleTodayStats()
     : realEquityCurveResponse?.todayStats;
 
-  const { isPaid: isPro, isElite, canAccess } = usePlan();
+  const { isPaid: isPro, isElite, isCoach, canAccess } = usePlan();
 
   const { data: insights, isLoading: isInsightsLoading } = useQuery<any>({
     queryKey: [`/api/ai/insights/${userId}`],
@@ -570,6 +571,7 @@ export default function Dashboard() {
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
         {sampleMode.active && <SampleDataBanner />}
         <MyCoachBanner />
+        {isCoach && <CoachQuickAccessCard />}
         <header className="mb-8 space-y-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>

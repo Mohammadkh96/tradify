@@ -1,4 +1,4 @@
-import { Crown } from "lucide-react";
+import { Crown, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EliteBadgeProps {
@@ -96,9 +96,40 @@ interface TierBadgeProps {
   className?: string;
 }
 
+export function CoachBadge({ size = "md", showLabel = true, className }: EliteBadgeProps) {
+  const sizeClasses = {
+    sm: "h-5 px-2 text-[9px] gap-1",
+    md: "h-6 px-2.5 text-[10px] gap-1.5",
+    lg: "h-7 px-3 text-xs gap-2",
+  };
+  const iconSizes = { sm: 10, md: 12, lg: 14 };
+
+  return (
+    <div
+      data-testid="badge-coach"
+      className={cn(
+        "inline-flex items-center rounded-full font-black uppercase tracking-wider",
+        "bg-gradient-to-r from-violet-500/20 via-purple-500/20 to-violet-500/20",
+        "border border-violet-500/40",
+        "text-violet-400",
+        "shadow-[0_0_12px_rgba(139,92,246,0.18)]",
+        sizeClasses[size],
+        className
+      )}
+    >
+      <GraduationCap size={iconSizes[size]} className="text-violet-400" />
+      {showLabel && <span>Coach</span>}
+    </div>
+  );
+}
+
 export function TierBadge({ tier, size = "md", showLabel = true, className }: TierBadgeProps) {
   const normalizedTier = tier?.toUpperCase();
-  
+
+  if (normalizedTier === "COACH") {
+    return <CoachBadge size={size} showLabel={showLabel} className={className} />;
+  }
+
   if (normalizedTier === "ELITE") {
     return <EliteBadge size={size} showLabel={showLabel} className={className} />;
   }
