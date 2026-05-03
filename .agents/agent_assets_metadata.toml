@@ -6,3 +6,75 @@ id = "8lNA7TAFkBgzDyLkpzy4W"
 uri = "file://tradify-competitive-analysis.pdf"
 type = "pdf"
 title = "Tradify Competitive Analysis Report — April 2026"
+
+[[outputs]]
+id = "ZGaAjoLCszeXRQmJF0hOP"
+uri = "file://marketing/exports/preview-01-revenge.jpg"
+type = "image"
+title = "Ad 1 — One revenge trade (Meta/IG square)"
+
+[[outputs]]
+id = "8FSpEiJMa9i6jn9mApOK3"
+uri = "file://marketing/exports/preview-02-blown.jpg"
+type = "image"
+title = "Ad 2 — Your last account (IG portrait 4:5)"
+
+[[outputs]]
+id = "CnbfEurT0AfrhTh7iXItc"
+uri = "file://marketing/exports/preview-03-discipline.jpg"
+type = "image"
+title = "Ad 3 — Discipline is the edge (Story/Reel 9:16)"
+
+[[outputs]]
+id = "lkGTSBrzqIL2OYxc5IJh4"
+uri = "file://marketing/exports/preview-04-pnl.jpg"
+type = "image"
+title = "Ad 4 — Your PnL is lying to you (Meta square)"
+
+[[outputs]]
+id = "e43YM2jt4jUIZpr7mFZ2Q"
+uri = "file://marketing/exports/preview-05-prop.jpg"
+type = "image"
+title = "Ad 5 — Pass the prop firm (LinkedIn/X landscape)"
+
+[[outputs]]
+id = "vPNOiV6mI19_PR400LiH0"
+uri = "file://marketing/exports/preview-06-aicoach.jpg"
+type = "image"
+title = "Ad 6 — AI coach (IG portrait 4:5)"
+
+[[outputs]]
+id = "Izjyjey8P69ibGjA6bz-F"
+uri = "file://attached_assets/generated_videos/tradify_pain_revenge.mp4"
+type = "video"
+title = "Demo Video 1 — Pain (9:16, 8s)"
+
+[[outputs]]
+id = "lPjdTIt-ClePbhmeve3yC"
+uri = "file://attached_assets/generated_videos/tradify_calm_focus.mp4"
+type = "video"
+title = "Demo Video 2 — Calm focus (9:16, 8s)"
+
+[[outputs]]
+id = "nhHQGbnVgE-SJkn8o0RKh"
+uri = "file://attached_assets/generated_videos/tradify_app_phone_hero.mp4"
+type = "video"
+title = "Demo Video 3 — App in hand (9:16, 8s)"
+
+[[outputs]]
+id = "PawYBOfseurMH-5uWLLDs"
+uri = "file://attached_assets/generated_videos/tradify_transformation_split.mp4"
+type = "video"
+title = "Demo Video 4 — Chaos to control (9:16, 8s)"
+
+[[outputs]]
+id = "rYKLscUvVG5oV5EVq0Xs7"
+uri = "file://marketing/posts.md"
+type = "text"
+title = "Social posts — X, LinkedIn, IG, TikTok, YouTube, Meta"
+
+[[outputs]]
+id = "HmaLD19Zjp-cUmsecp7oi"
+uri = "file://marketing/scripts/demo-videos.md"
+type = "text"
+title = "Demo video scripts + 30s stitch recipe"

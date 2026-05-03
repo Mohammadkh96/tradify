@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;700;900&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100vw; height: 100vh; overflow: hidden; }
+body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.ad { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 6vh 7vw; background: #0a0f1c; color: #f8fafc; position: relative; overflow: hidden; }
+.ad.light { background: #f8fafc; color: #0a0f1c; }
+.brand { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 2.6vw; letter-spacing: -0.02em; display: flex; align-items: center; gap: 0.6vw; }
+.brand .dot { width: 1vw; height: 1vw; background: #10b981; border-radius: 999px; box-shadow: 0 0 2vw #10b98199; }
+.headline { font-family: 'Inter', sans-serif; font-weight: 900; line-height: 1.02; letter-spacing: -0.035em; font-size: 7.2vw; }
+.benefit { font-family: 'Inter', sans-serif; font-weight: 400; font-size: 2.4vw; line-height: 1.4; opacity: 0.78; max-width: 70%; }
+.cta { display: inline-flex; align-self: flex-start; align-items: center; gap: 0.8vw; padding: 1.8vh 3.5vw; background: #10b981; color: #04150f; font-weight: 700; font-size: 2vw; border-radius: 999px; text-decoration: none; box-shadow: 0 1vh 4vh #10b98144; }
+.middle { display: flex; flex-direction: column; gap: 3vh; }
+.footer { font-size: 1.4vw; opacity: 0.5; letter-spacing: 0.02em; }
+.accent { color: #10b981; }
+.strike { text-decoration: line-through; text-decoration-color: #ef4444; text-decoration-thickness: 0.4vw; }
+.glow { position: absolute; width: 70vw; height: 70vw; background: radial-gradient(circle, #10b98122 0%, transparent 60%); top: -20vw; right: -20vw; pointer-events: none; }
+/* Square (1080x1080) tweaks */
+body.sq .headline { font-size: 9vw; }
+body.sq .benefit { font-size: 3.2vw; }
+body.sq .cta { font-size: 2.6vw; padding: 2.2vh 4.5vw; }
+body.sq .brand { font-size: 3.4vw; }
+body.sq .footer { font-size: 1.8vw; }
+/* Portrait 4:5 (1080x1350) */
+body.por .headline { font-size: 8.6vw; }
+body.por .benefit { font-size: 3vw; }
+body.por .cta { font-size: 2.4vw; }
+body.por .brand { font-size: 3.2vw; }
+/* Story 9:16 (1080x1920) */
+body.story .headline { font-size: 11vw; }
+body.story .benefit { font-size: 4.2vw; max-width: 90%; }
+body.story .cta { font-size: 3.4vw; padding: 2.2vh 6vw; }
+body.story .brand { font-size: 4.6vw; }
+body.story .footer { font-size: 2.6vw; }
+/* Landscape 1.91:1 (1200x628) */
+body.land { }
+body.land .ad { padding: 7vh 6vw; }
+body.land .headline { font-size: 6vw; }
+body.land .benefit { font-size: 1.8vw; }
+body.land .cta { font-size: 1.6vw; padding: 2vh 3vw; }
+body.land .brand { font-size: 2vw; }
+body.land .footer { font-size: 1.1vw; }
