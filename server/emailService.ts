@@ -1668,6 +1668,10 @@ async function processDripSequences(): Promise<void> {
         )
       );
 
+    let sentCount = 0;
+    let failedCount = 0;
+    let skippedCount = 0;
+
     for (const seq of dueSequences) {
       try {
         if (seq.userId && await isUserUnsubscribed(seq.userId)) {
@@ -1675,6 +1679,7 @@ async function processDripSequences(): Promise<void> {
             .set({ completed: true })
             .where(eq(schema.emailSequences.id, seq.id));
           console.log(`[DRIP] Skipping sequence ${seq.id} for unsubscribed user ${seq.userId}`);
+          skippedCount++;
           continue;
         }
 
@@ -1683,6 +1688,7 @@ async function processDripSequences(): Promise<void> {
             await db.update(schema.emailSequences)
               .set({ completed: true })
               .where(eq(schema.emailSequences.id, seq.id));
+            skippedCount++;
             continue;
           }
 
@@ -1692,6 +1698,7 @@ async function processDripSequences(): Promise<void> {
             await db.update(schema.emailSequences)
               .set({ completed: true })
               .where(eq(schema.emailSequences.id, seq.id));
+            skippedCount++;
             continue;
           }
 
@@ -1699,6 +1706,8 @@ async function processDripSequences(): Promise<void> {
           if (leadUnsubUrl) leadHeaders['List-Unsubscribe'] = `<${leadUnsubUrl}>`;
           const sent = await sendEmail(seq.email, emailData.subject, emailData.html, true, Object.keys(leadHeaders).length ? leadHeaders : undefined);
           console.log(`[DRIP] Lead step ${seq.currentStep} → ${seq.email}: ${sent ? 'sent' : 'failed'}`);
+          if (sent) sentCount++;
+          else failedCount++;
 
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= LEAD_TOTAL_STEPS;
@@ -1716,6 +1725,7 @@ async function processDripSequences(): Promise<void> {
             await db.update(schema.emailSequences)
               .set({ completed: true })
               .where(eq(schema.emailSequences.id, seq.id));
+            skippedCount++;
             continue;
           }
 
@@ -1732,6 +1742,7 @@ async function processDripSequences(): Promise<void> {
             await db.update(schema.emailSequences)
               .set({ completed: true })
               .where(eq(schema.emailSequences.id, seq.id));
+            skippedCount++;
             continue;
           }
 
@@ -1741,6 +1752,7 @@ async function processDripSequences(): Promise<void> {
               .set({ completed: true })
               .where(eq(schema.emailSequences.id, seq.id));
             console.log(`[DRIP] Skipping free_user sequence for upgraded user ${seq.userId}`);
+            skippedCount++;
             continue;
           }
 
@@ -1752,6 +1764,7 @@ async function processDripSequences(): Promise<void> {
             await db.update(schema.emailSequences)
               .set({ completed: true })
               .where(eq(schema.emailSequences.id, seq.id));
+            skippedCount++;
             continue;
           }
 
@@ -1759,6 +1772,8 @@ async function processDripSequences(): Promise<void> {
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
           const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
           console.log(`[DRIP] Free user step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          if (sent) sentCount++;
+          else failedCount++;
 
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= FREE_USER_TOTAL_STEPS;
@@ -1785,6 +1800,7 @@ async function processDripSequences(): Promise<void> {
           const tier = user.subscriptionTier?.toUpperCase() || 'FREE';
           if (tier === 'PRO' || tier === 'ELITE') {
             await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id));
+            skippedCount++;
             continue;
           }
           const topics = [
@@ -1816,6 +1832,10 @@ async function processDripSequences(): Promise<void> {
             if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
             const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
             console.log(`[DRIP] free_ongoing step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+            if (sent) sentCount++;
+            else failedCount++;
+          } else {
+            skippedCount++;
           }
           const nextStep = seq.currentStep + 1;
           const willCycle = nextStep >= FREE_ONGOING_TOTAL_STEPS;
@@ -1856,6 +1876,10 @@ async function processDripSequences(): Promise<void> {
             if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
             const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
             console.log(`[DRIP] pro_to_elite step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+            if (sent) sentCount++;
+            else failedCount++;
+          } else {
+            skippedCount++;
           }
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= PRO_TO_ELITE_TOTAL_STEPS;
@@ -1898,6 +1922,10 @@ async function processDripSequences(): Promise<void> {
             if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
             const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
             console.log(`[DRIP] elite_retention step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+            if (sent) sentCount++;
+            else failedCount++;
+          } else {
+            skippedCount++;
           }
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= ELITE_RETENTION_TOTAL_STEPS;
@@ -1938,6 +1966,10 @@ async function processDripSequences(): Promise<void> {
             if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
             const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
             console.log(`[DRIP] insights_newsletter step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+            if (sent) sentCount++;
+            else failedCount++;
+          } else {
+            skippedCount++;
           }
           const nextStep = seq.currentStep + 1;
           const willCycle = nextStep >= INSIGHTS_TOTAL_STEPS;
@@ -1959,6 +1991,8 @@ async function processDripSequences(): Promise<void> {
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
           const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
           console.log(`[DRIP] first_trade step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          if (sent) sentCount++;
+          else failedCount++;
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= FIRST_TRADE_TOTAL_STEPS;
           const nextHours = FIRST_TRADE_INTERVALS_HOURS[nextStep] ?? 24;
@@ -1979,6 +2013,8 @@ async function processDripSequences(): Promise<void> {
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
           const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
           console.log(`[DRIP] first_payout step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          if (sent) sentCount++;
+          else failedCount++;
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= FIRST_PAYOUT_TOTAL_STEPS;
           const nextHours = FIRST_PAYOUT_INTERVALS_HOURS[nextStep] ?? 24;
@@ -2011,6 +2047,8 @@ async function processDripSequences(): Promise<void> {
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
           const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
           console.log(`[DRIP] at_risk step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          if (sent) sentCount++;
+          else failedCount++;
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= AT_RISK_TOTAL_STEPS;
           const nextDays = AT_RISK_INTERVALS_DAYS[nextStep] ?? 7;
@@ -2039,6 +2077,8 @@ async function processDripSequences(): Promise<void> {
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
           const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
           console.log(`[DRIP] win_back step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
+          if (sent) sentCount++;
+          else failedCount++;
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= WIN_BACK_TOTAL_STEPS;
           const nextDays = WIN_BACK_INTERVALS_DAYS[nextStep] ?? 30;
@@ -2048,8 +2088,11 @@ async function processDripSequences(): Promise<void> {
         }
       } catch (seqErr) {
         console.error(`[DRIP] Error processing sequence ${seq.id}:`, seqErr);
+        failedCount++;
       }
     }
+
+    console.log(`[DRIP] Process complete — due ${dueSequences.length}, sent ${sentCount}, failed ${failedCount}, skipped ${skippedCount}`);
   } catch (err) {
     console.error('[DRIP] processDripSequences error:', err);
   }
