@@ -27,12 +27,19 @@ const chartUpload = multer({
 });
 import { runBackup, getBackupStatus, verifyLatestBackup, downloadBackupById } from "./backup-service";
 import { registerStripeWebhook, registerStripeRoutes } from "./stripeCheckout";
-import { openai } from "./replit_integrations/audio/index";
+const openai: any = {
+  chat: {
+    completions: {
+      create: async () => {
+        throw new Error("AI features have been removed.");
+      },
+    },
+  },
+};
 import { authLimiter, passwordResetLimiter, aiLimiter, uploadLimiter, earlyAccessLimiter } from "./rateLimit";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
 import { trackAIUsage, calculateCost, estimateTokensFromText } from "./ai-cost-tracker";
-import { FUNNEL_STAGES, generateFunnelAssets, generateSingleAsset } from "./funnel-generator";
 import archiver from "archiver";
 import fsNode from "node:fs";
 import pathNode from "node:path";
@@ -497,7 +504,7 @@ ${blogPosts.map(p => `  <url>
 
   // AI-backed features are retired. Reject requests before any legacy handler
   // can process data or call a model provider.
-  const retiredAiEndpoint = /^\/api\/(?:ai(?:\/|$)|monthly-review(?:\/|$)|trades\/[^/]+\/ai-tags$|compliance\/explain$|education\/ai-tutor$|generate-image$|admin\/marketing\/(?:generate(?:\/|$)|studio(?:\/|$)|smart-suggestions$|pipeline\/run$|funnel\/generate(?:-single)?$|content\/(?:[^/]+\/repurpose|fill-week)$|ad-strategy$)|conversations\/[^/]+\/(?:messages|voice-stream)$)/i;
+  const retiredAiEndpoint = /^\/api\/(?:ai(?:\/|$)|monthly-review(?:\/|$)|trades\/[^/]+\/ai-tags$|compliance\/explain$|education\/ai-tutor$|generate-image$|admin\/marketing\/(?:generate(?:\/|$)|studio(?:\/|$)|smart-suggestions$|playbooks$|pipeline\/run$|funnel\/(?:stages|generate(?:-single)?)$|content\/(?:[^/]+\/repurpose|fill-week)$|ad-strategy$)|conversations\/[^/]+\/(?:messages|voice-stream)$)/i;
   app.use((req, res, next) => {
     if (retiredAiEndpoint.test(req.path)) {
       return res.status(410).json({ message: "AI features have been removed." });
@@ -6566,11 +6573,7 @@ Provide a 3-4 sentence factual summary that:
 
 IMPORTANT: Only state facts from the data above. Do not recommend trades or suggest rule changes.`;
 
-      const OpenAI = (await import('openai')).default;
-      const openaiLocal = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
+      const openaiLocal = openai;
       
       const ceStartTime = Date.now();
       const response = await openaiLocal.chat.completions.create({
@@ -7939,103 +7942,6 @@ Guidelines:
     }
   });
 
-  // Content Generation
-  app.post("/api/admin/marketing/generate/post", requireAdmin, async (req, res) => {
-    try {
-      const { generatePost } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        platform: z.string().min(1),
-        contentType: z.string().min(1),
-        topic: z.string().optional(),
-      });
-      const { platform, contentType, topic } = bodySchema.parse(req.body);
-      const result = await generatePost(platform, contentType, topic);
-      res.json(result);
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Generate post error:", error);
-      res.status(500).json({ message: "Failed to generate post" });
-    }
-  });
-
-  app.post("/api/admin/marketing/generate/reel-script", requireAdmin, async (req, res) => {
-    try {
-      const { generateReelScript } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        goal: z.string().min(1),
-        topic: z.string().optional(),
-      });
-      const { goal, topic } = bodySchema.parse(req.body);
-      const result = await generateReelScript(goal, topic);
-      res.json(result);
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Generate reel script error:", error);
-      res.status(500).json({ message: "Failed to generate reel script" });
-    }
-  });
-
-  app.post("/api/admin/marketing/generate/blog", requireAdmin, async (req, res) => {
-    try {
-      const { generateBlogArticle } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        topic: z.string().optional(),
-        seoKeyword: z.string().optional(),
-      });
-      const { topic, seoKeyword } = bodySchema.parse(req.body);
-      const result = await generateBlogArticle(topic, seoKeyword);
-      res.json(result);
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Generate blog error:", error);
-      res.status(500).json({ message: "Failed to generate blog article" });
-    }
-  });
-
-  app.post("/api/admin/marketing/generate/ad-copy", requireAdmin, async (req, res) => {
-    try {
-      const { generateAdCopy } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        campaignGoal: z.string().min(1),
-        audience: z.string().min(1),
-      });
-      const { campaignGoal, audience } = bodySchema.parse(req.body);
-      const result = await generateAdCopy(campaignGoal, audience);
-      res.json(result);
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Generate ad copy error:", error);
-      res.status(500).json({ message: "Failed to generate ad copy" });
-    }
-  });
-
-  app.post("/api/admin/marketing/generate/email", requireAdmin, async (req, res) => {
-    try {
-      const { generateEmailCampaign } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        emailType: z.string().min(1),
-        segment: z.string().min(1),
-      });
-      const { emailType, segment } = bodySchema.parse(req.body);
-      const result = await generateEmailCampaign(emailType, segment);
-      res.json(result);
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Generate email error:", error);
-      res.status(500).json({ message: "Failed to generate email campaign" });
-    }
-  });
-
   // Content Library
   app.get("/api/admin/marketing/content", requireAdmin, async (req, res) => {
     try {
@@ -8132,136 +8038,6 @@ Guidelines:
     } catch (error) {
       console.error("Delete marketing content error:", error);
       res.status(500).json({ message: "Failed to delete content" });
-    }
-  });
-
-  app.post("/api/admin/marketing/content/:id/repurpose", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
-      const { targetTypes } = req.body;
-      if (!Array.isArray(targetTypes) || targetTypes.length === 0) {
-        return res.status(400).json({ message: "targetTypes array is required" });
-      }
-      const original = await storage.getMarketingContent(id);
-      if (!original) return res.status(404).json({ message: "Content not found" });
-      const brand = await storage.getMarketingBrandSettings("admin");
-      const { repurposeContent } = await import("./marketing-ai");
-      const repurposed = await repurposeContent(original, targetTypes, brand || undefined);
-      const saved = [];
-      for (const item of repurposed) {
-        const result = await storage.createMarketingContent({
-          type: item.type,
-          platform: item.platform,
-          title: item.title,
-          content: item.content,
-          hook: item.hook || null,
-          cta: item.cta || null,
-          hashtags: item.hashtags || null,
-          status: "draft",
-          aiModelUsed: "openai",
-          repurposedFrom: id,
-          topicTags: [],
-        });
-        saved.push(result);
-      }
-      res.json(saved);
-    } catch (error) {
-      console.error("Repurpose content error:", error);
-      res.status(500).json({ message: "Failed to repurpose content" });
-    }
-  });
-
-  app.post("/api/admin/marketing/smart-suggestions", requireAdmin, async (_req: Request, res: Response) => {
-    try {
-      const allContent = await storage.listMarketingContent();
-      const topContent = allContent
-        .filter(c => c.performanceRating && c.performanceRating >= 4)
-        .sort((a, b) => (b.performanceRating || 0) - (a.performanceRating || 0))
-        .slice(0, 10);
-      const brand = await storage.getMarketingBrandSettings("admin");
-      const { generateSmartSuggestions } = await import("./marketing-ai");
-      const suggestions = await generateSmartSuggestions(topContent, brand || undefined);
-      res.json({ suggestions });
-    } catch (error) {
-      console.error("Smart suggestions error:", error);
-      res.status(500).json({ message: "Failed to generate suggestions" });
-    }
-  });
-
-  app.post("/api/admin/marketing/content/fill-week", requireAdmin, async (_req: Request, res: Response) => {
-    try {
-      const brand = await storage.getMarketingBrandSettings("admin");
-      const { generateFillWeekContent } = await import("./marketing-ai");
-      const generated = await generateFillWeekContent(brand || undefined);
-      const now = new Date();
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - now.getDay() + 1);
-      monday.setHours(9, 0, 0, 0);
-      const saved = [];
-      for (const item of generated) {
-        const scheduledDate = new Date(monday);
-        scheduledDate.setDate(monday.getDate() + item.dayOffset);
-        const result = await storage.createMarketingContent({
-          type: item.type,
-          platform: item.platform,
-          title: item.title,
-          content: item.content,
-          hook: item.hook || null,
-          cta: item.cta || null,
-          hashtags: item.hashtags || null,
-          status: "draft",
-          aiModelUsed: "openai",
-          scheduledDate,
-          topicTags: [],
-        });
-        saved.push(result);
-      }
-      res.json(saved);
-    } catch (error) {
-      console.error("Fill week error:", error);
-      res.status(500).json({ message: "Failed to fill week" });
-    }
-  });
-
-  app.post("/api/admin/marketing/pipeline/run", requireAdmin, async (_req: Request, res: Response) => {
-    try {
-      const brand = await storage.getMarketingBrandSettings("admin");
-      const pipeline = (brand as any)?.contentPipeline;
-      if (!pipeline || !Array.isArray(pipeline.weeklyTypes) || pipeline.weeklyTypes.length === 0) {
-        return res.status(400).json({ message: "No content pipeline configured. Set up your pipeline in the Marketing Dashboard first." });
-      }
-      const { generatePipelineContent } = await import("./marketing-ai");
-      const pipelineItems: Array<{ type: string; platform: string; count: number }> = pipeline.weeklyTypes;
-      const generated = await generatePipelineContent(pipelineItems, brand || undefined);
-      const now = new Date();
-      const monday = new Date(now);
-      const dayOfWeek = now.getDay();
-      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-      monday.setHours(9, 0, 0, 0);
-      const saved = [];
-      for (const item of generated) {
-        const scheduledDate = new Date(monday);
-        scheduledDate.setDate(monday.getDate() + item.dayOffset);
-        const result = await storage.createMarketingContent({
-          type: item.type,
-          platform: item.platform,
-          title: item.title,
-          content: item.content,
-          hook: item.hook || null,
-          cta: item.cta || null,
-          hashtags: item.hashtags || null,
-          status: "draft",
-          aiModelUsed: "openai",
-          scheduledDate,
-          topicTags: [],
-        });
-        saved.push(result);
-      }
-      res.json({ count: saved.length, content: saved });
-    } catch (error) {
-      console.error("Pipeline run error:", error);
-      res.status(500).json({ message: "Failed to run pipeline" });
     }
   });
 
@@ -8371,44 +8147,6 @@ Guidelines:
     }
   });
 
-  // Ad Strategies
-  app.post("/api/admin/marketing/ad-strategy", requireAdmin, async (req, res) => {
-    try {
-      const { generateCampaignStrategy } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        goal: z.string().min(1),
-        budget: z.string().min(1),
-        audience: z.string().min(1),
-        campaignId: z.number().optional(),
-      });
-      const { goal, budget, audience, campaignId } = bodySchema.parse(req.body);
-      const strategyResult = await generateCampaignStrategy(goal, budget, audience);
-
-      const saved = await storage.createMarketingAdStrategy({
-        campaignId: campaignId || null,
-        campaignType: strategyResult.campaignType,
-        objective: goal,
-        audienceTargeting: strategyResult.audienceTargeting,
-        budgetStrategy: strategyResult.budgetAllocation,
-        bidStrategy: strategyResult.bidStrategy,
-        adCopyIds: [],
-        optimizationRules: {
-          testingPhases: strategyResult.testingPhases,
-          setupInstructions: strategyResult.setupInstructions,
-        },
-        performanceNotes: strategyResult.campaignTypeReasoning,
-      });
-
-      res.status(201).json({ ...saved, fullStrategy: strategyResult });
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Generate ad strategy error:", error);
-      res.status(500).json({ message: "Failed to generate ad strategy" });
-    }
-  });
-
   app.get("/api/admin/marketing/ad-strategies", requireAdmin, async (req, res) => {
     try {
       const campaignId = req.query.campaignId ? parseInt(req.query.campaignId as string) : undefined;
@@ -8469,77 +8207,6 @@ Guidelines:
     } catch (error) {
       console.error("Delete ad strategy error:", error);
       res.status(500).json({ message: "Failed to delete ad strategy" });
-    }
-  });
-
-  // Audience Strategy Generation
-  app.post("/api/admin/marketing/generate/audience-strategy", requireAdmin, async (req, res) => {
-    try {
-      const { generateAudienceStrategy } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        budget: z.string().min(1),
-        goal: z.string().min(1),
-      });
-      const { budget, goal } = bodySchema.parse(req.body);
-      const result = await generateAudienceStrategy(budget, goal);
-      res.json(result);
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Generate audience strategy error:", error);
-      res.status(500).json({ message: "Failed to generate audience strategy" });
-    }
-  });
-
-  // Budget Calculator
-  app.post("/api/admin/marketing/generate/budget", requireAdmin, async (req, res) => {
-    try {
-      const { calculateBudget } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        goal: z.string().min(1),
-        timeline: z.string().min(1),
-      });
-      const { goal, timeline } = bodySchema.parse(req.body);
-      const result = await calculateBudget(goal, timeline);
-      res.json(result);
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Calculate budget error:", error);
-      res.status(500).json({ message: "Failed to calculate budget" });
-    }
-  });
-
-  // Optimization Rules Generation
-  app.post("/api/admin/marketing/generate/optimization-rules", requireAdmin, async (req, res) => {
-    try {
-      const { generateOptimizationRules } = await import("./marketing-ai");
-      const bodySchema = z.object({
-        campaignType: z.string().min(1),
-      });
-      const { campaignType } = bodySchema.parse(req.body);
-      const result = await generateOptimizationRules(campaignType);
-      res.json(result);
-    } catch (error: any) {
-      if (error?.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      console.error("Generate optimization rules error:", error);
-      res.status(500).json({ message: "Failed to generate optimization rules" });
-    }
-  });
-
-  // Playbooks
-  app.get("/api/admin/marketing/playbooks", requireAdmin, async (_req, res) => {
-    try {
-      const { getCampaignPlaybooks } = await import("./marketing-ai");
-      const playbooks = getCampaignPlaybooks();
-      res.json(playbooks);
-    } catch (error) {
-      console.error("Get playbooks error:", error);
-      res.status(500).json({ message: "Failed to get playbooks" });
     }
   });
 
@@ -9042,115 +8709,6 @@ Guidelines:
   });
 
   app.use("/api/admin/marketing/funnel/file", express.static(pathNode.join(process.cwd(), "public", "generated")));
-
-  // ========== MARKETING STUDIO (All-in-One) ==========
-  app.post("/api/admin/marketing/studio/plan", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const schema = z.object({
-        goal: z.string().min(3),
-        audience: z.string().min(3),
-        timeframe: z.string().min(1),
-        budget: z.string().min(1),
-        channels: z.string().min(1),
-      });
-      const input = schema.parse(req.body);
-      const { generateMarketingPlan } = await import("./marketing-studio");
-      const plan = await generateMarketingPlan(input);
-      res.json(plan);
-    } catch (error: any) {
-      if (error?.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      console.error("Studio plan error:", error);
-      res.status(500).json({ message: error?.message || "Failed to generate plan" });
-    }
-  });
-
-  app.post("/api/admin/marketing/studio/photo", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const schema = z.object({
-        prompt: z.string().min(5),
-        aspectRatio: z.enum(["1:1", "4:5", "9:16", "16:9"]).default("1:1"),
-        photoStyle: z.string().optional(),
-      });
-      const { prompt, aspectRatio, photoStyle } = schema.parse(req.body);
-      const orientationMap: Record<string, string> = { "1:1": "square", "4:5": "portrait", "9:16": "portrait", "16:9": "landscape" };
-      const photoOrientation = orientationMap[aspectRatio] || "square";
-      const { generateSingleAsset } = await import("./funnel-generator");
-      const asset = await generateSingleAsset({
-        type: "stock_photo",
-        stage: "awareness",
-        topic: prompt,
-        platform: "instagram",
-        imageStyle: photoStyle || "premium photography",
-        aspectRatio,
-        photoOrientation,
-        photoStyle,
-      });
-      res.json(asset);
-    } catch (error: any) {
-      if (error?.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      console.error("Studio photo error:", error);
-      res.status(500).json({ message: error?.message || "Failed to generate photo" });
-    }
-  });
-
-  app.post("/api/admin/marketing/studio/video", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const schema = z.object({
-        topic: z.string().min(5),
-        aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
-        videoDuration: z.number().int().min(4).max(20).default(8),
-        platform: z.string().default("instagram"),
-      });
-      const { topic, aspectRatio, videoDuration, platform } = schema.parse(req.body);
-      const { generateSingleAsset } = await import("./funnel-generator");
-      const asset = await generateSingleAsset({
-        type: "video_reel",
-        stage: "awareness",
-        topic,
-        platform,
-        imageStyle: "cinematic premium",
-        aspectRatio,
-        videoDuration,
-      });
-      res.json(asset);
-    } catch (error: any) {
-      if (error?.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      console.error("Studio video error:", error);
-      res.status(500).json({ message: error?.message || "Failed to generate video" });
-    }
-  });
-
-  app.get("/api/admin/marketing/funnel/stages", requireAdmin, (_req: Request, res: Response) => {
-    res.json(FUNNEL_STAGES);
-  });
-
-  app.post("/api/admin/marketing/funnel/generate", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const { stage, assetTypes, topic, platform, imageStyle, videoDuration, aspectRatio, photoOrientation, photoStyle } = req.body;
-      if (!stage || !assetTypes || !Array.isArray(assetTypes) || assetTypes.length === 0) {
-        return res.status(400).json({ message: "stage and assetTypes[] are required" });
-      }
-      const assets = await generateFunnelAssets({ stage, assetTypes, topic, platform, imageStyle, videoDuration, aspectRatio, photoOrientation, photoStyle });
-      res.json(assets);
-    } catch (error) {
-      console.error("Funnel generate error:", error);
-      res.status(500).json({ message: "Failed to generate funnel assets" });
-    }
-  });
-
-  app.post("/api/admin/marketing/funnel/generate-single", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const { type, stage, topic, platform, imageStyle, videoDuration, aspectRatio, photoOrientation, photoStyle } = req.body;
-      if (!type || !stage) {
-        return res.status(400).json({ message: "type and stage are required" });
-      }
-      const asset = await generateSingleAsset({ type, stage, topic, platform, imageStyle, videoDuration, aspectRatio, photoOrientation, photoStyle });
-      res.json(asset);
-    } catch (error) {
-      console.error("Funnel generate-single error:", error);
-      res.status(500).json({ message: "Failed to regenerate asset" });
-    }
-  });
 
   app.post("/api/admin/marketing/funnel/export-bundle", requireAdmin, async (req: Request, res: Response) => {
     try {
