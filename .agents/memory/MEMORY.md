@@ -1,0 +1,1 @@
+- [Post-merge database changes](post-merge-db-changes.md) — avoid unreviewed schema pushes during merges; use reviewed migrations to prevent inferred renames and data loss.
