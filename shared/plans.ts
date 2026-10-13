@@ -3,12 +3,10 @@ export type PlanTier = "FREE" | "PRO" | "ELITE" | "COACH";
 export interface PlanFeatures {
   maxStrategies: number;
   historyDays: number;
-  aiAnalysis: boolean;
   sessionAnalytics: boolean;
   timePatternAnalysis: boolean;
   behavioralRiskFlags: boolean;
   strategyDeviationAnalysis: boolean;
-  monthlyAIReview: boolean;
   pdfReports: boolean;
   csvExport: boolean;
   prioritySupport: boolean;
@@ -17,7 +15,6 @@ export interface PlanFeatures {
   performanceIntelligence: boolean;
   fullEducationAccess: boolean;
   propFirmTracker: boolean;
-  propFirmAiWarnings: boolean;
   coachDashboard: boolean;
   maxStudents: number;
   studentFeedback: boolean;
@@ -48,12 +45,10 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
   FREE: {
     maxStrategies: 1,
     historyDays: 30,
-    aiAnalysis: false,
     sessionAnalytics: false,
     timePatternAnalysis: false,
     behavioralRiskFlags: false,
     strategyDeviationAnalysis: false,
-    monthlyAIReview: false,
     pdfReports: false,
     csvExport: false,
     prioritySupport: false,
@@ -62,7 +57,6 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     performanceIntelligence: false,
     fullEducationAccess: false,
     propFirmTracker: false,
-    propFirmAiWarnings: false,
     coachDashboard: false,
     maxStudents: 0,
     studentFeedback: false,
@@ -70,12 +64,10 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
   PRO: {
     maxStrategies: -1,
     historyDays: 180,
-    aiAnalysis: true,
     sessionAnalytics: false,
     timePatternAnalysis: false,
     behavioralRiskFlags: false,
     strategyDeviationAnalysis: false,
-    monthlyAIReview: false,
     pdfReports: true,
     csvExport: true,
     prioritySupport: false,
@@ -84,7 +76,6 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     performanceIntelligence: true,
     fullEducationAccess: true,
     propFirmTracker: true,
-    propFirmAiWarnings: false,
     coachDashboard: false,
     maxStudents: 0,
     studentFeedback: false,
@@ -92,12 +83,10 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
   ELITE: {
     maxStrategies: -1,
     historyDays: -1,
-    aiAnalysis: true,
     sessionAnalytics: true,
     timePatternAnalysis: true,
     behavioralRiskFlags: true,
     strategyDeviationAnalysis: true,
-    monthlyAIReview: true,
     pdfReports: true,
     csvExport: true,
     prioritySupport: true,
@@ -106,7 +95,6 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     performanceIntelligence: true,
     fullEducationAccess: true,
     propFirmTracker: true,
-    propFirmAiWarnings: true,
     coachDashboard: false,
     maxStudents: 0,
     studentFeedback: false,
@@ -114,12 +102,10 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
   COACH: {
     maxStrategies: -1,
     historyDays: -1,
-    aiAnalysis: true,
     sessionAnalytics: true,
     timePatternAnalysis: true,
     behavioralRiskFlags: true,
     strategyDeviationAnalysis: true,
-    monthlyAIReview: true,
     pdfReports: true,
     csvExport: true,
     prioritySupport: true,
@@ -128,7 +114,6 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     performanceIntelligence: true,
     fullEducationAccess: true,
     propFirmTracker: true,
-    propFirmAiWarnings: true,
     coachDashboard: true,
     maxStudents: 25,
     studentFeedback: true,
@@ -160,8 +145,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       "Full Education Hub (20 Lessons)",
       "Performance Intelligence Layer",
       "Full Equity Curve (All-Time)",
-      "AI Instrument Analysis",
-      "AI Psychology Review",
       "Prop Firm Challenge Tracker",
       "CSV Data Export",
       "PDF Report Generation",
@@ -169,8 +152,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       "Time Pattern Analysis",
       "Behavioral Risk Flags",
       "Strategy Deviation Analysis",
-      "AI Challenge Risk Warnings",
-      "Monthly AI Performance Review",
       "Unlimited Trade History",
     ],
   },
@@ -189,8 +170,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       "Performance Intelligence Layer",
       "6-Month Trade History",
       "Full Equity Curve (All-Time)",
-      "AI Instrument Analysis",
-      "AI Psychology Review",
       "Prop Firm Challenge Tracker",
       "CSV Data Export",
       "PDF Report Generation",
@@ -201,8 +180,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       "Time Pattern Analysis",
       "Behavioral Risk Flags",
       "Strategy Deviation Analysis",
-      "AI Challenge Risk Warnings",
-      "Monthly AI Performance Review",
       "Priority Support",
       "Elite Member Badge",
     ],
@@ -218,12 +195,10 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     displayFeatures: [
       "Everything in Pro",
       "Unlimited Trade History",
-      "AI Challenge Risk Warnings",
       "Session Performance Analytics",
       "Time Pattern Analysis",
       "Behavioral Risk Flags",
       "Strategy Deviation Analysis",
-      "Monthly AI Performance Review",
       "Priority Support",
       "Elite Member Badge",
     ],
@@ -322,10 +297,6 @@ export const FEATURE_DESCRIPTIONS: Record<keyof PlanFeatures, { name: string; de
     name: "Trade History",
     description: "How far back your trade journal data is retained",
   },
-  aiAnalysis: {
-    name: "AI Instrument Analysis",
-    description: "AI-powered analysis of your trading performance on specific instruments",
-  },
   sessionAnalytics: {
     name: "Session Analytics",
     description: "Performance breakdown by trading session (Asian, London, NY)",
@@ -341,10 +312,6 @@ export const FEATURE_DESCRIPTIONS: Record<keyof PlanFeatures, { name: string; de
   strategyDeviationAnalysis: {
     name: "Strategy Deviation Analysis",
     description: "Track how often you deviate from your strategy rules and the impact on performance",
-  },
-  monthlyAIReview: {
-    name: "Monthly AI Performance Review",
-    description: "AI-generated monthly summary of your trading performance with insights and recommendations",
   },
   pdfReports: {
     name: "PDF Reports",
@@ -377,10 +344,6 @@ export const FEATURE_DESCRIPTIONS: Record<keyof PlanFeatures, { name: string; de
   propFirmTracker: {
     name: "Prop Firm Tracker",
     description: "Track prop firm challenge progress with drawdown monitoring, consistency scoring, and deadline tracking",
-  },
-  propFirmAiWarnings: {
-    name: "AI Challenge Warnings",
-    description: "AI-powered warnings when approaching challenge rule violations during trade logging",
   },
   coachDashboard: {
     name: "Coach Dashboard",

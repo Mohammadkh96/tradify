@@ -41,7 +41,7 @@ const STATIC_PAGES: Record<string, PageMeta> = {
   },
   "/pricing": {
     title: "Pricing - Free, Pro & Elite Plans | TradifyApp",
-    description: "Choose your TradifyApp plan. Free MT5 sync, Pro analytics at $29/mo, or Elite with AI insights at $59/mo. Founding members get 30% off forever.",
+    description: "Choose your TradifyApp plan. Compare MT5 sync, performance analytics, prop firm tracking, and education features. Founding members get 30% off forever.",
     canonical: `${BASE_URL}/pricing`,
   },
   "/how-it-works": {
@@ -66,7 +66,7 @@ const STATIC_PAGES: Record<string, PageMeta> = {
   },
   "/demo": {
     title: "See TradifyApp in Action - Step-by-Step Demo",
-    description: "A visual walkthrough of how TradifyApp works: connect MT5, define rules, auto-sync trades, track your prop firm challenge, and get AI discipline insights.",
+    description: "A visual walkthrough of how TradifyApp works: connect MT5, define rules, auto-sync trades, track your prop firm challenge, and review historical performance analytics.",
     canonical: `${BASE_URL}/demo`,
   },
   "/checklist": {
@@ -76,7 +76,7 @@ const STATIC_PAGES: Record<string, PageMeta> = {
   },
   "/trading-journal": {
     title: "Best MT5 Trading Journal Software - Auto-Sync & Rule Validation | TradifyApp",
-    description: "The #1 MT5 trading journal that auto-syncs every trade, validates entries against your rules, and tracks performance with AI analytics. Free plan available. No manual logging.",
+    description: "An MT5 trading journal that auto-syncs trades, validates entries against your rules, and organizes historical performance analytics. Free plan available.",
     canonical: `${BASE_URL}/trading-journal`,
   },
   "/prop-firm-tracker": {
@@ -85,8 +85,8 @@ const STATIC_PAGES: Record<string, PageMeta> = {
     canonical: `${BASE_URL}/prop-firm-tracker`,
   },
   "/mt5-trading-analytics": {
-    title: "MT5 Trading Analytics & Performance Tracker - AI-Powered Insights | TradifyApp",
-    description: "Track your MT5 trading performance with AI-powered analytics. Equity curves, win rate by instrument, session analysis, drawdown tracking, and behavioral insights. Auto-syncs from MetaTrader 5.",
+    title: "MT5 Trading Analytics & Performance Tracker | TradifyApp",
+    description: "Track your MT5 trading performance with equity curves, win rate by instrument, session analysis, drawdown tracking, and rule-based behavioral risk flags. Auto-syncs from MetaTrader 5.",
     canonical: `${BASE_URL}/mt5-trading-analytics`,
   },
   "/terms": {

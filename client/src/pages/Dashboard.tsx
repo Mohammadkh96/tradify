@@ -18,10 +18,8 @@ import { SessionAnalytics } from "@/components/SessionAnalytics";
 import { TimePatterns } from "@/components/TimePatterns";
 import { BehavioralRiskFlags } from "@/components/BehavioralRiskFlags";
 import { StrategyDeviationAnalysis } from "@/components/StrategyDeviationAnalysis";
-import { MonthlyReviewReport } from "@/components/MonthlyReviewReport";
 import { PdfExportButton } from "@/components/PdfExportButton";
 import DashboardCustomizer, { useDashboardConfig } from "@/components/DashboardCustomizer";
-import { PsychologyTradeReview } from "@/components/PsychologyTradeReview";
 import TradingHeatmap from "@/components/TradingHeatmap";
 import { 
   Activity, 
@@ -211,7 +209,6 @@ export default function Dashboard() {
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
-  const [selectedInstrument, setSelectedInstrument] = useState<string>("");
   const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
   const dashConfig = useDashboardConfig();
   
@@ -278,7 +275,6 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: [`/api/behavioral-risks/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/strategy-deviation/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/instruments/${userId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/ai/insights/${userId}`] });
     },
   });
 
@@ -298,7 +294,6 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: [`/api/behavioral-risks/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/strategy-deviation/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/instruments/${userId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/ai/insights/${userId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/compliance/score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/prop-firm'] });
       toast({
@@ -340,41 +335,12 @@ export default function Dashboard() {
 
   const { isPaid: isPro, isElite, isCoach, canAccess } = usePlan();
 
-  const { data: insights, isLoading: isInsightsLoading } = useQuery<any>({
-    queryKey: [`/api/ai/insights/${userId}`],
-    enabled: !!userId && isPro,
-  });
-
   // Fetch available instruments from MT5 history
   const { data: instrumentsData } = useQuery<{ symbols: string[] }>({
     queryKey: [`/api/instruments/${userId}`],
     enabled: !!userId,
     refetchInterval: 60000,
   });
-
-  // Mutation for generating instrument analysis
-  const instrumentAnalysisMutation = useMutation({
-    mutationFn: async (symbol: string) => {
-      const res = await apiRequest("POST", `/api/ai/instrument-analysis/${userId}`, { symbol });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData([`/api/ai/instrument-analysis/${userId}`, selectedInstrument], data);
-    }
-  });
-
-  // Fetch cached analysis for selected instrument
-  const { data: instrumentAnalysis } = useQuery<any>({
-    queryKey: [`/api/ai/instrument-analysis/${userId}`, selectedInstrument],
-    enabled: false, // Only populated via mutation
-  });
-
-  const handleInstrumentSelect = (symbol: string) => {
-    setSelectedInstrument(symbol);
-    if (symbol && isPro) {
-      instrumentAnalysisMutation.mutate(symbol);
-    }
-  };
 
   // Compliance score for active strategy (aggregated, no rule evaluation)
   const { data: complianceScore, isLoading: isComplianceLoading } = useQuery<{
@@ -408,7 +374,6 @@ export default function Dashboard() {
         queryClient.invalidateQueries({ queryKey: [`/api/behavioral-risks/${userId}`] }),
         queryClient.invalidateQueries({ queryKey: [`/api/strategy-deviation/${userId}`] }),
         queryClient.invalidateQueries({ queryKey: [`/api/instruments/${userId}`] }),
-        queryClient.invalidateQueries({ queryKey: [`/api/ai/insights/${userId}`] }),
         queryClient.invalidateQueries({ queryKey: ['/api/compliance/score'] }),
         queryClient.invalidateQueries({ queryKey: ['/api/trades'] }),
       ]);
@@ -905,117 +870,6 @@ export default function Dashboard() {
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <Zap size={80} className="text-emerald-500" />
             </div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <BarChart3 size={18} className="text-emerald-500" />
-                {t("dashboard.aiInstrumentAnalysis")}
-              </h3>
-            </div>
-            
-            {/* Instrument Selector */}
-            <div className="mb-4">
-              <Select value={selectedInstrument} onValueChange={handleInstrumentSelect}>
-                <SelectTrigger 
-                  className="w-full bg-background/50 border-border"
-                  data-testid="select-instrument"
-                >
-                  <SelectValue placeholder={t("dashboard.selectInstrumentPlaceholder")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {instrumentsData?.symbols && instrumentsData.symbols.length > 0 ? (
-                    instrumentsData.symbols.map((symbol) => (
-                      <SelectItem key={symbol} value={symbol} data-testid={`instrument-${symbol}`}>
-                        {symbol}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="none" disabled>{t("dashboard.noInstrumentsFound")}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-4">
-              {instrumentAnalysisMutation.isPending ? (
-                <div className="flex flex-col items-center justify-center py-8 space-y-2">
-                  <div className="animate-spin text-emerald-500"><RefreshCw size={24} /></div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{t("dashboard.analyzing", { symbol: selectedInstrument })}</p>
-                </div>
-              ) : instrumentAnalysis?.analysisText ? (
-                <div className="space-y-4">
-                  {/* Stats Grid */}
-                  {instrumentAnalysis.tradeCount > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                      <div className="bg-background/50 p-2.5 rounded-lg border border-border">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">{t("dashboard.colTrades")}</span>
-                        <span className="text-sm font-black text-foreground">{instrumentAnalysis.tradeCount}</span>
-                      </div>
-                      <div className="bg-background/50 p-2.5 rounded-lg border border-border">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">{t("dashboard.colWinRate")}</span>
-                        <span className="text-sm font-black text-emerald-500">{instrumentAnalysis.winRate}%</span>
-                      </div>
-                      <div className="bg-background/50 p-2.5 rounded-lg border border-border">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">{t("dashboard.colAvgPL")}</span>
-                        <span className={cn(
-                          "text-sm font-black",
-                          parseFloat(instrumentAnalysis.avgProfitLoss) >= 0 ? "text-emerald-500" : "text-red-500"
-                        )}>
-                          ${instrumentAnalysis.avgProfitLoss}
-                        </span>
-                      </div>
-                      <div className="bg-background/50 p-2.5 rounded-lg border border-border">
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase block">{t("dashboard.colTotalPL")}</span>
-                        <span className={cn(
-                          "text-sm font-black",
-                          parseFloat(instrumentAnalysis.totalProfitLoss) >= 0 ? "text-emerald-500" : "text-red-500"
-                        )}>
-                          ${instrumentAnalysis.totalProfitLoss}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* AI Analysis Text */}
-                  <div className="prose prose-invert prose-sm max-w-none">
-                    <div className="text-xs text-foreground leading-relaxed whitespace-pre-line border-l-2 border-emerald-500/30 pl-4 py-1">
-                      {instrumentAnalysis.analysisText}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-2.5">
-                    <p className="text-[9px] text-muted-foreground/60 font-bold uppercase tracking-tighter">
-                      {t("dashboard.aiDisclaimer")}
-                    </p>
-                  </div>
-                </div>
-              ) : selectedInstrument ? (
-                <div className="py-6 text-center">
-                  <p className="text-xs text-muted-foreground italic">{t("dashboard.aiInstrumentHint")}</p>
-                </div>
-              ) : (
-                <div className="py-6 text-center">
-                  <BarChart3 size={32} className="text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground italic">{t("dashboard.aiSelectInstrumentHint")}</p>
-                  {(!instrumentsData?.symbols || instrumentsData.symbols.length === 0) && (
-                    <p className="text-[10px] text-muted-foreground/50 mt-2">{t("dashboard.aiConnectMT5Hint")}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {!isPro && (
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
-                <Lock className="text-emerald-500 mb-3" size={24} />
-                <h4 className="text-sm font-bold text-foreground uppercase tracking-tighter mb-1">{t("dashboard.aiAnalystLocked")}</h4>
-                <p className="text-[10px] text-muted-foreground mb-4">{t("dashboard.aiAnalystLockedDesc")}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-card border border-emerald-500/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Zap size={80} className="text-emerald-500" />
-            </div>
             <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
               <ShieldCheck size={18} className="text-emerald-500" />
               {t("dashboard.performanceIntelligence")}
@@ -1267,18 +1121,6 @@ export default function Dashboard() {
         {dashConfig.widgets.strategyDeviation !== false && userId && (
           <div className="mb-8">
             <StrategyDeviationAnalysis userId={userId} />
-          </div>
-        )}
-
-        {dashConfig.widgets.psychologyReview !== false && userId && (
-          <div className="mb-8">
-            <PsychologyTradeReview userId={userId} />
-          </div>
-        )}
-
-        {dashConfig.widgets.monthlyReview !== false && userId && (
-          <div className="mb-8">
-            <MonthlyReviewReport userId={userId} />
           </div>
         )}
 

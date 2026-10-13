@@ -4,20 +4,17 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Settings2, LayoutDashboard, Activity, BarChart3, Clock, Brain, ShieldCheck, FileText, GripVertical, HeartPulse, Trophy, Calendar } from "lucide-react";
+import { Settings2, LayoutDashboard, Activity, BarChart3, Clock, Brain, ShieldCheck, GripVertical, Trophy, Calendar } from "lucide-react";
 
 export type DashboardConfig = {
   widgets: {
     stats: boolean;
     equityCurve: boolean;
-    aiInstrument: boolean;
     recentTrades: boolean;
     sessionAnalytics: boolean;
     timePatterns: boolean;
     behavioralRisks: boolean;
     strategyDeviation: boolean;
-    monthlyReview: boolean;
-    psychologyReview: boolean;
     achievements: boolean;
     heatmap: boolean;
   };
@@ -27,14 +24,11 @@ export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
   widgets: {
     stats: true,
     equityCurve: true,
-    aiInstrument: true,
     recentTrades: true,
     sessionAnalytics: true,
     timePatterns: true,
     behavioralRisks: true,
     strategyDeviation: true,
-    monthlyReview: true,
-    psychologyReview: true,
     achievements: true,
     heatmap: true,
   },
@@ -43,14 +37,11 @@ export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
 const WIDGET_INFO = [
   { key: "stats", label: "Performance Stats", icon: LayoutDashboard, description: "Win rate, P&L, trades overview" },
   { key: "equityCurve", label: "Equity Curve", icon: Activity, description: "Growth performance chart" },
-  { key: "aiInstrument", label: "AI Instrument Analysis", icon: BarChart3, description: "AI-powered instrument insights" },
   { key: "recentTrades", label: "Recent Trades", icon: Clock, description: "Latest trade entries" },
   { key: "sessionAnalytics", label: "Session Analytics", icon: Clock, description: "Trading session breakdown" },
   { key: "timePatterns", label: "Time Patterns", icon: Clock, description: "Best/worst trading times" },
   { key: "behavioralRisks", label: "Behavioral Risk Flags", icon: Brain, description: "Psychology-based risk alerts" },
   { key: "strategyDeviation", label: "Strategy Deviation", icon: ShieldCheck, description: "Rule compliance tracking" },
-  { key: "monthlyReview", label: "Monthly Review", icon: FileText, description: "AI-generated monthly report" },
-  { key: "psychologyReview", label: "Psychology Review", icon: HeartPulse, description: "AI mood & mistake analysis" },
   { key: "achievements", label: "Achievements", icon: Trophy, description: "Badges, streaks & XP progress" },
   { key: "heatmap", label: "Trading Heatmap", icon: Calendar, description: "When you trade and how each slot performs" },
 ] as const;

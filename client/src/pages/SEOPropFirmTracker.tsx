@@ -39,7 +39,7 @@ export default function SEOPropFirmTracker() {
             "name": "TradifyApp Prop Firm Challenge Tracker",
             "applicationCategory": "FinanceApplication",
             "operatingSystem": "Web",
-            "description": "Real-time prop firm challenge tracking with drawdown monitoring, profit target gauges, consistency scoring, and AI risk warnings.",
+            "description": "Real-time prop firm challenge tracking with drawdown monitoring, profit target gauges, consistency scoring, and rule-based risk checks.",
             "url": "https://tradifyapp.com/prop-firm-tracker",
             "offers": [
               { "@type": "Offer", "price": "29", "priceCurrency": "USD", "name": "Pro Plan" },

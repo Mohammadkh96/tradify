@@ -3,7 +3,6 @@ import { Navigation, MobileNav } from "./Navigation";
 import { FloatingCalculator } from "./FloatingCalculator";
 import { ThemeToggle } from "./ThemeToggle";
 import { OnboardingTour } from "./OnboardingTour";
-import { FirstSyncMoment } from "./FirstSyncMoment";
 import { NotificationBell } from "./NotificationBell";
 import QuickAddTradeFab from "./QuickAddTradeFab";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -28,7 +27,6 @@ export function MainLayout({ children }: MainLayoutProps) {
       <FloatingCalculator />
       <QuickAddTradeFab />
       <OnboardingTour />
-      <FirstSyncMoment />
     </div>
   );
 }

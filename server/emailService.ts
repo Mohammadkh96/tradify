@@ -4,7 +4,6 @@ import path from 'path';
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { and, count, eq, gte, lte, ne } from "drizzle-orm";
-import { openai } from "./replit_integrations/audio/index";
 
 // Use process.cwd() for path resolution (works in both ESM and CJS)
 const EMAIL_TEMPLATES_DIR = path.join(process.cwd(), 'server', 'emails');
@@ -328,7 +327,6 @@ async function sendSubscriptionActivatedEmail(email: string, userName: string, p
                   <li>Advanced analytics &amp; reports</li>
                   <li>Custom trading rules (unlimited)</li>
                   <li>Performance insights dashboard</li>
-                  <li>AI-powered monthly self-review</li>
                   <li>Priority support</li>
                 </ul>
               </td></tr>
@@ -629,22 +627,9 @@ function dripFooterNote(isLead: boolean, unsubscribeUrl?: string): string {
   return `<p style="margin: 24px 0 0 0; font-size: 12px; color: #6B7280; border-top: 1px solid #1F2937; padding-top: 16px;">${reason}${unsubLink}</p>`;
 }
 
-// ==================== AI EMAIL GENERATION ====================
+// ==================== SCHEDULED EMAIL TEMPLATES ====================
 
-const PRODUCT_REFERENCE = `
-TradifyApp — Trading Discipline Platform. Tagline: "Your Rules. Enforced."
-NOT a journal. NOT a trade log. An enforcement layer.
-
-FREE plan: MT5 auto-sync via connector EA (read-only, installs in 3 min), trade history (30-day), basic analytics, psychology tracking, CSV import, risk calculators, 3 education lessons, basic rule validation.
-
-PRO plan ($29/month): Everything in Free + unlimited trade history, advanced analytics (win rate by session/day/instrument/setup), unlimited rule engine, multi-account MT5 tracking, full 19-lesson education hub, monthly AI self-review report, Prop Firm Challenge Tracker (FTMO / The5ers / FundedNext / Funding Pips / Alpha Capital / Topstep / E8 / Lux / custom), AI instrument analysis, priority support.
-
-ELITE plan ($59/month): Everything in Pro + behavioral risk flags, session analytics deep-dive, AI challenge risk warnings, strategy deviation analysis, monthly AI review reports with coaching recommendations.
-
-MT5 connector: A .pyw file the user runs locally. Completely read-only — never touches broker credentials or places trades. Syncs every 60 seconds.
-`;
-
-interface AIEmailUserData {
+interface ScheduledEmailUserData {
   name: string;
   tier: string;
   hasMt5: boolean;
@@ -653,118 +638,48 @@ interface AIEmailUserData {
   email: string;
 }
 
-async function generateAIEmail(
+function escapeEmailText(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character] as string);
+}
+
+function buildScheduledEmail(
   type: string,
-  userData: AIEmailUserData,
-  context?: { topic?: string; newsHeadlines?: string[]; step?: number; isElite?: boolean }
-): Promise<{ subject: string; body: string } | null> {
-  try {
-    const { name, tier, hasMt5, ruleCount, daysSinceSignup } = userData;
-    const topic = context?.topic || type;
-    const headlines = context?.newsHeadlines?.slice(0, 5) || [];
-    const isElite = context?.isElite || tier.toUpperCase() === 'ELITE';
+  userData: ScheduledEmailUserData,
+  context?: { topic?: string; step?: number },
+): { subject: string; body: string } {
+  const topics: Record<string, { subject: string; message: string }> = {
+    free_ongoing: {
+      subject: "Keep your trading journal up to date",
+      message: "Review your recent trades, record your process, and use your performance history to guide your own next steps.",
+    },
+    pro_to_elite: {
+      subject: "Make more of your trading reviews",
+      message: "Your dashboard brings your trade history and performance metrics together so you can review your decisions over time.",
+    },
+    elite_retention: {
+      subject: "Your trading progress is ready to review",
+      message: "Take a few minutes to review your recent activity, check your challenge progress, and keep your trading records current.",
+    },
+    insights_newsletter: {
+      subject: "A reminder to review your trading data",
+      message: "Regularly reviewing your own trade history can help you keep track of what is working and where you want to improve.",
+    },
+  };
+  const content = topics[type] || topics.free_ongoing;
+  const safeName = escapeEmailText(userData.name || "trader");
+  const safeTopic = context?.topic ? `<p style="margin: 0 0 20px; color: #9CA3AF;">This email's focus: ${escapeEmailText(context.topic)}</p>` : "";
+  const buttonColor = "#00D9A3";
 
-    const headlinesSection = headlines.length > 0
-      ? `\nRecent market headlines for context:\n${headlines.map(h => `- ${h}`).join('\n')}\n`
-      : '';
-
-    const eliteInsightInstruction = isElite
-      ? `\nSince this user is on Elite, include an exclusive "Elite Insight" section after the main content — a short, data-driven tip that only applies to elite-level analysis or behavioral risk. Use the HTML callout box style shown below:\n<div style="background-color: #1a0a2e; border: 1px solid #7c3aed; border-radius: 8px; padding: 20px; margin: 24px 0;"><p style="margin: 0 0 8px 0; font-size: 11px; color: #7c3aed; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold;">&#9889; Elite Insight</p><p style="margin: 0; font-size: 15px; color: #D1D5DB; line-height: 1.7;">[elite insight content]</p></div>`
-      : '';
-
-    const systemPrompt = `You are the voice of TradifyApp — a trading discipline platform for serious traders. Your brand voice is: direct, no-fluff, disciplined. You write short, impactful emails that respect the reader's intelligence.
-
-${PRODUCT_REFERENCE}
-
-Rules:
-- Write in plain English. No corporate buzzwords.
-- Use emojis in headings and list items (📊 📈 ⚡ 🎯 🧠 ✅ etc)
-- ALL feature mentions must be accurate per the product reference above
-- Do NOT use phrases like "built by a trader, for traders" or call it a "journal"
-- Return only the HTML email body content — no outer wrapper, no DOCTYPE, no <html>/<body> tags
-- Use inline styles. Dark theme: bg #0A0F1E, text #D1D5DB, headings #ffffff, accent #00D9A3
-- Include one emerald CTA button using this exact HTML pattern (replace URL and label):
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0;"><tr><td style="background-color: #00D9A3; border-radius: 6px;"><a href="${APP_URL}/dashboard" style="display: inline-block; padding: 14px 28px; font-size: 15px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: 0.3px;">[CTA LABEL] →</a></td></tr></table>
-- Section callout boxes use: <div style="background-color: #131A2B; border-left: 3px solid #00D9A3; padding: 20px; margin: 20px 0; border-radius: 0 6px 6px 0;">content</div>
-- First line of subject: return as "SUBJECT: [subject here]" on its own line at the very top, then the HTML body below`;
-
-    const userContext = `User: ${name} | Tier: ${tier} | MT5 connected: ${hasMt5} | Rules created: ${ruleCount} | Days since signup: ${daysSinceSignup}`;
-
-    const userPrompt = `Write a ${type} email.
-Topic: ${topic}
-${userContext}
-${headlinesSection}${eliteInsightInstruction}
-
-Write the subject line first as "SUBJECT: [subject]", then the HTML body.`;
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      max_tokens: 1200,
-      temperature: 0.7,
-    });
-
-    const raw = response.choices[0]?.message?.content || '';
-    const lines = raw.split('\n');
-    const subjectLine = lines.find(l => l.startsWith('SUBJECT:'));
-    const subject = subjectLine ? subjectLine.replace('SUBJECT:', '').trim() : `Your TradifyApp update — ${topic}`;
-    const bodyStart = lines.findIndex(l => l.startsWith('SUBJECT:'));
-    const body = lines.slice(bodyStart + 1).join('\n').trim();
-
-    if (!body) return null;
-    return { subject, body };
-  } catch (err) {
-    console.error('[AI EMAIL] generateAIEmail error:', err);
-    return null;
-  }
-}
-
-interface BraveNewsResult {
-  title?: string;
-  url?: string;
-  description?: string;
-}
-
-interface BraveNewsResponse {
-  results?: BraveNewsResult[];
-}
-
-async function fetchMarketNews(): Promise<string[]> {
-  const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
-  if (!BRAVE_API_KEY) {
-    console.log('[DRIP] No BRAVE_API_KEY configured, skipping news fetch');
-    return [];
-  }
-
-  try {
-    const queries = [
-      'prop firm trading news 2025',
-      'forex discipline trading psychology',
-      'algorithmic trading risk management prop firm',
-    ];
-    const headlines: string[] = [];
-
-    for (const q of queries) {
-      const url = `https://api.search.brave.com/res/v1/news/search?q=${encodeURIComponent(q)}&count=5&freshness=pw`;
-      const resp = await fetch(url, {
-        headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY },
-      });
-      if (!resp.ok) continue;
-      const data: BraveNewsResponse = await resp.json();
-      const results = data?.results ?? [];
-      for (const r of results.slice(0, 3)) {
-        if (r?.title) headlines.push(r.title);
-      }
-    }
-
-    return headlines.slice(0, 6);
-  } catch (err) {
-    console.error('[DRIP] fetchMarketNews error:', err);
-    return [];
-  }
+  return {
+    subject: content.subject,
+    body: `<p style="margin: 0 0 16px;">Hi ${safeName},</p><p style="margin: 0 0 20px;">${content.message}</p>${safeTopic}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0;"><tr><td style="background-color: ${buttonColor}; border-radius: 6px;"><a href="${APP_URL}/dashboard" style="display: inline-block; padding: 14px 28px; font-size: 15px; font-weight: bold; color: #000000; text-decoration: none;">Open your dashboard →</a></td></tr></table><p style="margin: 0; color: #9CA3AF;">Your plan: ${escapeEmailText(userData.tier)}. MT5 connected: ${userData.hasMt5 ? "yes" : "no"}.</p>`,
+  };
 }
 
 async function getUserRuleCount(userId: string): Promise<number> {
@@ -1006,9 +921,6 @@ async function buildFreeUserEmail(
             <td style="padding: 12px 8px; font-size: 15px; color: #D1D5DB;">As many rules as your trading plan requires.</td>
           </tr>
           <tr style="border-bottom: 1px solid #1F2937;">
-            <td style="padding: 12px 8px; font-size: 15px; font-weight: bold; color: #ffffff;">Monthly self-review</td>
-            <td style="padding: 12px 8px; font-size: 15px; color: #D1D5DB;">AI-generated performance reports with actionable coaching.</td>
-          </tr>
           <tr>
             <td style="padding: 12px 8px; font-size: 15px; font-weight: bold; color: #ffffff;">Priority support</td>
             <td style="padding: 12px 8px; font-size: 15px; color: #D1D5DB;">Direct access — no ticket queues.</td>
@@ -1823,8 +1735,8 @@ async function processDripSequences(): Promise<void> {
           const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
           const hasMt5 = mt5Check.length > 0;
           const ruleCount = await getUserRuleCount(seq.userId);
-          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
-          const aiResult = await generateAIEmail('free_ongoing', userData, { topic, step: seq.currentStep });
+          const userData: ScheduledEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
+          const aiResult = buildScheduledEmail('free_ongoing', userData, { topic, step: seq.currentStep });
           if (aiResult) {
             const unsubUrl = await getUnsubscribeUrl(seq.userId);
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
@@ -1857,9 +1769,9 @@ async function processDripSequences(): Promise<void> {
             'Unlimited rule engine — building a complete trading plan',
             'Multi-account MT5 tracking — managing multiple challenges',
             'Prop Firm Challenge Tracker with FTMO, The5ers, FundedNext, Funding Pips, Alpha Capital, Topstep, E8, Lux + custom presets',
-            'AI instrument analysis and what it tells you',
+            'Instrument performance analytics',
             'Full 19-lesson education hub — structured trading knowledge',
-            'Why Elite is the next step: behavioral risk and AI coaching',
+            'Elite tools: session analytics and behavioral risk flags',
           ];
           const userName = user.fullName || seq.userId.split('@')[0];
           const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
@@ -1867,8 +1779,8 @@ async function processDripSequences(): Promise<void> {
           const hasMt5 = mt5Check.length > 0;
           const ruleCount = await getUserRuleCount(seq.userId);
           const topic = topics[seq.currentStep] || topics[topics.length - 1];
-          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
-          const aiResult = await generateAIEmail('pro_to_elite', userData, { topic, step: seq.currentStep });
+          const userData: ScheduledEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
+          const aiResult = buildScheduledEmail('pro_to_elite', userData, { topic, step: seq.currentStep });
           if (aiResult) {
             const unsubUrl = await getUnsubscribeUrl(seq.userId);
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
@@ -1903,9 +1815,9 @@ async function processDripSequences(): Promise<void> {
             'Welcome to Elite — your full platform overview',
             'Behavioral risk flags: what TradifyApp watches for',
             'Session analytics deep-dive: your edge by time and session',
-            'AI challenge risk warnings: staying inside prop firm limits',
+            'Rule-based challenge risk checks',
             'Strategy deviation analysis: when you drift from your plan',
-            'Monthly AI review reports with personalized coaching',
+            'Reviewing historical performance data',
           ];
           const userName = user.fullName || seq.userId.split('@')[0];
           const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
@@ -1913,8 +1825,8 @@ async function processDripSequences(): Promise<void> {
           const hasMt5 = mt5Check.length > 0;
           const ruleCount = await getUserRuleCount(seq.userId);
           const topic = topics[seq.currentStep] || topics[topics.length - 1];
-          const userData: AIEmailUserData = { name: userName, tier: 'ELITE', hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
-          const aiResult = await generateAIEmail('elite_retention', userData, { topic, step: seq.currentStep, isElite: true });
+          const userData: ScheduledEmailUserData = { name: userName, tier: 'ELITE', hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
+          const aiResult = buildScheduledEmail('elite_retention', userData, { topic, step: seq.currentStep });
           if (aiResult) {
             const unsubUrl = await getUnsubscribeUrl(seq.userId);
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
@@ -1945,19 +1857,15 @@ async function processDripSequences(): Promise<void> {
           if (!user) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
           const tier = user.subscriptionTier?.toUpperCase() || 'FREE';
           if (tier === 'FREE') { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
-          const isElite = tier === 'ELITE';
           const userName = user.fullName || seq.userId.split('@')[0];
           const daysSinceSignup = user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
           const mt5Check = await db.select({ id: schema.mt5Data.id }).from(schema.mt5Data).where(eq(schema.mt5Data.userId, seq.userId)).limit(1);
           const hasMt5 = mt5Check.length > 0;
           const ruleCount = await getUserRuleCount(seq.userId);
-          const newsHeadlines = await fetchMarketNews();
-          const userData: AIEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
-          const aiResult = await generateAIEmail('insights_newsletter', userData, {
+          const userData: ScheduledEmailUserData = { name: userName, tier, hasMt5, ruleCount, daysSinceSignup, email: seq.userId };
+          const aiResult = buildScheduledEmail('insights_newsletter', userData, {
             topic: 'Market insights and prop firm trading discipline',
-            newsHeadlines,
             step: seq.currentStep,
-            isElite,
           });
           if (aiResult) {
             const unsubUrl = await getUnsubscribeUrl(seq.userId);

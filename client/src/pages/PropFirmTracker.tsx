@@ -715,7 +715,7 @@ export default function PropFirmTracker() {
 
   const riskCheckMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch("/api/prop-firm/ai-risk-check", {
+      const res = await fetch("/api/prop-firm/risk-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -1840,13 +1840,10 @@ export default function PropFirmTracker() {
               <div className="space-y-1">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Brain size={16} className="text-amber-500" />
-                  {t("aiRiskAnalysis")}
+                  {t("riskCheckTitle")}
                 </CardTitle>
-                <CardDescription>{t("aiRiskDesc")}</CardDescription>
+                <CardDescription>{t("riskCheckDesc")}</CardDescription>
               </div>
-              <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
-                {t("elite")}
-              </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

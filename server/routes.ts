@@ -494,6 +494,16 @@ ${blogPosts.map(p => `  <url>
   registerStripeWebhook(app);
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+  // AI-backed features are retired. Reject requests before any legacy handler
+  // can process data or call a model provider.
+  const retiredAiEndpoint = /^\/api\/(?:ai(?:\/|$)|monthly-review(?:\/|$)|trades\/[^/]+\/ai-tags$|compliance\/explain$|education\/ai-tutor$|generate-image$|admin\/marketing\/(?:generate(?:\/|$)|studio(?:\/|$)|smart-suggestions$|pipeline\/run$|funnel\/generate(?:-single)?$|content\/(?:[^/]+\/repurpose|fill-week)$|ad-strategy$)|conversations\/[^/]+\/(?:messages|voice-stream)$)/i;
+  app.use((req, res, next) => {
+    if (retiredAiEndpoint.test(req.path)) {
+      return res.status(410).json({ message: "AI features have been removed." });
+    }
+    next();
+  });
   
   // Early Access Signup Endpoint
   app.post("/api/early-access/signup", earlyAccessLimiter, async (req, res) => {
@@ -3777,6 +3787,9 @@ Output exactly 1-3 bullet points.`;
   // ENHANCED AI PSYCHOLOGY REVIEW - Pro+ feature
   // Analyzes trading psychology patterns: mood-outcome correlations, mistake impact
   app.get("/api/ai/psychology-review/:userId", aiLimiter, requireAuth, async (req, res) => {
+    if (retiredAiEndpoint.test(req.path)) {
+      return res.status(410).json({ message: "AI features have been removed." });
+    }
     try {
       const { userId } = req.params;
       const { period = "30", force } = req.query;
@@ -3786,10 +3799,9 @@ Output exactly 1-3 bullet points.`;
       }
 
       const user = await storage.getUserRole(userId);
-      if (!user || !canAccessFeature(user.subscriptionTier || "FREE", "aiAnalysis")) {
+      if (!user) {
         return res.status(403).json({
-          message: "Pro subscription required for Psychology Review",
-          requiredTier: "PRO"
+          message: "User not found"
         });
       }
 
@@ -4395,6 +4407,9 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
   // Generate AI analysis for a specific instrument (PRO only)
   app.post("/api/ai/instrument-analysis/:userId", aiLimiter, requireAuth, async (req, res) => {
+    if (retiredAiEndpoint.test(req.path)) {
+      return res.status(410).json({ message: "AI features have been removed." });
+    }
     try {
       const { userId } = req.params;
       const { symbol } = req.body;
@@ -4404,15 +4419,10 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      // Check AI analysis access based on plan
-      const userRole = await storage.getUserRole(userId);
-      if (!canAccessFeature(userRole?.subscriptionTier, "aiAnalysis")) {
-        return res.status(403).json({ message: "Pro or Elite subscription required for AI analysis" });
-      }
-      
       if (!symbol) {
         return res.status(400).json({ message: "Symbol is required" });
       }
+      const userRole = await storage.getUserRole(userId);
       
       // Check cache - only regenerate if older than 30 minutes
       const existing = await db.select()
@@ -7035,6 +7045,9 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
   });
 
   app.post("/api/education/ai-tutor", requireAuth, async (req, res) => {
+    if (retiredAiEndpoint.test(req.path)) {
+      return res.status(410).json({ message: "AI features have been removed." });
+    }
     try {
       const userId = req.session.userId!;
       
@@ -7051,14 +7064,6 @@ IMPORTANT: Only state facts from the data above. Do not recommend trades or sugg
       }
       
       const { question, lessonTitle, lessonContent } = validationResult.data;
-      
-      const user = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
-      const userPlan = user[0]?.subscriptionTier || "FREE";
-      
-      if (!canAccessFeature(userPlan, "aiAnalysis")) {
-        res.status(403).json({ message: "AI Tutor is a Pro/Elite feature. Upgrade to access." });
-        return;
-      }
       
       const systemPrompt = `${AI_SYSTEM_CONTEXT}
 
@@ -7557,8 +7562,8 @@ Guidelines:
     }
   });
 
-  // AI Risk Analysis for trade against active challenge
-  app.post("/api/prop-firm/ai-risk-check", requireAuth, async (req, res) => {
+  // Deterministic rule-based risk check for trade against active challenge.
+  app.post("/api/prop-firm/risk-check", requireAuth, async (req, res) => {
     try {
       const { challengeId, tradeDirection, pair, entryPrice, stopLoss, lotSize, currentPl } = req.body;
       

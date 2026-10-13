@@ -18,8 +18,6 @@ import { format, formatDistanceToNow, startOfDay, startOfWeek, startOfMonth } fr
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import ContentStudio from "@/pages/admin/ContentStudio";
-import MetaAdsStrategist from "@/pages/admin/MetaAdsStrategist";
 import CostIntelligence from "@/pages/admin/CostIntelligence";
 
 function AdminAccessTab() {
@@ -1591,16 +1589,6 @@ export default function AdminDashboard() {
   // --- 8. SUGGESTIONS PAGE ---
   if (location.pathname === "/admin/suggestions") {
     return <SuggestionsTab />;
-  }
-
-  // --- 9. CONTENT STUDIO PAGE ---
-  if (location.pathname === "/admin/marketing/content-studio") {
-    return <ContentStudio />;
-  }
-
-  // --- 10. META ADS STRATEGIST PAGE ---
-  if (location.pathname === "/admin/marketing/meta-ads") {
-    return <MetaAdsStrategist />;
   }
 
   // --- 11. BLOG MANAGEMENT PAGE ---

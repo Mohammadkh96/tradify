@@ -28,17 +28,13 @@ export default function Pricing() {
     { name: t("pricing.feat_unlimitedStrategies"), free: false, pro: true, elite: true },
     { name: t("pricing.feat_perfIntel"), free: false, pro: true, elite: true },
     { name: t("pricing.feat_equityCurve"), free: false, pro: true, elite: true },
-    { name: t("pricing.feat_aiInstrument"), free: false, pro: true, elite: true },
-    { name: t("pricing.feat_aiPsych"), free: false, pro: true, elite: true },
     { name: t("pricing.feat_propFirm"), free: false, pro: true, elite: true },
     { name: t("pricing.feat_csvExport"), free: false, pro: true, elite: true },
     { name: t("pricing.feat_pdfReport"), free: false, pro: true, elite: true },
-    { name: t("pricing.feat_aiRiskWarn"), free: false, pro: false, elite: true },
     { name: t("pricing.feat_sessionAnalytics"), free: false, pro: false, elite: true },
     { name: t("pricing.feat_timePattern"), free: false, pro: false, elite: true },
     { name: t("pricing.feat_behavioralFlags"), free: false, pro: false, elite: true },
     { name: t("pricing.feat_strategyDeviation"), free: false, pro: false, elite: true },
-    { name: t("pricing.feat_monthlyReview"), free: false, pro: false, elite: true },
     { name: t("pricing.feat_prioritySupport"), free: false, pro: false, elite: true },
     { name: t("pricing.feat_eliteBadge"), free: false, pro: false, elite: true },
   ];
@@ -78,7 +74,7 @@ export default function Pricing() {
     <div className="flex-1 text-foreground pb-20 md:pb-0 bg-background">
       <SEO 
         title="Pricing - Free, Pro & Elite Plans | TradifyApp"
-        description="Choose your TradifyApp plan. Free MT5 sync, Pro analytics at $29/mo, or Elite with AI insights at $59/mo. Founding members get 30% off forever."
+        description="Choose your TradifyApp plan. Compare MT5 sync, performance analytics, prop firm tracking, and education features. Founding members get 30% off forever."
         canonical="https://tradifyapp.com/pricing"
         breadcrumbs={[
           { name: "Home", url: "https://tradifyapp.com" },
@@ -89,7 +85,7 @@ export default function Pricing() {
             "@context": "https://schema.org",
             "@type": "Product",
             "name": "TradifyApp Pro",
-            "description": "Professional trading journal with prop firm tracker, AI instrument analysis, full education hub, and 6-month trade history. Includes MT5 auto-sync, unlimited strategies, and CSV export.",
+            "description": "Professional trading journal with prop firm tracking, a full education hub, and 6-month trade history. Includes MT5 auto-sync, performance analytics, unlimited strategies, and CSV export.",
             "brand": { "@type": "Brand", "name": "TradifyApp" },
             "url": "https://tradifyapp.com/pricing",
             "offers": {
@@ -105,7 +101,7 @@ export default function Pricing() {
             "@context": "https://schema.org",
             "@type": "Product",
             "name": "TradifyApp Elite",
-            "description": "Elite trading journal with session analytics, behavioral risk flags, strategy deviation analysis, AI monthly performance reviews, unlimited trade history, and priority support.",
+            "description": "Elite trading journal with session analytics, behavioral risk flags, strategy deviation analysis, unlimited trade history, and priority support.",
             "brand": { "@type": "Brand", "name": "TradifyApp" },
             "url": "https://tradifyapp.com/pricing",
             "offers": {

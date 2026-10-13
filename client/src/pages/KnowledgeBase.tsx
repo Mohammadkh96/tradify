@@ -548,115 +548,6 @@ function QuizSection({
   );
 }
 
-function AITutorSection({ lesson, hasProAccess }: { lesson: Lesson; hasProAccess: boolean }) {
-  const { t } = useTranslation("common", { keyPrefix: "kb" });
-  const [question, setQuestion] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-
-  const askTutorMutation = useMutation({
-    mutationFn: async (q: string) => {
-      const lessonContent = lesson.sections.map(s => `${s.title}: ${s.content}`).join('\n\n').slice(0, 3000);
-      const response = await apiRequest("POST", "/api/education/ai-tutor", {
-        question: q,
-        lessonTitle: lesson.title,
-        lessonContent
-      });
-      return await response.json() as { answer: string };
-    },
-  });
-
-  const handleSubmit = () => {
-    if (!question.trim()) return;
-    askTutorMutation.mutate(question);
-  };
-
-  if (!hasProAccess) {
-    return (
-      <div className="mt-10 p-6 bg-gradient-to-r from-purple-500/5 to-transparent rounded-xl border border-purple-500/20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="text-purple-500" size={20} />
-            <h2 className="text-lg font-black text-foreground uppercase tracking-tight">{t("aiTutor")}</h2>
-          </div>
-          <Badge variant="outline" className="text-[10px] font-black gap-1">
-            <Crown size={10} className="text-amber-500" />
-            {t("proElite")}
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground mt-2">
-          {t("aiTutorUpgrade")}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-10 p-6 bg-gradient-to-r from-purple-500/5 to-transparent rounded-xl border border-purple-500/20">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between"
-        data-testid="button-toggle-ai-tutor"
-      >
-        <div className="flex items-center gap-2">
-          <MessageSquare className="text-purple-500" size={20} />
-          <h2 className="text-lg font-black text-foreground uppercase tracking-tight">{t("aiTutor")}</h2>
-        </div>
-        <ChevronRight className={cn("w-5 h-5 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
-      </button>
-
-      {isOpen && (
-        <div className="mt-4 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {t("aiTutorIntro")}
-          </p>
-
-          <div className="flex gap-2">
-            <Input
-              placeholder={t("aiTutorPlaceholder")}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              disabled={askTutorMutation.isPending}
-              data-testid="input-ai-question"
-            />
-            <Button
-              onClick={handleSubmit}
-              disabled={askTutorMutation.isPending || !question.trim()}
-              data-testid="button-ask-ai"
-            >
-              {askTutorMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send size={16} />
-              )}
-            </Button>
-          </div>
-
-          {askTutorMutation.isSuccess && askTutorMutation.data && (
-            <div className="p-4 bg-muted/50 rounded-lg border border-border">
-              <div className="flex items-center gap-2 text-purple-500 text-xs font-black tracking-widest uppercase mb-2">
-                <Brain size={14} />
-                <span>{t("aiResponse")}</span>
-              </div>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                {askTutorMutation.data.answer.split('\n\n').map((paragraph, idx) => (
-                  <p key={idx} className="text-sm text-foreground mb-2">{paragraph}</p>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {askTutorMutation.isError && (
-            <div className="p-4 bg-rose-500/10 rounded-lg border border-rose-500/20">
-              <p className="text-sm text-rose-500">{t("aiTutorError")}</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function LessonViewer({
   lesson,
   onClose,
@@ -885,8 +776,6 @@ function LessonViewer({
               </ul>
             </div>
           )}
-
-          <AITutorSection lesson={lesson} hasProAccess={hasProAccess} />
 
           {lesson.quiz && lesson.quiz.length > 0 && (
             <QuizSection

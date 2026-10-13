@@ -228,7 +228,7 @@ export default function MarketingBrandSettings() {
             <Palette /> Brand Settings
           </h1>
           <p className="text-muted-foreground text-sm mt-1 uppercase tracking-widest font-bold">
-            Define your brand identity for AI content generation
+            Define your brand identity for consistent marketing materials
           </p>
         </div>
         <Button
@@ -250,7 +250,7 @@ export default function MarketingBrandSettings() {
                 Brand Identity
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Core brand information used in all AI-generated content
+                Core brand information used in your marketing materials
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -349,7 +349,7 @@ export default function MarketingBrandSettings() {
                 label="Unique Selling Points (USPs)"
                 items={form.uniqueSellingPoints}
                 onChange={(items) => setForm({ ...form, uniqueSellingPoints: items })}
-                placeholder="e.g. AI-powered trade journaling"
+                placeholder="e.g. MT5 trading analytics"
                 testIdPrefix="usps"
               />
 
@@ -404,7 +404,7 @@ export default function MarketingBrandSettings() {
                 Profile Completeness
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Complete your brand profile for better AI-generated content
+                Complete your brand profile to keep marketing materials consistent
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

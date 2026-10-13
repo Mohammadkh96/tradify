@@ -174,8 +174,8 @@
   "previewLabel": "Preview: ",
   "recordDailyStats": "Record Daily Stats",
 
-  "aiRiskAnalysis": "AI Risk Analysis",
-  "aiRiskDesc": "Check if a planned trade is safe within your challenge limits before you enter.",
+  "riskCheckTitle": "Challenge Risk Check",
+  "riskCheckDesc": "Check a planned trade against your challenge limits before entry.",
   "elite": "ELITE",
   "pair": "Pair",
   "direction": "Direction",

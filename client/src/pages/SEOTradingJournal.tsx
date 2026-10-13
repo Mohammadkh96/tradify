@@ -75,7 +75,7 @@ export default function SEOTradingJournal() {
             "name": "TradifyApp Trading Journal",
             "applicationCategory": "FinanceApplication",
             "operatingSystem": "Web",
-            "description": "Automated MT5 trading journal with rule validation, AI analytics, psychology tracking, and performance insights.",
+            "description": "Automated MT5 trading journal with rule validation, psychology tracking, and historical performance analytics.",
             "url": "https://tradifyapp.com/trading-journal",
             "offers": [
               { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free Plan" },

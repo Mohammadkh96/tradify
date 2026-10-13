@@ -57,7 +57,7 @@ export default function SEOMT5Analytics() {
             "name": "TradifyApp MT5 Trading Analytics",
             "applicationCategory": "FinanceApplication",
             "operatingSystem": "Web",
-            "description": "AI-powered MT5 trading analytics with equity curves, session analysis, behavioral insights, and performance tracking.",
+            "description": "MT5 trading analytics with equity curves, session analysis, behavioral risk flags, and performance tracking.",
             "url": "https://tradifyapp.com/mt5-trading-analytics",
             "offers": [
               { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free Plan" },
@@ -77,7 +77,7 @@ export default function SEOMT5Analytics() {
             "@context": "https://schema.org",
             "@type": "FAQPage",
             "mainEntity": [
-              { "@type": "Question", "name": "What trading analytics does TradifyApp provide?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp provides comprehensive trading analytics including equity curves, win rate by instrument and session, risk-to-reward analysis, drawdown tracking, profit factor calculation, expectancy metrics, behavioral pattern detection, and AI-powered performance insights — all auto-synced from MT5." } },
+              { "@type": "Question", "name": "What trading analytics does TradifyApp provide?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp provides trading analytics including equity curves, win rate by instrument and session, risk-to-reward analysis, drawdown tracking, profit factor calculation, expectancy metrics, and rule-based behavioral risk flags — with trade data synced from MT5." } },
               { "@type": "Question", "name": "How does MT5 performance tracking work?", "acceptedAnswer": { "@type": "Answer", "text": "TradifyApp installs a free Expert Advisor on your MT5 platform that reads your trade data in real time. Every trade is automatically captured and analyzed — entries, exits, lot sizes, instruments, and P&L. The analytics dashboard updates continuously as new trades come in." } },
               { "@type": "Question", "name": "Can I track multiple MT5 accounts?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. TradifyApp supports multi-account connectivity. You can connect and independently track trades, equity curves, and analytics for each of your MT5 accounts from one unified dashboard." } },
               { "@type": "Question", "name": "What is session analytics in trading?", "acceptedAnswer": { "@type": "Answer", "text": "Session analytics breaks down your trading performance by market session (London, New York, Tokyo, Sydney), day of week, and hour of day. This helps you identify when you trade best and when you should avoid trading, based on your actual historical data." } }
