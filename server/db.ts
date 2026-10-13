@@ -15,18 +15,28 @@ function cleanConnectionString(url: string | undefined): string | undefined {
   return cleaned;
 }
 
-// Use Neon database if available, otherwise fall back to Replit's database
-const connectionString = cleanConnectionString(process.env.NEON_DATABASE_URL) || process.env.DATABASE_URL;
+// Fail closed instead of silently falling back to a database that may contain
+// production customer data. Preview/test connections must be explicitly
+// isolated from the production Neon database.
+const nodeEnv = process.env.NODE_ENV || "development";
+const connectionEnvName =
+  nodeEnv === "production"
+    ? "NEON_DATABASE_URL"
+    : nodeEnv === "test"
+      ? "TEST_DATABASE_URL"
+      : "DEV_DATABASE_URL";
+const connectionString = cleanConnectionString(process.env[connectionEnvName]);
 
 if (!connectionString) {
   throw new Error(
-    "DATABASE_URL or NEON_DATABASE_URL must be set. Did you forget to provision a database?",
+    `${connectionEnvName} must be set for NODE_ENV=${nodeEnv}. Refusing an unsafe database fallback.`,
   );
 }
 
 // Log which database is being used (without exposing credentials)
-const isNeon = !!process.env.NEON_DATABASE_URL;
-console.log(`Using ${isNeon ? 'Neon' : 'Replit'} PostgreSQL database`);
+console.log(
+  `Using ${nodeEnv === "production" ? "production Neon" : nodeEnv === "test" ? "isolated test" : "isolated development"} PostgreSQL database`,
+);
 
 // Neon requires SSL. Pool sized for high concurrency — defaults are too small.
 // For 10k+ concurrent users you also need to scale Neon compute units; the

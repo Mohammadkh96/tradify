@@ -1,0 +1,149 @@
+PROJECT: ORIGINAL TRADIFYAPP TRADING JOURNAL
+
+Domain: tradifyapp.com
+
+IMPORTANT: This task does NOT concern Tradify Signals at signals.tradifyapp.com or Tradigo.
+
+Yes, please prepare a separate background-job architecture, but DO NOT publish, activate production jobs, modify production data, or change DNS.
+
+Our goal is to make the original TradifyApp production-ready while keeping operating costs reasonable.
+
+### PHASE 1 — Background job audit
+
+Inspect every existing background task, including:
+
+- MT5 synchronization.
+- Risk monitoring and alerts.
+- Daily and weekly performance digests.
+- Email delivery and retries.
+- Database backups.
+- Backup verification.
+- Subscription maintenance.
+- Cleanup and maintenance routines.
+- Any remaining AI-related jobs.
+
+For each job, document its trigger, frequency, expected runtime, dependencies, database writes, retry behavior, cost, and whether it requires continuous operation.
+
+Identify which tasks currently run inside the Node/Express web-server process.
+
+### PHASE 2 — Separate execution models
+
+Prepare distinct execution paths:
+
+1. Scheduled tasks for periodic digests, backups, cleanup and other short-running activities.
+2. A dedicated always-on worker only for tasks that genuinely require continuous processing, such as sufficiently frequent MT5 ingestion or real-time risk monitoring.
+3. Existing web API endpoints for interactive requests and incoming payment webhooks.
+
+Compare Replit Scheduled Deployments, Reserved VM Background Workers, and other supported options.
+
+Do not assume every background task needs an always-on server.
+
+Provide expected recurring costs before recommending a production deployment architecture.
+
+### PHASE 3 — Prevent duplicate execution
+
+Implement safe coordination using database-backed job records, transactional claiming, appropriate locking, and idempotency keys.
+
+Ensure:
+
+- Jobs do not run twice because Autoscale launches multiple instances.
+- Restarting a worker does not create duplicate customer emails.
+- MT5 history imports do not duplicate trades.
+- Risk alerts are deduplicated.
+- Subscription operations are idempotent.
+- Failed jobs can be retried safely.
+- Each job maintains execution history, status, duration and error information.
+
+Never depend on in-memory timers as the only source of job state.
+
+### PHASE 4 — Email safety
+
+The earlier development workflow attempted 104 emails and all failed.
+
+Investigate their current queue state without resending them.
+
+Do not automatically replay failed historical emails.
+
+Use a disposable email recipient or isolated test transport for development.
+
+Require correct production SMTP credentials before enabling actual customer delivery.
+
+Add rate limits, bounded retries, failed-delivery logs, and safe recovery from Gmail authentication or throttling errors.
+
+Determine whether Gmail SMTP is suitable for production volume and recommend a transactional email provider if necessary.
+
+### PHASE 5 — MT5 and risk monitoring
+
+Preserve all existing MT5 accounts, trade history and prop-firm challenge data.
+
+Assess how frequently MT5 synchronization must run to support the existing product promises.
+
+Ensure synchronization continues independently of website traffic.
+
+Prevent duplicate historical trades and missed updates.
+
+Ensure risk alerts are derived from authoritative data, correctly deduplicated, and not silently skipped when ingestion fails.
+
+Do not generate false alerts or silently relax risk thresholds.
+
+### PHASE 6 — Backups and database safety
+
+Inspect the existing backup implementation.
+
+The last recorded backup was May 2, 2026, with a successful restore verification on June 7, 2026.
+
+Do not assume that backup is adequate for the current database.
+
+Prepare a new backup and restore-verification process, but do not execute changes against production without my approval.
+
+Preserve the existing Neon PostgreSQL schema and records.
+
+Do not grant DDL permissions to the tradify_app runtime role.
+
+Do not reintroduce startup schema-altering SQL, demo trade insertion, or hard-coded administrator passwords.
+
+### PHASE 7 — AI removal
+
+As previously requested, identify any remaining AI-consuming background operations in the original TradifyApp.
+
+Remove or disable unnecessary runtime AI inference while preserving deterministic trading analytics.
+
+Do not remove MT5 synchronization, normal risk calculations or essential notifications.
+
+### PHASE 8 — Testing
+
+Use an isolated development database and safe test credentials.
+
+Verify:
+
+- Scheduled jobs execute correctly.
+- Workers recover from restarts.
+- Duplicate execution is prevented.
+- Failed jobs are retried safely.
+- Customer emails are not duplicated.
+- MT5 imports are idempotent.
+- Risk monitoring remains accurate.
+- Missing secrets produce controlled failures.
+- The web API can start without launching background jobs.
+- No unauthorized changes occur in production.
+
+### FINAL DELIVERABLES
+
+Provide:
+
+1. Complete existing job inventory.
+2. Recommended deployment architecture.
+3. Dedicated job entry points and scripts.
+4. Scheduler configuration and proposed frequencies.
+5. Required environment variables.
+6. Estimated Replit deployment costs.
+7. Test results.
+8. Rollback procedures.
+9. Production activation checklist.
+10. Remaining blockers.
+
+Do not publish or activate any production process.
+
+Do not touch Tradify Signals or its database.
+
+Once preparation is complete, provide a GO/NO-GO readiness report and wait for my explicit approval.

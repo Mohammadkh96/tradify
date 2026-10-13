@@ -271,10 +271,10 @@ export class PayPalService {
   }
 
   async verifyWebhookSignature(headers: any, body: string): Promise<boolean> {
-    // Skip verification if webhook ID not configured (development mode)
+    // Only allow the unsigned development path outside production.
     if (!PAYPAL_WEBHOOK_ID) {
       console.warn('PayPal webhook verification skipped - PAYPAL_WEBHOOK_ID not set');
-      return true;
+      return process.env.NODE_ENV !== 'production';
     }
 
     try {
@@ -311,8 +311,14 @@ export class PayPalService {
   }
 
   async handleWebhook(payload: any, headers?: any, rawBody?: string) {
-    // Verify webhook signature if headers provided
-    if (headers && rawBody && PAYPAL_WEBHOOK_ID) {
+    if (
+      process.env.NODE_ENV === "production" &&
+      (!headers || !rawBody || !PAYPAL_WEBHOOK_ID)
+    ) {
+      throw new Error("PayPal webhook verification is not configured.");
+    }
+    // Verify whenever a signature context is available.
+    if (headers && rawBody) {
       const isValid = await this.verifyWebhookSignature(headers, rawBody);
       if (!isValid) {
         console.error('PayPal webhook signature verification failed');
@@ -328,12 +334,12 @@ export class PayPalService {
     switch (eventType) {
       case 'BILLING.SUBSCRIPTION.ACTIVATED':
       case 'BILLING.SUBSCRIPTION.UPDATED':
-        await this.handleSubscriptionActivated(resource);
+        await this.handleSubscriptionActivated(resource, String(payload.id ?? resource.id ?? ""));
         break;
       case 'BILLING.SUBSCRIPTION.CANCELLED':
       case 'BILLING.SUBSCRIPTION.EXPIRED':
       case 'BILLING.SUBSCRIPTION.SUSPENDED':
-        await this.handleSubscriptionCancelled(resource);
+        await this.handleSubscriptionCancelled(resource, String(payload.id ?? resource.id ?? ""));
         break;
       case 'PAYMENT.SALE.COMPLETED':
         // Subscription payment received
@@ -377,7 +383,7 @@ export class PayPalService {
         });
         
         const userName = userId.split('@')[0];
-        await emailService.sendSubscriptionActivatedEmail(userId, userName, determinedTier);
+        await emailService.sendSubscriptionActivatedEmail(userId, userName, determinedTier, `paypal-return:${subscriptionId}:activated`);
         emailService.cancelActiveTrack(userId, 'free_user').catch(() => {});
         emailService.cancelActiveTrack(userId, 'free_ongoing').catch(() => {});
         emailService.cancelActiveTrack(userId, 'pro_to_elite').catch(() => {});
@@ -398,7 +404,7 @@ export class PayPalService {
     }
   }
 
-  private async handleSubscriptionActivated(resource: any) {
+  private async handleSubscriptionActivated(resource: any, eventId?: string) {
     const paypalSubscriptionId = resource.id;
     const status = resource.status; 
     const customId = resource.custom_id; 
@@ -428,7 +434,7 @@ export class PayPalService {
       });
       
       const userName = customId.split('@')[0];
-      await emailService.sendSubscriptionActivatedEmail(customId, userName, tier);
+      await emailService.sendSubscriptionActivatedEmail(customId, userName, tier, `paypal:${eventId || paypalSubscriptionId}:activated`);
       emailService.cancelActiveTrack(customId, 'free_user').catch(() => {});
       emailService.cancelActiveTrack(customId, 'free_ongoing').catch(() => {});
       emailService.cancelActiveTrack(customId, 'pro_to_elite').catch(() => {});
@@ -440,7 +446,7 @@ export class PayPalService {
     }
   }
 
-  private async handleSubscriptionCancelled(resource: any) {
+  private async handleSubscriptionCancelled(resource: any, eventId?: string) {
     const customId = resource.custom_id;
     console.log('Subscription cancelled for user:', customId);
     
@@ -468,7 +474,7 @@ export class PayPalService {
       
       // Send subscription canceled email
       const userName = customId.split('@')[0];
-      await emailService.sendSubscriptionCanceledEmail(customId, userName, planName);
+      await emailService.sendSubscriptionCanceledEmail(customId, userName, planName, `paypal:${eventId || resource.id || "subscription"}:cancelled`);
     }
   }
 

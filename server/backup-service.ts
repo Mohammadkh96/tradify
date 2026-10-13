@@ -193,12 +193,17 @@ function cleanConnectionString(url: string | undefined): string | undefined {
 }
 
 function getBackupConnectionString(): string {
-  const url =
-    cleanConnectionString(process.env.NEON_DATABASE_URL) ||
-    cleanConnectionString(process.env.DATABASE_URL);
+  const nodeEnv = process.env.NODE_ENV || "development";
+  const variableName =
+    nodeEnv === "production"
+      ? "NEON_DATABASE_URL"
+      : nodeEnv === "test"
+        ? "TEST_DATABASE_URL"
+        : "DEV_DATABASE_URL";
+  const url = cleanConnectionString(process.env[variableName]);
   if (!url) {
     throw new Error(
-      "No database URL configured (set NEON_DATABASE_URL or DATABASE_URL)",
+      `${variableName} must be set for backup execution; refusing an unsafe database fallback.`,
     );
   }
   return url;

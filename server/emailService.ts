@@ -1,7 +1,9 @@
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
-import { db } from "./db";
+import { randomUUID } from "node:crypto";
+import { db, pool } from "./db";
+import { enqueueAndSendEmail, processEmailOutbox } from "./emailDelivery";
 import * as schema from "@shared/schema";
 import { and, count, eq, gte, lte, ne } from "drizzle-orm";
 
@@ -12,6 +14,7 @@ const SMTP_HOST = 'smtp.gmail.com';
 const SMTP_PORT = 587;
 const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_APP_PASSWORD = process.env.SMTP_APP_PASSWORD || '';
+const EMAIL_DELIVERY_ENABLED = process.env.EMAIL_DELIVERY_ENABLED === "true";
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@tradifyapp.com';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@tradifyapp.com';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@tradifyapp.com';
@@ -94,49 +97,48 @@ async function sendEmail(
   to: string,
   subject: string,
   html: string,
-  retryOnce = true,
-  extraHeaders?: Record<string, string>
+  _retryOnce = true,
+  extraHeaders?: Record<string, string>,
+  idempotencyKey: string = randomUUID(),
 ): Promise<boolean> {
-  if (!SMTP_USER || !SMTP_APP_PASSWORD) {
-    console.warn('[EMAIL] SMTP credentials not configured. Email not sent.');
-    logEmail({ to, subject, success: false, error: 'SMTP not configured', timestamp: new Date() });
+  if (!EMAIL_DELIVERY_ENABLED || !SMTP_USER || !SMTP_APP_PASSWORD) {
+    const error = !EMAIL_DELIVERY_ENABLED
+      ? "Email delivery is disabled by EMAIL_DELIVERY_ENABLED."
+      : "SMTP credentials are not configured.";
+    console.warn(`[EMAIL] ${error} Message was not sent.`);
+    logEmail({ to, subject, success: false, error, timestamp: new Date() });
     return false;
   }
 
   try {
-    await transporter.sendMail({
-      from: `"${APP_NAME}" <${FROM_EMAIL}>`,
+    const result = await enqueueAndSendEmail(
+      pool,
+      transporter,
+      `"${APP_NAME}" <${FROM_EMAIL}>`,
+      { to, subject, html, headers: extraHeaders },
+      idempotencyKey,
+    );
+    const success = result.status === "sent";
+    logEmail({
       to,
       subject,
-      html,
-      headers: extraHeaders,
+      success,
+      error: result.error ?? (success ? undefined : `Delivery status: ${result.status}`),
+      timestamp: new Date(),
     });
-    logEmail({ to, subject, success: true, timestamp: new Date() });
-    
-    // Log to database
-    try {
-      await db.insert(schema.sentEmails).values({
-        recipient: to,
-        subject,
-        templateName: 'transactional',
-        success: true,
-      });
-    } catch (dbError) {
-      console.error('[EMAIL] Failed to log email to database:', dbError);
-    }
-    
-    return true;
+    return success;
   } catch (error: any) {
     const errorMessage = error.message || 'Unknown error';
-    
-    if (retryOnce) {
-      console.log(`[EMAIL] Retrying send to ${to}...`);
-      return sendEmail(to, subject, html, false);
-    }
-    
     logEmail({ to, subject, success: false, error: errorMessage, timestamp: new Date() });
     return false;
   }
+}
+
+export async function processPendingEmailOutbox() {
+  if (!EMAIL_DELIVERY_ENABLED || !SMTP_USER || !SMTP_APP_PASSWORD) {
+    throw new Error("Email outbox is disabled or SMTP credentials are missing.");
+  }
+  return processEmailOutbox(pool, transporter, `"${APP_NAME}" <${FROM_EMAIL}>`, 10);
 }
 
 function getEmailHeader(): string {
@@ -310,7 +312,7 @@ async function sendAdminCreatedUserEmail(email: string, userName: string, tempPa
   return sendEmail(email, `Your ${APP_NAME} Account Has Been Created`, html);
 }
 
-async function sendSubscriptionActivatedEmail(email: string, userName: string, planName: string): Promise<boolean> {
+async function sendSubscriptionActivatedEmail(email: string, userName: string, planName: string, idempotencyKey?: string): Promise<boolean> {
   const content = `
         <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Welcome to ${planName}! &#128640;</h1>
         <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">Your subscription has been activated successfully. You now have access to all ${planName} features.</p>
@@ -338,10 +340,10 @@ async function sendSubscriptionActivatedEmail(email: string, userName: string, p
         </table>`;
 
   const html = wrapEmailBody(content, `Welcome to TradifyApp ${planName}`, `Your ${planName} subscription is now active`);
-  return sendEmail(email, `Welcome to ${APP_NAME} ${planName}!`, html);
+  return sendEmail(email, `Welcome to ${APP_NAME} ${planName}!`, html, true, undefined, idempotencyKey);
 }
 
-async function sendSubscriptionCanceledEmail(email: string, userName: string, planName: string): Promise<boolean> {
+async function sendSubscriptionCanceledEmail(email: string, userName: string, planName: string, idempotencyKey?: string): Promise<boolean> {
   const content = `
         <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin-top: 0; margin-bottom: 16px;">Subscription Canceled</h1>
         <p style="color: #D1D5DB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">We're sorry to see you go. Your subscription has been canceled as requested.</p>
@@ -358,7 +360,7 @@ async function sendSubscriptionCanceledEmail(email: string, userName: string, pl
         </table>`;
 
   const html = wrapEmailBody(content, 'Subscription Canceled', 'Your subscription has been canceled');
-  return sendEmail(email, `Your ${APP_NAME} ${planName} Subscription Has Been Canceled`, html);
+  return sendEmail(email, `Your ${APP_NAME} ${planName} Subscription Has Been Canceled`, html, true, undefined, idempotencyKey);
 }
 
 function escapeHtml(str: string): string {
@@ -1480,6 +1482,7 @@ async function scanForAtRiskUsers(): Promise<void> {
     if (queued > 0) console.log(`[DRIP] Queued at_risk for ${queued} inactive users`);
   } catch (err) {
     console.error('[DRIP] scanForAtRiskUsers error:', err);
+    throw err;
   }
 }
 
@@ -1567,18 +1570,23 @@ async function backfillEmailSequences(): Promise<void> {
   }
 }
 
-async function processDripSequences(): Promise<void> {
+async function processDripSequences(options: { notBefore?: Date } = {}): Promise<void> {
   try {
     const now = new Date();
+    const sequenceConditions = [
+      eq(schema.emailSequences.completed, false),
+      lte(schema.emailSequences.nextSendAt, now),
+    ];
+    if (options.notBefore) {
+      if (Number.isNaN(options.notBefore.getTime())) {
+        throw new Error("Invalid email sequence cutover timestamp.");
+      }
+      sequenceConditions.push(gte(schema.emailSequences.createdAt, options.notBefore));
+    }
 
     const dueSequences = await db.select()
       .from(schema.emailSequences)
-      .where(
-        and(
-          eq(schema.emailSequences.completed, false),
-          lte(schema.emailSequences.nextSendAt, now)
-        )
-      );
+      .where(and(...sequenceConditions));
 
     let sentCount = 0;
     let failedCount = 0;
@@ -1616,10 +1624,11 @@ async function processDripSequences(): Promise<void> {
 
           const leadHeaders: Record<string, string> = {};
           if (leadUnsubUrl) leadHeaders['List-Unsubscribe'] = `<${leadUnsubUrl}>`;
-          const sent = await sendEmail(seq.email, emailData.subject, emailData.html, true, Object.keys(leadHeaders).length ? leadHeaders : undefined);
+          const sent = await sendEmail(seq.email, emailData.subject, emailData.html, true, Object.keys(leadHeaders).length ? leadHeaders : undefined, `drip:${seq.id}:${seq.currentStep}`);
           console.log(`[DRIP] Lead step ${seq.currentStep} → ${seq.email}: ${sent ? 'sent' : 'failed'}`);
           if (sent) sentCount++;
           else failedCount++;
+          if (!sent) continue;
 
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= LEAD_TOTAL_STEPS;
@@ -1682,10 +1691,11 @@ async function processDripSequences(): Promise<void> {
 
           const headers: Record<string, string> = {};
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
           console.log(`[DRIP] Free user step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           if (sent) sentCount++;
           else failedCount++;
+          if (!sent) continue;
 
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= FREE_USER_TOTAL_STEPS;
@@ -1742,10 +1752,11 @@ async function processDripSequences(): Promise<void> {
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
             const headers: Record<string, string> = {};
             if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
+            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
             console.log(`[DRIP] free_ongoing step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
             if (sent) sentCount++;
             else failedCount++;
+            if (!sent) continue;
           } else {
             skippedCount++;
           }
@@ -1786,10 +1797,11 @@ async function processDripSequences(): Promise<void> {
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
             const headers: Record<string, string> = {};
             if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
+            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
             console.log(`[DRIP] pro_to_elite step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
             if (sent) sentCount++;
             else failedCount++;
+            if (!sent) continue;
           } else {
             skippedCount++;
           }
@@ -1832,10 +1844,11 @@ async function processDripSequences(): Promise<void> {
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
             const headers: Record<string, string> = {};
             if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
+            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
             console.log(`[DRIP] elite_retention step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
             if (sent) sentCount++;
             else failedCount++;
+            if (!sent) continue;
           } else {
             skippedCount++;
           }
@@ -1872,10 +1885,11 @@ async function processDripSequences(): Promise<void> {
             const html = wrapEmailBody(aiResult.body, aiResult.subject, aiResult.subject, unsubUrl);
             const headers: Record<string, string> = {};
             if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined);
+            const sent = await sendEmail(seq.userId, aiResult.subject, html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
             console.log(`[DRIP] insights_newsletter step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
             if (sent) sentCount++;
             else failedCount++;
+            if (!sent) continue;
           } else {
             skippedCount++;
           }
@@ -1897,10 +1911,11 @@ async function processDripSequences(): Promise<void> {
           if (!emailData) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
           const headers: Record<string, string> = {};
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
           console.log(`[DRIP] first_trade step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           if (sent) sentCount++;
           else failedCount++;
+          if (!sent) continue;
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= FIRST_TRADE_TOTAL_STEPS;
           const nextHours = FIRST_TRADE_INTERVALS_HOURS[nextStep] ?? 24;
@@ -1919,10 +1934,11 @@ async function processDripSequences(): Promise<void> {
           if (!emailData) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
           const headers: Record<string, string> = {};
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
           console.log(`[DRIP] first_payout step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           if (sent) sentCount++;
           else failedCount++;
+          if (!sent) continue;
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= FIRST_PAYOUT_TOTAL_STEPS;
           const nextHours = FIRST_PAYOUT_INTERVALS_HOURS[nextStep] ?? 24;
@@ -1953,10 +1969,11 @@ async function processDripSequences(): Promise<void> {
           if (!emailData) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
           const headers: Record<string, string> = {};
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
           console.log(`[DRIP] at_risk step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           if (sent) sentCount++;
           else failedCount++;
+          if (!sent) continue;
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= AT_RISK_TOTAL_STEPS;
           const nextDays = AT_RISK_INTERVALS_DAYS[nextStep] ?? 7;
@@ -1983,10 +2000,11 @@ async function processDripSequences(): Promise<void> {
           if (!emailData) { await db.update(schema.emailSequences).set({ completed: true }).where(eq(schema.emailSequences.id, seq.id)); continue; }
           const headers: Record<string, string> = {};
           if (unsubUrl) headers['List-Unsubscribe'] = `<${unsubUrl}>`;
-          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined);
+          const sent = await sendEmail(seq.userId, emailData.subject, emailData.html, true, Object.keys(headers).length ? headers : undefined, `drip:${seq.id}:${seq.currentStep}`);
           console.log(`[DRIP] win_back step ${seq.currentStep} → ${seq.userId}: ${sent ? 'sent' : 'failed'}`);
           if (sent) sentCount++;
           else failedCount++;
+          if (!sent) continue;
           const nextStep = seq.currentStep + 1;
           const isLastStep = nextStep >= WIN_BACK_TOTAL_STEPS;
           const nextDays = WIN_BACK_INTERVALS_DAYS[nextStep] ?? 30;
@@ -2003,6 +2021,7 @@ async function processDripSequences(): Promise<void> {
     console.log(`[DRIP] Process complete — due ${dueSequences.length}, sent ${sentCount}, failed ${failedCount}, skipped ${skippedCount}`);
   } catch (err) {
     console.error('[DRIP] processDripSequences error:', err);
+    throw err;
   }
 }
 
@@ -2115,6 +2134,7 @@ const SEVERITY_COLOR: Record<string, string> = {
 export async function sendDailyAlertDigestEmail(
   userIdOrEmail: string,
   data: DailyDigestEmailData,
+  idempotencyKey?: string,
 ): Promise<boolean> {
   try {
     if (!SMTP_USER || !SMTP_APP_PASSWORD) return false;
@@ -2203,7 +2223,7 @@ export async function sendDailyAlertDigestEmail(
     return await sendEmail(userIdOrEmail, subject, html, true, {
       "List-Unsubscribe": unsubUrl ? `<${unsubUrl}>` : "",
       "X-Tradify-Alert-Type": "daily_digest",
-    });
+    }, idempotencyKey);
   } catch (err) {
     console.error("[DailyDigest] send error:", err);
     return false;
@@ -2257,6 +2277,7 @@ export async function sendWeeklyPerformanceDigestEmail(
     worstTrade: { pair: string; pl: number } | null;
     ruleComplianceRate: number; insight: string; weekLabel: string;
   },
+  idempotencyKey?: string,
 ): Promise<boolean> {
   const escape = (v: string) => v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] || c));
   const plColor = s.netPl >= 0 ? "#10B981" : "#F43F5E";
@@ -2299,7 +2320,7 @@ export async function sendWeeklyPerformanceDigestEmail(
       <tr><td style="background-color:#00D9A3;border-radius:8px;"><a href="${APP_URL}/journal" style="display:inline-block;color:#0A0F1E;padding:13px 30px;text-decoration:none;font-weight:bold;font-size:14px;">Open my journal</a></td></tr>
     </table>`;
   const html = wrapEmailBody(content, "Your weekly trading digest", `Week ${s.weekLabel}: ${s.total} trades, ${s.winRate.toFixed(0)}% win rate`);
-  return sendEmail(email, `Your week in trading — ${s.weekLabel}`, html);
+  return sendEmail(email, `Your week in trading — ${s.weekLabel}`, html, true, undefined, idempotencyKey);
 }
 
 export const emailService = {
@@ -2335,5 +2356,6 @@ export const emailService = {
   scanForAtRiskUsers,
   cancelActiveTrack,
   processDripSequences,
+  processPendingEmailOutbox,
   backfillEmailSequences,
 };

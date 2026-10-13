@@ -1,5 +1,6 @@
 import { pool } from "./db";
 import { sendDailyAlertDigestEmail } from "./emailService";
+import { emailIdempotencyKey } from "./emailDelivery";
 
 const DIGEST_HOUR_DEFAULT = 8;
 const DIGEST_HOUR = (() => {
@@ -44,21 +45,23 @@ function getLocalDateAndHour(tz: string): { date: string; hour: number } {
   return { date, hour };
 }
 
-export async function runDailyDigestSweep(opts: { force?: boolean } = {}): Promise<{ checked: number; sent: number; skipped: number }> {
+export async function runDailyDigestSweep(opts: { force?: boolean; notBefore?: Date } = {}): Promise<{ checked: number; sent: number; skipped: number }> {
   let checked = 0;
   let sent = 0;
   let skipped = 0;
   try {
+    const rollingCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const since = opts.notBefore && opts.notBefore > rollingCutoff ? opts.notBefore : rollingCutoff;
     const { rows } = await pool.query<CandidateRow>(`
       SELECT n.user_id,
              COALESCE(ap.digest_enabled, true) AS digest_enabled,
              (SELECT timezone FROM user_role ur WHERE ur.user_id = n.user_id LIMIT 1) AS timezone
       FROM notifications n
       LEFT JOIN alert_preferences ap ON ap.user_id = n.user_id
-      WHERE n.created_at >= NOW() - INTERVAL '24 hours'
-        AND n.type = ANY($1::text[])
+      WHERE n.created_at >= $1::timestamptz
+        AND n.type = ANY($2::text[])
       GROUP BY n.user_id, ap.digest_enabled
-    `, [RISK_ALERT_TYPES]);
+    `, [since, RISK_ALERT_TYPES]);
 
     // Process users concurrently with bounded parallelism. Serial loop would
     // take O(N * (DB+SMTP) latency) — at 10k users that's hours. With limit=10
@@ -88,11 +91,11 @@ export async function runDailyDigestSweep(opts: { force?: boolean } = {}): Promi
         SELECT type, severity, COUNT(*)::int AS count
         FROM notifications
         WHERE user_id = $1
-          AND created_at >= NOW() - INTERVAL '24 hours'
-          AND type = ANY($2::text[])
+          AND created_at >= $2::timestamptz
+          AND type = ANY($3::text[])
         GROUP BY type, severity
         ORDER BY type, severity
-      `, [row.user_id, RISK_ALERT_TYPES]);
+      `, [row.user_id, since, RISK_ALERT_TYPES]);
 
       if ((agg.rowCount ?? 0) === 0) { counters.skipped++; return; }
 
@@ -103,7 +106,7 @@ export async function runDailyDigestSweep(opts: { force?: boolean } = {}): Promi
         date: local.date,
         total,
         groups,
-      });
+      }, emailIdempotencyKey("daily-digest", `${row.user_id}:${local.date}`));
 
       if (!ok) { counters.skipped++; return; }
 
@@ -131,6 +134,7 @@ export async function runDailyDigestSweep(opts: { force?: boolean } = {}): Promi
     skipped = counters.skipped;
   } catch (e) {
     console.error("[DailyDigest] sweep error:", e);
+    throw e;
   }
   return { checked, sent, skipped };
 }

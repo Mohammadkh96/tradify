@@ -476,15 +476,17 @@ ${blogPosts.map(p => `  <url>
   }
   
   // Session setup
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    throw new Error("SESSION_SECRET must be configured; refusing the insecure fallback.");
+  }
+
   app.use(session({
     store: new PostgresStore({
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
-      },
-      createTableIfMissing: true,
+      pool,
+      createTableIfMissing: false,
     }),
-    secret: process.env.SESSION_SECRET || "tradify_secret_2026",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {

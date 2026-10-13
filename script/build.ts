@@ -6,7 +6,6 @@ import path from "path";
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
 const allowlist = [
-  "@google/generative-ai",
   "axios",
   "connect-pg-simple",
   "cors",
@@ -21,7 +20,6 @@ const allowlist = [
   "multer",
   "nanoid",
   "nodemailer",
-  "openai",
   "passport",
   "passport-local",
   "pg",
@@ -71,6 +69,21 @@ async function buildAll() {
     bundle: true,
     format: "cjs",
     outfile: "dist/index.cjs",
+    define: {
+      "process.env.NODE_ENV": '"production"',
+    },
+    minify: true,
+    external: externals,
+    logLevel: "info",
+  });
+
+  console.log("building standalone background worker...");
+  await esbuild({
+    entryPoints: ["server/jobs/cli.ts"],
+    platform: "node",
+    bundle: true,
+    format: "cjs",
+    outfile: "dist/worker.cjs",
     define: {
       "process.env.NODE_ENV": '"production"',
     },

@@ -96,7 +96,7 @@ export function registerStripeWebhook(app: Express) {
           try {
             const u = await storage.getUserRole(userId);
             const email = userId.includes("@") ? userId : null;
-            if (email) await emailService.sendSubscriptionActivatedEmail(email, u?.fullName || email.split("@")[0] || "Trader", tier);
+            if (email) await emailService.sendSubscriptionActivatedEmail(email, u?.fullName || email.split("@")[0] || "Trader", tier, `stripe:${event.id}:activated`);
           } catch (e) { console.error("[Stripe] activation email error:", e); }
         }
       } else if (event.type === "customer.subscription.deleted") {
@@ -116,7 +116,7 @@ export function registerStripeWebhook(app: Express) {
           await setUserTier(row.user_id, "FREE", undefined, null);
           try {
             const email = row.user_id.includes("@") ? row.user_id : null;
-            if (email) await emailService.sendSubscriptionCanceledEmail(email, row.full_name || email.split("@")[0] || "Trader", row.subscription_tier || "PRO");
+            if (email) await emailService.sendSubscriptionCanceledEmail(email, row.full_name || email.split("@")[0] || "Trader", row.subscription_tier || "PRO", `stripe:${event.id}:canceled`);
           } catch (e) { console.error("[Stripe] cancel email error:", e); }
         } else if (row) {
           console.log(`[Stripe] sub.deleted ${sub.id} for ${row.user_id} ignored — user has alternate provider`);

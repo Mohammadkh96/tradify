@@ -1,5 +1,6 @@
 import { pool } from "./db";
 import { sendWeeklyPerformanceDigestEmail } from "./emailService";
+import { emailIdempotencyKey } from "./emailDelivery";
 
 const DIGEST_HOUR_DEFAULT = 9;
 const DIGEST_HOUR = (() => {
@@ -102,9 +103,11 @@ async function computeWeeklyStats(userId: string): Promise<WeeklyStats | null> {
   return { total, wins, losses, winRate, netPl, bestTrade, worstTrade, ruleComplianceRate, insight, weekLabel };
 }
 
-export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Promise<{ checked: number; sent: number; skipped: number }> {
+export async function runWeeklyDigestSweep(opts: { force?: boolean; notBefore?: Date } = {}): Promise<{ checked: number; sent: number; skipped: number }> {
   let checked = 0, sent = 0, skipped = 0;
   try {
+    const rollingCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const since = opts.notBefore && opts.notBefore > rollingCutoff ? opts.notBefore : rollingCutoff;
     const { rows } = await pool.query<CandidateRow>(`
       SELECT ur.user_id,
              ur.user_id AS email,
@@ -117,9 +120,9 @@ export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Prom
         AND COALESCE(ur.email_unsubscribed, false) = false
         AND EXISTS (
           SELECT 1 FROM trade_journal tj
-          WHERE tj.user_id = ur.user_id AND tj.created_at >= NOW() - INTERVAL '7 days'
+          WHERE tj.user_id = ur.user_id AND tj.created_at >= $1::timestamptz
         )
-    `);
+    `, [since]);
 
     // Bounded-concurrency sweep. Atomic dedupe-claim ordering preserved exactly:
     // every worker still does claim-INSERT FIRST, send second, mark-sent third.
@@ -162,15 +165,31 @@ export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Prom
           dedupeKey,
         ],
       );
-      if ((claim.rowCount ?? 0) === 0) { counters.skipped++; return; }
+      let notificationId = claim.rows[0]?.id as number | undefined;
+      if (!notificationId) {
+        const existing = await pool.query<{ id: number; email_sent: boolean | null }>(
+          `SELECT id, email_sent FROM notifications
+           WHERE user_id = $1 AND type = 'weekly_digest' AND dedupe_key = $2 LIMIT 1`,
+          [row.user_id, dedupeKey],
+        );
+        if (!existing.rows[0] || existing.rows[0].email_sent === true) {
+          counters.skipped++;
+          return;
+        }
+        notificationId = existing.rows[0].id;
+      }
 
-      const ok = await sendWeeklyPerformanceDigestEmail(row.email!, stats);
+      const ok = await sendWeeklyPerformanceDigestEmail(
+        row.email!,
+        stats,
+        emailIdempotencyKey("weekly-digest", `${row.user_id}:${local.date}`),
+      );
       if (ok) {
-        await pool.query(`UPDATE notifications SET email_sent = true WHERE id = $1`, [claim.rows[0].id]).catch(() => {});
+        await pool.query(`UPDATE notifications SET email_sent = true WHERE id = $1`, [notificationId]).catch(() => {});
         counters.sent++;
       } else {
-        // Email failed but we keep the marker — better to skip a week than spam.
-        // Counted as skipped so observability reflects actual delivery, not claims.
+        // Keep the un-sent marker so the next sweep can retry through the
+        // idempotent outbox rather than duplicate a message.
         counters.skipped++;
       }
     })));
@@ -179,6 +198,7 @@ export async function runWeeklyDigestSweep(opts: { force?: boolean } = {}): Prom
     skipped = counters.skipped;
   } catch (e) {
     console.error("[WeeklyDigest] sweep error:", e);
+    throw e;
   }
   return { checked, sent, skipped };
 }
