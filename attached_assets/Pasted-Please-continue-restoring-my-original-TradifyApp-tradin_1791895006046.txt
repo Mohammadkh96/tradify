@@ -1,0 +1,83 @@
+Please continue restoring my original TradifyApp trading journal at tradifyapp.com.
+
+The local preview works, Neon is reachable, but production deployment is missing and the tradify_app PostgreSQL role cannot alter the user_role table.
+
+I want you to resolve these issues safely.
+
+### Phase 1 — Diagnose database permissions
+
+1. Identify the PostgreSQL owner of the user_role table and the role used by the application.
+2. Identify the exact SQL statement failing during startup.
+3. Determine which ORM, migration framework, or initialization routine is attempting to modify user_role.
+4. Check whether the required schema migration has already been applied.
+5. Inspect the existing migration history and database structure.
+6. Do not reset, drop, recreate, or overwrite any existing customer tables.
+
+### Phase 2 — Fix schema management
+
+Use the least-privileged solution.
+
+Prefer performing required schema changes through an approved, version-controlled migration executed using the database owner or dedicated migration role.
+
+Do not grant unrestricted privileges to the application's runtime database user.
+
+Do not change table ownership without identifying dependencies and obtaining approval.
+
+Ensure production startup does not repeatedly attempt unauthorized schema alterations.
+
+Before any schema modifications:
+- Verify the authoritative production database.
+- Confirm that existing customer records are present.
+- Prepare a verified backup or Neon restore point.
+- Review the migration's effects and rollback procedure.
+
+If privileged database credentials or owner approval are required, tell me exactly what I need to do through Neon.
+
+### Phase 3 — Verify functionality
+
+After resolving the permission problem, verify:
+
+- User registration and login.
+- Existing user accounts.
+- Trading journal records.
+- MT5 connections and synchronization.
+- Performance statistics.
+- Prop-firm challenge tracking.
+- Rule-based risk monitoring.
+- Email notifications.
+- Subscription and payment records.
+- Admin Dashboard functionality.
+
+Do not use simulated records as proof that production customer data is intact.
+
+### Phase 4 — Prepare production deployment
+
+Inspect Replit Publishing and determine why no active production deployment exists.
+
+Confirm the correct production build command, run command, runtime environment variables, Neon connection, health checks, and required background workers.
+
+Prepare an active production deployment for tradifyapp.com.
+
+Verify whether the existing domain configuration is reusable and identify any necessary configuration changes.
+
+Do not modify the separate Tradify Signals project at signals.tradifyapp.com.
+
+Do not change Namecheap DNS unless absolutely necessary and approved.
+
+### Phase 5 — Final release report
+
+Provide:
+
+1. Root cause of the database permission error.
+2. Exact migration or permission change required.
+3. Confirmation that existing data is preserved.
+4. Any action I must take in Neon.
+5. Production deployment configuration.
+6. Custom domain mapping status.
+7. Test results.
+8. Remaining blockers.
+9. GO/NO-GO recommendation.
+
+Do not publish to production or execute potentially destructive schema changes without my explicit approval.
+
+My objective is to restore the existing TradifyApp trading journal without losing customer information or affecting Tradify Signals.

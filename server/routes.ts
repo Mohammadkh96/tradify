@@ -5829,9 +5829,6 @@ End with: "Review your charts for current market structure."`;
     res.json({ success: true });
   });
 
-  // Seed data on startup
-  await seedDatabase();
-
   // Bot SEO middleware — serves per-page meta to crawlers before SPA catch-all
   app.use(botSeoMiddleware);
 
@@ -9434,39 +9431,4 @@ Guidelines:
   });
 
   return httpServer;
-}
-
-async function seedDatabase() {
-  // Ensure admin user has a password if it doesn't
-  const adminEmail = "mohammad@admin.com";
-  const [admin] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, adminEmail)).limit(1);
-  if (admin && !admin.password) {
-    const hashedPassword = await bcrypt.hash("Admin123!", 10);
-    await db.update(schema.userRole).set({ password: hashedPassword }).where(eq(schema.userRole.userId, adminEmail));
-    console.log("Seeded admin password");
-  }
-
-  const existingTrades = await storage.getTrades();
-  if (existingTrades.length === 0) {
-    await storage.createTrade({
-      pair: "EURUSD",
-      direction: "Short",
-      timeframe: "M15",
-      htfBias: "Bearish",
-      structureState: "BOS",
-      liquidityStatus: "Taken",
-      zoneValidity: "Valid",
-      htfBiasClear: true,
-      zoneValid: true,
-      liquidityTaken: true,
-      structureConfirmed: true,
-      entryConfirmed: true,
-      entryPrice: "1.0850",
-      stopLoss: "1.0870",
-      takeProfit: "1.0800",
-      riskReward: "2.5",
-      outcome: "Win",
-      notes: "Perfect textbook setup. Liquidity sweep of Asian high, displacement down, entered on FVG retest."
-    });
-  }
 }
