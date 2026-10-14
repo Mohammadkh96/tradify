@@ -6,75 +6,186 @@ id = "8lNA7TAFkBgzDyLkpzy4W"
 uri = "file://tradify-competitive-analysis.pdf"
 type = "pdf"
 title = "Tradify Competitive Analysis Report — April 2026"
+logical_id = "bcc3ad95-f382-4e2d-82b4-284637de6d9e"
 
 [[outputs]]
 id = "ZGaAjoLCszeXRQmJF0hOP"
 uri = "file://marketing/exports/preview-01-revenge.jpg"
 type = "image"
 title = "Ad 1 — One revenge trade (Meta/IG square)"
+logical_id = "cfa64363-6758-4cef-8451-267427833025"
 
 [[outputs]]
 id = "8FSpEiJMa9i6jn9mApOK3"
 uri = "file://marketing/exports/preview-02-blown.jpg"
 type = "image"
 title = "Ad 2 — Your last account (IG portrait 4:5)"
+logical_id = "6c4d5ce0-ae81-4129-a40e-fb96287b5530"
 
 [[outputs]]
 id = "CnbfEurT0AfrhTh7iXItc"
 uri = "file://marketing/exports/preview-03-discipline.jpg"
 type = "image"
 title = "Ad 3 — Discipline is the edge (Story/Reel 9:16)"
+logical_id = "4d17491c-7223-4de0-b767-27837098f9df"
 
 [[outputs]]
 id = "lkGTSBrzqIL2OYxc5IJh4"
 uri = "file://marketing/exports/preview-04-pnl.jpg"
 type = "image"
 title = "Ad 4 — Your PnL is lying to you (Meta square)"
+logical_id = "17557903-cca3-4ae6-b638-0290a2f2706d"
 
 [[outputs]]
 id = "e43YM2jt4jUIZpr7mFZ2Q"
 uri = "file://marketing/exports/preview-05-prop.jpg"
 type = "image"
 title = "Ad 5 — Pass the prop firm (LinkedIn/X landscape)"
+logical_id = "f3434ed0-4c2e-462b-85c9-bbe3cc62d5ec"
 
 [[outputs]]
 id = "vPNOiV6mI19_PR400LiH0"
 uri = "file://marketing/exports/preview-06-aicoach.jpg"
 type = "image"
 title = "Ad 6 — AI coach (IG portrait 4:5)"
+logical_id = "3557fdcf-acc2-4648-bffd-49c700b6c76f"
 
 [[outputs]]
 id = "Izjyjey8P69ibGjA6bz-F"
 uri = "file://attached_assets/generated_videos/tradify_pain_revenge.mp4"
 type = "video"
 title = "Demo Video 1 — Pain (9:16, 8s)"
+logical_id = "97881833-d352-4d51-94df-6a3f72c7bd0d"
 
 [[outputs]]
 id = "lPjdTIt-ClePbhmeve3yC"
 uri = "file://attached_assets/generated_videos/tradify_calm_focus.mp4"
 type = "video"
 title = "Demo Video 2 — Calm focus (9:16, 8s)"
+logical_id = "331407c9-4878-4226-a54f-ee929295c077"
 
 [[outputs]]
 id = "nhHQGbnVgE-SJkn8o0RKh"
 uri = "file://attached_assets/generated_videos/tradify_app_phone_hero.mp4"
 type = "video"
 title = "Demo Video 3 — App in hand (9:16, 8s)"
+logical_id = "068973ad-b4b7-4d6c-9f0a-fbd982cdb597"
 
 [[outputs]]
 id = "PawYBOfseurMH-5uWLLDs"
 uri = "file://attached_assets/generated_videos/tradify_transformation_split.mp4"
 type = "video"
 title = "Demo Video 4 — Chaos to control (9:16, 8s)"
+logical_id = "8578f83b-9e5a-4953-8fc8-a80b5e352700"
 
 [[outputs]]
 id = "rYKLscUvVG5oV5EVq0Xs7"
 uri = "file://marketing/posts.md"
 type = "text"
 title = "Social posts — X, LinkedIn, IG, TikTok, YouTube, Meta"
+logical_id = "159754b5-aebc-401d-b67d-2d6e06e3f75b"
 
 [[outputs]]
 id = "HmaLD19Zjp-cUmsecp7oi"
 uri = "file://marketing/scripts/demo-videos.md"
 type = "text"
 title = "Demo video scripts + 30s stitch recipe"
+logical_id = "bfc92983-3436-4e0e-be31-64d053ed10e4"
+
+[[outputs]]
+id = "gstrcydkAtf7AxSitq2df"
+uri = "file://generated-artifacts/tradify-phase1/desktop-homepage.jpg"
+type = "image"
+title = "Tradify Phase 1 — Desktop homepage"
+description = "Desktop capture of the development-only Tradify Journal homepage."
+logical_id = "02c9a717-c4b4-47a6-8782-5fa9178f87c9"
+content_hash = "sha256:d0c2e143fec10c197f89d7cacdfe5e57d2fe3f6c06e7fa0a56626b3a4c4bec04"
+size = 108051
+mtime_ms = 1791960935932
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/02c9a717-c4b4-47a6-8782-5fa9178f87c9/1a68c85c-fdb1-49f8-bdfb-a959634ecf89"
+storage_version_token = "1791961083501517"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "6rlZC8o_A3ptiWe2nyNR0"
+uri = "file://generated-artifacts/tradify-phase1/mobile-homepage.jpg"
+type = "image"
+title = "Tradify Phase 1 — Mobile homepage"
+description = "Mobile-width capture of the development-only Tradify Journal homepage."
+logical_id = "f921d811-d564-4d51-b853-18f772cea7de"
+content_hash = "sha256:061e6ecb839262e52d20ccd85a4d8014fcc401a6857e9a1850cea6a54a23fe2e"
+size = 51435
+mtime_ms = 1791960938444
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/f921d811-d564-4d51-b853-18f772cea7de/923517e4-5060-49bc-bd7f-9f71f6489e5e"
+storage_version_token = "1791961085020538"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "8U0DuXKVCfaZ4AQTYRWEN"
+uri = "file://generated-artifacts/tradify-phase1/products-menu.jpg"
+type = "image"
+title = "Tradify Phase 1 — Products menu"
+description = "Desktop capture with the Products menu open; Signals remains Launch Pending."
+logical_id = "09a00478-49d8-46e8-a3c4-e55aea9fa8f5"
+content_hash = "sha256:777dea0e61b7ea14ebdcf4f635dc1a66e8e1eb7bc0a7e5350f10afaa44151ce9"
+size = 155698
+mtime_ms = 1791960972019
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/09a00478-49d8-46e8-a3c4-e55aea9fa8f5/8e674c71-5380-4cba-bdd8-ac426b3c3d2d"
+storage_version_token = "1791961086734265"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "L9e5HlM6ikYitV47Bkikj"
+uri = "file://generated-artifacts/tradify-phase1/product-showcase.jpg"
+type = "image"
+title = "Tradify Phase 1 — Product showcase"
+description = "Desktop capture of the Journal and Signals showcase."
+logical_id = "983e286d-4f7f-4979-8caa-63b3c186512f"
+content_hash = "sha256:5c6a3641acf483d26f58bf2482984b3e49dfc9246b8cd9368955a114c15ae1b4"
+size = 100220
+mtime_ms = 1791960941400
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/983e286d-4f7f-4979-8caa-63b3c186512f/c621fd38-453d-4886-81d6-e4f4fb014ab6"
+storage_version_token = "1791961088305539"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "wGBc8n60Km-zDEjJscfsE"
+uri = "file://generated-artifacts/tradify-phase1/pricing.jpg"
+type = "image"
+title = "Tradify Phase 1 — Pricing presentation"
+description = "Desktop capture showing informational product options above the existing Journal plans."
+logical_id = "2d730203-a247-4602-b072-3dd615976b82"
+content_hash = "sha256:332eeb9bb386a587f5247cbbfffb659e3efc1c4928db47e8013758cc06faf4e8"
+size = 132514
+mtime_ms = 1791960944228
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/2d730203-a247-4602-b072-3dd615976b82/465a4d20-ccd4-4f20-bee2-936a45299beb"
+storage_version_token = "1791961090082893"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "VhDdTZQBf4Ww4duuGw_hy"
+uri = "file://docs/TRADIFY_BRAND_SYSTEM.md"
+type = "text"
+title = "Tradify Brand System — complete specification"
+description = "Complete existing 101-line parent Tradify brand specification, unchanged."
+logical_id = "9c90a91c-a69e-4ff8-8107-9a48795f3fcd"
+content_hash = "sha256:830b9346d14be5cb3f7006b3674fd9e09aac086b1ca21e91cb7a356966a39809"
+size = 7480
+mtime_ms = 1791960494831
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/9c90a91c-a69e-4ff8-8107-9a48795f3fcd/5f2b2d72-23fd-4a40-85b5-d361554fdb8f"
+storage_version_token = "1791961271226822"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "3ficTZvyILjwQfoYZQg2e"
+uri = "file://docs/TRADIFY_SIGNALS_HANDOFF.md"
+type = "text"
+title = "Tradify Journal → Signals — brand handoff"
+description = "Detailed Markdown handoff with exact source-backed references, proposal status, and Signals ownership boundaries."
+logical_id = "bc805ee4-5fd6-4416-8437-3ff3ddce21e2"
+content_hash = "sha256:e324255e1c885991e928c05e6e3f078960c9cab4c705e17b6da531f0e0972709"
+size = 11969
+mtime_ms = 1791961245739
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/bc805ee4-5fd6-4416-8437-3ff3ddce21e2/292eb6d3-176d-43b4-b487-ddfb30978458"
+storage_version_token = "1791961272400172"
+content_type = "text/markdown"
