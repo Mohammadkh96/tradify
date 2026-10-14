@@ -1,0 +1,119 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL — tradifyapp.com
+
+The security remediation in commit 02612e4750d1289ca3629c3fadf7a39075fd37f6 is accepted for continued development verification, not production deployment.
+
+I want to move toward safely restoring my original TradifyApp website using my EXISTING Neon production database.
+
+Please complete the following tasks.
+
+## TASK 1 — Identify the current production hosting
+
+Investigate why tradifyapp.com resolves to 34.111.179.208 while this Replit workspace has no active deployment.
+
+Use passive DNS information, public website observations, hosting configuration and available deployment metadata.
+
+Determine:
+- Which hosting provider currently serves the domain.
+- Whether an old TradifyApp application is deployed.
+- Whether the current production application is accessible.
+- Whether the confirmed vulnerable code version could still be exposed.
+- Whether the existing Vercel configuration is active or obsolete.
+
+Do not attempt unauthorized access, exploit API vulnerabilities or inspect customer records.
+
+If an exposed vulnerable deployment is confirmed, immediately report the safest containment options and the approval needed to implement them.
+
+Do not change DNS or hosting configuration without approval.
+
+## TASK 2 — Finish security regression testing
+
+Create or use a UNIQUE disposable non-production PostgreSQL database.
+
+Do not use production Neon or the existing shared development database for write tests.
+
+Test the real application with synthetic identities and records.
+
+Verify:
+- Customer registration and email-verification rules.
+- Login and session management.
+- User-role and subscription authorization.
+- Cross-user access denial.
+- MT5 account ownership.
+- MT5 sync-token provisioning and validation.
+- Legitimate MT5 bridge compatibility.
+- Prop-firm challenge ownership.
+- Admin access and audit-log redaction.
+- Payment and entitlement boundaries using test or mocked provider events.
+- Database-backed email and job state without sending external messages.
+- AI endpoints returning 410 without invoking inference providers.
+
+Confirm all test data and disposable databases are cleaned up.
+
+## TASK 3 — Resolve the Vercel adapter problem
+
+Determine whether Vercel is part of the intended production architecture.
+
+If Replit Autoscale is the intended production host, document how the legacy Vercel adapter will be excluded from that release.
+
+If Vercel is still required, correct the authentication and deployment configuration in development before considering it for production.
+
+Do not create an authenticated customer session before the application's required verification and authorization conditions are satisfied.
+
+Do not deploy either hosting configuration yet.
+
+## TASK 4 — Verify dependency exposure
+
+Separate:
+- Dependencies actually shipped in the Replit production runtime.
+- Development/build-only dependencies.
+- Separate mockup-sandbox dependencies.
+
+Prioritize reachable production vulnerabilities.
+
+Apply safe compatible corrections and document unresolved risks.
+
+Do not break existing Journal functionality solely to achieve a zero-warning scanner result.
+
+## TASK 5 — Prepare the real production restoration
+
+Produce a precise, staged deployment plan covering:
+
+1. Intended hosting provider.
+2. Correct production build and start commands.
+3. Required secret names and configuration presence, without exposing values.
+4. Existing Neon database connection verification procedure.
+5. Production database compatibility without automatic migrations.
+6. Authentication and MT5 security checks.
+7. Stripe/PayPal and email readiness.
+8. Background-worker isolation.
+9. Production domain routing and HTTPS.
+10. Rollback and recovery procedures.
+11. Expected hosting costs and any paid prerequisites.
+12. Post-deployment smoke tests.
+
+Do not create another production database.
+
+Do not purchase Neon snapshots or upgrade services.
+
+Do not wake or query production Neon without separate approval.
+
+Do not publish, modify DNS, activate jobs, send email or enable live payment processing.
+
+Preserve the existing Tradify branding changes and customer data.
+
+Do not modify Tradify Signals or Tradigo.
+
+## DELIVERABLES
+
+Implement safe development corrections, not another generic audit.
+
+Provide:
+- Current hosting identification and evidence.
+- Security regression results.
+- Vercel adapter decision.
+- Actual remaining runtime dependency risks.
+- Exact production-restoration plan.
+- Updated GO / NO-GO verdict.
+- Commit hash for verified fixes.
+
+Stop before production deployment and ask for the exact remaining approvals.
