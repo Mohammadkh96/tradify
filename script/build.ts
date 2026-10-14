@@ -84,9 +84,6 @@ async function buildAll() {
     bundle: true,
     format: "cjs",
     outfile: "dist/worker.cjs",
-    define: {
-      "process.env.NODE_ENV": '"production"',
-    },
     minify: true,
     external: externals,
     logLevel: "info",

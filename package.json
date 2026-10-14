@@ -11,7 +11,8 @@
     "jobs": "node dist/worker.cjs",
     "test:jobs": "vitest run server/jobs/jobRuns.test.ts && vitest run server/emailDelivery.test.ts",
     "verify:backup-restore": "tsx scripts/verify-backup-restore.ts",
-    "db:push": "drizzle-kit push"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

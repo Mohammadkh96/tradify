@@ -4,12 +4,14 @@ import { dispatchScheduledJobs, runManualJob } from "./worker";
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const [command, jobName] = args;
-  if (process.env.NODE_ENV === "production") {
-    if (process.env.BACKGROUND_JOBS_ENABLED !== "true" || !args.includes("--confirm-live")) {
-      throw new Error(
-        "Refusing production job execution without BACKGROUND_JOBS_ENABLED=true and --confirm-live.",
-      );
-    }
+  if (process.env.BACKGROUND_JOBS_ENABLED !== "true") {
+    throw new Error("Background jobs are disabled; set BACKGROUND_JOBS_ENABLED=true only for an approved controlled run.");
+  }
+  if (process.env.NODE_ENV === "production" && !args.includes("--confirm-live")) {
+    throw new Error("Refusing production job execution without --confirm-live.");
+  }
+  if (process.env.NODE_ENV !== "production" && !args.includes("--confirm-isolated")) {
+    throw new Error("Refusing non-production job execution without --confirm-isolated.");
   }
 
   if (command === "dispatch") {
@@ -24,7 +26,7 @@ async function main(): Promise<void> {
     if (result.status === "failed" || result.status === "uncertain") process.exitCode = 1;
     return;
   }
-  throw new Error("Usage: node dist/worker.cjs dispatch|run <job-name> [--confirm-live]");
+  throw new Error("Usage: node dist/worker.cjs dispatch|run <job-name> [--confirm-live|--confirm-isolated]");
 }
 
 main()

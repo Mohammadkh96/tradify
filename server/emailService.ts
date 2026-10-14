@@ -12,9 +12,13 @@ const EMAIL_TEMPLATES_DIR = path.join(process.cwd(), 'server', 'emails');
 
 const SMTP_HOST = 'smtp.gmail.com';
 const SMTP_PORT = 587;
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_APP_PASSWORD = process.env.SMTP_APP_PASSWORD || '';
-const EMAIL_DELIVERY_ENABLED = process.env.EMAIL_DELIVERY_ENABLED === "true";
+const isProductionRuntime = process.env.NODE_ENV === "production";
+// Development must never reuse production mail credentials or deliver to
+// customer addresses. Sandbox email can be added later with separate settings.
+const SMTP_USER = isProductionRuntime ? process.env.SMTP_USER || '' : '';
+const SMTP_APP_PASSWORD = isProductionRuntime ? process.env.SMTP_APP_PASSWORD || '' : '';
+const EMAIL_DELIVERY_ENABLED =
+  isProductionRuntime && process.env.EMAIL_DELIVERY_ENABLED === "true";
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@tradifyapp.com';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@tradifyapp.com';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@tradifyapp.com';

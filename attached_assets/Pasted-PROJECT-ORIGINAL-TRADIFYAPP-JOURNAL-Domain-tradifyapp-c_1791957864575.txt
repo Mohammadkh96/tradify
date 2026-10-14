@@ -1,0 +1,45 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL
+Domain: tradifyapp.com
+
+The separate Tradify Signals Replit project has now completed and committed its ecosystem documentation:
+
+- docs/TRADIFY_ECOSYSTEM.md
+- docs/INTEGRATION_CONTRACTS.md
+
+Signals commit: 94c9d5f
+
+I want you to prepare the corresponding documentation for THIS original TradifyApp Journal project.
+
+Our long-term goal is to operate both products under one Tradify ecosystem, with future support for Tradigo.
+
+Please:
+
+1. Audit the existing Journal architecture, authentication, Neon database, MT5 synchronization, subscriptions, payments, Admin Dashboard, risk monitoring and website branding.
+
+2. Create docs/TRADIFY_ECOSYSTEM.md describing this project's responsibilities, boundaries, current infrastructure and future integration opportunities.
+
+3. Create docs/INTEGRATION_CONTRACTS.md describing existing interfaces and proposed future integration contracts.
+
+4. Identify opportunities for shared customer login, subscription bundles, centralized Admin operations, MT5 data integration and cross-product navigation.
+
+5. Document which Journal data must remain authoritative in its own database.
+
+6. Identify how customers could eventually connect actual MT5 trades recorded in Journal with Tradify Signals lifecycle events, without assuming that trades were automatically executed from signals.
+
+7. Document current Journal production blockers separately from Signals blockers.
+
+8. Preserve the existing TradifyApp database, customer records, and deployment configuration.
+
+9. Do not access or modify the separate Signals database or repository.
+
+10. Do not implement cross-project integration yet. We must compare both architecture reports before approving development.
+
+11. Commit the documentation and provide the commit hash.
+
+IMPORTANT:
+
+The immediate Journal priorities remain production restoration, safe Neon database isolation, MT5 integrity, background-worker readiness, SMTP and payment configuration.
+
+Do not let ecosystem documentation interrupt or replace those priorities.
+
+Do not deploy, change DNS, merge databases, or enable production jobs without explicit approval.

@@ -1,6 +1,6 @@
 # Background jobs: inventory, safety, and activation plan
 
-**Status (13 October 2026): prepared but not activated.** No production migration was applied, no production job was run, no email was resent, no deployment was published, and no DNS or production customer data was changed. The API workflow remains stopped because the development database connection resolves to the production Neon database; an isolated `DEV_DATABASE_URL` is not configured.
+**Status (14 October 2026): prepared but not activated.** The isolated Neon project and development schema are ready, and `DEV_DATABASE_URL` has been added securely. The development workflow and smoke tests have been verified with synthetic data, which was removed afterward. No production migration was applied, no production job was run, no email was delivered, no deployment was published, and no DNS or production customer data was changed.
 
 ## Architecture
 
@@ -10,7 +10,7 @@
 - An always-on worker is not currently justified. MT5 data is pushed to the API by the user's EA/client, and the API processes risk events synchronously. There is no server-side MT5 polling loop.
 - `background_job_runs` provides a unique job/slot claim, lease, retry count, and completion/error record. A stale run is marked `uncertain` rather than automatically replayed when it may have performed an external side effect.
 - `email_delivery_outbox` stores email content and an idempotency key before SMTP delivery. Explicit transient SMTP throttles receive at most three attempts with 5- and 15-minute delays. Permanent errors stop. Ambiguous socket failures and expired in-flight sends are marked `uncertain` and require manual review: SMTP cannot guarantee exactly-once delivery after a lost response.
-- The migration `migrations/0001_background_jobs_and_email_outbox.sql` is **not applied**. Review and apply it only to an isolated development database first. Do not use `db:push` or grant DDL to the runtime `tradify_app` role.
+- The development-only baseline (`migrations/0000_tradifyapp_dev_baseline.sql`) and background-job/outbox schema have been applied only to the separate empty development Neon project. The production migration remains unapplied. Use reviewed, version-controlled migrations; do not use schema push or grant DDL to the runtime `tradify_app` role.
 
 ## Job inventory
 
@@ -21,7 +21,7 @@
 | At-risk user scan | Every 6 hours | DB scan; no model call and no direct email | Adds/updates at-risk sequence records; job-slot claim prevents duplicate scan for a time bucket. |
 | Daily risk digest | Every 15 minutes; per-user local day/time rules | DB aggregation + SMTP | Stable digest key; only includes notifications newer than both the rolling 24-hour window and cutover time. |
 | Weekly performance digest | Every 30 minutes; sends only for the user's local weekly window | DB aggregation + SMTP | Stable digest key and notification marker. Unsent markers can be retried without creating another email. |
-| Daily database backup | 03:30 UTC | Potentially the longest task; matching-version `pg_dump`, gzip, Replit Object Storage, production Neon connection | Creates a backup record/object and prunes retained backups. Runs only in the separate, approved worker. |
+| Daily database backup | 03:30 UTC | Potentially the longest task; matching-version `pg_dump`, gzip, Replit Object Storage, production `DATABASE_URL` | Creates a backup record/object and prunes retained backups. Runs only in the separate, approved worker. |
 | Weekly backup structure check | Sunday 04:30 UTC | Downloads and gunzips the latest backup; Object Storage + PostgreSQL metadata | Updates verification status. **This checks the SQL file structure, not a real PostgreSQL restore.** |
 | Historical email-sequence backfill | Manual only; never in regular dispatch | DB-only operation until delivery is separately enabled | Requires `EMAIL_BACKFILL_ENABLED=true`; must be reviewed because it can create new sequences for existing users. |
 

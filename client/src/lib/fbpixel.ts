@@ -1,6 +1,6 @@
 declare global {
   interface Window {
-    fbq: ((...args: any[]) => void) | undefined;
+    fbq?: (...args: any[]) => void;
   }
 }
 

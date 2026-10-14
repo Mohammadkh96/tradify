@@ -982,8 +982,17 @@ ${blogPosts.map(p => `  <url>
         // Create a temporary session for password reset only
         req.session.userId = user.userId;
         req.session.role = user.role;
+        const {
+          password: _password,
+          emailVerificationToken: _emailVerificationToken,
+          emailVerificationExpiry: _emailVerificationExpiry,
+          passwordResetToken: _passwordResetToken,
+          passwordResetExpiry: _passwordResetExpiry,
+          unsubscribeToken: _unsubscribeToken,
+          ...safeUser
+        } = user;
         return res.json({ 
-          ...user, 
+          ...safeUser,
           requiresPasswordReset: true 
         });
       }
@@ -1000,7 +1009,16 @@ ${blogPosts.map(p => `  <url>
         .where(eq(schema.userRole.userId, user.userId))
         .catch(err => console.error("Failed to update lastLoginAt:", err));
 
-      res.json({ ...user, isFirstLogin });
+      const {
+        password: _password,
+        emailVerificationToken: _emailVerificationToken,
+        emailVerificationExpiry: _emailVerificationExpiry,
+        passwordResetToken: _passwordResetToken,
+        passwordResetExpiry: _passwordResetExpiry,
+        unsubscribeToken: _unsubscribeToken,
+        ...safeUser
+      } = user;
+      res.json({ ...safeUser, isFirstLogin });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
@@ -1136,14 +1154,23 @@ ${blogPosts.map(p => `  <url>
   });
 
   app.get("/api/paypal/setup", requireAuth, async (req, res) => {
+    if (process.env.NODE_ENV !== "production") {
+      return res.status(503).json({ error: "PayPal order setup is disabled in development." });
+    }
     await loadPaypalDefault(req, res);
   });
 
   app.post("/api/paypal/order", requireAuth, async (req, res) => {
+    if (process.env.NODE_ENV !== "production") {
+      return res.status(503).json({ error: "PayPal orders are disabled in development." });
+    }
     await createPaypalOrder(req, res);
   });
 
   app.post("/api/paypal/order/:orderID/capture", requireAuth, async (req, res) => {
+    if (process.env.NODE_ENV !== "production") {
+      return res.status(503).json({ error: "PayPal order capture is disabled in development." });
+    }
     // Store the original json function to intercept the response
     const originalJson = res.json.bind(res);
     res.json = function(data: any) {
@@ -1721,6 +1748,12 @@ ${blogPosts.map(p => `  <url>
   // MT5 Bridge Sync Endpoint (REST API for Python Connector)
   // SINGLE SOURCE OF TRUTH: This is the ONLY endpoint for MT5 data ingestion
   app.post("/api/mt5/sync", async (req, res) => {
+    if (
+      process.env.NODE_ENV !== "production" &&
+      process.env.DEV_MT5_SYNC_ENABLED !== "true"
+    ) {
+      return res.status(503).json({ message: "MT5 sync is disabled in development." });
+    }
     try {
       const { 
         userId, 

@@ -14,7 +14,8 @@ async function getCredentials() {
 
   if (!xReplitToken) throw new Error("X-Replit-Token not found for repl/depl");
 
-  const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+  const isProduction =
+    process.env.NODE_ENV === "production" && process.env.REPLIT_DEPLOYMENT === "1";
   const targetEnvironment = isProduction ? "production" : "development";
 
   const url = new URL(`https://${hostname}/api/v2/connection`);
@@ -30,6 +31,12 @@ async function getCredentials() {
 
   if (!connectionSettings || !connectionSettings.settings.publishable || !connectionSettings.settings.secret) {
     throw new Error(`Stripe ${targetEnvironment} connection not found`);
+  }
+  if (
+    !isProduction &&
+    !/^(sk|rk)_test_/.test(connectionSettings.settings.secret)
+  ) {
+    throw new Error("Stripe development connection must use a test-mode key.");
   }
   return {
     publishableKey: connectionSettings.settings.publishable,

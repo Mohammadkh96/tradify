@@ -66,7 +66,10 @@ export function registerStripeWebhook(app: Express) {
   // level which Express respects per-route.
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string | undefined;
-    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    const secret =
+      process.env.NODE_ENV === "production"
+        ? process.env.STRIPE_WEBHOOK_SECRET
+        : process.env.DEV_STRIPE_WEBHOOK_SECRET;
     if (!sig || !secret) {
       // Without a verified webhook secret, refuse — never trust unsigned events.
       return res.status(400).json({ error: "Missing signature or webhook secret not configured" });

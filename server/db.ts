@@ -63,6 +63,10 @@ export const db = drizzle(pool, { schema });
 
 // Auto-migrate: ensure all required columns exist
 export async function ensureSchemaColumns() {
+  throw new Error(
+    "Automatic schema repair is disabled. Apply reviewed database migrations explicitly.",
+  );
+
   try {
     // Add all potentially missing columns
     await pool.query(`
@@ -243,7 +247,7 @@ export async function ensureSchemaColumns() {
             WHERE e.user_id = u.user_id AND e.track = 'free_user'
           )
       `);
-      if (backfillResult.rowCount && backfillResult.rowCount > 0) {
+      if ((backfillResult.rowCount ?? 0) > 0) {
         console.log(`[Startup] Backfilled ${backfillResult.rowCount} existing free user(s) into drip sequence`);
       }
     } catch (e) {
@@ -298,7 +302,7 @@ export async function ensureSchemaColumns() {
       const backfillResult = await pool.query(`
         UPDATE mt5_history SET mt5_account_id = 'default' WHERE mt5_account_id IS NULL
       `);
-      if (backfillResult.rowCount && backfillResult.rowCount > 0) {
+      if ((backfillResult.rowCount ?? 0) > 0) {
         console.log(`[Startup] Backfilled ${backfillResult.rowCount} NULL mt5_account_id values`);
       }
     } catch (e) {
@@ -314,7 +318,7 @@ export async function ensureSchemaColumns() {
           GROUP BY user_id, mt5_account_id, ticket
         )
       `);
-      if (dupResult.rowCount && dupResult.rowCount > 0) {
+      if ((dupResult.rowCount ?? 0) > 0) {
         console.log(`[Startup] Cleaned ${dupResult.rowCount} duplicate MT5 history records`);
       }
     } catch (e) {

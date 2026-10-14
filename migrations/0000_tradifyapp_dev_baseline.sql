@@ -721,3 +721,47 @@ CREATE TABLE "session" (
 );
 --> statement-breakpoint
 CREATE INDEX "IDX_session_expire" ON "session" ("expire");
+--> statement-breakpoint
+CREATE TABLE "background_job_runs" (
+  "id" bigserial PRIMARY KEY,
+  "job_name" text NOT NULL,
+  "run_key" text NOT NULL,
+  "status" text NOT NULL CHECK ("status" IN ('running', 'succeeded', 'failed', 'uncertain')),
+  "attempts" integer NOT NULL DEFAULT 1 CHECK ("attempts" > 0),
+  "started_at" timestamptz NOT NULL DEFAULT now(),
+  "lease_expires_at" timestamptz NOT NULL,
+  "finished_at" timestamptz,
+  "next_retry_at" timestamptz,
+  "duration_ms" bigint,
+  "result" jsonb,
+  "error_message" text,
+  "created_at" timestamptz NOT NULL DEFAULT now(),
+  "updated_at" timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT "background_job_runs_name_key_unique" UNIQUE ("job_name", "run_key")
+);
+--> statement-breakpoint
+CREATE INDEX "background_job_runs_status_retry_idx"
+  ON "background_job_runs" ("status", "next_retry_at");
+--> statement-breakpoint
+CREATE TABLE "email_delivery_outbox" (
+  "id" bigserial PRIMARY KEY,
+  "idempotency_key" text NOT NULL UNIQUE,
+  "recipient" text NOT NULL,
+  "subject" text NOT NULL,
+  "html" text,
+  "headers" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "status" text NOT NULL DEFAULT 'queued'
+    CHECK ("status" IN ('queued', 'sending', 'retry', 'sent', 'failed', 'uncertain')),
+  "attempt_count" integer NOT NULL DEFAULT 0 CHECK ("attempt_count" >= 0),
+  "next_attempt_at" timestamptz NOT NULL DEFAULT now(),
+  "lease_expires_at" timestamptz,
+  "provider_message_id" text,
+  "last_error" text,
+  "created_at" timestamptz NOT NULL DEFAULT now(),
+  "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "sent_at" timestamptz
+);
+--> statement-breakpoint
+CREATE INDEX "email_delivery_outbox_due_idx"
+  ON "email_delivery_outbox" ("next_attempt_at", "id")
+  WHERE "status" IN ('queued', 'retry');

@@ -1,8 +1,26 @@
 import { storage } from './storage';
 import { emailService } from './emailService';
 
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_PLAN_ID, PAYPAL_ELITE_PLAN_ID, PAYPAL_PRO_ANNUAL_PLAN_ID, PAYPAL_ELITE_ANNUAL_PLAN_ID, PAYPAL_FM_PRO_PLAN_ID, PAYPAL_FM_ELITE_PLAN_ID, PAYPAL_FM_PRO_ANNUAL_PLAN_ID, PAYPAL_FM_ELITE_ANNUAL_PLAN_ID, PAYPAL_COACH_PLAN_ID, PAYPAL_COACH_ANNUAL_PLAN_ID, PAYPAL_FM_COACH_PLAN_ID, PAYPAL_FM_COACH_ANNUAL_PLAN_ID, PAYPAL_MODE } = process.env;
-const PAYPAL_BASE_URL = PAYPAL_MODE === 'live'
+const isProductionRuntime = process.env.NODE_ENV === "production";
+const paypalSetting = (name: string) =>
+  process.env[isProductionRuntime ? name : `DEV_${name}`] || '';
+const PAYPAL_CLIENT_ID = paypalSetting("PAYPAL_CLIENT_ID");
+const PAYPAL_CLIENT_SECRET = paypalSetting("PAYPAL_CLIENT_SECRET");
+const PAYPAL_WEBHOOK_ID = paypalSetting("PAYPAL_WEBHOOK_ID");
+const PAYPAL_PLAN_ID = paypalSetting("PAYPAL_PLAN_ID");
+const PAYPAL_ELITE_PLAN_ID = paypalSetting("PAYPAL_ELITE_PLAN_ID");
+const PAYPAL_PRO_ANNUAL_PLAN_ID = paypalSetting("PAYPAL_PRO_ANNUAL_PLAN_ID");
+const PAYPAL_ELITE_ANNUAL_PLAN_ID = paypalSetting("PAYPAL_ELITE_ANNUAL_PLAN_ID");
+const PAYPAL_FM_PRO_PLAN_ID = paypalSetting("PAYPAL_FM_PRO_PLAN_ID");
+const PAYPAL_FM_ELITE_PLAN_ID = paypalSetting("PAYPAL_FM_ELITE_PLAN_ID");
+const PAYPAL_FM_PRO_ANNUAL_PLAN_ID = paypalSetting("PAYPAL_FM_PRO_ANNUAL_PLAN_ID");
+const PAYPAL_FM_ELITE_ANNUAL_PLAN_ID = paypalSetting("PAYPAL_FM_ELITE_ANNUAL_PLAN_ID");
+const PAYPAL_COACH_PLAN_ID = paypalSetting("PAYPAL_COACH_PLAN_ID");
+const PAYPAL_COACH_ANNUAL_PLAN_ID = paypalSetting("PAYPAL_COACH_ANNUAL_PLAN_ID");
+const PAYPAL_FM_COACH_PLAN_ID = paypalSetting("PAYPAL_FM_COACH_PLAN_ID");
+const PAYPAL_FM_COACH_ANNUAL_PLAN_ID = paypalSetting("PAYPAL_FM_COACH_ANNUAL_PLAN_ID");
+const PAYPAL_MODE = isProductionRuntime ? process.env.PAYPAL_MODE : "sandbox";
+const PAYPAL_BASE_URL = PAYPAL_MODE === 'live' && isProductionRuntime
   ? 'https://api-m.paypal.com' 
   : 'https://api-m.sandbox.paypal.com';
 
@@ -479,7 +497,7 @@ export class PayPalService {
   }
 
   async testConnection(): Promise<{ success: boolean; mode: string; message: string; details?: any }> {
-    const mode = process.env.PAYPAL_MODE === 'live' ? 'LIVE' : 'SANDBOX';
+    const mode = PAYPAL_MODE === 'live' && isProductionRuntime ? 'LIVE' : 'SANDBOX';
     
     if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
       return {

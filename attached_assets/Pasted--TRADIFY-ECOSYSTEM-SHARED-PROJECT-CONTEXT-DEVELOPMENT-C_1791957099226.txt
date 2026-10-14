@@ -1,0 +1,217 @@
+# TRADIFY ECOSYSTEM — SHARED PROJECT CONTEXT & DEVELOPMENT COORDINATION
+
+## Important: Multi-Project Development
+
+We are developing multiple independent applications simultaneously under one parent brand called **Tradify**.
+
+You are one of multiple Replit Agents working on separate applications that will eventually form a connected ecosystem.
+
+You must understand the wider architecture and preserve compatibility with the other projects.
+
+However, you must only make code, database, deployment and configuration changes within your own authorized project.
+
+## PROJECT 1 — TRADIFYAPP JOURNAL
+
+**Domain:** https://tradifyapp.com
+
+**Purpose:** Trading journal and performance management platform.
+
+Main functionality:
+- Trading journal.
+- MT5 account synchronization.
+- Forex trading performance analytics.
+- Prop-firm challenge monitoring.
+- Risk management and alerts.
+- Trading history and statistics.
+- Customer subscriptions and payments.
+- Email notifications.
+- Administrative operations.
+
+Development direction:
+- Eliminate generative AI runtime consumption.
+- Preserve deterministic analytics.
+- Maintain the existing Neon PostgreSQL database.
+- Implement reliable background job processing.
+- Restore and verify production deployment.
+- Prepare for future integration with Tradify Signals.
+
+This project owns its trading journal data, customer MT5 account records, risk-monitoring logic and existing journal billing records.
+
+## PROJECT 2 — TRADIFY SIGNALS
+
+**Domain:** https://signals.tradifyapp.com
+
+**Purpose:** Algorithmic trading signals platform.
+
+Main functionality:
+- DGv8, BBB and other trading strategies.
+- Validated BUY/SELL signals.
+- Entry, TP and SL lifecycle tracking.
+- Real-time strategy updates.
+- Trading notifications.
+- PWA application.
+- Future Expo Android/iOS distribution.
+- Customer authentication and entitlements.
+- Separate Signals Admin Dashboard.
+
+Development direction:
+- Complete the full customer-facing PWA.
+- Preserve the Expo native application.
+- Improve signal and market-data reliability.
+- Maintain secure authentication.
+- Implement premium access protections.
+- Prepare for integration with TradifyApp Journal.
+
+Task 381, covering the notification release and physical-device verification, is currently ON HOLD / BLOCKED. Preserve its completed work and documented blockers. Do not restart that task without explicit authorization.
+
+This project owns its signal strategies, signal lifecycle events, notification state and Signals-specific subscription entitlements.
+
+## FUTURE PROJECT 3 — TRADIGO
+
+Tradigo is a future marketplace for instant coaching sessions and scheduled appointments.
+
+It may eventually connect to the wider ecosystem through shared identity, administrative infrastructure and relevant business integrations.
+
+Do not implement or modify Tradigo as part of current development work.
+
+## LONG-TERM ECOSYSTEM OBJECTIVE
+
+We want users to experience one professional Tradify brand.
+
+Our intended future capabilities include:
+
+1. Unified branding and design principles.
+2. Cross-product navigation.
+3. Shared customer authentication or SSO.
+4. Product-specific entitlements and bundled subscriptions.
+5. Unified pricing and promotional offers.
+6. Central Admin Portal at admin.tradifyapp.com.
+7. Secure service-to-service APIs.
+8. Integration of Signals strategy data with actual Journal MT5 trade records.
+9. Coordinated reporting and business analytics.
+10. Independent deployment and fault isolation for each product.
+
+These are future architectural goals, not permission to merge production systems now.
+
+## CRITICAL DEVELOPMENT RULES
+
+### Rule 1 — Separate source code
+
+Each project must retain its own source code and deployment pipeline.
+
+Do not combine both applications into one repository without explicit approval.
+
+### Rule 2 — Separate production databases
+
+Do not merge databases or directly modify the other product's database.
+
+Future data sharing should use documented, authenticated service APIs and explicit customer authorization where appropriate.
+
+### Rule 3 — Separate environment variables
+
+Do not reuse production database URLs, authentication secrets, payment webhooks, or privileged service credentials across applications.
+
+### Rule 4 — Integration readiness
+
+Whenever implementing a feature that could eventually connect to the other application, consider:
+- Stable API contracts.
+- Versioned interfaces.
+- Consistent identity mapping.
+- Correct entitlement boundaries.
+- Data privacy.
+- Audit logs.
+- Migration compatibility.
+- Future unified administration.
+
+Do not create a shared integration merely because the two products have similar features.
+
+### Rule 5 — Independent production releases
+
+Do not modify or publish another project's production deployment.
+
+Never change DNS or production configurations without explicit authorization.
+
+### Rule 6 — Shared product design
+
+Use consistent Tradify brand principles where practical.
+
+Keep Journal and Signals recognizable as separate products within the same family.
+
+Do not abruptly redesign functioning user interfaces merely to establish visual consistency.
+
+### Rule 7 — Coordinated integration changes
+
+If a proposed feature requires changes in both projects:
+
+1. Identify the dependency.
+2. Write an integration specification.
+3. Define which project owns each API and data record.
+4. Identify required changes in each repository.
+5. Define authentication and authorization requirements.
+6. Define backward compatibility requirements.
+7. Provide contract tests and rollout order.
+8. Wait for approval before performing cross-project integration.
+
+Do not assume that the other Replit Agent has implemented a dependency merely because it appears in the roadmap.
+
+## REQUIRED PROJECT DOCUMENTATION
+
+Create or update:
+
+`docs/TRADIFY_ECOSYSTEM.md`
+
+Include:
+- This project's identity and responsibilities.
+- Other ecosystem products.
+- Current architecture.
+- Existing integration points.
+- Planned integrations.
+- Cross-project dependencies.
+- Security and isolation boundaries.
+- Current development priorities.
+- Known blockers.
+- Last reviewed date.
+
+Also maintain:
+
+`docs/INTEGRATION_CONTRACTS.md`
+
+Document any proposed or approved cross-project API contracts, without including credentials.
+
+## DEVELOPMENT COMMUNICATION
+
+For any future work, explicitly identify:
+
+- Which Tradify project is being modified.
+- Whether the change is internal or cross-project.
+- Whether another project has a dependency.
+- Whether the modification affects database schemas, APIs, authentication, subscriptions, market data, or deployments.
+- Whether coordinated changes will be required before release.
+
+At the end of substantial development tasks, provide a short cross-project impact summary.
+
+If another project must implement something, produce a clear handoff instruction that can be given to its Replit Agent.
+
+Do not claim that you directly modified or verified another project unless you actually had authorized access and performed those actions.
+
+## IMMEDIATE ACTION
+
+First identify which application this Replit workspace contains.
+
+Document its existing architecture and responsibilities.
+
+Create the shared-context documentation in THIS repository.
+
+Do not rebuild either application.
+
+Do not change production.
+
+Do not change DNS.
+
+Do not activate background jobs.
+
+Do not resume paused tasks automatically.
+
+Continue the existing project's approved development priorities while maintaining compatibility with the broader Tradify ecosystem.
+
+Our ultimate goal is one integrated Tradify product family with independently maintainable services.

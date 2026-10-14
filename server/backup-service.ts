@@ -1,12 +1,12 @@
 /**
  * Database backup service for Tradify.
  *
- * Runs `pg_dump` against the production Neon database, gzip-compresses the
+ * Runs `pg_dump` against the database selected for the current environment, gzip-compresses the
  * output, uploads it to Replit Object Storage, prunes old backups, and
  * records every run in the `database_backups` table.
  *
- * Scheduling: invoked daily by `server/index.ts` at ~03:30 UTC. Can also
- * be invoked manually via the admin panel ("Run Now") or the CLI:
+ * Scheduling: invoked only by the separately controlled background worker.
+ * Can also be invoked manually via the admin panel ("Run Now") or the CLI:
  *
  *     npx tsx scripts/backup-db.ts
  *
@@ -27,6 +27,7 @@ import { db, pool } from "./db";
 import { databaseBackups, type DatabaseBackup } from "@shared/schema";
 import { and, desc, eq, isNotNull, lt, sql } from "drizzle-orm";
 import { emailService } from "./emailService";
+import { assertNotProductionDatabase } from "./dbTarget";
 
 const BUCKET_PREFIX = "db-backups";
 const DAILY_RETENTION = 30;
@@ -196,7 +197,7 @@ function getBackupConnectionString(): string {
   const nodeEnv = process.env.NODE_ENV || "development";
   const variableName =
     nodeEnv === "production"
-      ? "NEON_DATABASE_URL"
+      ? "DATABASE_URL"
       : nodeEnv === "test"
         ? "TEST_DATABASE_URL"
         : "DEV_DATABASE_URL";
@@ -205,6 +206,12 @@ function getBackupConnectionString(): string {
     throw new Error(
       `${variableName} must be set for backup execution; refusing an unsafe database fallback.`,
     );
+  }
+  if (nodeEnv !== "production") {
+    assertNotProductionDatabase(variableName, url, [
+      { name: "DATABASE_URL", connectionString: cleanConnectionString(process.env.DATABASE_URL) },
+      { name: "NEON_DATABASE_URL", connectionString: cleanConnectionString(process.env.NEON_DATABASE_URL) },
+    ]);
   }
   return url;
 }
