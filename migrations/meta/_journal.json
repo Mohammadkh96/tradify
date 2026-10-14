@@ -1,1 +1,13 @@
-{"version":"7","dialect":"postgresql","entries":[]}
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791955458786,
+      "tag": "0000_tradifyapp_dev_baseline",
+      "breakpoints": true
+    }
+  ]
+}

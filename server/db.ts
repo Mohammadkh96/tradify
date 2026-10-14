@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
+import { assertNotProductionDatabase } from "./dbTarget";
 
 const { Pool } = pg;
 
@@ -21,7 +22,7 @@ function cleanConnectionString(url: string | undefined): string | undefined {
 const nodeEnv = process.env.NODE_ENV || "development";
 const connectionEnvName =
   nodeEnv === "production"
-    ? "NEON_DATABASE_URL"
+    ? "DATABASE_URL"
     : nodeEnv === "test"
       ? "TEST_DATABASE_URL"
       : "DEV_DATABASE_URL";
@@ -31,6 +32,13 @@ if (!connectionString) {
   throw new Error(
     `${connectionEnvName} must be set for NODE_ENV=${nodeEnv}. Refusing an unsafe database fallback.`,
   );
+}
+
+if (nodeEnv !== "production") {
+  assertNotProductionDatabase(connectionEnvName, connectionString, [
+    { name: "DATABASE_URL", connectionString: cleanConnectionString(process.env.DATABASE_URL) },
+    { name: "NEON_DATABASE_URL", connectionString: cleanConnectionString(process.env.NEON_DATABASE_URL) },
+  ]);
 }
 
 // Log which database is being used (without exposing credentials)
