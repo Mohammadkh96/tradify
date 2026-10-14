@@ -1,0 +1,102 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL
+Domain: tradifyapp.com
+
+Yes, please proceed with preparing an isolated development database using DEV_DATABASE_URL.
+
+This task applies ONLY to the original TradifyApp trading journal. Do not touch Tradify Signals or Tradigo.
+
+### PHASE 1 — Create isolated development database
+
+Use a separate Neon PostgreSQL development project if possible, or another genuinely isolated database environment.
+
+Requirements:
+
+1. Preserve the existing production Neon database completely.
+2. Do not copy actual customer data unless I explicitly authorize it.
+3. Do not modify or reset production database tables.
+4. Use a separate database connection credential for development.
+5. Configure DEV_DATABASE_URL securely through Replit Secrets.
+6. Confirm that the development connection points to a different actual database environment, not merely a different environment variable containing the production URL.
+7. Never print passwords or complete connection strings.
+
+If I must create the Neon project or supply credentials, give me exact instructions and wait for my action.
+
+### PHASE 2 — Protect production data
+
+Implement environment-aware database configuration.
+
+- Development must use DEV_DATABASE_URL.
+- Production must use the explicitly configured production DATABASE_URL.
+- If development credentials are missing, fail safely instead of falling back to production.
+- Reject development startup if the resolved database target matches production.
+- Prevent development scripts, tests, migrations and workers from accidentally targeting production.
+- Use separate credentials and database identities to verify isolation.
+
+### PHASE 3 — Prepare the development schema
+
+Our production database already contains the required existing tables.
+
+Prepare the development schema using a reviewed, non-destructive schema-only migration or baseline.
+
+Do not copy customer records, passwords, payment information, MT5 credentials or trading histories.
+
+Use synthetic test accounts, trades, MT5 records and subscriptions.
+
+Do not reintroduce schema-changing SQL during normal application startup.
+
+Use a version-controlled migration approach for future database changes.
+
+### PHASE 4 — Disable production integrations
+
+In development:
+
+- Disable production customer email delivery.
+- Disable real Stripe and PayPal payment processing.
+- Disable production MT5 synchronization.
+- Disable customer risk notifications.
+- Disable production backup schedules.
+- Disable background jobs unless explicitly running an isolated controlled test.
+- Never use real production payment webhooks or customer email recipients.
+
+Use sandbox credentials or mocked external services as appropriate.
+
+### PHASE 5 — Restore safe Replit preview
+
+Once DEV_DATABASE_URL is configured:
+
+1. Start the normal development workflow.
+2. Verify database connectivity.
+3. Verify registration and login using disposable accounts.
+4. Verify journal creation and trade calculations.
+5. Verify prop-firm challenge calculations.
+6. Verify deterministic risk analytics.
+7. Verify test subscription functionality.
+8. Confirm no production data has been modified.
+9. Confirm no real customer emails or MT5 actions occurred.
+
+### PHASE 6 — Technical debt
+
+After the development environment is stable:
+
+- Investigate and fix the 10 existing TypeScript errors.
+- Review the 52 dependency audit advisories.
+- Prioritize the 2 critical advisories by exploitability and whether affected code is reachable in production.
+- Avoid blindly upgrading dependencies that could break the application.
+- Confirm the removal of AI inference does not affect deterministic analytics.
+
+### FINAL REPORT
+
+Provide:
+
+1. Development database configuration status.
+2. Confirmation of production isolation.
+3. Schema setup results.
+4. Preview URL.
+5. Login and journal test results.
+6. Background job safety verification.
+7. TypeScript issues remaining.
+8. Dependency security findings.
+9. Outstanding deployment requirements.
+10. Production readiness status.
+
+Do not publish TradifyApp, change DNS, activate background workers, send customer emails, or change production data without my approval.
