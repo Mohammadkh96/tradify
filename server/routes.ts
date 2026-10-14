@@ -723,6 +723,7 @@ ${blogPosts.map(p => `  <url>
         phoneNumber: phoneNumber || null,
         timezone,
         subscriptionTier: isFoundingMember ? "PRO" : "FREE",
+        subscriptionStatus: isFoundingMember ? "founding_member_access" : null,
         emailVerified: false,
         emailVerificationToken: verificationToken,
         emailVerificationExpiry: tokenExpiry,
@@ -1083,8 +1084,12 @@ ${blogPosts.map(p => `  <url>
     // Check if founding member free Pro has expired
     if (user && user.foundingMember && user.foundingMemberProExpiry && 
         user.subscriptionTier === "PRO") {
+      // A missing status is not evidence that a legacy PRO entitlement expired.
+      // Preserve access until an unknown subscription state has been reviewed.
+      const subscriptionStatusIsKnown =
+        user.subscriptionStatus !== null && user.subscriptionStatus !== undefined;
       const hasActiveSubscription = user.subscriptionStatus === "ACTIVE" || user.subscriptionStatus === "active";
-      if (!hasActiveSubscription) {
+      if (subscriptionStatusIsKnown && !hasActiveSubscription) {
         const now = new Date();
         if (now > new Date(user.foundingMemberProExpiry)) {
           await db.update(schema.userRole)

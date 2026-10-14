@@ -230,6 +230,64 @@ describe("application security boundaries against a disposable local PostgreSQL 
     expect((await request("/api/user", { cookie: alice.cookie })).status).toBe(401);
   });
 
+  it("preserves legacy null-status PRO and labels new founding-member access explicitly", async () => {
+    const legacyEmail = `${emailPrefix}-legacy-pro-null-status@example.invalid`;
+    await registerAndVerify(legacyEmail, "Synthetic Legacy Founder");
+    const legacy = await login(legacyEmail);
+
+    const signupState = await testPool.query<{
+      founding_member: boolean;
+      subscription_status: string | null;
+    }>(
+      "SELECT founding_member, subscription_status FROM user_role WHERE user_id = $1",
+      [legacyEmail],
+    );
+    if (signupState.rows[0]?.founding_member) {
+      expect(signupState.rows[0].subscription_status).toBe("founding_member_access");
+    }
+
+    await testPool.query(
+      `UPDATE user_role
+       SET subscription_tier = 'PRO',
+           founding_member = TRUE,
+           founding_member_pro_expiry = NOW() - INTERVAL '1 day',
+           subscription_status = NULL
+       WHERE user_id = $1`,
+      [legacyEmail],
+    );
+
+    try {
+      const profile = await request("/api/user", { cookie: legacy.cookie });
+      expect(profile.status).toBe(200);
+      expect(await profile.json()).toMatchObject({
+        subscriptionTier: "PRO",
+        subscriptionStatus: null,
+      });
+
+      const preserved = await testPool.query<{
+        subscription_tier: string;
+        subscription_status: string | null;
+      }>(
+        "SELECT subscription_tier, subscription_status FROM user_role WHERE user_id = $1",
+        [legacyEmail],
+      );
+      expect(preserved.rows[0]).toEqual({
+        subscription_tier: "PRO",
+        subscription_status: null,
+      });
+    } finally {
+      await testPool.query(
+        `UPDATE user_role
+         SET subscription_tier = 'FREE',
+             founding_member = FALSE,
+             founding_member_pro_expiry = NULL,
+             subscription_status = NULL
+         WHERE user_id = $1`,
+        [legacyEmail],
+      );
+    }
+  });
+
   it("provisions a private MT5 token, permits valid bridge sync, and blocks cross-user account reads", async () => {
     await registerAndVerify(bobEmail, "Synthetic Bob");
     const alice = await login(aliceEmail);
