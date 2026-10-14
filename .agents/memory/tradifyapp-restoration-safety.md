@@ -32,3 +32,9 @@ Treat Journal-local signal-provider and receiver tables as Journal data, not as 
 **Why:** Similar naming does not establish shared data ownership or an existing integration; the user requires report comparison before development.
 
 **How to apply:** Keep Journal and Signals data/API boundaries explicit in future design work. Do not inspect or modify the Signals repository or database while working in this project.
+
+For ecosystem branding, the parent brand is Tradify; Tradify Journal retains its dark/emerald identity; Tradify Signals retains its existing navy/gold/teal identity; no cyan accent is approved; Tradigo remains reserved and unavailable.
+
+**Why:** The user explicitly set this product-brand direction and asked that Signals remain an independent product.
+
+**How to apply:** Keep prototypes in the Journal development workspace, use a launch-pending state for unfinished Signals destinations, and do not change Signals assets, code, or release state.

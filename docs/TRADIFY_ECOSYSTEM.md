@@ -14,7 +14,7 @@ This repository is the original TradifyApp Journal. It owns customer journal acc
 ### Web application and branding
 
 - A React/Vite client and Express API are served by the same application.
-- TradifyApp has its own customer-facing brand, marketing pages, pricing, free tools, prop-firm pages, and blog. Its current visual identity is distinct from the Signals product; no shared navigation or shared login is assumed by this report.
+- TradifyApp is the original Journal product, with its own pricing, free tools, prop-firm pages, and blog. A development-only proposal introduces the parent Tradify brand and product navigation while keeping Journal's dark/emerald identity. No shared login or session is implied.
 - The original deployment configuration is Autoscale with `npm run build` and `node ./dist/index.cjs`. No deployment is currently active for this Replit workspace; `tradifyapp.com` may be served by another deployment. DNS was not changed.
 
 ### Authentication and authorization
@@ -62,6 +62,8 @@ The Journal schema includes provider profiles, receivers, and provider subscript
 
 Signals owns its strategy definitions, signal events and lifecycle, notification state, and Signals entitlements. This Journal workspace has not inspected or modified the Signals repository or database.
 
+The approved design direction is to preserve Signals' existing navy/gold/teal identity. This Journal prototype uses a visual approximation only; the Signals source remains authoritative for exact color values and assets.
+
 ### Tradigo
 
 **Purpose:** Future marketplace for coaching sessions and appointments.
@@ -96,3 +98,4 @@ Signals is a separate project. Its blockers are not assessed or repeated here; c
 - Keep `tradifyapp-dev` for development. Preserve the original Journal production database and connection configuration.
 - Ask before waking production compute for a short read-only check. Do not run migrations, seed data, send email, run MT5 or scheduled jobs, publish, or change DNS without explicit approval.
 - Compare both architecture reports and approve a versioned contract before implementing any cross-project integration.
+- The proposed shared design specification and Signals handoff guidance are in `TRADIFY_BRAND_SYSTEM.md`; this is not approval to change the independent Signals project.

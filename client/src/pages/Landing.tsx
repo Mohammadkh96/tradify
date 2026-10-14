@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { 
   TrendingUp, 
   ShieldCheck, 
@@ -67,6 +67,7 @@ function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: str
 
 export default function Landing() {
   const { t } = useTranslation();
+  const { hash } = useLocation();
   const [activeScreenshotTab, setActiveScreenshotTab] = useState(0);
   const [checklistEmail, setChecklistEmail] = useState("");
   const [checklistLoading, setChecklistLoading] = useState(false);
@@ -89,6 +90,16 @@ export default function Landing() {
       .then(d => setFounderCount(d))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const targetId = hash.slice(1);
+    if (targetId !== "products" && targetId !== "signals") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({ block: "start", behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [hash]);
 
   const handleChecklistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -578,6 +589,77 @@ export default function Landing() {
                 <div className="text-[8px] italic text-muted-foreground/60">{stat.source}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Tradify ecosystem */}
+      <section id="products" className="scroll-mt-28 py-20 border-b border-border bg-muted/10" data-testid="section-tradify-products">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <Badge className="mb-4 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+              {t("ecosystem.eyebrow")}
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight uppercase">
+              {t("ecosystem.homeTitle")}
+            </h2>
+            <p className="mt-4 text-muted-foreground leading-relaxed">{t("ecosystem.homeSubtitle")}</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-emerald-500/25 bg-card/80 shadow-xl overflow-hidden">
+              <CardContent className="p-7 sm:p-9">
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                      <BookOpen size={24} />
+                    </span>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">{t("ecosystem.journalProductType")}</p>
+                      <h3 className="text-xl font-black text-foreground">{t("ecosystem.journal")}</h3>
+                    </div>
+                  </div>
+                  <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">{t("ecosystem.available")}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed min-h-12">{t("ecosystem.journalShort")}</p>
+                <div className="mt-7 flex flex-wrap items-center gap-3">
+                  <Button asChild className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-[10px]">
+                    <Link to="/signup">
+                      {t("ecosystem.journalStart")}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Link to="/features" className="inline-flex items-center text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-emerald-500 transition-colors">
+                    {t("ecosystem.journalExplore")}
+                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card id="signals" className="scroll-mt-28 border-amber-500/25 bg-card/80 shadow-xl overflow-hidden" data-testid="card-tradify-signals">
+              <CardContent className="p-7 sm:p-9">
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
+                      <Activity size={24} />
+                    </span>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400">{t("ecosystem.signalsProductType")}</p>
+                      <h3 className="text-xl font-black text-foreground">{t("ecosystem.signals")}</h3>
+                    </div>
+                  </div>
+                  <Badge className="bg-teal-500/10 text-teal-300 border border-teal-500/20">{t("ecosystem.webPendingBadge")}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed min-h-12">{t("ecosystem.signalsShort")}</p>
+                <div className="mt-7 flex flex-wrap items-center gap-3">
+                  <span role="status" className="inline-flex items-center rounded-md border border-teal-500/25 bg-teal-500/10 px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-teal-200">
+                    {t("ecosystem.signalsPending")}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{t("ecosystem.signalsWebNote")}</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
@@ -1599,7 +1681,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-16 border-t border-border" data-testid="section-footer">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 mb-12">
             <div>
               <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">{t("landing.footerProduct")}</h4>
               <div className="space-y-3">
@@ -1617,6 +1699,19 @@ export default function Landing() {
                 <Link to="/prop-firm-tracker" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-prop-firm-tracker">{t("landing.footerPropFirmTracker")}</Link>
                 <Link to="/mt5-trading-analytics" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-mt5-analytics">{t("landing.footerMT5Analytics")}</Link>
                 <Link to="/blog" className="block text-xs text-muted-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-blog">{t("landing.footerBlog")}</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">{t("ecosystem.footerTitle")}</h4>
+              <div className="space-y-4">
+                <div>
+                  <Link to="/features" className="block text-xs font-bold text-foreground hover:text-emerald-500 transition-colors" data-testid="link-footer-journal">{t("ecosystem.journal")}</Link>
+                  <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t("ecosystem.footerJournalDescription")}</p>
+                </div>
+                <div>
+                  <Link to="/#signals" className="block text-xs font-bold text-foreground hover:text-amber-400 transition-colors" data-testid="link-footer-signals">{t("ecosystem.signals")}</Link>
+                  <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t("ecosystem.footerSignalsDescription")}</p>
+                </div>
               </div>
             </div>
             <div>

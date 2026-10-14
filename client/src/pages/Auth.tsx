@@ -378,7 +378,7 @@ export default function Auth() {
   if (requiresPasswordReset) {
     return (
       <div className="min-h-screen bg-background flex flex-col relative pt-20">
-        <PublicNavbar />
+        <PublicNavbar showProducts={false} />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-2xl border border-border">
             <div className="text-center">
@@ -446,7 +446,7 @@ export default function Auth() {
   if (requiresVerification) {
     return (
       <div className="min-h-screen bg-background flex flex-col relative pt-20">
-        <PublicNavbar />
+        <PublicNavbar showProducts={false} />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-6 text-center">
             {/* Founding Member Celebration Block */}
@@ -540,7 +540,7 @@ export default function Auth() {
   if (showForgot) {
     return (
       <div className="min-h-screen bg-background flex flex-col relative pt-20">
-        <PublicNavbar />
+        <PublicNavbar showProducts={false} />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-2xl border border-border">
             <div className="text-center">
@@ -588,7 +588,7 @@ export default function Auth() {
         canonical={isLogin ? "https://tradifyapp.com/login" : "https://tradifyapp.com/signup"}
         noindex={true}
       />
-      <PublicNavbar />
+      <PublicNavbar showProducts={false} />
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Side: Brand & Trust (Hidden on Mobile) */}
         <div className="hidden lg:flex flex-1 flex-col justify-between p-12 bg-gradient-to-br from-muted to-background relative">

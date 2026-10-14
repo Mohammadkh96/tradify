@@ -137,6 +137,55 @@ export default function Pricing() {
           )}
         </header>
 
+        <section className="mb-12" aria-labelledby="product-options-title" data-testid="section-product-pricing-options">
+          <div className="mb-6 text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">{t("ecosystem.pricingEyebrow")}</p>
+            <h2 id="product-options-title" className="mt-2 text-xl sm:text-2xl font-black uppercase tracking-tight text-foreground">
+              {t("ecosystem.pricingTitle")}
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">{t("ecosystem.pricingSubtitle")}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-emerald-500/30 bg-card">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-black text-foreground">{t("ecosystem.journalOnly")}</h3>
+                  <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">{t("ecosystem.available")}</Badge>
+                </div>
+                <p className="mt-3 min-h-12 text-sm leading-relaxed text-muted-foreground">{t("ecosystem.journalPricingDescription")}</p>
+                <a href="#journal-plans" className="mt-5 inline-flex items-center text-xs font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-400">
+                  {t("ecosystem.viewJournalPlans")}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-500/25 bg-card">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-black text-foreground">{t("ecosystem.signalsOnly")}</h3>
+                  <Badge className="bg-teal-500/10 text-teal-300 border border-teal-500/20">{t("ecosystem.webPendingBadge")}</Badge>
+                </div>
+                <p className="mt-3 min-h-12 text-sm leading-relaxed text-muted-foreground">{t("ecosystem.signalsPricingDescription")}</p>
+                <span role="status" className="mt-4 inline-flex items-center rounded-md border border-teal-500/25 bg-teal-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-teal-200">
+                  {t("ecosystem.pricingNotPublished")}
+                </span>
+              </CardContent>
+            </Card>
+            <Card className="border-border bg-card">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-black text-foreground">{t("ecosystem.complete")}</h3>
+                  <Badge variant="outline">{t("ecosystem.proposalOnly")}</Badge>
+                </div>
+                <p className="mt-3 min-h-12 text-sm leading-relaxed text-muted-foreground">{t("ecosystem.completePricingDescription")}</p>
+                <span role="status" className="mt-4 inline-flex items-center rounded-md border border-border bg-muted/50 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  {t("ecosystem.proposalOnly")}
+                </span>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
         {/* Billing Period Toggle */}
         <div className="flex justify-center mb-10">
           <div className="inline-flex items-center bg-card border border-border rounded-xl p-1 shadow-lg" data-testid="billing-toggle">
@@ -170,7 +219,7 @@ export default function Pricing() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+        <div id="journal-plans" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
           {/* Free Plan */}
           <Card className="bg-card border-border shadow-2xl relative overflow-hidden group">
             <CardContent className="p-6">
