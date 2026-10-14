@@ -27,6 +27,18 @@ const chartUpload = multer({
 });
 import { runBackup, getBackupStatus, verifyLatestBackup, downloadBackupById } from "./backup-service";
 import { registerStripeWebhook, registerStripeRoutes } from "./stripeCheckout";
+import {
+  retiredAiEndpoint,
+  retiredAiMiddleware,
+  toAdminUserRole,
+  toClientUserRole,
+  redactSensitiveFields,
+  requireAdminSession,
+  requireOwnUserParam,
+  requireOwnUserQueryOrHeader,
+  requireSessionAuth,
+  syncTokensMatch,
+} from "./security-helpers";
 const openai: any = {
   chat: {
     completions: {
@@ -40,7 +52,7 @@ import { authLimiter, passwordResetLimiter, aiLimiter, uploadLimiter, earlyAcces
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
 import { trackAIUsage, calculateCost, estimateTokensFromText } from "./ai-cost-tracker";
-import archiver from "archiver";
+import * as archiver from "archiver";
 import fsNode from "node:fs";
 import pathNode from "node:path";
 // Removed pdfkit - using client-side PDF generation with jspdf
@@ -208,21 +220,38 @@ async function getAllMT5Trades(userId: string): Promise<any[]> {
 }
 
 // Authentication middleware
-const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ message: "Session expired. Please log in." });
-  }
-  next();
-};
+const requireAuth = requireSessionAuth;
 
-const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
+async function hasActiveAdminAccess(userId: string): Promise<boolean> {
+  const [access] = await db.select({ id: schema.adminAccess.id })
+    .from(schema.adminAccess)
+    .where(and(
+      eq(schema.adminAccess.email, userId),
+      eq(schema.adminAccess.isActive, true),
+    ))
+    .limit(1);
+  return Boolean(access);
+}
+
+async function getClientUserRole(user: Record<string, any>): Promise<Record<string, unknown> | null> {
+  const role = user.role === "OWNER" || user.role === "ADMIN" || !(await hasActiveAdminAccess(user.userId))
+    ? user.role
+    : "ADMIN";
+  return toClientUserRole({ ...user, role });
+}
+
+const requireAdmin = requireAdminSession(
+  async (userId) => (await storage.getUserRole(userId))?.role,
+  hasActiveAdminAccess,
+);
+
+const requireOwner = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: "Session expired" });
   }
-  
   const user = await storage.getUserRole(req.session.userId);
-  if (user?.role !== "OWNER" && user?.role !== "ADMIN") {
-    return res.status(403).json({ message: "Admin access required" });
+  if (user?.role !== "OWNER") {
+    return res.status(403).json({ message: "Owner access required" });
   }
   next();
 };
@@ -506,13 +535,7 @@ ${blogPosts.map(p => `  <url>
 
   // AI-backed features are retired. Reject requests before any legacy handler
   // can process data or call a model provider.
-  const retiredAiEndpoint = /^\/api\/(?:ai(?:\/|$)|monthly-review(?:\/|$)|trades\/[^/]+\/ai-tags$|compliance\/explain$|education\/ai-tutor$|generate-image$|admin\/marketing\/(?:generate(?:\/|$)|studio(?:\/|$)|smart-suggestions$|playbooks$|pipeline\/run$|funnel\/(?:stages|generate(?:-single)?)$|content\/(?:[^/]+\/repurpose|fill-week)$|ad-strategy$)|conversations\/[^/]+\/(?:messages|voice-stream)$)/i;
-  app.use((req, res, next) => {
-    if (retiredAiEndpoint.test(req.path)) {
-      return res.status(410).json({ message: "AI features have been removed." });
-    }
-    next();
-  });
+  app.use(retiredAiMiddleware);
   
   // Early Access Signup Endpoint
   app.post("/api/early-access/signup", earlyAccessLimiter, async (req, res) => {
@@ -982,15 +1005,7 @@ ${blogPosts.map(p => `  <url>
         // Create a temporary session for password reset only
         req.session.userId = user.userId;
         req.session.role = user.role;
-        const {
-          password: _password,
-          emailVerificationToken: _emailVerificationToken,
-          emailVerificationExpiry: _emailVerificationExpiry,
-          passwordResetToken: _passwordResetToken,
-          passwordResetExpiry: _passwordResetExpiry,
-          unsubscribeToken: _unsubscribeToken,
-          ...safeUser
-        } = user;
+        const safeUser = await getClientUserRole(user);
         return res.json({ 
           ...safeUser,
           requiresPasswordReset: true 
@@ -1009,15 +1024,7 @@ ${blogPosts.map(p => `  <url>
         .where(eq(schema.userRole.userId, user.userId))
         .catch(err => console.error("Failed to update lastLoginAt:", err));
 
-      const {
-        password: _password,
-        emailVerificationToken: _emailVerificationToken,
-        emailVerificationExpiry: _emailVerificationExpiry,
-        passwordResetToken: _passwordResetToken,
-        passwordResetExpiry: _passwordResetExpiry,
-        unsubscribeToken: _unsubscribeToken,
-        ...safeUser
-      } = user;
+      const safeUser = await getClientUserRole(user);
       res.json({ ...safeUser, isFirstLogin });
     } catch (error) {
       console.error("Login error:", error);
@@ -1069,11 +1076,9 @@ ${blogPosts.map(p => `  <url>
     });
   });
 
-  app.get("/api/user", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    const user = await storage.getUserRole(req.session.userId);
+  app.get("/api/user", requireAuth, async (req, res) => {
+    const user = await storage.getUserRole(req.session.userId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
     
     // Check if founding member free Pro has expired
     if (user && user.foundingMember && user.foundingMemberProExpiry && 
@@ -1090,7 +1095,7 @@ ${blogPosts.map(p => `  <url>
       }
     }
     
-    res.json(user);
+    res.json(await getClientUserRole(user));
   });
 
   app.get("/api/user/referral-stats", requireAuth, async (req, res) => {
@@ -1773,25 +1778,23 @@ ${blogPosts.map(p => `  <url>
         server         // MT5 server name (optional)
       } = req.body;
 
-      if (!userId || !token) {
+      if (
+        typeof userId !== "string" ||
+        !userId.trim() ||
+        typeof token !== "string" ||
+        !token.trim()
+      ) {
         return res.status(401).json({ message: "Authentication required: userId and token" });
       }
+      const providedToken = token.trim();
 
       // 1. Identification & Security Check
       const user = await storage.getUserRole(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found", error: "USER_NOT_FOUND" });
-      }
-
-      const storedToken = user.syncToken?.trim();
-      const providedToken = token?.trim();
-
-      // Enforce strict token validation (403 for mismatch)
-      if (storedToken && storedToken !== providedToken) {
-        console.warn(`[MT5 Sync] UNAUTHORIZED: Token mismatch for ${userId}.`);
-        return res.status(403).json({ 
-          message: "Invalid Sync Token.",
-          error: "TOKEN_MISMATCH"
+      if (!user || !syncTokensMatch(user.syncToken, token)) {
+        console.warn("[MT5 Sync] Rejected invalid sync credentials.");
+        return res.status(403).json({
+          message: "Invalid sync credentials.",
+          error: "INVALID_CREDENTIALS",
         });
       }
 
@@ -2042,7 +2045,7 @@ ${blogPosts.map(p => `  <url>
     }
   });
 
-  app.get("/api/mt5/status/:userId", async (req, res) => {
+  app.get("/api/mt5/status/:userId", requireAuth, requireOwnUserParam(), async (req, res) => {
     try {
       const { userId } = req.params;
       const data = await storage.getMT5Data(userId);
@@ -2199,7 +2202,7 @@ ${blogPosts.map(p => `  <url>
     }
   });
 
-  app.get("/api/mt5/snapshots/:userId", async (req, res) => {
+  app.get("/api/mt5/snapshots/:userId", requireAuth, requireOwnUserParam(), async (req, res) => {
     try {
       const { userId } = req.params;
       const snapshots = await storage.getDailySnapshots(userId);
@@ -4771,7 +4774,7 @@ End with: "Review your charts for current market structure."`;
       const ltvEstimate = isPaid ? monthsActive * TIER_PRICE[tier] : 0;
 
       return {
-        ...u,
+        ...toAdminUserRole(u),
         mt5Connected,
         tradeCount,
         lifecycleStage,
@@ -4820,7 +4823,7 @@ End with: "Review your charts for current market structure."`;
       } catch {}
 
       events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
-      res.json({ user: u, events });
+      res.json({ user: toAdminUserRole(u), events });
     } catch (error) {
       console.error("Timeline error:", error);
       res.status(500).json({ message: "Failed to fetch timeline" });
@@ -5138,10 +5141,15 @@ End with: "Review your charts for current market structure."`;
         return res.json({ success: true, affected: targetUsers.length });
       }
       if (action === "deactivate") {
-        await db.update(schema.userRole)
+        const changed = await db.update(schema.userRole)
           .set({ role: "DEACTIVATED" })
-          .where(inArray(schema.userRole.userId, ids));
-        return res.json({ success: true, affected: ids.length });
+          .where(and(
+            inArray(schema.userRole.userId, ids),
+            ne(schema.userRole.role, "OWNER"),
+            ne(schema.userRole.role, "ADMIN"),
+          ))
+          .returning({ userId: schema.userRole.userId });
+        return res.json({ success: true, affected: changed.length });
       }
       return res.status(400).json({ message: `Unknown action: ${action}` });
     } catch (error) {
@@ -5688,19 +5696,22 @@ End with: "Review your charts for current market structure."`;
 
   app.post("/api/admin/create-user", requireAdmin, async (req, res) => {
     try {
-      const { email, subscriptionTier, role, tempPassword } = req.body;
+      const { email, subscriptionTier, tempPassword } = req.body || {};
       const adminId = req.session.userId!;
       
-      if (!email) {
+      if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         return res.status(400).json({ message: "Email is required" });
       }
 
       // Normalize email to lowercase (matches login behavior)
       const normalizedEmail = email.toLowerCase().trim();
+      if (typeof tempPassword !== "string" || tempPassword.length < 12 || tempPassword.length > 128) {
+        return res.status(400).json({ message: "A temporary password of 12–128 characters is required" });
+      }
 
       // Validate subscription tier
       const validTiers = ["FREE", "PRO", "ELITE", "COACH"];
-      const tier = validTiers.includes(subscriptionTier?.toUpperCase()) 
+      const tier = validTiers.includes(typeof subscriptionTier === "string" ? subscriptionTier.toUpperCase() : "")
         ? subscriptionTier.toUpperCase() 
         : "FREE";
 
@@ -5710,15 +5721,13 @@ End with: "Review your charts for current market structure."`;
         return res.status(400).json({ message: "User with this email already exists" });
       }
 
-      // Generate or use provided temporary password
-      const password = tempPassword || `Tradify${Math.random().toString(36).substring(2, 8)}!`;
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
       // Create the user with hashed password
       const newUser = await storage.createUserRole({
         userId: normalizedEmail,
         password: hashedPassword,
-        role: role || "TRADER",
+        role: "TRADER",
         subscriptionTier: tier,
         termsAccepted: true,
         riskAcknowledged: true,
@@ -5730,14 +5739,14 @@ End with: "Review your charts for current market structure."`;
         adminId,
         actionType: "CREATE_USER",
         targetUserId: normalizedEmail,
-        details: { subscriptionTier: tier, role: role || "USER" }
+        details: { subscriptionTier: tier, role: "TRADER" }
       });
 
       // Send welcome email with temporary password
       const userName = normalizedEmail.split('@')[0];
-      await emailService.sendAdminCreatedUserEmail(normalizedEmail, userName, password);
+      await emailService.sendAdminCreatedUserEmail(normalizedEmail, userName, tempPassword);
 
-      res.json({ success: true, user: newUser, tempPassword: password });
+      res.json({ success: true, user: toClientUserRole(newUser) });
     } catch (error) {
       console.error("Create user error:", error);
       res.status(500).json({ message: "Failed to create user" });
@@ -5746,20 +5755,43 @@ End with: "Review your charts for current market structure."`;
 
   app.post("/api/admin/update-user", requireAdmin, async (req, res) => {
     try {
-      const { targetUserId, updates } = req.body;
+      const { targetUserId, updates } = req.body || {};
       const adminId = req.session.userId!;
-      
-      // If subscriptionTier is being updated, use the dedicated storage method
-      if (updates.subscriptionTier) {
-        const newTier: string = updates.subscriptionTier.toUpperCase();
-        await storage.updateUserSubscription(targetUserId, updates.subscriptionTier);
+
+      if (typeof targetUserId !== "string" || !targetUserId.trim() ||
+          !updates || typeof updates !== "object" || Array.isArray(updates)) {
+        return res.status(400).json({ message: "targetUserId and updates are required" });
+      }
+      const allowedKeys = new Set(["subscriptionTier", "role"]);
+      if (Object.keys(updates).some((key) => !allowedKeys.has(key))) {
+        return res.status(400).json({ message: "Unsupported user fields" });
+      }
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No supported updates provided" });
+      }
+      const [targetUser] = await db.select({ role: schema.userRole.role })
+        .from(schema.userRole)
+        .where(eq(schema.userRole.userId, targetUserId))
+        .limit(1);
+      if (!targetUser) return res.status(404).json({ message: "User not found" });
+      if (targetUser.role === "OWNER" || targetUser.role === "ADMIN") {
+        return res.status(403).json({ message: "Protected roles cannot be changed here" });
+      }
+
+      if (updates.subscriptionTier !== undefined) {
+        const validTiers = new Set(["FREE", "PRO", "ELITE", "COACH"]);
+        const newTier = typeof updates.subscriptionTier === "string" ? updates.subscriptionTier.toUpperCase() : "";
+        if (!validTiers.has(newTier)) {
+          return res.status(400).json({ message: "Invalid subscription tier" });
+        }
+        await storage.updateUserSubscription(targetUserId, newTier);
         
         // Audit log
         await db.insert(schema.adminAuditLog).values({
           adminId,
-          actionType: `SET_PLAN_${updates.subscriptionTier}`,
+          actionType: `SET_PLAN_${newTier}`,
           targetUserId,
-          details: { updates }
+          details: { subscriptionTier: newTier }
         });
 
         emailService.cancelActiveTrack(targetUserId, 'free_user').catch(() => {});
@@ -5772,24 +5804,21 @@ End with: "Review your charts for current market structure."`;
         } else if (newTier === 'PRO') {
           emailService.queueProToEliteSequence(targetUserId).catch(e => console.error('[DRIP] admin update-user pro:', e));
         }
-        
-        delete updates.subscriptionTier; // Remove from updates object to avoid duplicate update below
       }
 
       // Handle role update (Deactivation/Reactivation)
-      if (updates.role) {
+      if (updates.role !== undefined) {
+        if (!["TRADER", "DEACTIVATED"].includes(updates.role)) {
+          return res.status(403).json({ message: "Only trader deactivation or reactivation is allowed" });
+        }
         await db.insert(schema.adminAuditLog).values({
           adminId,
           actionType: updates.role === "DEACTIVATED" ? "DEACTIVATE_USER" : "ACTIVATE_USER",
           targetUserId,
-          details: { updates }
+          details: { role: updates.role }
         });
-      }
-
-      // Handle any other role/meta updates
-      if (Object.keys(updates).length > 0) {
         await db.update(schema.userRole)
-          .set({ ...updates, updatedAt: new Date() })
+          .set({ role: updates.role, updatedAt: new Date() })
           .where(eq(schema.userRole.userId, targetUserId));
       }
 
@@ -5803,7 +5832,7 @@ End with: "Review your charts for current market structure."`;
   app.get("/api/admin/audit-logs", requireAdmin, async (req, res) => {
     try {
       const logs = await db.select().from(schema.adminAuditLog).orderBy(desc(schema.adminAuditLog.timestamp));
-      res.json(logs);
+      res.json(redactSensitiveFields(logs));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch audit logs" });
     }
@@ -5841,25 +5870,41 @@ End with: "Review your charts for current market structure."`;
     }
   });
 
-  app.get("/api/admin/access", requireAdmin, async (req, res) => {
-    const admins = await db.select().from(schema.adminAccess);
+  app.get("/api/admin/access", requireOwner, async (req, res) => {
+    const admins = await db.select({
+      id: schema.adminAccess.id,
+      email: schema.adminAccess.email,
+      label: schema.adminAccess.label,
+      isActive: schema.adminAccess.isActive,
+      createdAt: schema.adminAccess.createdAt,
+    }).from(schema.adminAccess);
     res.json(admins);
   });
 
-  app.post("/api/admin/access", requireAdmin, async (req, res) => {
-    const { email, label } = req.body;
-    const accessKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  app.post("/api/admin/access", requireOwner, async (req, res) => {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const label = typeof req.body?.label === "string" ? req.body.label.trim().slice(0, 120) : null;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "A valid email is required" });
+    }
+    const accessKey = crypto.randomBytes(32).toString("hex");
     
     const [newAdmin] = await db.insert(schema.adminAccess).values({
       email,
       label,
       accessKey,
-    }).returning();
+    }).returning({
+      id: schema.adminAccess.id,
+      email: schema.adminAccess.email,
+      label: schema.adminAccess.label,
+      isActive: schema.adminAccess.isActive,
+      createdAt: schema.adminAccess.createdAt,
+    });
     
     res.json(newAdmin);
   });
 
-  app.delete("/api/admin/access/:id", requireAdmin, async (req, res) => {
+  app.delete("/api/admin/access/:id", requireOwner, async (req, res) => {
     await db.delete(schema.adminAccess).where(eq(schema.adminAccess.id, parseInt(req.params.id)));
     res.json({ success: true });
   });
@@ -5867,71 +5912,10 @@ End with: "Review your charts for current market structure."`;
   // Bot SEO middleware — serves per-page meta to crawlers before SPA catch-all
   app.use(botSeoMiddleware);
 
-  app.get("/api/user/role", async (req, res) => {
-    // Check for hardcoded admin first
-    const userId = req.query.userId as string || req.headers["x-user-id"] as string;
-    const country = req.query.country as string;
-    const phoneNumber = req.query.phoneNumber as string;
-    const timezone = req.query.timezone as string;
-    
-    if (!userId) {
-      return res.status(400).json({ message: "UserId required" });
-    }
-    
-    // Check dynamic admin access table
-    const [dynamicAdmin] = await db.select().from(schema.adminAccess).where(eq(schema.adminAccess.email, userId)).limit(1);
-
-    if (userId === "mohammad@admin.com" || (dynamicAdmin && dynamicAdmin.isActive)) {
-      const [existing] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, userId)).limit(1);
-      if (!existing || existing.role !== 'OWNER') {
-        await storage.updateUserSubscription(userId, "PRO");
-        await db.update(schema.userRole).set({ role: 'OWNER' }).where(eq(schema.userRole.userId, userId));
-      }
-      return res.json({ userId, role: 'OWNER', subscriptionTier: 'PRO' });
-    }
-
-    let role = await storage.getUserRole(userId);
-    
-    // Create role if it doesn't exist
-    if (!role) {
-      const syncToken = Math.random().toString(36).substring(2, 15);
-      role = await storage.createUserRole({
-        userId,
-        role: userId === "dev-user" ? "OWNER" : "TRADER",
-        country: country || null,
-        phoneNumber: phoneNumber || null,
-        timezone: timezone || null,
-        subscriptionTier: "FREE",
-        syncToken
-      });
-      if (userId === "dev-user") {
-        await storage.updateUserSubscription(userId, "FREE");
-      }
-    } else if (country || phoneNumber || timezone) {
-      // Update existing if new info provided during login/signup sync
-      await db.update(schema.userRole)
-        .set({ 
-          country: country || role.country, 
-          phoneNumber: phoneNumber || role.phoneNumber,
-          timezone: timezone || role.timezone,
-          updatedAt: new Date() 
-        })
-        .where(eq(schema.userRole.userId, userId));
-      
-      // Refresh role data
-      role = await storage.getUserRole(userId);
-    }
-    
-    return res.json(role || { userId, subscriptionTier: "FREE", role: "TRADER" });
-  });
-
-  app.post("/api/user/upgrade-dev", async (req, res) => {
-    const userId = req.headers["x-user-id"] as string || "dev-user";
-    await storage.updateUserSubscription(userId, "PRO");
-    emailService.cancelActiveTrack(userId, 'free_user').catch(() => {});
-    emailService.cancelActiveTrack(userId, 'free_ongoing').catch(() => {});
-    emailService.queueProToEliteSequence(userId).catch(() => {});
-    res.json({ success: true, message: "Developer PRO access granted" });
+  app.get("/api/user/role", requireAuth, requireOwnUserQueryOrHeader, async (req, res) => {
+    const role = await storage.getUserRole(req.session.userId!);
+    if (!role) return res.status(404).json({ message: "User not found" });
+    return res.json(await getClientUserRole(role));
   });
 
   app.post("/api/user/update-profile", requireAuth, async (req, res) => {
@@ -7488,7 +7472,10 @@ Guidelines:
 
       const [updated] = await db.update(schema.propFirmChallenges)
         .set(updateData)
-        .where(eq(schema.propFirmChallenges.id, challengeId))
+        .where(and(
+          eq(schema.propFirmChallenges.id, challengeId),
+          eq(schema.propFirmChallenges.userId, req.session.userId!)
+        ))
         .returning();
       res.json(updated);
 
@@ -7514,12 +7501,25 @@ Guidelines:
   app.delete("/api/prop-firm/challenges/:id", requireAuth, async (req, res) => {
     try {
       const challengeId = parseInt(req.params.id);
+      const userId = req.session.userId!;
+      const [challenge] = await db.select({ id: schema.propFirmChallenges.id })
+        .from(schema.propFirmChallenges)
+        .where(and(
+          eq(schema.propFirmChallenges.id, challengeId),
+          eq(schema.propFirmChallenges.userId, userId),
+        ))
+        .limit(1);
+      if (!challenge) return res.status(404).json({ message: "Challenge not found" });
+
       await db.delete(schema.propFirmDailyStats)
-        .where(eq(schema.propFirmDailyStats.challengeId, challengeId));
+        .where(and(
+          eq(schema.propFirmDailyStats.challengeId, challengeId),
+          eq(schema.propFirmDailyStats.userId, userId),
+        ));
       await db.delete(schema.propFirmChallenges)
         .where(and(
           eq(schema.propFirmChallenges.id, challengeId),
-          eq(schema.propFirmChallenges.userId, req.session.userId!)
+          eq(schema.propFirmChallenges.userId, userId)
         ));
       res.status(204).send();
     } catch (error) {
@@ -7567,7 +7567,10 @@ Guidelines:
           highWaterMark: String(newHWM),
           updatedAt: new Date(),
         })
-        .where(eq(schema.propFirmChallenges.id, challengeId));
+        .where(and(
+          eq(schema.propFirmChallenges.id, challengeId),
+          eq(schema.propFirmChallenges.userId, req.session.userId!)
+        ));
 
       res.status(201).json(stat);
     } catch (error) {
@@ -8753,7 +8756,7 @@ Guidelines:
       res.setHeader("Content-Type", "application/zip");
       res.setHeader("Content-Disposition", `attachment; filename="tradify-funnel-assets-${dateStr}.zip"`);
 
-      const archive = archiver("zip", { zlib: { level: 9 } });
+      const archive = new (archiver as any).ZipArchive({ zlib: { level: 9 } });
       archive.on("error", (err: Error) => { throw err; });
       archive.pipe(res);
 

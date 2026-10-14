@@ -109,7 +109,6 @@ function PostGeneratorTab() {
         hashtags: editedHashtags,
         hook: result?.hook || "",
         status: "draft",
-        aiModelUsed: "openai",
         topicTags: topic ? [topic] : [],
       });
       return res.json();
@@ -360,7 +359,6 @@ function ReelScriptGeneratorTab() {
         hook: editedScript.hook,
         cta: editedScript.cta,
         status: "draft",
-        aiModelUsed: "openai",
         topicTags: topic ? [topic] : [],
       });
       return res.json();
@@ -622,7 +620,6 @@ function BlogGeneratorTab() {
         title: editedBlog.title,
         content: editedBlog.content,
         status: "draft",
-        aiModelUsed: "openai",
         topicTags: [topic, seoKeyword].filter(Boolean),
       });
       return res.json();
@@ -886,7 +883,6 @@ function EmailGeneratorTab() {
         title: editedEmail.subjectLine,
         content: editedEmail.body,
         status: "draft",
-        aiModelUsed: "openai",
         topicTags: [emailType, segment],
       });
       return res.json();

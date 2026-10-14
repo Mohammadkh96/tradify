@@ -221,6 +221,7 @@ export default function MT5Bridge() {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>(0);
   const [copied, setCopied] = useState(false);
+  const [revealedSyncToken, setRevealedSyncToken] = useState<string | null>(null);
   const [downloaded, setDownloaded] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
   const [os, setOs] = useState<"windows" | "mac">("windows");
@@ -256,7 +257,11 @@ export default function MT5Bridge() {
   });
 
   const isConnected = mt5?.status === "CONNECTED";
-  const hasToken = !!userRoleData?.syncToken;
+  const hasToken = !!userRoleData?.hasSyncToken || !!revealedSyncToken;
+
+  useEffect(() => {
+    setRevealedSyncToken(null);
+  }, [currentUserId]);
 
   useEffect(() => {
     if (typeof navigator === "undefined") return;
@@ -279,11 +284,11 @@ export default function MT5Bridge() {
   const generateTokenMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/traders-hub/generate-token", {
-        userId: currentUserId,
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: { token?: string }) => {
+      if (data.token) setRevealedSyncToken(data.token);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({
         queryKey: [`/api/traders-hub/user-role/${currentUserId}`],
@@ -295,16 +300,35 @@ export default function MT5Bridge() {
     },
   });
 
-  const copyToken = () => {
-    if (!userRoleData?.syncToken) return;
-    navigator.clipboard.writeText(userRoleData.syncToken);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const revealSyncToken = async () => {
+    if (revealedSyncToken) return revealedSyncToken;
+    const res = await apiRequest("POST", "/api/traders-hub/reveal-token", {});
+    const data = await res.json();
+    if (typeof data.syncToken !== "string" || !data.syncToken) {
+      throw new Error("No MT5 sync token is available.");
+    }
+    setRevealedSyncToken(data.syncToken);
+    return data.syncToken as string;
+  };
+
+  const copyToken = async () => {
+    try {
+      const token = await revealSyncToken();
+      await navigator.clipboard.writeText(token);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({
+        title: t("mt5Bridge.toastGenerateFirst"),
+        description: t("mt5Bridge.toastGenerateFirstCopy"),
+        variant: "destructive",
+      });
+    }
   };
 
   const [copiedScript, setCopiedScript] = useState(false);
-  const copyScript = () => {
-    if (!currentUserId || !userRoleData?.syncToken) {
+  const copyScript = async () => {
+    if (!currentUserId || !hasToken) {
       toast({
         title: t("mt5Bridge.toastGenerateFirst"),
         description: t("mt5Bridge.toastGenerateFirstCopy"),
@@ -312,23 +336,32 @@ export default function MT5Bridge() {
       });
       return;
     }
-    const apiUrl = `${window.location.protocol}//${window.location.host}/api/mt5/sync`;
-    const populated = MT5_CONNECTOR_PYTHON
-      .replace(/__TRADIFY_USER_ID__/g, currentUserId)
-      .replace(/__TRADIFY_SYNC_TOKEN__/g, userRoleData.syncToken)
-      .replace(/__TRADIFY_API_URL__/g, apiUrl);
-    navigator.clipboard.writeText(populated);
-    setCopiedScript(true);
-    setDownloaded(true);
-    setTimeout(() => setCopiedScript(false), 2500);
-    toast({
-      title: t("mt5Bridge.toastScriptCopied"),
-      description: t("mt5Bridge.toastScriptCopiedDesc"),
-    });
+    try {
+      const token = await revealSyncToken();
+      const apiUrl = `${window.location.protocol}//${window.location.host}/api/mt5/sync`;
+      const populated = MT5_CONNECTOR_PYTHON
+        .replace(/__TRADIFY_USER_ID__/g, currentUserId)
+        .replace(/__TRADIFY_SYNC_TOKEN__/g, token)
+        .replace(/__TRADIFY_API_URL__/g, apiUrl);
+      await navigator.clipboard.writeText(populated);
+      setCopiedScript(true);
+      setDownloaded(true);
+      setTimeout(() => setCopiedScript(false), 2500);
+      toast({
+        title: t("mt5Bridge.toastScriptCopied"),
+        description: t("mt5Bridge.toastScriptCopiedDesc"),
+      });
+    } catch {
+      toast({
+        title: t("mt5Bridge.toastGenerateFirst"),
+        description: t("mt5Bridge.toastGenerateFirstCopy"),
+        variant: "destructive",
+      });
+    }
   };
 
-  const downloadConnector = () => {
-    if (!currentUserId || !userRoleData?.syncToken) {
+  const downloadConnector = async () => {
+    if (!currentUserId || !hasToken) {
       toast({
         title: t("mt5Bridge.toastGenerateFirst"),
         description: t("mt5Bridge.toastGenerateFirstDownload"),
@@ -336,23 +369,32 @@ export default function MT5Bridge() {
       });
       return;
     }
-    const apiUrl = `${window.location.protocol}//${window.location.host}/api/mt5/sync`;
-    const populated = MT5_CONNECTOR_PYTHON
-      .replace(/__TRADIFY_USER_ID__/g, currentUserId)
-      .replace(/__TRADIFY_SYNC_TOKEN__/g, userRoleData.syncToken)
-      .replace(/__TRADIFY_API_URL__/g, apiUrl);
-    const file = new Blob([populated], { type: "text/plain" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(file);
-    a.download = "tradify_connector.pyw";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setDownloaded(true);
-    toast({
-      title: t("mt5Bridge.toastConnectorDownloaded"),
-      description: t("mt5Bridge.toastConnectorDownloadedDesc"),
-    });
+    try {
+      const token = await revealSyncToken();
+      const apiUrl = `${window.location.protocol}//${window.location.host}/api/mt5/sync`;
+      const populated = MT5_CONNECTOR_PYTHON
+        .replace(/__TRADIFY_USER_ID__/g, currentUserId)
+        .replace(/__TRADIFY_SYNC_TOKEN__/g, token)
+        .replace(/__TRADIFY_API_URL__/g, apiUrl);
+      const file = new Blob([populated], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(file);
+      a.download = "tradify_connector.pyw";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setDownloaded(true);
+      toast({
+        title: t("mt5Bridge.toastConnectorDownloaded"),
+        description: t("mt5Bridge.toastConnectorDownloadedDesc"),
+      });
+    } catch {
+      toast({
+        title: t("mt5Bridge.toastGenerateFirst"),
+        description: t("mt5Bridge.toastGenerateFirstDownload"),
+        variant: "destructive",
+      });
+    }
   };
 
   const troubleshooting = useMemo(
@@ -474,7 +516,7 @@ export default function MT5Bridge() {
                       className="flex-1 rounded-lg bg-background border border-border px-3 py-2 font-mono text-xs break-all"
                       data-testid="text-sync-token"
                     >
-                      {userRoleData.syncToken}
+                      {revealedSyncToken || "••••••••••••••••"}
                     </code>
                     <Button
                       onClick={copyToken}

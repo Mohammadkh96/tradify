@@ -1,6 +1,8 @@
 import express from "express";
+import { randomBytes } from "node:crypto";
 import { storage } from "./storage";
 import { insertHubPostSchema, insertHubCommentSchema, insertHubReportSchema, insertCreatorApplicationSchema, insertCreatorProfileSchema } from "@shared/schema";
+import { requireOwnUserParam } from "./security-helpers";
 import { z } from "zod";
 
 const router = express.Router();
@@ -159,12 +161,37 @@ router.post("/posts/:postId/comments", async (req, res) => {
   }
 });
 
-router.get("/user-role/:userId", async (req, res) => {
+router.get("/user-role/:userId", requireOwnUserParam(), async (req, res) => {
   try {
-    const user = await storage.getUserRole(req.params.userId);
-    res.json(user);
+    const sessionUserId = req.session.userId;
+    const user = await storage.getUserRole(sessionUserId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({
+      userId: user.userId,
+      role: user.role,
+      subscriptionTier: user.subscriptionTier,
+      hasSyncToken: typeof user.syncToken === "string" && user.syncToken.length > 0,
+    });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch user role" });
+  }
+});
+
+router.post("/reveal-token", async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const user = await storage.getUserRole(userId);
+    if (!user || user.role === "DEACTIVATED") {
+      return res.status(403).json({ message: "Account unavailable" });
+    }
+    if (typeof user.syncToken !== "string" || !user.syncToken) {
+      return res.status(409).json({ message: "No MT5 sync token is configured" });
+    }
+    res.set("Cache-Control", "no-store");
+    res.json({ syncToken: user.syncToken });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to reveal MT5 token" });
   }
 });
 
@@ -172,11 +199,15 @@ router.post("/generate-token", async (req, res) => {
   try {
     const userId = req.session.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const user = await storage.getUserRole(userId);
+    if (!user || user.role === "DEACTIVATED") {
+      return res.status(403).json({ message: "Account unavailable" });
+    }
 
-    const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const newToken = randomBytes(32).toString("hex");
     await storage.updateUserSubscriptionInfo(userId, { syncToken: newToken });
     
-    // Explicitly update the session if needed, but the client should refetch
+    res.set("Cache-Control", "no-store");
     res.json({ token: newToken });
   } catch (error) {
     console.error("Token generation error:", error);

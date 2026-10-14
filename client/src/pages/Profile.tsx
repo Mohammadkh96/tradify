@@ -534,7 +534,7 @@ export default function Profile() {
 
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery<any>({
     queryKey: ["/api/paypal/subscription"],
-    enabled: isPaid && !!user?.paypalSubscriptionId,
+    enabled: isPaid && user?.subscriptionProvider === "paypal",
   });
 
   const [country, setCountry] = useState("");

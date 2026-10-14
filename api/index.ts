@@ -1,13 +1,39 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Pool } from 'pg';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import bcrypt from 'bcryptjs';
+import { assertNotProductionDatabase } from '../server/dbTarget';
+
+type ApiRequest = IncomingMessage & { body?: any };
+type ApiResponse = ServerResponse & {
+  status(code: number): ApiResponse;
+  json(body: unknown): ApiResponse;
+};
+
+const nodeEnv = process.env.NODE_ENV || 'development';
+const connectionEnvName =
+  nodeEnv === 'production' ? 'DATABASE_URL' : nodeEnv === 'test' ? 'TEST_DATABASE_URL' : 'DEV_DATABASE_URL';
+const connectionString = process.env[connectionEnvName];
+if (!connectionString) {
+  throw new Error(`${connectionEnvName} must be set. Refusing an unsafe database fallback.`);
+}
+if (nodeEnv !== 'production') {
+  assertNotProductionDatabase(connectionEnvName, connectionString, [
+    { name: 'DATABASE_URL', connectionString: process.env.DATABASE_URL },
+    { name: 'NEON_DATABASE_URL', connectionString: process.env.NEON_DATABASE_URL },
+  ]);
+}
+
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) {
+  throw new Error('SESSION_SECRET must be set. Refusing to use a fallback session secret.');
+}
 
 // Create pool once (reused across invocations)
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  connectionString,
+  ssl: { rejectUnauthorized: true },
   max: 5,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000
@@ -18,13 +44,13 @@ const PgSession = connectPgSimple(session);
 const sessionStore = new PgSession({
   pool,
   tableName: 'session',
-  createTableIfMissing: true
+  createTableIfMissing: false
 });
 
 // Session middleware with production-ready settings
 const sessionMiddleware = session({
   store: sessionStore,
-  secret: process.env.SESSION_SECRET || 'tradify-secret-key-change-in-production',
+  secret: sessionSecret,
   name: 'tradify.sid',
   resave: false,
   saveUninitialized: false,
@@ -47,17 +73,31 @@ function runSession(req: any, res: any): Promise<void> {
   });
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers
-  const origin = req.headers.origin || 'https://tradifyapp.com';
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+export default async function handler(req: ApiRequest, res: ApiResponse) {
+  const configuredOrigins = [
+    'https://tradifyapp.com',
+    'https://www.tradifyapp.com',
+    ...(nodeEnv === 'production'
+      ? []
+      : (process.env.REPLIT_DOMAINS || '').split(',').map((domain) => domain.trim()).filter(Boolean).map((domain) => `https://${domain}`)),
+    ...(nodeEnv === 'production' ? [] : ['http://localhost:5000', 'http://127.0.0.1:5000']),
+  ];
+  const originHeader = req.headers.origin;
+  const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
+  const originAllowed = Boolean(origin && configuredOrigins.includes(origin));
   res.setHeader('Vary', 'Origin');
+  if (origin && !originAllowed) {
+    return res.status(403).json({ message: 'Origin not allowed' });
+  }
+  if (originAllowed && origin) {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return originAllowed ? res.status(204).end() : res.status(403).end();
   }
 
   try {

@@ -350,7 +350,6 @@ function AdCopyGeneratorTab() {
         cta: variation.description,
         frameworkUsed: variation.framework,
         status: "draft",
-        aiModelUsed: "openai",
       });
       return res.json();
     },

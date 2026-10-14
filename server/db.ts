@@ -54,7 +54,7 @@ const POOL_IDLE_MS = Number(process.env.DB_POOL_IDLE_MS || 30_000);
 const POOL_CONN_TIMEOUT_MS = Number(process.env.DB_POOL_CONN_TIMEOUT_MS || 10_000);
 export const pool = new Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: true },
   max: POOL_MAX,
   idleTimeoutMillis: POOL_IDLE_MS,
   connectionTimeoutMillis: POOL_CONN_TIMEOUT_MS,

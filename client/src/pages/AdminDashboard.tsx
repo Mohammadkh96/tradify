@@ -637,7 +637,7 @@ export default function AdminDashboard() {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: async (data: { email: string; subscriptionTier: string }) => {
+    mutationFn: async (data: { email: string; subscriptionTier: string; tempPassword: string }) => {
       const res = await apiRequest("POST", "/api/admin/create-user", data);
       if (!res.ok) {
         const err = await res.json();
@@ -645,11 +645,11 @@ export default function AdminDashboard() {
       }
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       setNewUserEmail("");
       setNewUserPlan("FREE");
-      setCreatedUserPassword(data.tempPassword);
+      setCreatedUserPassword(variables.tempPassword);
       toast({ title: "User Created", description: "New user has been created. Share the temporary password with them." });
     },
     onError: (error: any) => {
@@ -823,7 +823,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black text-cyan-500">
-                {users?.filter(u => u.syncToken).length || 0}
+                {users?.filter(u => u.hasSyncToken).length || 0}
               </div>
             </CardContent>
           </Card>
@@ -1221,7 +1221,13 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-3 pt-2">
                 <Button 
                   className="bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest text-xs"
-                  onClick={() => createUserMutation.mutate({ email: newUserEmail, subscriptionTier: newUserPlan })}
+                  onClick={() => {
+                    const bytes = new Uint8Array(24);
+                    window.crypto.getRandomValues(bytes);
+                    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+                    const tempPassword = `T${Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("")}9!`;
+                    createUserMutation.mutate({ email: newUserEmail, subscriptionTier: newUserPlan, tempPassword });
+                  }}
                   disabled={createUserMutation.isPending || !newUserEmail}
                   data-testid="button-submit-create-user"
                 >

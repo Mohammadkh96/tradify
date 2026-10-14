@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { isRetiredAiRequest } from "@shared/retiredAi";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -12,6 +13,11 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const path = new URL(url, "http://local.invalid").pathname;
+  if (isRetiredAiRequest(method, path)) {
+    throw new Error("410: AI features have been removed.");
+  }
+
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -29,7 +35,12 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = queryKey.join("/") as string;
+    const path = new URL(url, "http://local.invalid").pathname;
+    if (isRetiredAiRequest("GET", path)) {
+      throw new Error("410: AI features have been removed.");
+    }
+    const res = await fetch(url, {
       credentials: "include",
     });
 
