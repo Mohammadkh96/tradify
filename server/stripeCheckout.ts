@@ -70,14 +70,22 @@ export function registerStripeWebhook(app: Express) {
       process.env.NODE_ENV === "production"
         ? process.env.STRIPE_WEBHOOK_SECRET
         : process.env.DEV_STRIPE_WEBHOOK_SECRET;
-    if (!sig || !secret) {
+    // server/index.ts installs express.json() before this route and captures
+    // the original bytes in rawBody. Prefer those bytes when the global parser
+    // has already consumed the request; otherwise use express.raw()'s body.
+    const rawBody = Buffer.isBuffer(req.body)
+      ? req.body
+      : Buffer.isBuffer((req as any).rawBody)
+        ? (req as any).rawBody as Buffer
+        : null;
+    if (!sig || !secret || !rawBody) {
       // Without a verified webhook secret, refuse — never trust unsigned events.
-      return res.status(400).json({ error: "Missing signature or webhook secret not configured" });
+      return res.status(400).json({ error: "Missing signature, raw body, or webhook secret not configured" });
     }
     let event: Stripe.Event;
     try {
       const stripe = await getUncachableStripeClient();
-      event = stripe.webhooks.constructEvent(req.body as Buffer, sig, secret);
+      event = stripe.webhooks.constructEvent(rawBody, sig, secret);
     } catch (err: any) {
       console.error("[Stripe] webhook signature failed:", err.message);
       return res.status(400).json({ error: `Webhook Error: ${err.message}` });

@@ -1,2 +1,3 @@
 - [Post-merge database changes](post-merge-db-changes.md) — avoid unreviewed schema pushes during merges; use reviewed migrations to prevent inferred renames and data loss.
 - [TradifyApp production restoration](tradifyapp-restoration-safety.md) — preserve customer records, keep Tradify Signals separate, and require approval before publishing or risky production changes.
+- [Isolated local PostgreSQL testing](local-postgres-testing.md) — use a loopback-only disposable cluster with its own socket directory and temporary trusted TLS CA.

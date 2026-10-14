@@ -1204,7 +1204,18 @@ ${blogPosts.map(p => `  <url>
 
   app.post("/api/paypal/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
     try {
-      const rawBody = req.body.toString();
+      // The main server parses JSON globally before route registration, but
+      // stores the exact original request bytes for webhook signature checks.
+      // Fall back to express.raw() when this route is used without that parser.
+      const rawBuffer = Buffer.isBuffer(req.body)
+        ? req.body
+        : Buffer.isBuffer((req as any).rawBody)
+          ? (req as any).rawBody as Buffer
+          : null;
+      if (!rawBuffer) {
+        return res.status(400).json({ error: "Raw request body required" });
+      }
+      const rawBody = rawBuffer.toString("utf8");
       const payload = JSON.parse(rawBody);
       await paypalService.handleWebhook(payload, req.headers, rawBody);
       res.sendStatus(200);
@@ -1987,7 +1998,7 @@ ${blogPosts.map(p => `  <url>
         if (historyForEval.length === 0) {
           try {
             const rows = await pool.query(
-              `SELECT ticket, open_time, close_time, profit, net_pl, gross_pl, volume, symbol
+              `SELECT ticket, open_time, close_time, net_pl, gross_pl, volume, symbol
                FROM mt5_history WHERE user_id = $1 AND mt5_account_id = $2 AND close_time >= $3`,
               [userId, accountId, today]
             );
@@ -1995,7 +2006,6 @@ ${blogPosts.map(p => `  <url>
               ticket: r.ticket,
               openTime: r.open_time,
               closeTime: r.close_time,
-              profit: r.profit,
               netPl: r.net_pl,
               grossPl: r.gross_pl,
               volume: r.volume,
