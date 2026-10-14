@@ -1,0 +1,31 @@
+PROJECT 1 — ORIGINAL TRADIFYAPP JOURNAL
+
+The production Neon verification is accepted.
+
+My original production database has been confirmed, and I want to preserve it exactly as it is.
+
+We are moving into FINAL HOSTING AND DEPLOYMENT PREPARATION.
+
+Please:
+
+1. Identify what is currently serving tradifyapp.com, including the existing Google Cloud DNS address and TLS failure. Determine which hosting configuration or account controls that endpoint, without changing it.
+2. Confirm internally that production DATABASE_URL targets the verified original Neon project, production branch and neondb database. Do not expose the password or full connection string. Do not wake compute just to check this.
+3. Investigate why 26 legacy PRO users have a null subscription status. Review existing application entitlement logic in source and synthetic tests. Do not alter or downgrade production customers.
+4. Verify that imported MT5 history is displayed correctly and does not depend on the manual trade_journal table.
+5. Ensure the secured Replit build excludes the incomplete legacy Vercel adapter.
+6. Prepare the exact Replit deployment configuration, required environment variables, expected monthly costs, health checks and rollback procedure.
+7. Confirm that the security fixes, zero-AI-runtime behavior, payment webhook corrections and completed branding work are included in the intended release commit.
+8. Identify which features must remain disabled until SMTP, Stripe, PayPal and background-worker configurations are verified.
+
+Do not create another database or paid snapshot.
+
+Do not write, migrate, seed or modify production Neon.
+
+Do not modify DNS, publish, enable payment processing, send email or activate workers.
+
+Do not touch Tradify Signals.
+
+DELIVERABLE:
+Provide one precise production-restoration checklist separating confirmed readiness, remaining blockers, and the exact approvals needed.
+
+Do not repeat the previous broad security audit. Focus on resolving the hosting and release-configuration problems.
