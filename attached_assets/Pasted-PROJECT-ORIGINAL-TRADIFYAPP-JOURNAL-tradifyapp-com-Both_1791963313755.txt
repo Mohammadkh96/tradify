@@ -1,0 +1,43 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL — tradifyapp.com
+
+Both Tradify projects have completed the initial branding coordination.
+
+Signals has reconciled the shared specification with its existing identity and committed its design work in commit 77533d19.
+
+I want us to move from branding into JOURNAL PRODUCTION READINESS.
+
+The Phase 1 development branding changes should remain intact. Do not start another redesign.
+
+Please perform a production-readiness audit covering:
+
+1. Verify the existing Journal development build and public website routes.
+2. Confirm the existing login, registration, password reset, customer dashboard, MT5 synchronization routes, journal analytics, prop-firm challenges and Admin functionality remain intact.
+3. Review the current production deployment configuration and identify why this workspace has no active published deployment.
+4. Confirm the intended production DATABASE_URL points to my original Neon database, without exposing credentials or connecting to it.
+5. Keep tradifyapp-dev isolated from production.
+6. Identify missing production SMTP, Stripe, PayPal and webhook configurations without exposing or modifying secrets.
+7. Review the remaining high-severity dependency issues and identify which are actual release blockers.
+8. Confirm that publishing cannot unintentionally trigger database migrations, sample-data seeding, background jobs, email sends or MT5 synchronization.
+9. Check that the new Journal branding, Products navigation and pricing presentation work correctly on desktop and mobile.
+10. Identify which new translations still use English fallback.
+11. Prepare a safe staged production restoration plan with testing, rollback and cost considerations.
+
+IMPORTANT:
+
+Do not create another production database.
+
+Do not create paid Neon snapshots or upgrade the Neon plan.
+
+Do not wake or query production Neon without my separate approval.
+
+Do not deploy, publish, change DNS, modify production secrets or activate background workers.
+
+Do not modify the Signals project.
+
+DELIVERABLE:
+
+Give me a clear GO / NO-GO production-readiness report, separating confirmed issues from assumptions.
+
+Identify the exact approvals required to restore tradifyapp.com safely.
+
+Do not execute the production restoration yet.
