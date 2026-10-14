@@ -4,11 +4,11 @@
 
 **Review date:** 14 October 2026
 
-**Status:** **NO-GO for production release.** Development verification is complete; the production host, TLS, database identity/allowance, and live service configuration are not yet verified.
+**Status:** **NO-GO for production release.** Development verification and the approved read-only Neon identity/count check are complete. Public TLS, the current host owner, and live service configuration remain unresolved.
 
 ## 1. Scope and safety boundary
 
-This review did not connect to, wake, or query production Neon; create a snapshot; start the production application; change DNS; publish a deployment; run migrations; start a worker; send email; or call live payment services. No Tradify Signals or Tradigo files were changed.
+The initial review did not connect to production Neon. After conditional approval, Neon control-plane metadata was checked and one read-only transaction was run against the identified production branch. No snapshot was created; no database writes, migrations, application startup, DNS changes, deployment, worker, email, or live payment activity occurred. No Tradify Signals or Tradigo files were changed.
 
 Write tests used a unique PostgreSQL cluster and database under `/tmp`, bound only to `127.0.0.1`, with synthetic `example.invalid` identities. The temporary database and cluster are removed after verification. The existing `DATABASE_URL`, `NEON_DATABASE_URL`, and development database configuration are not changed.
 
@@ -25,7 +25,8 @@ The previously accepted security remediation remains development-only; this repo
 - Plain HTTP redirects to HTTPS. A TLS connection to the HTTPS endpoint for this hostname closed before returning a certificate (`unexpected eof while reading` / `SSL_ERROR_SYSCALL`). A control HTTPS request to an unrelated public site succeeded from the same environment.
 - Replit deployment metadata reports **no active deployment** for this workspace.
 - The project is configured for Replit **Autoscale**, but that configuration is not itself a published deployment.
-- An earlier owner-provided Neon screenshot showed the production branch archived and Primary compute idle. That is historical evidence only; its current state was not checked.
+- Neon control-plane metadata identifies project **Tradify** (`green-art-19890518`), branch **production** (`br-empty-wildflower-ahbsfyzr`), database **`neondb`**, role **`tradify_app`**, and endpoint **`ep-sparkling-moon-ahtc0gbu`** in `aws-us-east-1`.
+- The branch metadata reports `ready`; the endpoint was `idle` before the approved SQL check and `active` afterward. An earlier owner-provided screenshot showed an archived-branch banner, so the archive-state discrepancy remains unexplained. No branch archive/unarchive or endpoint-management operation was invoked.
 
 ### Finding
 
@@ -61,7 +62,7 @@ No Vercel or Replit production deployment was created or changed.
 
 ## 4. Regression verification
 
-Verification used only synthetic records and the isolated local database. No external SMTP, Stripe, PayPal, OpenAI, or production database calls were made.
+Regression tests used only synthetic records and the isolated local database. No external SMTP, Stripe, PayPal, or OpenAI calls were made. Separately, the approved production check selected aggregate counts only; no customer row details were queried.
 
 | Area | Result |
 |---|---|
@@ -116,8 +117,8 @@ Only configuration names and secret-presence metadata were inspected; secret val
 
 | Configuration | Current evidence | Restoration requirement |
 |---|---|---|
-| `DATABASE_URL` | Present as a production secret. Production code selects this name. | Preserve its existing value and prove it identifies the original production project/branch only after approval. Do not replace it with a new database. |
-| `NEON_DATABASE_URL` | Present as a secret; not queried. | Preserve unchanged. Do not wake or query the branch before the separate approval below. |
+| `DATABASE_URL` | Present as a production secret. Production code selects this name. Its value was not read, so it is not yet confirmed to point to the identified branch. | Preserve its existing value; verify the mapping without exposing it before deployment approval. Do not replace it with a new database. |
+| `NEON_DATABASE_URL` | Present as a secret; its value was not read or used for the approved check. | Preserve unchanged. |
 | `SESSION_SECRET` | Present as a production secret. | Preserve; never print or rotate during this recovery step. |
 | Stripe API access | Replit Stripe integration is installed/configured in the workspace; production connector credentials were not exercised. | Confirm the production connector context without creating a live checkout. The app also requires `STRIPE_WEBHOOK_SECRET`, which was not present in production secret metadata. |
 | PayPal | Shared config declares PayPal live mode and contains client/plan configuration (values withheld). `PAYPAL_CLIENT_SECRET` was not present in production secret metadata. | Verify `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, and the applicable `PAYPAL_*_PLAN_ID` values in the production environment. Keep live processing disabled until separately approved. |
@@ -129,14 +130,14 @@ Only configuration names and secret-presence metadata were inspected; secret val
 
 ## 7. Staged restoration procedure
 
-### Stage A — identify and verify the existing production database (approval required)
+### Stage A — identify and verify the existing production database (completed)
 
-1. Do not create another production database or purchase a snapshot.
-2. Before any database connection, confirm the original Neon project ID, production branch ID, database name, role, and compute endpoint from Neon metadata. Compare with the owner's known original TradifyApp branch. Stop if any identity differs or is ambiguous.
-3. Confirm the account's current Free-plan allowance without initiating paid usage. If the Free allowance or reactivation cost cannot be confirmed, stop.
-4. Obtain approval to wake the existing compute for one short read-only check. No connection before this approval.
-5. After approval, use a transaction explicitly set `READ ONLY`; query only schema metadata and counts needed for `user_role`, MT5 history, MT5 accounts, prop-firm challenges, journal records, and subscription records. Compare against the previously reported reference counts (53 user-role rows, 31,722 MT5-history rows, 21 MT5 accounts, 8 challenges); those historical counts were not rechecked in this review.
-6. Do not execute migrations, seed data, inspect customer details, modify roles, or run the app/worker. Close the connection after counts and report the branch/compute status. Stop and wait for the next approval.
+1. No new production database or paid snapshot was created.
+2. Neon metadata confirmed project `Tradify` (`green-art-19890518`), production branch `br-empty-wildflower-ahbsfyzr`, database `neondb`, role `tradify_app`, and endpoint `ep-sparkling-moon-ahtc0gbu`.
+3. The project owner metadata reports the Free plan (`free_v3`). For the 1 October–1 November usage window, the project counters showed 815 compute seconds and 2,924 active seconds; the endpoint's configured maximum is 2 CU. Even at that maximum, the reported active period is about 1.63 CU-hours, well below Neon Free's published 191.9 CU-hours per project per month. These are control-plane counters, not a final invoice.
+4. With the owner's conditional approval, one transaction began with `SET TRANSACTION READ ONLY`. A `current_setting('transaction_read_only')` result confirmed `on`. The transaction used only identity/count `SELECT`s. Results: `user_role` 53; `mt5_history` 31,722; `mt5_accounts` 21; `prop_firm_challenges` 8; `trade_journal` 1. Subscription tiers: ELITE 8, FREE 18, PRO 27 (one PRO row has `founding_member_access`; the other 26 have no status value). The four reference counts supplied earlier match.
+5. No customer-level rows or secrets were selected. No roles, records, schemas, or permissions were changed. No snapshot, migration, seed, application, or worker was used.
+6. The endpoint was still reported `active` 85 seconds after its last recorded activity, despite a zero-second suspend-time setting. No manual suspend/restart was performed. Stop further production activity and obtain separate approval before any endpoint-management action.
 
 ### Stage B — prepare the Replit release candidate (no production traffic)
 
@@ -177,7 +178,7 @@ Only configuration names and secret-presence metadata were inspected; secret val
 ### Cost
 
 - Replit Autoscale is usage-based. Replit's published Autoscale rate is **$0.60 per million compute units**, with account-plan credits affecting the bill. This account's plan, credits, and actual monthly use were not inspected. No Replit deployment was active during this review.
-- Neon documents a Free plan with **191.9 compute hours per project per month** and scale-to-zero behavior; the owner's current plan, remaining allowance, and cost of waking the archived production branch are **not verified**. No snapshot, upgrade, or production compute wake occurred.
+- Neon documents a Free plan with **191.9 CU-hours per project per month**. The project metadata reports Free (`free_v3`) and low current-period usage as detailed in Stage A. The read-only query did wake the endpoint; it was still reported `active` after 85 seconds, so compute status should be rechecked in the Neon console before any further use. No snapshot or upgrade occurred.
 - The old Google Cloud resource's billing status is unknown; no Google Cloud account was available.
 
 References:
@@ -193,9 +194,9 @@ References:
 
 1. The current public HTTPS endpoint fails TLS from this environment and its owning Google Cloud service is unidentified.
 2. No Replit production deployment exists, and a Vercel deployment cannot be ruled out from workspace metadata alone.
-3. The original production Neon branch identity and Free-plan compute allowance have not been verified; no production connection was made.
+3. The original Neon identity and read-only record counts are verified, but the production `DATABASE_URL` secret's mapping to that branch remains unverified; Neon still reported the endpoint active after the check.
 4. Production email configuration is not ready/verified, and the production Stripe webhook secret and PayPal client secret are absent from secret metadata.
 5. The production-reachable Replit object-storage dependency chain has unresolved moderate audit findings.
-6. No production smoke test, live payment, email, DNS cutover, or worker test is authorized or completed.
+6. No production application startup, smoke test, live payment, email, DNS cutover, or worker test is authorized or completed.
 
-The next safe step is a narrowly scoped, read-only identity/count check against the existing Neon production branch, only after the owner approves waking compute and only if the Free allowance is confirmed. No other production action is implied by that approval.
+The approved read-only identity/count check is complete. No further Neon operation, database write, endpoint change, deployment, DNS edit, or activation of email, payment processing, or workers is approved by that check.
