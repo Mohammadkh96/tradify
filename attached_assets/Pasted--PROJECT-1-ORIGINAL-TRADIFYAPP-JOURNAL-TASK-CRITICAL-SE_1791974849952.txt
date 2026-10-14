@@ -1,0 +1,172 @@
+# PROJECT 1 — ORIGINAL TRADIFYAPP JOURNAL
+## TASK: CRITICAL SECURITY REMEDIATION AND ZERO-AI-RUNTIME ENFORCEMENT
+
+Domain: tradifyapp.com
+
+I reviewed the production-readiness audit.
+
+I authorize DEVELOPMENT-ONLY source-code security fixes and regression testing.
+
+Do not publish or modify production.
+
+The audit identified serious access-control vulnerabilities that must be fixed before restoring the application.
+
+### PRIORITY 1 — Fix critical API authorization vulnerabilities
+
+1. GET /api/user/role
+
+- Require authenticated sessions and server-side authorization.
+- Never trust a supplied user ID as proof of identity.
+- Return only the fields required by the customer interface.
+- Never expose password hashes, MT5 sync tokens, reset tokens, verification tokens, payment-provider secrets or other sensitive internal fields.
+- Remove any hard-coded administrator identity or automatic OWNER/PRO privilege assignment.
+- Preserve legitimate staff functionality with explicit role checks.
+
+2. POST /api/user/upgrade-dev
+
+- Remove the insecure subscription-upgrade behavior.
+- The route must never grant PRO privileges in production.
+- Prefer deleting the route if unused.
+- If development testing requires it, use an isolated test helper with explicit development-only authorization, never a client-supplied x-user-id alone.
+- Confirm that normal paid upgrades occur only through verified, authorized billing logic.
+
+3. GET /api/mt5/status/:userId
+4. GET /api/mt5/snapshots/:userId
+
+- Require authentication.
+- Enforce ownership checks or narrowly scoped administrative authorization.
+- Prevent one customer from accessing another customer's account information.
+- Return only necessary account fields.
+
+5. POST /api/mt5/sync
+
+- Require a previously provisioned, valid synchronization credential associated with the intended account/user.
+- Reject missing, empty, unknown and mismatched credentials.
+- Never enroll a new credential simply because the stored token is empty.
+- Preserve compatibility with legitimate existing MT5 synchronization clients where securely possible.
+- If correcting the issue requires re-enrollment or changing the MT5 bridge protocol, document it and ask before implementing that migration.
+
+### PRIORITY 2 — Audit other routes for similar vulnerabilities
+
+Review all customer, Admin, billing, MT5, journal, subscription, backup, challenge and risk-related API routes.
+
+Find any endpoints that trust:
+- Client-supplied user IDs.
+- Unverified identity headers.
+- Unauthenticated parameters.
+- Client-supplied roles or subscription tiers.
+- Insecure development bypasses.
+
+Enforce object-level authorization, role checks and least-privilege data responses.
+
+Do not merely hide vulnerable frontend controls. Fix authorization in the backend.
+
+### PRIORITY 3 — Remove unwanted AI runtime costs
+
+The latest audit found AI completion calls still present.
+
+My requirement remains:
+
+ZERO GENERATIVE AI RUNTIME USAGE.
+
+Please:
+
+- Inventory every AI SDK, API call, endpoint, background job and fallback.
+- Remove or safely disable runtime inference.
+- Prevent AI-related background or asynchronous jobs from making paid requests.
+- Remove runtime dependence on OpenAI or other paid inference providers.
+- Preserve useful deterministic analytics, risk calculations, MT5 performance reporting and prop-firm monitoring.
+- Replace AI-only user-interface functionality with truthful disabled or non-AI alternatives where appropriate.
+- Add regression checks proving no reachable runtime path can call paid AI services.
+
+Do not delete customer data.
+
+### PRIORITY 4 — Fix database transport security
+
+Review the database TLS configuration using rejectUnauthorized: false.
+
+Determine why certificate validation was disabled.
+
+Implement secure certificate validation appropriate for Neon and the deployment environment.
+
+Test connectivity only against the isolated development database.
+
+Do not access or wake production Neon.
+
+### PRIORITY 5 — Runtime dependency remediation
+
+Investigate the high-risk production dependency findings.
+
+Prioritize:
+- drizzle-orm
+- nodemailer
+- archiver and its dependency chain
+- Any other genuinely reachable high-severity package
+
+Apply compatible fixes where possible.
+
+Use targeted upgrades and regression tests rather than blindly updating all dependencies to new major versions.
+
+Explain any findings that cannot be safely fixed immediately.
+
+### PRIORITY 6 — Comprehensive testing
+
+Use ONLY the isolated development database and synthetic test users.
+
+Create tests that confirm:
+
+- Unauthenticated requests are rejected.
+- User A cannot access User B's private records.
+- Ordinary users cannot perform Admin operations.
+- Development endpoints cannot grant production subscription access.
+- MT5 synchronization rejects invalid, missing and mismatched credentials.
+- Legitimate customer authentication and MT5 synchronization still work.
+- Existing Journal features and subscriptions remain functional.
+- No sensitive tokens appear in API responses.
+- No AI provider calls are reachable.
+
+Test login, registration, journal, MT5, prop-firm challenges, analytics, Admin authorization and existing billing logic using mocks or test environments.
+
+Run npm run check, npm run build and applicable automated tests.
+
+### PRIORITY 7 — Determine whether production is exposed
+
+Perform a safe, non-invasive investigation of where tradifyapp.com currently points and which deployment owns the public domain.
+
+Do not submit customer IDs, probe sensitive API responses or attempt exploitation.
+
+Report whether the vulnerable code version could currently be public. If confirmed, report urgent containment options before any production changes.
+
+### CRITICAL RESTRICTIONS
+
+- Do not publish or deploy.
+- Do not modify DNS.
+- Do not wake or query production Neon.
+- Do not create paid database snapshots.
+- Do not create a new database.
+- Do not modify customer records.
+- Do not execute production migrations.
+- Do not enable SMTP, payments, MT5 background jobs or other workers.
+- Do not modify Tradify Signals or Tradigo.
+- Preserve the completed Tradify branding work.
+
+### DELIVERABLES
+
+Provide:
+
+1. Complete list of vulnerabilities found.
+2. Exact fixes implemented.
+3. Security regression test results.
+4. Confirmation of AI runtime removal.
+5. Dependency security status.
+6. Confirmation that existing customer functionality is preserved.
+7. List of modified files.
+8. Git commit hash.
+9. Remaining production blockers.
+10. Updated GO / NO-GO assessment.
+
+Commit only the verified development fixes.
+
+Do not stop after another audit. Implement the safe fixes that can be completed in development.
+
+Ask for approval only where a fix requires a production action, paid resource, migration or breaking change to an external integration.
