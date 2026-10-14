@@ -1,0 +1,184 @@
+# PROJECT 1 — TRADIFYAPP JOURNAL
+## Tradify Ecosystem: Phase 1 — Brand and Website Integration
+
+Domain: https://tradifyapp.com
+
+We have completed our initial Tradify ecosystem architecture documentation.
+
+Our company ecosystem consists of:
+
+1. Tradify Journal — Existing trading journal and performance platform.
+2. Tradify Signals — Separate algorithmic signals product at https://signals.tradifyapp.com.
+3. Tradigo — Future coaching marketplace.
+
+The goal is to establish one professional Tradify brand while keeping each product independently deployable.
+
+## STEP 1 — Review the Existing Architecture
+
+Read:
+
+- docs/TRADIFY_ECOSYSTEM.md
+- docs/INTEGRATION_CONTRACTS.md
+
+Audit the current marketing website, navigation, branding, landing page, pricing sections, registration entry points, and existing customer dashboard.
+
+Preserve all Journal functionality.
+
+Do not assume the Signals project uses the same authentication, subscriptions, or database.
+
+Provide the contents of INTEGRATION_CONTRACTS.md for external architecture review, excluding any sensitive credentials.
+
+## STEP 2 — Design the Parent Tradify Brand
+
+Prepare a unified branding proposal for the ecosystem.
+
+The parent brand will be Tradify.
+
+The products will be:
+
+- Tradify Journal
+- Tradify Signals
+- Future Tradigo
+
+Create a consistent design system covering:
+
+- Brand identity.
+- Primary and secondary colors.
+- Typography.
+- Buttons.
+- Navigation.
+- Product cards.
+- Headers and footers.
+- Mobile-responsive behavior.
+- Shared components where appropriate.
+
+Preserve the recognizable existing Tradify Journal identity where possible.
+
+Do not perform a wholesale visual redesign without approval.
+
+Document proposed shared design tokens so the independent Signals project can reproduce them.
+
+## STEP 3 — Introduce Both Products on the Website
+
+Prepare enhancements to the public TradifyApp website.
+
+### Homepage
+
+Introduce the wider Tradify ecosystem without removing the existing Journal marketing content.
+
+Explain that Tradify provides tools for:
+
+- Trading performance analysis.
+- MT5 trade tracking.
+- Prop-firm challenge monitoring.
+- Risk management.
+- Algorithmic market signals.
+- Trading notifications.
+
+Add a professional product showcase:
+
+**Tradify Journal**
+Track performance, synchronize trading accounts, monitor risk and analyze trading results.
+
+**Tradify Signals**
+Follow algorithmic trading strategies, monitor entries and targets, and access trading signal updates.
+
+Each product should have a clearly identified call to action.
+
+Journal links should retain their existing destination.
+
+Signals links should point to https://signals.tradifyapp.com once the destination is confirmed working.
+
+### Navigation
+
+Prepare a Products menu containing:
+
+- Tradify Journal
+- Tradify Signals
+
+Reserve future extensibility for Tradigo without displaying it as an available product.
+
+Do not change existing login routes, user dashboard routes, or authenticated navigation unexpectedly.
+
+### Footer
+
+Add clear ecosystem links, product descriptions, and relevant legal navigation.
+
+## STEP 4 — Prepare Combined Pricing
+
+Design a pricing presentation supporting:
+
+- Journal Only
+- Signals Only
+- Tradify Complete — Journal + Signals
+
+IMPORTANT:
+
+Do not activate combined billing.
+
+Do not invent pricing.
+
+Do not create discounts, checkout sessions, or subscription entitlements.
+
+Do not modify existing Stripe or PayPal integrations.
+
+First identify current Journal subscription tiers and document how a future bundle might work.
+
+Mark combined pricing as a proposal until both products have an approved billing contract.
+
+## STEP 5 — Preserve Existing Journal Operations
+
+Do not modify:
+
+- Original Neon production database.
+- MT5 synchronization.
+- Customer records.
+- Trading history.
+- Prop-firm challenges.
+- Risk calculations.
+- Existing paid subscriptions.
+- Stripe or PayPal webhooks.
+- Background workers.
+- Domain DNS configuration.
+
+Do not introduce AI inference functionality.
+
+The Journal production restoration remains a separate priority.
+
+## STEP 6 — Implementation Approach
+
+First provide:
+
+1. Current website design audit.
+2. Proposed unified branding.
+3. Existing design components that can be reused.
+4. Homepage and navigation changes.
+5. Pricing presentation proposal.
+6. Potential compatibility risks.
+
+Then implement approved, non-destructive branding and navigation changes in the development environment.
+
+Do not publish to production.
+
+Run applicable typechecks, builds and visual tests.
+
+Use temporary-safe navigation behavior if Signals production is not ready.
+
+## FINAL DELIVERABLES
+
+Provide:
+
+- Development preview URL.
+- Updated homepage and navigation preview.
+- Unified design tokens.
+- Proposed pricing presentation.
+- List of modified files.
+- Test results.
+- Integration contract document for comparison.
+- Cross-project handoff instructions for Tradify Signals.
+
+Do not modify the Signals repository or database.
+
+Do not publish, create paid deployments, activate workers or modify production without explicit approval.
+
+The success criterion is that TradifyApp presents a coherent multi-product brand while preserving the original Journal customer experience.
