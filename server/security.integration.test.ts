@@ -7,6 +7,7 @@ import Stripe from "stripe";
 import { registerRoutes } from "./routes";
 import { pool as applicationPool } from "./db";
 import { paypalService } from "./paypalService";
+import { capturePaypalOrder } from "./paypal";
 
 const { isolatedEmailService } = vi.hoisted(() => ({
   isolatedEmailService: new Proxy({}, {
@@ -403,6 +404,40 @@ describe("application security boundaries against a disposable local PostgreSQL 
         subscriptionTier: "PRO",
         subscriptionStatus: "cancelled",
       });
+
+      await testPool.query(
+        `UPDATE user_role
+         SET subscription_tier = 'FREE',
+             subscription_status = NULL,
+             founding_member = FALSE,
+             founding_member_pro_expiry = NULL,
+             subscription_provider = NULL,
+             paypal_subscription_id = NULL
+         WHERE user_id = $1`,
+        [aliceEmail],
+      );
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+      vi.mocked(capturePaypalOrder).mockImplementationOnce(async (_req, res) => {
+        res.status(200).json({ status: "COMPLETED", id: `ORDER-${testRunId}` });
+      });
+      try {
+        const completedOneTimeOrder = await request(
+          `/api/paypal/order/ORDER-${testRunId}/capture`,
+          { method: "POST", cookie: alice.cookie, json: {} },
+        );
+        expect(completedOneTimeOrder.status).toBe(200);
+        expect((await testPool.query(
+          "SELECT subscription_tier, subscription_status FROM user_role WHERE user_id = $1",
+          [aliceEmail],
+        )).rows[0]).toEqual({
+          subscription_tier: "FREE",
+          subscription_status: null,
+        });
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+        vi.mocked(capturePaypalOrder).mockReset();
+      }
     } finally {
       await testPool.query(
         `UPDATE user_role

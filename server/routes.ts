@@ -1176,29 +1176,8 @@ ${blogPosts.map(p => `  <url>
     if (process.env.NODE_ENV !== "production") {
       return res.status(503).json({ error: "PayPal order capture is disabled in development." });
     }
-    // Store the original json function to intercept the response
-    const originalJson = res.json.bind(res);
-    res.json = function(data: any) {
-      // If capture was successful (status COMPLETED), upgrade the user
-      if (data && data.status === 'COMPLETED') {
-        const userId = req.session.userId!;
-        storage.updateUserSubscriptionInfo(userId, {
-          subscriptionTier: 'PRO',
-          subscriptionProvider: 'paypal',
-          paypalSubscriptionId: data.id || null,
-        }).catch(err => console.error('Failed to upgrade user after PayPal payment:', err));
-
-        storage.getUserRole(userId).then(user => {
-          if (user) {
-            emailService.sendSubscriptionActivatedEmail(userId, user.fullName || "Trader", "Pro");
-            emailService.cancelActiveTrack(userId, 'free_user').catch(() => {});
-            emailService.cancelActiveTrack(userId, 'free_ongoing').catch(() => {});
-            emailService.queueProToEliteSequence(userId).catch(e => console.error('[DRIP] queueProToElite paypal order:', e));
-          }
-        }).catch(err => console.error('Failed to send subscription email:', err));
-      }
-      return originalJson(data);
-    };
+    // One-time order capture is not proof of a Tradify subscription. Only the
+    // provider-verified subscription activation/webhook paths may grant a tier.
     await capturePaypalOrder(req, res);
   });
 
