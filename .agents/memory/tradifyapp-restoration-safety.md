@@ -27,11 +27,11 @@ For isolated PostgreSQL smoke tests, initialize the temporary data directory wit
 
 **How to apply:** Check `initdb --version` and `postgres --version` before reusing a test data directory; create a fresh temporary cluster when the major versions differ.
 
-Treat Journal-local signal-provider and receiver tables as Journal data, not as records owned by the separate Tradify Signals product. Do not begin cross-product integration until both products' architecture reports are compared and the owners approve a versioned contract.
+Treat Journal-local signal-provider and receiver tables as Journal data, not as records owned by the separate Tradify Signals product. A Journal-only development prototype may be prepared behind default-off gates after the user approves a versioned contract; do not activate it or modify Signals before the counterpart and owners approve the contract.
 
-**Why:** Similar naming does not establish shared data ownership or an existing integration; the user requires report comparison before development.
+**Why:** Similar naming does not establish shared data ownership or an existing integration; the user authorized only a disabled Journal-side development implementation, not a live cross-product integration.
 
-**How to apply:** Keep Journal and Signals data/API boundaries explicit in future design work. Do not inspect or modify the Signals repository or database while working in this project.
+**How to apply:** Keep Journal and Signals data/API boundaries explicit. Do not inspect or modify the Signals repository or database; require counterpart review, consent UX, key rotation, and unlink/recovery decisions before activation.
 
 For ecosystem branding, the parent brand is Tradify; Tradify Journal retains its dark/emerald identity; Tradify Signals retains its existing navy/gold/teal identity; no cyan accent is approved; Tradigo remains reserved and unavailable.
 
@@ -50,3 +50,9 @@ Keep provider-verified Stripe and PayPal subscription updates active while new c
 **Why:** The user wants existing paid subscription changes to keep reconciling while new purchases remain blocked.
 
 **How to apply:** Do not treat `LIVE_BILLING_ENABLED=false` as a global webhook pause. Only add a separate entitlement-update gate if the user explicitly changes this decision.
+
+The user prioritizes functional development of Tradify Journal on isolated development data over repeating deployment audits. Keep Signals code and data untouched. A Journal-side linking prototype must remain disabled until the Signals counterpart is verified and the contract is approved.
+
+**Why:** The user explicitly redirected work toward functional Journal workflows and safe ecosystem integration preparation on 15 October 2026.
+
+**How to apply:** Fix and test Journal flows with synthetic accounts and local disposable databases first. Do not revisit production readiness unless a concrete blocker is required for the current feature; do not activate cross-product linking without approval.

@@ -9,11 +9,20 @@ import { pool as applicationPool } from "./db";
 import { paypalService } from "./paypalService";
 import { capturePaypalOrder } from "./paypal";
 
-const { isolatedEmailService } = vi.hoisted(() => ({
-  isolatedEmailService: new Proxy({}, {
-    get: () => vi.fn(async () => false),
-  }),
-}));
+const { isolatedEmailService, capturedPasswordResetLink } = vi.hoisted(() => {
+  const capturedPasswordResetLink = { value: "" };
+  return {
+    capturedPasswordResetLink,
+    isolatedEmailService: new Proxy({}, {
+      get: (_target, property: string | symbol) => vi.fn(async (...args: unknown[]) => {
+        if (property === "sendPasswordResetEmail" && typeof args[2] === "string") {
+          capturedPasswordResetLink.value = args[2];
+        }
+        return false;
+      }),
+    }),
+  };
+});
 
 vi.mock("./stripeClient", async () => {
   const stripeModule = await vi.importActual<typeof import("stripe")>("stripe");
@@ -53,6 +62,10 @@ const emailPrefix = `replit-security-${testRunId}`;
 const aliceEmail = `${emailPrefix}-alice@example.invalid`;
 const bobEmail = `${emailPrefix}-bob@example.invalid`;
 const adminEmail = `${emailPrefix}-admin@example.invalid`;
+const journalOwnerEmail = `${emailPrefix}-journal-owner@example.invalid`;
+const journalOtherEmail = `${emailPrefix}-journal-other@example.invalid`;
+const recoveryEmail = `${emailPrefix}-password-recovery@example.invalid`;
+const linkingEmail = `${emailPrefix}-account-linking@example.invalid`;
 const testPassword = "Local-only-security-test-password-1";
 const stripeWebhookSecret = "whsec_local_only_test";
 
@@ -101,10 +114,10 @@ async function registerAndVerify(email: string, fullName: string): Promise<void>
   expect(verification.headers.get("location")).toContain("verified=true");
 }
 
-async function login(email: string): Promise<{ cookie: string; user: any }> {
+async function login(email: string, password = testPassword): Promise<{ cookie: string; user: any }> {
   const response = await request("/api/auth/login", {
     method: "POST",
-    json: { email, password: testPassword },
+    json: { email, password },
   });
   expect(response.status).toBe(200);
   const setCookie = response.headers.get("set-cookie");
@@ -125,6 +138,8 @@ beforeAll(async () => {
   }
   const outboxMigration = await readFile("migrations/0001_background_jobs_and_email_outbox.sql", "utf8");
   await testPool.query(outboxMigration);
+  const productLinkingMigration = await readFile("migrations/0002_tradify_account_linking_v1.sql", "utf8");
+  await testPool.query(productLinkingMigration);
 
   const app = express();
   app.set("trust proxy", 1);
@@ -158,6 +173,93 @@ afterAll(async () => {
 });
 
 describe("application security boundaries against a disposable local PostgreSQL database", () => {
+  it("supports owner-scoped journal trade create, read, update, list, and delete", async () => {
+    await registerAndVerify(journalOwnerEmail, "Synthetic Journal Owner");
+    await registerAndVerify(journalOtherEmail, "Synthetic Journal Other");
+    const owner = await login(journalOwnerEmail);
+    const other = await login(journalOtherEmail);
+
+    const createdResponse = await request("/api/trades", {
+      method: "POST",
+      cookie: owner.cookie,
+      json: {
+        pair: "EURUSD",
+        direction: "Buy",
+        timeframe: "M15",
+        htfBias: "Bullish",
+        outcome: "Win",
+        netPl: "25.00",
+        notes: "Synthetic CRUD verification",
+      },
+    });
+    expect(createdResponse.status).toBe(201);
+    const created = await createdResponse.json();
+    const tradeId = Number(created.id);
+    expect(created).toMatchObject({
+      userId: journalOwnerEmail,
+      pair: "EURUSD",
+      direction: "Buy",
+      netPl: "25.00",
+    });
+
+    const ownerList = await request("/api/trades", { cookie: owner.cookie });
+    expect(ownerList.status).toBe(200);
+    expect(await ownerList.json()).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: tradeId })]),
+    );
+    const otherList = await request("/api/trades", { cookie: other.cookie });
+    expect(otherList.status).toBe(200);
+    expect(await otherList.json()).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: tradeId })]),
+    );
+
+    expect((await request(`/api/trades/${tradeId}`, { method: "PUT", json: { notes: "unauthenticated" } })).status).toBe(401);
+    expect((await request(`/api/trades/${tradeId}`, { method: "DELETE" })).status).toBe(401);
+    expect((await request(`/api/trades/${tradeId}`, { cookie: other.cookie })).status).toBe(403);
+    expect((await request(`/api/trades/${tradeId}`, {
+      method: "PUT",
+      cookie: other.cookie,
+      json: { notes: "cross-user mutation" },
+    })).status).toBe(404);
+    expect((await request(`/api/trades/${tradeId}`, {
+      method: "DELETE",
+      cookie: other.cookie,
+    })).status).toBe(404);
+
+    const updatedResponse = await request(`/api/trades/${tradeId}`, {
+      method: "PUT",
+      cookie: owner.cookie,
+      json: { notes: "Owner update confirmed", netPl: "30.00" },
+    });
+    expect(updatedResponse.status).toBe(200);
+    expect(await updatedResponse.json()).toMatchObject({
+      id: tradeId,
+      userId: journalOwnerEmail,
+      notes: "Owner update confirmed",
+      netPl: "30.00",
+    });
+
+    const heatmapResponse = await request("/api/analytics/heatmap?days=30", {
+      cookie: owner.cookie,
+    });
+    expect(heatmapResponse.status).toBe(200);
+    const heatmap = await heatmapResponse.json();
+    expect(heatmap.grid).toHaveLength(7);
+    expect(heatmap.grid.every((day: unknown[]) => day.length === 24)).toBe(true);
+    expect(heatmap.totalTrades).toBe(1);
+    const heatmapCells = heatmap.grid.flat();
+    expect(heatmapCells.reduce((total: number, cell: any) => total + cell.trades, 0)).toBe(1);
+    expect(heatmapCells.reduce((total: number, cell: any) => total + cell.wins, 0)).toBe(1);
+    expect(heatmapCells.reduce((total: number, cell: any) => total + cell.netPl, 0)).toBe(30);
+
+    const deletedResponse = await request(`/api/trades/${tradeId}`, {
+      method: "DELETE",
+      cookie: owner.cookie,
+    });
+    expect(deletedResponse.status).toBe(204);
+    expect((await request(`/api/trades/${tradeId}`, { cookie: owner.cookie })).status).toBe(404);
+  });
+
   it("requires email verification and returns no credential fields to the signed-in user", async () => {
     const registration = await request("/api/auth/register", {
       method: "POST",
@@ -229,6 +331,221 @@ describe("application security boundaries against a disposable local PostgreSQL 
     });
     expect(logout.status).toBe(200);
     expect((await request("/api/user", { cookie: alice.cookie })).status).toBe(401);
+  });
+
+  it("completes password recovery through a local email mock and consumes the reset token once", async () => {
+    await registerAndVerify(recoveryEmail, "Synthetic Recovery User");
+    capturedPasswordResetLink.value = "";
+
+    const requestReset = await request("/api/user/reset-password-request", {
+      method: "POST",
+      json: { email: recoveryEmail },
+    });
+    expect(requestReset.status).toBe(200);
+    expect(await requestReset.json()).toMatchObject({
+      message: "If an account exists with that email, a password reset link has been sent.",
+    });
+    expect(capturedPasswordResetLink.value).toContain("/reset-password?token=");
+
+    const resetUrl = new URL(capturedPasswordResetLink.value);
+    const token = resetUrl.searchParams.get("token");
+    expect(token).toMatch(/^[a-f0-9]{64}$/);
+    const { createHash } = await import("node:crypto");
+    const savedReset = await testPool.query<{
+      password_reset_token: string;
+      password_reset_expiry: Date;
+    }>(
+      "SELECT password_reset_token, password_reset_expiry FROM user_role WHERE user_id = $1",
+      [recoveryEmail],
+    );
+    expect(savedReset.rows[0]?.password_reset_token).toBe(
+      createHash("sha256").update(token!).digest("hex"),
+    );
+    expect(savedReset.rows[0]?.password_reset_expiry.getTime()).toBeGreaterThan(Date.now());
+
+    const newPassword = "Synthetic-recovery-password-2";
+    const completeReset = await request("/api/auth/reset-password-with-token", {
+      method: "POST",
+      json: { token, newPassword },
+    });
+    expect(completeReset.status).toBe(200);
+    expect(await completeReset.json()).toMatchObject({ success: true });
+
+    const consumedReset = await testPool.query<{
+      password_reset_token: string | null;
+      password_reset_expiry: Date | null;
+    }>(
+      "SELECT password_reset_token, password_reset_expiry FROM user_role WHERE user_id = $1",
+      [recoveryEmail],
+    );
+    expect(consumedReset.rows[0]).toMatchObject({
+      password_reset_token: null,
+      password_reset_expiry: null,
+    });
+    expect((await request("/api/auth/reset-password-with-token", {
+      method: "POST",
+      json: { token, newPassword },
+    })).status).toBe(400);
+
+    const oldPasswordLogin = await request("/api/auth/login", {
+      method: "POST",
+      json: { email: recoveryEmail, password: testPassword },
+    });
+    expect(oldPasswordLogin.status).toBe(401);
+    const recoveredSession = await login(recoveryEmail, newPassword);
+    expect((await request("/api/user", { cookie: recoveredSession.cookie })).status).toBe(200);
+    expect((await request("/api/logout", {
+      method: "POST",
+      cookie: recoveredSession.cookie,
+    })).status).toBe(200);
+    expect((await request("/api/user", { cookie: recoveredSession.cookie })).status).toBe(401);
+  });
+
+  it("keeps Signals linking disabled by default and requires a signed, consented, single-use assertion", async () => {
+    await registerAndVerify(linkingEmail, "Synthetic Linking User");
+    const journalSession = await login(linkingEmail);
+    const envKeys = [
+      "NODE_ENV",
+      "DEV_PRODUCT_LINKING_ENABLED",
+      "PRODUCT_LINKING_ENABLED",
+      "PRODUCT_LINKING_VERIFIED",
+      "TRADIFY_SIGNALS_ISSUER",
+      "TRADIFY_SIGNALS_KEY_ID",
+      "TRADIFY_SIGNALS_PUBLIC_KEY",
+    ] as const;
+    const savedEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+    const crypto = await import("node:crypto");
+    const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const issuer = "https://signals.test.invalid";
+    const keyId = "synthetic-key-1";
+    const consentVersion = "tradify-account-linking-v1";
+    const createAssertion = (claims: Record<string, unknown>) => {
+      const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: keyId })).toString("base64url");
+      const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
+      const signingInput = `${header}.${payload}`;
+      const signature = crypto.sign("RSA-SHA256", Buffer.from(signingInput), privateKey).toString("base64url");
+      return `${signingInput}.${signature}`;
+    };
+    const buildClaims = (authorizationCode: string, jti = crypto.randomUUID()) => {
+      const now = Math.floor(Date.now() / 1000);
+      return {
+        iss: issuer,
+        aud: "tradify-journal-link-v1",
+        sub: "signals-user-opaque-001",
+        iat: now,
+        exp: now + 90,
+        jti,
+        consent: true,
+        consent_at: now,
+        consent_version: consentVersion,
+        code_sha256: crypto.createHash("sha256").update(authorizationCode).digest("hex"),
+      };
+    };
+
+    try {
+      process.env.NODE_ENV = "test";
+      delete process.env.DEV_PRODUCT_LINKING_ENABLED;
+      expect((await request("/api/v1/product-links/signals", {
+        cookie: journalSession.cookie,
+      })).status).toBe(503);
+
+      process.env.NODE_ENV = "production";
+      process.env.PRODUCT_LINKING_ENABLED = "true";
+      process.env.PRODUCT_LINKING_VERIFIED = "false";
+      expect((await request("/api/v1/product-links/signals", {
+        cookie: journalSession.cookie,
+      })).status).toBe(503);
+
+      process.env.NODE_ENV = "test";
+      process.env.DEV_PRODUCT_LINKING_ENABLED = "true";
+      delete process.env.PRODUCT_LINKING_ENABLED;
+      delete process.env.PRODUCT_LINKING_VERIFIED;
+      process.env.TRADIFY_SIGNALS_ISSUER = issuer;
+      process.env.TRADIFY_SIGNALS_KEY_ID = keyId;
+      process.env.TRADIFY_SIGNALS_PUBLIC_KEY = publicKey.export({
+        type: "spki",
+        format: "pem",
+      }).toString();
+      expect((await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: journalSession.cookie,
+        json: { consent: false, consentVersion },
+      })).status).toBe(400);
+
+      const authorizationResponse = await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: journalSession.cookie,
+        json: { consent: true, consentVersion },
+      });
+      expect(authorizationResponse.status).toBe(201);
+      const authorization = await authorizationResponse.json();
+      expect(authorization.authorizationCode).toMatch(/^[a-f0-9]{64}$/);
+      expect(new Date(authorization.expiresAt).getTime()).toBeGreaterThan(Date.now());
+
+      const invalidAssertion = createAssertion({
+        ...buildClaims(authorization.authorizationCode),
+        code_sha256: crypto.createHash("sha256").update("not-the-authorization-code").digest("hex"),
+      });
+      expect((await request("/api/v1/product-links/signals/claim", {
+        method: "POST",
+        headers: { authorization: `Bearer ${invalidAssertion}` },
+        json: { authorizationCode: authorization.authorizationCode },
+      })).status).toBe(401);
+
+      const assertion = createAssertion(buildClaims(authorization.authorizationCode));
+      const claimResponse = await request("/api/v1/product-links/signals/claim", {
+        method: "POST",
+        headers: { authorization: `Bearer ${assertion}` },
+        json: { authorizationCode: authorization.authorizationCode },
+      });
+      expect(claimResponse.status).toBe(201);
+      const linked = await claimResponse.json();
+      expect(linked).toMatchObject({ status: "linked" });
+      expect(linked.linkId).toBeTruthy();
+      expect(JSON.stringify(linked)).not.toContain(linkingEmail);
+      expect(JSON.stringify(linked)).not.toContain("signals-user-opaque-001");
+
+      const replayedAssertion = await request("/api/v1/product-links/signals/claim", {
+        method: "POST",
+        headers: { authorization: `Bearer ${assertion}` },
+        json: { authorizationCode: authorization.authorizationCode },
+      });
+      expect(replayedAssertion.status).toBe(200);
+      expect(await replayedAssertion.json()).toMatchObject({ linkId: linked.linkId, status: "linked" });
+
+      const linkStatus = await request("/api/v1/product-links/signals", {
+        cookie: journalSession.cookie,
+      });
+      expect(linkStatus.status).toBe(200);
+      expect(await linkStatus.json()).toMatchObject({ linked: true });
+
+      const expiredAuthorizationResponse = await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: journalSession.cookie,
+        json: { consent: true, consentVersion },
+      });
+      const expiredAuthorization = await expiredAuthorizationResponse.json();
+      const expiredDigest = crypto.createHash("sha256").update(expiredAuthorization.authorizationCode).digest("hex");
+      await testPool.query(
+        `UPDATE product_link_authorizations
+         SET created_at = NOW() - INTERVAL '10 minutes',
+             expires_at = NOW() - INTERVAL '1 second'
+         WHERE authorization_code_sha256 = $1`,
+        [expiredDigest],
+      );
+      const expiredAssertion = createAssertion(buildClaims(expiredAuthorization.authorizationCode));
+      expect((await request("/api/v1/product-links/signals/claim", {
+        method: "POST",
+        headers: { authorization: `Bearer ${expiredAssertion}` },
+        json: { authorizationCode: expiredAuthorization.authorizationCode },
+      })).status).toBe(409);
+    } finally {
+      for (const key of envKeys) {
+        const value = savedEnv[key];
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
   });
 
   it("preserves legacy null-status PRO and labels new founding-member access explicitly", async () => {
@@ -584,6 +901,8 @@ describe("application security boundaries against a disposable local PostgreSQL 
     });
     expect(rejectedSync.status).toBe(403);
 
+    const syntheticTicket = `${testRunId}-MT5-1`;
+    const syncTime = Math.floor(Date.now() / 1000);
     const validSync = await request("/api/mt5/sync", {
       method: "POST",
       json: {
@@ -593,14 +912,27 @@ describe("application security boundaries against a disposable local PostgreSQL 
         broker: "Synthetic Broker",
         server: "Synthetic Demo",
         currency: "USD",
-        balance: 10000,
-        equity: 10000,
+        balance: 10012.5,
+        equity: 10012.5,
         margin: 0,
-        freeMargin: 10000,
+        freeMargin: 10012.5,
         marginLevel: 0,
         floatingPl: 0,
         leverage: 100,
-        history: [],
+        history: [{
+          ticket: syntheticTicket,
+          symbol: "EURUSD",
+          direction: "Buy",
+          volume: "0.25",
+          price: "1.08500",
+          open_time: syncTime - 3600,
+          close_time: syncTime - 1800,
+          profit: "12.50",
+          commission: "-1.00",
+          swap: "-0.25",
+          sl: "1.08000",
+          tp: "1.09500",
+        }],
         positions: [],
       },
     });
@@ -612,6 +944,30 @@ describe("application security boundaries against a disposable local PostgreSQL 
     expect(accounts.status).toBe(200);
     expect(await accounts.json()).toEqual(
       expect.arrayContaining([expect.objectContaining({ accountNumber: "SYNTHETIC-MT5-1" })]),
+    );
+
+    const historyResponse = await request(`/api/mt5/history/${encodeURIComponent(aliceEmail)}`, {
+      cookie: alice.cookie,
+    });
+    expect(historyResponse.status).toBe(200);
+    const importedHistory = await historyResponse.json();
+    expect(importedHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ticket: syntheticTicket,
+          userId: aliceEmail,
+          symbol: "EURUSD",
+          direction: "Buy",
+          volume: "0.25",
+          entryPrice: "1.08500",
+          exitPrice: "1.08500",
+          grossPl: "12.5",
+          commission: "-1",
+          swap: "-0.25",
+          netPl: "11.25",
+          mt5AccountId: "SYNTHETIC-MT5-1",
+        }),
+      ]),
     );
   });
 
@@ -634,6 +990,44 @@ describe("application security boundaries against a disposable local PostgreSQL 
     expect(created.status).toBe(201);
     const challenge = await created.json();
     const challengeId = challenge.id as number;
+
+    const riskCheck = await request("/api/prop-firm/risk-check", {
+      method: "POST",
+      cookie: alice.cookie,
+      json: {
+        challengeId,
+        tradeDirection: "Buy",
+        pair: "EURUSD",
+        entryPrice: "1.10000",
+        stopLoss: "1.04000",
+        lotSize: "1",
+        currentPl: "0",
+      },
+    });
+    expect(riskCheck.status).toBe(200);
+    const riskResult = await riskCheck.json();
+    expect(riskResult.metrics).toMatchObject({
+      dailyDDRemaining: 5000,
+      maxDDRemaining: 10000,
+    });
+    expect(riskResult.metrics.potentialLoss).toBeCloseTo(6000, 5);
+    expect(riskResult.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ level: "critical" }),
+      ]),
+    );
+    expect((await request("/api/prop-firm/risk-check", {
+      method: "POST",
+      cookie: bob.cookie,
+      json: {
+        challengeId,
+        tradeDirection: "Buy",
+        pair: "EURUSD",
+        entryPrice: "1.10000",
+        stopLoss: "1.04000",
+        lotSize: "1",
+      },
+    })).status).toBe(404);
 
     expect((await request(`/api/prop-firm/challenges/${challengeId}`, {
       cookie: alice.cookie,

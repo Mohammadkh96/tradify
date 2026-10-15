@@ -49,6 +49,7 @@ const openai: any = {
   },
 };
 import { authLimiter, passwordResetLimiter, aiLimiter, uploadLimiter, earlyAccessLimiter } from "./rateLimit";
+import { registerProductLinkingRoutes } from "./product-linking";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
 import { trackAIUsage, calculateCost, estimateTokensFromText } from "./ai-cost-tracker";
@@ -1407,10 +1408,14 @@ ${blogPosts.map(p => `  <url>
     }
   });
 
-  app.put(api.trades.update.path, async (req, res) => {
+  app.put(api.trades.update.path, requireAuth, async (req, res) => {
     try {
       const input = api.trades.update.input.parse(req.body);
-      const trade = await storage.updateTrade(Number(req.params.id), input);
+      const trade = await storage.updateTradeForUser(
+        Number(req.params.id),
+        req.session.userId!,
+        input,
+      );
       if (!trade) {
         return res.status(404).json({ message: 'Trade not found' });
       }
@@ -1426,8 +1431,12 @@ ${blogPosts.map(p => `  <url>
     }
   });
 
-  app.delete(api.trades.delete.path, async (req, res) => {
-    await storage.deleteTrade(Number(req.params.id));
+  app.delete(api.trades.delete.path, requireAuth, async (req, res) => {
+    const deleted = await storage.deleteTradeForUser(
+      Number(req.params.id),
+      req.session.userId!,
+    );
+    if (!deleted) return res.status(404).json({ message: "Trade not found" });
     res.status(204).send();
   });
 
@@ -9489,5 +9498,6 @@ Guidelines:
     }
   });
 
+  registerProductLinkingRoutes(app, requireAuth);
   return httpServer;
 }

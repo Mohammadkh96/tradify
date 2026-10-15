@@ -1,9 +1,9 @@
 # Tradify Integration Contracts
 
-**Status:** No cross-project contract is approved or implemented.
-**Last reviewed:** 14 October 2026
+**Status:** A Journal-only development implementation of account linking is proposed in `TRADIFY_ACCOUNT_LINKING_V1.md`; no cross-project contract is jointly approved or production-enabled.
+**Last reviewed:** 15 October 2026
 
-This document describes Journal interfaces verified in this repository and proposals for future review. Proposed items are not implementation permission. Compare this report with the Signals project's report before approving cross-product development.
+This document describes Journal interfaces verified in this repository and proposals for future review. The local account-linking implementation is disabled by default and does not authorize changes to the separate Signals project. Compare the contract with the Signals project's report before activation.
 
 ## Existing Journal interfaces
 
@@ -35,6 +35,10 @@ The Journal schema also contains provider-profile, receiver, provider-subscripti
 
 Consider a standards-based identity provider and versioned identity-claims contract. Products should map an external stable subject to their own local user records, require consent for account linking, and continue enforcing product-local authorization. Never share password hashes, session cookies, reset tokens, or secrets.
 
+### Journal/Signals account association
+
+The Journal-only development protocol is specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md). It associates opaque account identifiers after separate authentication and consent; it is not SSO. It remains disabled until Signals and both product owners approve the issuer, signing key/rotation, consent UX, and unlink/recovery lifecycle.
+
 ### Subscription bundles
 
 If bundles are introduced, define product-scoped entitlement claims and a signed/versioned event or API contract for grant, renewal, grace, cancellation, and refund. Journal remains the authority for Journal access; Signals remains the authority for Signals access. A bundle must not silently convert one product's tier into another's.
@@ -53,7 +57,7 @@ Navigation may link to the other product with clear product labels. Until SSO is
 
 ## Approval and compatibility checklist
 
-Before implementing any cross-project contract, jointly approve:
+Before exposing or activating any cross-project contract, jointly approve:
 
 1. The owning project, business purpose, data owner, and data minimization rules.
 2. Versioned request/response schemas, stable identifiers, idempotency, and error semantics.

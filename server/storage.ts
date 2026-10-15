@@ -72,7 +72,8 @@ export interface IStorage {
   getTrade(id: number): Promise<Trade | undefined>;
   createTrade(trade: InsertTrade): Promise<Trade>;
   updateTrade(id: number, updates: UpdateTradeRequest): Promise<Trade>;
-  deleteTrade(id: number): Promise<void>;
+  updateTradeForUser(id: number, userId: string, updates: UpdateTradeRequest): Promise<Trade | undefined>;
+  deleteTradeForUser(id: number, userId: string): Promise<boolean>;
   validateTradeRules(trade: InsertTrade): { valid: boolean; reason?: string; matchedSetup?: string; violations?: string[] };
   updateMT5Data(data: { 
     userId: string;
@@ -553,16 +554,33 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async deleteTrade(id: number): Promise<void> {
-    // Best-effort cleanup of attached chart in object storage before DB delete.
-    try {
-      const [row] = await db.select({ chartUrl: tradeJournal.chartUrl }).from(tradeJournal).where(eq(tradeJournal.id, id));
-      if (row?.chartUrl) {
+  async updateTradeForUser(
+    id: number,
+    userId: string,
+    updates: UpdateTradeRequest,
+  ): Promise<Trade | undefined> {
+    const [updated] = await db.update(tradeJournal)
+      .set(updates)
+      .where(and(eq(tradeJournal.id, id), eq(tradeJournal.userId, userId)))
+      .returning();
+    return updated;
+  }
+
+  async deleteTradeForUser(id: number, userId: string): Promise<boolean> {
+    const [deleted] = await db.delete(tradeJournal)
+      .where(and(eq(tradeJournal.id, id), eq(tradeJournal.userId, userId)))
+      .returning({ chartUrl: tradeJournal.chartUrl });
+    if (!deleted) return false;
+
+    if (deleted.chartUrl) {
+      try {
         const { deleteChart } = await import("./tradeChartStorage");
-        deleteChart(row.chartUrl).catch(() => {});
+        await deleteChart(deleted.chartUrl);
+      } catch {
+        // The database deletion is authoritative; chart cleanup is best effort.
       }
-    } catch { /* ignore — never block trade deletion on storage hiccup */ }
-    await db.delete(tradeJournal).where(eq(tradeJournal.id, id));
+    }
+    return true;
   }
 
   // Trader Hub Implementation
