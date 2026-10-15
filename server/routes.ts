@@ -5023,6 +5023,9 @@ End with: "Review your charts for current market structure."`;
   // Trigger password reset email for a user
   app.post("/api/admin/users/:userId/send-password-reset", requireAdmin, async (req, res) => {
     try {
+      if (!isProductionEmailReady()) {
+        return res.status(503).json({ message: "Password recovery is temporarily unavailable." });
+      }
       const targetUserId = decodeURIComponent(req.params.userId);
       const [user] = await db.select().from(schema.userRole).where(eq(schema.userRole.userId, targetUserId)).limit(1);
       if (!user) return res.status(404).json({ message: "User not found" });

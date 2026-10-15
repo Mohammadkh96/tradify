@@ -113,20 +113,24 @@ The separate `artifacts/mockup-sandbox` dependency tree is not included in Tradi
 
 ## 6. Production configuration readiness
 
-Only configuration names and secret-presence metadata were inspected; secret values were not accessed or printed.
+Only configuration names and secret-presence metadata were inspected; secret values were not accessed or printed. Replit documents production app secrets as separate from development secrets; they are configured in Publishing → Adjust settings → Production app secrets after the first publish, and their values remain hidden. This project is not published, so workspace secret presence does not establish what the eventual production deployment will receive.
 
 | Configuration | Current evidence | Restoration requirement |
 |---|---|---|
-| `DATABASE_URL` | Present as a production secret. Production code selects this name. Its value was not read, so it is not yet confirmed to point to the identified branch. | Preserve its existing value; verify the mapping without exposing it before deployment approval. Do not replace it with a new database. |
-| `NEON_DATABASE_URL` | Present as a secret; its value was not read or used for the approved check. | Preserve unchanged. |
-| `SESSION_SECRET` | Present as a production secret. | Preserve; never print or rotate during this recovery step. |
-| Stripe API access | Replit Stripe integration is installed/configured in the workspace; production connector credentials were not exercised. | Confirm the production connector context without creating a live checkout. The app also requires `STRIPE_WEBHOOK_SECRET`, which was not present in production secret metadata. |
-| PayPal | Shared config declares PayPal live mode and contains client/plan configuration (values withheld). `PAYPAL_CLIENT_SECRET` was not present in production secret metadata. | Verify `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, and the applicable `PAYPAL_*_PLAN_ID` values in the production environment. Keep live processing disabled until separately approved. |
-| Email | Code uses Gmail SMTP at `smtp.gmail.com:587`. `SMTP_USER`, `SMTP_APP_PASSWORD`, and `EMAIL_DELIVERY_ENABLED` were not declared in `.replit` or found in production secret metadata. | Configure the approved production mail account and `EMAIL_DELIVERY_ENABLED=true` only after approval. Until then, production verification/reset emails cannot be relied on. |
+| `DATABASE_URL` | Runtime-managed in this workspace; its value was not read. Production code selects this name, but workspace status does not establish the unpublished deployment's destination. | A production startup guard now parses it offline and refuses to start unless its Neon endpoint, database name, and role match the approved identity. Do not substitute a development URL or allow a database-provision/copy prompt. |
+| `NEON_DATABASE_URL` | Present as a workspace secret; its value was not read. It is not currently selected for production by `server/db.ts`. | Preserve unchanged. Do not assume it is the deployment secret or switch production to it without explicit review. |
+| `SESSION_SECRET` | Present in workspace secret metadata; no deployment-specific value can be confirmed before publication. | Set/confirm a distinct production value in Production app secrets after first publish. Never print or share it. |
+| Stripe webhook verification | Stripe integration is installed/configured in the workspace; `STRIPE_WEBHOOK_SECRET` is absent from secret metadata. | Provider events fail closed without a valid Stripe signature secret. Add the production signing secret only through the secure production settings after approval; do not enable new checkout as part of the first release. |
+| PayPal webhook verification | Shared config contains non-secret PayPal client/plan settings; `PAYPAL_CLIENT_SECRET` and `PAYPAL_WEBHOOK_ID` are absent from secret metadata. | Provider events fail closed without valid API credentials and webhook ID. Add production credentials through secure production settings after approval; keep checkout disabled. |
+| Email | Code uses Gmail SMTP at `smtp.gmail.com:587`. `SMTP_USER` and `SMTP_APP_PASSWORD` are absent from secret metadata; `EMAIL_DELIVERY_ENABLED=false`. | Keep mail disabled. Registration, verification resend, and self-service reset are unavailable until approved production SMTP credentials are configured and tested. |
 | Email links | `APP_URL` is declared in `.replit` (value withheld); `FROM_EMAIL` and `SUPPORT_EMAIL` have code defaults. | Confirm production links and sender configuration before enabling delivery. |
+| Safety switches | `.replit` production settings currently set `LIVE_BILLING_ENABLED=false`, `EMAIL_DELIVERY_ENABLED=false`, `MT5_SYNC_ENABLED=false`, and `BACKGROUND_JOBS_ENABLED=false`. | Keep all four false for the private restoration deployment. |
+| PayPal checkout settings | Shared config includes `PAYPAL_CLIENT_ID`, `PAYPAL_MODE`, `PAYPAL_PLAN_ID`, `PAYPAL_ELITE_PLAN_ID`, `PAYPAL_COACH_PLAN_ID`, `PAYPAL_PRO_ANNUAL_PLAN_ID`, `PAYPAL_ELITE_ANNUAL_PLAN_ID`, `PAYPAL_COACH_ANNUAL_PLAN_ID`, `PAYPAL_FM_PRO_PLAN_ID`, `PAYPAL_FM_ELITE_PLAN_ID`, `PAYPAL_FM_COACH_PLAN_ID`, `PAYPAL_FM_PRO_ANNUAL_PLAN_ID`, `PAYPAL_FM_ELITE_ANNUAL_PLAN_ID`, `PAYPAL_FM_COACH_ANNUAL_PLAN_ID`. Values are intentionally omitted. | These do not override `LIVE_BILLING_ENABLED=false`. Keep checkout disabled; verify production plan mapping before any separately approved activation. |
 | Worker | Separate command: `npm run jobs` (`node dist/worker.cjs`). | Keep it stopped. Start a worker and set `BACKGROUND_JOBS_ENABLED=true` only after explicit approval and a reviewed schedule. |
 
 `server/emailService.ts` sends only when the process is production, `EMAIL_DELIVERY_ENABLED` is exactly `"true"`, and both SMTP credentials are present. The current development test run disabled email and used test doubles. No real message was sent.
+
+For a first temporary deployment, choose **Workspace only** or **Invite only** in Publishing security settings before publishing. This restricts customer access but does not avoid hosting charges. External Stripe/PayPal webhooks will also be blocked from reaching a private deployment unless a production external-access token is configured and provided to the sender; do not create such a token or change provider endpoints without separate approval.
 
 ## 7. Staged restoration procedure
 
@@ -141,7 +145,7 @@ Only configuration names and secret-presence metadata were inspected; secret val
 
 ### Stage B — prepare the Replit release candidate (no production traffic)
 
-1. Keep the original `DATABASE_URL` unchanged and `DEV_DATABASE_URL` separate. Confirm the production secret points to the verified original Neon branch before any app deployment is approved.
+1. Keep `DEV_DATABASE_URL` separate. The production process uses `DATABASE_URL` and now validates the expected Neon endpoint, database, and role without connecting. If `DATABASE_URL` is runtime-managed to another database, the app will refuse to start; do not silently switch it or provision a replacement database.
 2. Use `npm run build`; the configured web command is `node ./dist/index.cjs`.
 3. Do not run `npm run db:migrate`, `npm run db:generate`, or startup schema repair. Check existing schema compatibility read-only first; any required schema change needs a separately reviewed migration and explicit approval.
 4. Keep `npm run jobs` stopped. Do not activate scheduled tasks, backup jobs, MT5 sync workers, or any external scheduler.
@@ -256,7 +260,9 @@ Current Replit documentation lists Autoscale charges of `$1/month` base, `$0.60 
 
 ### Production database URL verification without connecting
 
-No production secret value was read and the existing `DATABASE_URL` mapping remains unverified. At a separately approved time, run a no-network fingerprint in the intended production environment: parse `DATABASE_URL` in memory, print only its hostname/endpoint identifier, port, database name, and role, and compare those fields with the previously verified Neon project `green-art-19890518`, branch `br-empty-wildflower-ahbsfyzr`, endpoint `ep-sparkling-moon-ahtc0gbu`, database `neondb`, and role `tradify_app`. Never print the URL, password, query parameters, or full connection string. Stop on any mismatch. Only a later separately approved database-backed smoke test may open a connection and wake Neon compute.
+No production deployment secret value was read. The workspace shows `DATABASE_URL` as runtime-managed, and the project is unpublished. The application now has a no-network startup guard that parses the production `DATABASE_URL` in memory and compares its host to endpoint `ep-sparkling-moon-ahtc0gbu`, path to database `neondb`, and username to role `tradify_app`. It emits only the names of mismatching fields—never the URL, username, password, host, or query string—and refuses to start on any mismatch. Unit tests use synthetic URLs only. This check does not connect to Neon and cannot independently verify the Neon project/branch mapping; that mapping must be confirmed in Neon’s dashboard.
+
+Replit's documentation says Production app secrets are configured in **Publishing → Adjust settings → Production app secrets** after the first publish, and values remain hidden. If the owner later approves a first publish, choose **Workspace only** (or **Invite only**) and check that panel. If the existing production value cannot be confirmed or `DATABASE_URL` cannot be edited because it is runtime-managed, obtain the connection string directly from the Neon dashboard for the verified Tradify production branch and enter it only in the appropriate secure production setting. Never paste it into chat. If Replit will not accept it under `DATABASE_URL`, stop and request approval before changing the application to use a different, explicitly named production secret. Do not use `DEV_DATABASE_URL` as a fallback. Only a later separately approved read-only database check may connect to Neon and wake compute.
 
 ### Controlled restoration steps
 
@@ -266,11 +272,12 @@ No production secret value was read and the existing `DATABASE_URL` mapping rema
 
 1. Confirm access to the Namecheap DNS zone and identify any Google Cloud, Vercel, or other hosting account that may own the old endpoint. Do not share credentials; the owner can confirm the account/service and inspect it directly.
 2. Choose a Replit publishing geography before the first publish if the account permits it; Replit documents that geography cannot be changed after the first publish. No geography or account plan was inspected.
-3. Approve the offline production `DATABASE_URL` fingerprint. Approve separately before any request that would connect to production Neon or wake its compute.
-4. Approve publication to the generated Replit URL. Verify build health and production gates there before attaching `tradifyapp.com`.
-5. In Replit Publishing → Domains, add the domain and use only the exact A/TXT values Replit supplies. Configure `www` as Replit directs. At Namecheap, first record existing records and TTL; only then, with separate DNS approval, replace conflicting website records. Preserve mail/verification TXT records and retain Replit's required TXT record for certificate renewals.
-6. Wait for Replit's TLS certificate status to become valid before routing customers. Check root and `www` over HTTPS, login with an existing verified account, health/liveness, authentication, MT5-disabled response, and payment/email-disabled responses. A database-backed smoke test needs its own Neon-wake approval.
-7. Enable billing, email, MT5 sync, or jobs only through separate approvals after the relevant production credentials, webhooks, SMTP sender, and test procedures are verified. Do not enable them as part of the first restoration.
+3. Review the offline `DATABASE_URL` startup guard. Approve separately before any first private publish, which creates a production environment and may incur hosting charges.
+4. After an approved private first publish, check Production app secrets and confirm/re-enter the Neon URL securely. The app refuses startup on a target mismatch. Approve separately before any request that would connect to production Neon or wake its compute.
+5. Approve publication to the generated Replit URL. Verify build health and production gates there before attaching `tradifyapp.com`.
+6. In Replit Publishing → Domains, add the domain and use only the exact A/TXT values Replit supplies. Configure `www` as Replit directs. At Namecheap, first record existing records and TTL; only then, with separate DNS approval, replace conflicting website records. Preserve mail/verification TXT records and retain Replit's required TXT record for certificate renewals.
+7. Wait for Replit's TLS certificate status to become valid before routing customers. Check root and `www` over HTTPS, login with an existing verified account, health/liveness, authentication, MT5-disabled response, and payment/email-disabled responses. A database-backed smoke test needs its own Neon-wake approval.
+8. Enable billing, email, MT5 sync, or jobs only through separate approvals after the relevant production credentials, webhooks, SMTP sender, and test procedures are verified. Do not enable them as part of the first restoration.
 
 **Rollback:** before any DNS change, save the exact old records and TTL. If a Replit build fails, use Replit's prior successful deployment for rollback. If the app works but domain routing or TLS fails, correct the Replit-provided DNS values; do not assume restoring the old records restores service, because the current endpoint fails TLS and its owner is unknown. Any DNS rollback still requires explicit approval.
 

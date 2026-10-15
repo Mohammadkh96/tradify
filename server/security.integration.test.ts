@@ -672,6 +672,53 @@ describe("application security boundaries against a disposable local PostgreSQL 
       [adminEmail, "local-only-admin-key", "Disposable integration test"],
     );
 
+    const originalEnv = {
+      NODE_ENV: process.env.NODE_ENV,
+      EMAIL_DELIVERY_ENABLED: process.env.EMAIL_DELIVERY_ENABLED,
+      SMTP_USER: process.env.SMTP_USER,
+      SMTP_APP_PASSWORD: process.env.SMTP_APP_PASSWORD,
+    };
+    const resetStateBefore = await testPool.query<{
+      password_reset_token: string | null;
+      password_reset_expiry: Date | null;
+    }>(
+      "SELECT password_reset_token, password_reset_expiry FROM user_role WHERE user_id = $1",
+      [aliceEmail],
+    );
+    try {
+      process.env.NODE_ENV = "production";
+      process.env.EMAIL_DELIVERY_ENABLED = "false";
+      delete process.env.SMTP_USER;
+      delete process.env.SMTP_APP_PASSWORD;
+
+      const disabledAdminReset = await request(
+        `/api/admin/users/${encodeURIComponent(aliceEmail)}/send-password-reset`,
+        { method: "POST", cookie: admin.cookie },
+      );
+      expect(disabledAdminReset.status).toBe(503);
+      expect(await disabledAdminReset.json()).toMatchObject({
+        message: "Password recovery is temporarily unavailable.",
+      });
+      const resetStateAfter = await testPool.query<{
+        password_reset_token: string | null;
+        password_reset_expiry: Date | null;
+      }>(
+        "SELECT password_reset_token, password_reset_expiry FROM user_role WHERE user_id = $1",
+        [aliceEmail],
+      );
+      expect(resetStateAfter.rows[0]?.password_reset_token).toBe(
+        resetStateBefore.rows[0]?.password_reset_token,
+      );
+      expect(resetStateAfter.rows[0]?.password_reset_expiry?.getTime()).toBe(
+        resetStateBefore.rows[0]?.password_reset_expiry?.getTime(),
+      );
+    } finally {
+      for (const [key, value] of Object.entries(originalEnv)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+
     const blockedList = await request("/api/admin/users", { cookie: alice.cookie });
     expect(blockedList.status).toBe(403);
     const blockedPlanChange = await request("/api/admin/update-user", {

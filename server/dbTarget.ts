@@ -3,6 +3,10 @@ type DatabaseReference = {
   connectionString?: string;
 };
 
+const EXPECTED_PRODUCTION_ENDPOINT_ID = "ep-sparkling-moon-ahtc0gbu";
+const EXPECTED_PRODUCTION_DATABASE = "neondb";
+const EXPECTED_PRODUCTION_ROLE = "tradify_app";
+
 function normalizeConnectionString(value: string): URL {
   let cleaned = value.trim();
   if (cleaned.startsWith("psql ")) {
@@ -20,6 +24,30 @@ function normalizeConnectionString(value: string): URL {
     throw new Error("Database URL must use PostgreSQL; refusing to start.");
   }
   return parsed;
+}
+
+export function assertProductionDatabaseTarget(connectionString: string): void {
+  const url = normalizeConnectionString(connectionString);
+  const labels = url.hostname.toLowerCase().split(".");
+  const endpointLabel = labels[0];
+  const hostDomain = labels.slice(1).join(".");
+  const hostnameMatches =
+    (endpointLabel === EXPECTED_PRODUCTION_ENDPOINT_ID ||
+      endpointLabel === `${EXPECTED_PRODUCTION_ENDPOINT_ID}-pooler`) &&
+    hostDomain.endsWith(".neon.tech");
+  const database = decodeURIComponent(url.pathname.replace(/^\//, ""));
+  const role = decodeURIComponent(url.username);
+  const mismatches: string[] = [];
+
+  if (!hostnameMatches) mismatches.push("hostname");
+  if (database !== EXPECTED_PRODUCTION_DATABASE) mismatches.push("database name");
+  if (role !== EXPECTED_PRODUCTION_ROLE) mismatches.push("role");
+
+  if (mismatches.length > 0) {
+    throw new Error(
+      `Production database target mismatch (${mismatches.join(", ")}); refusing to start.`,
+    );
+  }
 }
 
 function databaseIdentity(connectionString: string): string {

@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
-import { assertNotProductionDatabase } from "./dbTarget";
+import { assertNotProductionDatabase, assertProductionDatabaseTarget } from "./dbTarget";
 
 const { Pool } = pg;
 
@@ -34,7 +34,11 @@ if (!connectionString) {
   );
 }
 
-if (nodeEnv !== "production") {
+if (nodeEnv === "production") {
+  // Offline, credential-safe identity check: never connect unless the runtime
+  // URL names the approved original Neon endpoint, database, and role.
+  assertProductionDatabaseTarget(connectionString);
+} else {
   assertNotProductionDatabase(connectionEnvName, connectionString, [
     { name: "DATABASE_URL", connectionString: cleanConnectionString(process.env.DATABASE_URL) },
     { name: "NEON_DATABASE_URL", connectionString: cleanConnectionString(process.env.NEON_DATABASE_URL) },

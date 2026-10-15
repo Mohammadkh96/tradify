@@ -1,5 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { assertNotProductionDatabase } from "./dbTarget";
+import { assertNotProductionDatabase, assertProductionDatabaseTarget } from "./dbTarget";
+
+describe("assertProductionDatabaseTarget", () => {
+  it("accepts the verified Neon endpoint with the expected database and role", () => {
+    expect(() =>
+      assertProductionDatabaseTarget(
+        "postgresql://tradify_app:synthetic-only@ep-sparkling-moon-ahtc0gbu-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require",
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects any target mismatch without echoing connection details", () => {
+    const wrongUrl =
+      "postgresql://wrong_role:synthetic-password@ep-other-endpoint.c-3.us-east-1.aws.neon.tech/otherdb";
+    let errorMessage = "";
+    try {
+      assertProductionDatabaseTarget(wrongUrl);
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : String(error);
+    }
+
+    expect(errorMessage).toBe(
+      "Production database target mismatch (hostname, database name, role); refusing to start.",
+    );
+    expect(errorMessage).not.toContain("synthetic-password");
+    expect(errorMessage).not.toContain("ep-other-endpoint");
+  });
+
+  it("rejects non-Neon hosts even if the endpoint label looks right", () => {
+    expect(() =>
+      assertProductionDatabaseTarget(
+        "postgresql://tradify_app:synthetic-only@ep-sparkling-moon-ahtc0gbu.attacker.example/neondb",
+      ),
+    ).toThrow("Production database target mismatch (hostname); refusing to start.");
+  });
+});
 
 describe("assertNotProductionDatabase", () => {
   const productionUrl = "postgresql://prod:secret@ep-main-pooler.c-1.aws.neon.tech/prod";
