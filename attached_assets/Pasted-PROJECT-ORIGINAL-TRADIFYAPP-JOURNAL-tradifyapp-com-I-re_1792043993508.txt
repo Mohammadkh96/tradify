@@ -1,0 +1,50 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL — tradifyapp.com
+
+I reviewed the final pre-deployment report.
+
+The build and security tests are accepted. I do not authorize publishing or paid hosting yet.
+
+Please complete the remaining ZERO-COST pre-deployment work.
+
+1. Fix the Admin password-reset action so it cannot create a new reset token or report successful email delivery while EMAIL_DELIVERY_ENABLED=false. Add a regression test.
+
+2. Prepare a secure, offline DATABASE_URL verification method that can compare the configured production database hostname, database name, and role with my verified original Neon connection.
+
+Expected:
+- Project: Tradify
+- Branch: production
+- Database: neondb
+- Role: tradify_app
+- Endpoint ID: ep-sparkling-moon-ahtc0gbu
+
+Do not print the connection string, password, tokens, or other credentials.
+
+Do not connect to Neon or execute database queries.
+
+Do not silently substitute DEV_DATABASE_URL for production.
+
+If production Secrets cannot be inspected safely in this environment, give me instructions for verifying the target myself in the Replit Secrets interface or re-entering the correct connection string securely. Do not assume a workspace secret is identical to a deployment secret.
+
+3. Confirm how the temporary Replit deployment can initially be restricted from public customer use while preserving the existing production database.
+
+4. Confirm that verified Stripe/PayPal events cannot be accepted without valid provider-verification credentials.
+
+5. Prepare the exact production environment-variable checklist and identify which missing values prevent existing customers from using the app safely.
+
+6. Preserve the existing original Neon database and the latest security, entitlement and branding fixes.
+
+7. Commit any verified development fixes and provide the final commit hash.
+
+IMPORTANT:
+- No production publishing.
+- No paid hosting.
+- No DNS changes.
+- No Neon database connections or writes.
+- No new database.
+- No live payment or email activation.
+- No background jobs or MT5 automation.
+- Do not touch Tradify Signals.
+
+Do not repeat the entire architecture audit.
+
+Stop when the pre-deployment fixes and instructions are ready. I will separately confirm my Replit credits and approve any deployment.
