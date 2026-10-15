@@ -194,14 +194,14 @@ content_type = "text/markdown"
 id = "2zuick9JtV1nlXZ5Ry38j"
 uri = "file://docs/TRADIFY_ACCOUNT_LINKING_V1.md"
 type = "text"
-title = "Tradify Journal–Signals Account-Linking Contract v1"
-description = "Development-only contract and Signals handoff. Linking remains disabled until counterpart review and approval."
+title = "Tradify Journal–Signals Account-Linking V1 Contract"
+description = "Revised implementation-ready proposal for Signals review. Linking remains disabled; no migration or production change is authorized."
 logical_id = "e0f3580d-7c10-46ca-9302-b017149e0986"
-content_hash = "sha256:f60251cd6994ea38c8cf8649e55312d5efdde795777f91041860f1dd1e214a38"
-size = 7901
-mtime_ms = 1792047444751
-storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/e0f3580d-7c10-46ca-9302-b017149e0986/e9d5b22d-6893-445a-88fd-53a6d32bd16f"
-storage_version_token = "1792047490881480"
+content_hash = "sha256:54dc9e8cdc3da7f05a5e5817c61d41b28a582aec077fdc888e6dabd0673367bd"
+size = 38388
+mtime_ms = 1792051835420
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/e0f3580d-7c10-46ca-9302-b017149e0986/5604a866-c34f-4945-86bc-af57b376946a"
+storage_version_token = "1792051878387126"
 content_type = "text/markdown"
 
 [[outputs]]
@@ -217,3 +217,115 @@ mtime_ms = 1792046556135
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/55ef3c99-fa56-4974-ad6d-c296b54cef75/88c1b3f3-969e-4ccb-accb-565f1139c56a"
 storage_version_token = "1792047492099532"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "en8mFmhNp6_-h9vh5k5_j"
+uri = "file://generated-artifacts/journal-authenticated/01-dashboard-authenticated.png"
+type = "image"
+title = "Authenticated Journal dashboard"
+description = "Real signed-in development browser capture using a synthetic account and isolated development data."
+logical_id = "8868571f-da75-4e32-afc3-59f5ba2f980c"
+content_hash = "sha256:077587265a03a9bf1d02561a0dba9022be1b2a0f2e61a173374be7aa5231e463"
+size = 146242
+mtime_ms = 1792050494964
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/8868571f-da75-4e32-afc3-59f5ba2f980c/cc326fc5-5707-4a89-8345-48133de4cbcb"
+storage_version_token = "1792050673816715"
+content_type = "image/png"
+
+[[outputs]]
+id = "IVc4r8SybF2JSR6xJxem_"
+uri = "file://generated-artifacts/journal-authenticated/02-journal-mt5-history.png"
+type = "image"
+title = "Journal with imported MT5 history"
+description = "Synthetic MT5 history is visible and read-only in the Journal."
+logical_id = "6de83777-6f00-4767-bbba-fcf12df02e15"
+content_hash = "sha256:d36558d08c2e15b5f5edcab66d345e71cd3914e6002cd8eb02813f4beec3ba3e"
+size = 115475
+mtime_ms = 1792050495736
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/6de83777-6f00-4767-bbba-fcf12df02e15/5b36ca1a-3f14-4efb-8bae-ba38cae3eb37"
+storage_version_token = "1792050675471695"
+content_type = "image/png"
+
+[[outputs]]
+id = "IXYpWkTKnKuQbClLj5OLS"
+uri = "file://generated-artifacts/journal-authenticated/03-journal-trade-created.png"
+type = "image"
+title = "Journal trade created"
+description = "A synthetic manual EURUSD trade is shown beside the imported MT5 row."
+logical_id = "8e80d497-145d-4d23-b95a-d44e29a983e2"
+content_hash = "sha256:eaca10f3f76659fb24948a47f42750791a232e73ee3a10369beea55549761b9e"
+size = 128614
+mtime_ms = 1792050497248
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/8e80d497-145d-4d23-b95a-d44e29a983e2/706056a5-49df-41ec-bd86-7a4f1d535f36"
+storage_version_token = "1792050677160608"
+content_type = "image/png"
+
+[[outputs]]
+id = "XveZQ3vf1fUeOB3nUqpm_"
+uri = "file://generated-artifacts/journal-authenticated/04-journal-trade-edited.png"
+type = "image"
+title = "Journal trade edited"
+description = "The synthetic manual trade edit is persisted and displayed; the MT5 row remains unchanged."
+logical_id = "93b942ad-089a-42db-bf2f-a4a6d5b568f3"
+content_hash = "sha256:962a5870d4adef7d7e46f7708745cc51fe51886885fabf154e12070bc7b4ebeb"
+size = 129706
+mtime_ms = 1792050498228
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/93b942ad-089a-42db-bf2f-a4a6d5b568f3/4f200ff4-fef8-4dd1-851c-3b348b6b2113"
+storage_version_token = "1792050678948832"
+content_type = "image/png"
+
+[[outputs]]
+id = "n16cc7YCfwW5Smp2vFai0"
+uri = "file://generated-artifacts/journal-authenticated/05-dashboard-analytics-updated.png"
+type = "image"
+title = "Dashboard analytics after trade edit"
+description = "Dashboard totals and equity curve reflect the synthetic edited trade."
+logical_id = "bdccc1ee-86ca-4364-9fce-51d7c10708c1"
+content_hash = "sha256:94c98f5a181646cb251ab13f7babb0a0deacdf63cad1f5724360b3fee48da494"
+size = 148311
+mtime_ms = 1792050501900
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/bdccc1ee-86ca-4364-9fce-51d7c10708c1/1d1bda71-852b-4e24-9f59-d05f022595db"
+storage_version_token = "1792050680822224"
+content_type = "image/png"
+
+[[outputs]]
+id = "LB_0qyqD0SLePaZu9St_6"
+uri = "file://generated-artifacts/journal-authenticated/06-prop-firm-challenge.png"
+type = "image"
+title = "Prop-firm challenge"
+description = "Authenticated challenge view with a synthetic development-only challenge."
+logical_id = "54a8d89e-f058-415e-b904-cff9446af5cd"
+content_hash = "sha256:32f368de4da27b854b2cb239a3127fbd5d9d1a8c1ecc38cf2f631a7bf497cb62"
+size = 77250
+mtime_ms = 1792050502536
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/54a8d89e-f058-415e-b904-cff9446af5cd/cfee3a63-7cd6-4e45-a7cf-6850c17d2623"
+storage_version_token = "1792050682264775"
+content_type = "image/png"
+
+[[outputs]]
+id = "IGQ-6dEGBGvmtMA2PIiRq"
+uri = "file://generated-artifacts/journal-authenticated/07-mt5-bridge.png"
+type = "image"
+title = "MT5 bridge"
+description = "Authenticated bridge view; the connected account shown is a synthetic fixture, not a live MT5 sync."
+logical_id = "470910b3-0e8a-4bb6-9705-e90e26c442d8"
+content_hash = "sha256:f9669b86bbdd6c173e8ab76c041a2b799f1536db47b2c6d03418ee0476b8a697"
+size = 131094
+mtime_ms = 1792050503968
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/470910b3-0e8a-4bb6-9705-e90e26c442d8/a77d4a83-89a7-4409-b74a-ce469987ad4f"
+storage_version_token = "1792050684082048"
+content_type = "image/png"
+
+[[outputs]]
+id = "3iCGkQ-ghlWGO5vJGrDbl"
+uri = "file://generated-artifacts/journal-authenticated/08-journal-mobile-after-delete.png"
+type = "image"
+title = "Mobile Journal after trade deletion"
+description = "402×874 mobile capture confirms the deleted manual trade is absent and the remaining imported row is shown."
+logical_id = "428361ca-d4ca-4fba-a8a0-9bbaef8e8f49"
+content_hash = "sha256:8164de19138999ee1fe2d7b69f169731746e60c2ccd10964fbce4938ffaf56f2"
+size = 52960
+mtime_ms = 1792050506112
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/428361ca-d4ca-4fba-a8a0-9bbaef8e8f49/893f3b69-1726-4521-a602-a2a09c31ac0e"
+storage_version_token = "1792050685503863"
+content_type = "image/png"

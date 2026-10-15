@@ -1,0 +1,76 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL
+
+The Tradify Signals Agent has reviewed our proposed account-linking V1 protocol.
+
+The overall architecture is acceptable, but Signals identified security and compatibility requirements that must be resolved before either project enables linking.
+
+Please revise docs/TRADIFY_ACCOUNT_LINKING_V1.md into a complete, implementation-ready V1 contract.
+
+Required amendments:
+
+1. SIGNALS IDENTITY
+Use a stable, server-generated opaque Signals linking subject. Never trust a client-supplied registration userId or match accounts by email.
+
+2. EXPLICIT CONSENT
+Require independently authenticated Journal and Signals sessions, with separate, versioned consent records in both products.
+
+3. SECURE LINKING FLOW
+Define the complete user journey, including how the Journal authorization code reaches Signals without placing sensitive tokens in URLs, logs, analytics or persistent browser storage.
+
+The customer must know exactly which two accounts are being linked.
+
+4. SIGNED ASSERTIONS
+Specify:
+- RS256 signed assertions.
+- Environment-specific issuer and audience.
+- Server-side signing and verification.
+- Pinned signing key IDs.
+- Maximum assertion lifetime of 120 seconds.
+- Exact clock-skew rules.
+- Key rotation and emergency revocation.
+
+5. REPLAY AND SUBSTITUTION PREVENTION
+Specify atomic consumption of the single-use authorization code, complete claim comparison for idempotent retries, uniqueness constraints, CSRF protection and rejection of account substitution.
+
+6. ACCOUNT LIFECYCLE
+Define:
+- Unlink from either product.
+- Account deletion.
+- Account suspension.
+- Lost account access and recovery.
+- Link retention and revoked audit records.
+- Failed or interrupted linking.
+- Reconciliation if one service becomes unavailable.
+
+Unlinking must not delete the other account, change its subscriptions or transfer permissions.
+
+7. SECURITY BOUNDARIES
+Keep both databases, passwords, customer sessions, Admin permissions and product entitlements independent.
+
+8. DEVELOPMENT INTEGRATION
+Provide exact versioned request/response contracts, example sanitized payloads, endpoint ownership, failure responses, required schema changes, and contract tests.
+
+Prepare a development-only implementation plan that uses separate isolated databases and synthetic accounts.
+
+IMPORTANT:
+
+Do not enable the existing Journal linking feature.
+
+Do not apply migrations to production.
+
+Do not activate shared SSO or subscription synchronization.
+
+Do not deploy, change DNS or modify Signals.
+
+Do not weaken existing security requirements to simplify the integration.
+
+DELIVERABLES:
+
+- Revised complete account-linking V1 contract.
+- Clear responsibilities for Journal and Signals.
+- Exact implementation and testing handoff.
+- Updated contract tests where possible.
+- Commit hash.
+- Downloadable Markdown handoff for the Signals Agent.
+
+Once completed, stop and wait for Signals' acceptance before activating or implementing cross-project functionality.
