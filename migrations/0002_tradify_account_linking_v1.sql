@@ -58,6 +58,10 @@ CREATE TABLE IF NOT EXISTS product_account_links (
     (state = 'active' AND linked_at IS NOT NULL AND journal_confirmation_consent_version IS NOT NULL
       AND journal_confirmation_consent_at IS NOT NULL)
     OR state <> 'active'
+  ),
+  CHECK (
+    state NOT IN ('awaiting_journal_confirmation', 'active', 'revocation_pending')
+    OR partner_subject IS NOT NULL
   )
 );
 

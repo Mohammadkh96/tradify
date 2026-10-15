@@ -17,6 +17,12 @@ app.use(
   express.json({
     limit: '50mb',
     verify: (req, _res, buf) => {
+      if (req.url?.startsWith("/api/v1/product-links") && buf.length > 8 * 1024) {
+        throw Object.assign(new Error("Product-link request body is too large."), {
+          status: 413,
+          statusCode: 413,
+        });
+      }
       req.rawBody = buf;
     },
   }),

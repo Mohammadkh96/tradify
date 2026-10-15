@@ -2,3 +2,4 @@
 - [TradifyApp production restoration](tradifyapp-restoration-safety.md) — preserve customer records, keep Tradify Signals separate, and require approval before publishing or risky production changes.
 - [Isolated local PostgreSQL testing](local-postgres-testing.md) — use a loopback-only disposable cluster with its own socket directory and temporary trusted TLS CA.
 - [Authenticated browser validation](authenticated-browser-validation.md) — wait for route-specific UI readiness and mutation responses; DOM size and open streams can mislead CDP checks.
+- [Revocation retry protocol](revocation-retry-protocol.md) — event ID plus canonical payload hash governs retries; each attempt uses a fresh 120-second assertion.

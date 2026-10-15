@@ -965,8 +965,31 @@ export function registerProductLinkingRoutes(
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        const prior = await client.query<{ link_id: string; assertion_sha256: string }>(
-          `SELECT link_id, assertion_sha256
+        const replay = await client.query<{
+          assertion_sha256: string;
+          link_id: string;
+          action: string;
+        }>(
+          `SELECT assertion_sha256, link_id, action
+             FROM product_link_assertion_replays
+            WHERE partner_issuer = $1 AND audience = $2 AND assertion_jti = $3
+            LIMIT 1 FOR UPDATE`,
+          [assertion.issuer, assertion.audience, assertion.jti],
+        );
+        if (
+          replay.rows[0] &&
+          (
+            replay.rows[0].action !== "revoke" ||
+            replay.rows[0].link_id !== assertion.linkId ||
+            !constantTimeHexEqual(replay.rows[0].assertion_sha256, assertion.fingerprint)
+          )
+        ) {
+          await client.query("ROLLBACK");
+          return errorResponse(res, 409, "REPLAY_CONFLICT", "This signed request was already used.");
+        }
+
+        const prior = await client.query<{ link_id: string; reason: RevocationReason }>(
+          `SELECT link_id, reason
              FROM product_link_revocation_inbox
             WHERE partner_issuer = $1 AND event_id = $2
             LIMIT 1 FOR UPDATE`,
@@ -975,11 +998,12 @@ export function registerProductLinkingRoutes(
         if (prior.rows[0]) {
           if (
             prior.rows[0].link_id !== assertion.linkId ||
-            !constantTimeHexEqual(prior.rows[0].assertion_sha256, assertion.fingerprint)
+            prior.rows[0].reason !== assertion.reason
           ) {
             await client.query("ROLLBACK");
             return errorResponse(res, 409, "REPLAY_CONFLICT", "This revocation event was already used.");
           }
+          if (!replay.rows[0]) await saveReplay(client, assertion, assertion.linkId, null);
           await client.query("COMMIT");
           return res.json({
             contractVersion: LINK_CONTRACT_VERSION,

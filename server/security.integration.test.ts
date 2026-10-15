@@ -8,6 +8,20 @@ import { registerRoutes } from "./routes";
 import { pool as applicationPool } from "./db";
 import { paypalService } from "./paypalService";
 import { capturePaypalOrder } from "./paypal";
+import {
+  JOURNAL_DEV_ISSUER,
+  JOURNAL_LINK_SERVICE_SUBJECT,
+  LINK_CONTRACT_VERSION,
+  JOURNAL_INITIATION_CONSENT_VERSION,
+  JOURNAL_CONFIRMATION_CONSENT_VERSION,
+  SIGNALS_CONSENT_VERSION,
+  SIGNALS_DEV_ISSUER,
+  SIGNALS_LINK_AUDIENCE,
+  SIGNALS_LINK_SERVICE_SUBJECT,
+  sha256,
+} from "./product-linking-assertions";
+import { drainProductLinkOutboxOnce } from "./product-linking-outbox";
+import { prepareProductLinkAccountLifecycle } from "./product-linking-routes";
 
 const { isolatedEmailService, capturedPasswordResetLink } = vi.hoisted(() => {
   const capturedPasswordResetLink = { value: "" };
@@ -81,6 +95,9 @@ async function request(
   const headers = new Headers(init.headers);
   headers.set("x-forwarded-for", `192.0.2.${(forwardedIp++ % 250) + 1}`);
   if (cookie) headers.set("cookie", cookie);
+  if (path.startsWith("/api/v1/product-links") && !headers.has("origin")) {
+    headers.set("origin", origin);
+  }
   let body = init.body;
   if (json !== undefined) {
     headers.set("content-type", "application/json");
@@ -146,6 +163,12 @@ beforeAll(async () => {
   app.use(express.json({
     limit: "50mb",
     verify: (req, _res, body) => {
+      if (req.url?.startsWith("/api/v1/product-links") && body.length > 8 * 1024) {
+        throw Object.assign(new Error("Product-link request body is too large."), {
+          status: 413,
+          statusCode: 413,
+        });
+      }
       (req as any).rawBody = Buffer.from(body);
     },
   }));
@@ -408,9 +431,8 @@ describe("application security boundaries against a disposable local PostgreSQL 
     expect((await request("/api/user", { cookie: recoveredSession.cookie })).status).toBe(401);
   });
 
-  it("keeps Signals linking disabled by default and requires a signed, consented, single-use assertion", async () => {
-    await registerAndVerify(linkingEmail, "Synthetic Linking User");
-    const journalSession = await login(linkingEmail);
+  it("keeps Journal linking default-off and enforces the two-consent V1 contract", async () => {
+    const { randomBytes, generateKeyPairSync, sign, verify, createHash } = await import("node:crypto");
     const envKeys = [
       "NODE_ENV",
       "DEV_PRODUCT_LINKING_ENABLED",
@@ -419,143 +441,595 @@ describe("application security boundaries against a disposable local PostgreSQL 
       "TRADIFY_SIGNALS_ISSUER",
       "TRADIFY_SIGNALS_KEY_ID",
       "TRADIFY_SIGNALS_PUBLIC_KEY",
+      "TRADIFY_SIGNALS_PREVIOUS_KEY_ID",
+      "TRADIFY_SIGNALS_PREVIOUS_PUBLIC_KEY",
+      "TRADIFY_SIGNALS_PREVIOUS_KEY_EXPIRES_AT",
+      "TRADIFY_JOURNAL_ISSUER",
+      "TRADIFY_JOURNAL_AUDIENCE",
+      "TRADIFY_JOURNAL_KEY_ID",
+      "TRADIFY_JOURNAL_PRIVATE_KEY",
+      "TRADIFY_SIGNALS_API_BASE_URL",
     ] as const;
     const savedEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
-    const crypto = await import("node:crypto");
-    const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
-    const issuer = "https://signals.test.invalid";
-    const keyId = "synthetic-key-1";
-    const consentVersion = "tradify-account-linking-v1";
-    const createAssertion = (claims: Record<string, unknown>) => {
-      const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: keyId })).toString("base64url");
-      const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
+    const signalsKeys = generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const journalKeys = generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const signalsKid = "signals-local-test-key";
+    const journalKid = "journal-local-test-key";
+    const signalsSubject = () => randomBytes(32).toString("base64url");
+    const signalsPublicPem = signalsKeys.publicKey.export({ type: "spki", format: "pem" }).toString();
+    const journalPrivatePem = journalKeys.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+    const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+    const signSignalsAssertion = (claims: Record<string, unknown>, privateKey = signalsKeys.privateKey) => {
+      const header = b64({ alg: "RS256", typ: "JWT", kid: signalsKid });
+      const payload = b64(claims);
       const signingInput = `${header}.${payload}`;
-      const signature = crypto.sign("RSA-SHA256", Buffer.from(signingInput), privateKey).toString("base64url");
+      const signature = sign("RSA-SHA256", Buffer.from(signingInput), privateKey).toString("base64url");
       return `${signingInput}.${signature}`;
     };
-    const buildClaims = (authorizationCode: string, jti = crypto.randomUUID()) => {
+    const baseClaims = (sub: string, action: string, additions: Record<string, unknown> = {}) => {
       const now = Math.floor(Date.now() / 1000);
       return {
-        iss: issuer,
-        aud: "tradify-journal-link-v1",
-        sub: "signals-user-opaque-001",
+        iss: SIGNALS_DEV_ISSUER,
+        aud: "tradify-journal-link-v1-dev",
+        sub,
         iat: now,
         exp: now + 90,
-        jti,
+        jti: randomBytes(24).toString("base64url"),
+        action,
+        contract_version: LINK_CONTRACT_VERSION,
+        ...additions,
+      };
+    };
+    const claimAssertion = (
+      code: string,
+      journalAttemptLabel: string,
+      sub: string,
+      overrides: Record<string, unknown> = {},
+    ) => {
+      const now = Math.floor(Date.now() / 1000);
+      return signSignalsAssertion({
+        ...baseClaims(sub, "claim"),
         consent: true,
         consent_at: now,
-        consent_version: consentVersion,
-        code_sha256: crypto.createHash("sha256").update(authorizationCode).digest("hex"),
-      };
+        consent_version: SIGNALS_CONSENT_VERSION,
+        journal_initiation_consent_version: JOURNAL_INITIATION_CONSENT_VERSION,
+        journal_attempt_label: journalAttemptLabel,
+        signals_attempt_label: "SIG-ABCDEFG23456",
+        code_sha256: createHash("sha256").update(code).digest("hex"),
+        ...overrides,
+      });
+    };
+    const setCsrf = async (cookie: string) => {
+      const response = await request("/api/v1/product-links/signals/csrf", { cookie });
+      expect(response.status).toBe(200);
+      return (await response.json()).csrfToken as string;
+    };
+    const servicePost = (path: string, body: unknown, assertion: string, extraHeaders: Record<string, string> = {}) =>
+      request(path, {
+        method: "POST",
+        headers: { authorization: `Bearer ${assertion}`, ...extraHeaders },
+        json: body,
+      });
+    const createActiveLink = async (email: string, name: string) => {
+      await registerAndVerify(email, name);
+      const session = await login(email);
+      const csrfToken = await setCsrf(session.cookie);
+      const authorizationResponse = await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: session.cookie,
+        headers: { "x-csrf-token": csrfToken },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          consent: true,
+          consentVersion: JOURNAL_INITIATION_CONSENT_VERSION,
+        },
+      });
+      expect(authorizationResponse.status).toBe(201);
+      const authorization = await authorizationResponse.json();
+      const subject = signalsSubject();
+      const assertion = claimAssertion(
+        authorization.authorizationCode,
+        authorization.journalAttemptLabel,
+        subject,
+      );
+      const claim = await servicePost(
+        "/api/v1/product-links/signals/claim",
+        { contractVersion: LINK_CONTRACT_VERSION, authorizationCode: authorization.authorizationCode },
+        assertion,
+      );
+      expect(claim.status).toBe(201);
+      const pending = await claim.json();
+      const confirm = await request("/api/v1/product-links/signals/confirm", {
+        method: "POST",
+        cookie: session.cookie,
+        headers: { "x-csrf-token": csrfToken },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          linkId: pending.linkId,
+          consent: true,
+          consentVersion: JOURNAL_CONFIRMATION_CONSENT_VERSION,
+        },
+      });
+      expect(confirm.status).toBe(200);
+      return { session, csrfToken, linkId: pending.linkId, subject };
     };
 
     try {
       process.env.NODE_ENV = "test";
       delete process.env.DEV_PRODUCT_LINKING_ENABLED;
+      const disabledResponse = await request("/api/v1/product-links/signals/configuration");
+      expect(disabledResponse.status).toBe(401);
+      await registerAndVerify(linkingEmail, "Synthetic Linking User");
+      const journalSession = await login(linkingEmail);
+      expect(await (await request("/api/v1/product-links/signals/configuration", {
+        cookie: journalSession.cookie,
+      })).json()).toEqual({ enabled: false });
       expect((await request("/api/v1/product-links/signals", {
         cookie: journalSession.cookie,
       })).status).toBe(503);
-      expect((await request("/api/v1/product-links/signals/authorization", {
-        method: "POST",
-        cookie: journalSession.cookie,
-        json: { consent: true, consentVersion },
-      })).status).toBe(503);
-      expect((await request("/api/v1/product-links/signals/claim", {
-        method: "POST",
-        headers: { authorization: "Bearer not-a-real-assertion" },
-        json: { authorizationCode: "a".repeat(64) },
-      })).status).toBe(503);
 
+      process.env.DEV_PRODUCT_LINKING_ENABLED = "true";
       process.env.NODE_ENV = "production";
-      process.env.PRODUCT_LINKING_ENABLED = "true";
-      process.env.PRODUCT_LINKING_VERIFIED = "false";
+      expect(await (await request("/api/v1/product-links/signals/configuration", {
+        cookie: journalSession.cookie,
+      })).json()).toEqual({ enabled: false });
       expect((await request("/api/v1/product-links/signals", {
         cookie: journalSession.cookie,
       })).status).toBe(503);
 
       process.env.NODE_ENV = "test";
-      process.env.DEV_PRODUCT_LINKING_ENABLED = "true";
-      delete process.env.PRODUCT_LINKING_ENABLED;
-      delete process.env.PRODUCT_LINKING_VERIFIED;
-      process.env.TRADIFY_SIGNALS_ISSUER = issuer;
-      process.env.TRADIFY_SIGNALS_KEY_ID = keyId;
-      process.env.TRADIFY_SIGNALS_PUBLIC_KEY = publicKey.export({
-        type: "spki",
-        format: "pem",
-      }).toString();
-      expect((await request("/api/v1/product-links/signals/authorization", {
+      process.env.TRADIFY_SIGNALS_ISSUER = SIGNALS_DEV_ISSUER;
+      process.env.TRADIFY_SIGNALS_KEY_ID = signalsKid;
+      process.env.TRADIFY_SIGNALS_PUBLIC_KEY = signalsPublicPem;
+      process.env.TRADIFY_JOURNAL_ISSUER = JOURNAL_DEV_ISSUER;
+      process.env.TRADIFY_JOURNAL_AUDIENCE = SIGNALS_LINK_AUDIENCE;
+      process.env.TRADIFY_JOURNAL_KEY_ID = journalKid;
+      process.env.TRADIFY_JOURNAL_PRIVATE_KEY = journalPrivatePem;
+      process.env.TRADIFY_SIGNALS_API_BASE_URL = "https://signals.test.invalid";
+      expect(await (await request("/api/v1/product-links/signals/configuration", {
+        cookie: journalSession.cookie,
+      })).json()).toEqual({ enabled: true });
+
+      const csrfToken = await setCsrf(journalSession.cookie);
+      const noCsrf = await request("/api/v1/product-links/signals/authorization", {
         method: "POST",
         cookie: journalSession.cookie,
-        json: { consent: false, consentVersion },
-      })).status).toBe(400);
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          consent: true,
+          consentVersion: JOURNAL_INITIATION_CONSENT_VERSION,
+        },
+      });
+      expect(noCsrf.status).toBe(403);
+      const wrongOrigin = await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: journalSession.cookie,
+        headers: { origin: "https://attacker.invalid", "x-csrf-token": csrfToken },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          consent: true,
+          consentVersion: JOURNAL_INITIATION_CONSENT_VERSION,
+        },
+      });
+      expect(wrongOrigin.status).toBe(403);
+      const noConsent = await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: journalSession.cookie,
+        headers: { "x-csrf-token": csrfToken },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          consent: false,
+          consentVersion: JOURNAL_INITIATION_CONSENT_VERSION,
+        },
+      });
+      expect(noConsent.status).toBe(400);
 
       const authorizationResponse = await request("/api/v1/product-links/signals/authorization", {
         method: "POST",
         cookie: journalSession.cookie,
-        json: { consent: true, consentVersion },
+        headers: { "x-csrf-token": csrfToken },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          consent: true,
+          consentVersion: JOURNAL_INITIATION_CONSENT_VERSION,
+        },
       });
       expect(authorizationResponse.status).toBe(201);
       const authorization = await authorizationResponse.json();
       expect(authorization.authorizationCode).toMatch(/^[a-f0-9]{64}$/);
-      expect(new Date(authorization.expiresAt).getTime()).toBeGreaterThan(Date.now());
+      expect(authorization.journalAttemptLabel).toMatch(/^JRN-[A-Z2-7]{12}$/);
+      expect(authorization.journalAccountLabel).toBe("Synthetic Linking User");
+      expect(JSON.stringify(authorization)).not.toContain(linkingEmail);
+      const authDigest = sha256(authorization.authorizationCode);
+      const storedAuthorization = await testPool.query<{
+        created_at: Date;
+        expires_at: Date;
+        authorization_code_sha256: string;
+      }>(
+        `SELECT created_at, expires_at, authorization_code_sha256
+           FROM product_link_authorizations WHERE authorization_code_sha256 = $1`,
+        [authDigest],
+      );
+      expect(storedAuthorization.rows[0]?.authorization_code_sha256).toBe(authDigest);
+      expect(storedAuthorization.rows[0].expires_at.getTime() - storedAuthorization.rows[0].created_at.getTime()).toBeLessThanOrEqual(5 * 60_000);
+      expect(storedAuthorization.rows[0].expires_at.getTime() - storedAuthorization.rows[0].created_at.getTime()).toBeGreaterThan(0);
 
-      const invalidAssertion = createAssertion({
-        ...buildClaims(authorization.authorizationCode),
-        code_sha256: crypto.createHash("sha256").update("not-the-authorization-code").digest("hex"),
+      const preview = await servicePost(
+        "/api/v1/product-links/signals/preview",
+        {
+          contractVersion: LINK_CONTRACT_VERSION,
+          authorizationCode: authorization.authorizationCode,
+        },
+        "unused-preview-bearer-not-required",
+      );
+      expect(preview.status).toBe(200);
+      expect(await preview.json()).toMatchObject({
+        state: "awaiting_signals_consent",
+        journalAttemptLabel: authorization.journalAttemptLabel,
       });
-      expect((await request("/api/v1/product-links/signals/claim", {
-        method: "POST",
-        headers: { authorization: `Bearer ${invalidAssertion}` },
-        json: { authorizationCode: authorization.authorizationCode },
-      })).status).toBe(401);
 
-      const assertion = createAssertion(buildClaims(authorization.authorizationCode));
-      const claimResponse = await request("/api/v1/product-links/signals/claim", {
-        method: "POST",
-        headers: { authorization: `Bearer ${assertion}` },
-        json: { authorizationCode: authorization.authorizationCode },
-      });
+      const subject = signalsSubject();
+      const badDigestAssertion = claimAssertion(
+        authorization.authorizationCode,
+        authorization.journalAttemptLabel,
+        subject,
+        { code_sha256: sha256("different-code") },
+      );
+      const badDigestResponse = await servicePost(
+        "/api/v1/product-links/signals/claim",
+        {
+          contractVersion: LINK_CONTRACT_VERSION,
+          authorizationCode: authorization.authorizationCode,
+        },
+        badDigestAssertion,
+      );
+      expect(badDigestResponse.status).toBe(401);
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const expiredAssertion = claimAssertion(
+        authorization.authorizationCode,
+        authorization.journalAttemptLabel,
+        subject,
+        { iat: nowSeconds - 90, exp: nowSeconds - 1 },
+      );
+      expect((await servicePost(
+        "/api/v1/product-links/signals/claim",
+        { contractVersion: LINK_CONTRACT_VERSION, authorizationCode: authorization.authorizationCode },
+        expiredAssertion,
+      )).status).toBe(401);
+      const excessiveLifetimeAssertion = claimAssertion(
+        authorization.authorizationCode,
+        authorization.journalAttemptLabel,
+        subject,
+        { iat: nowSeconds, exp: nowSeconds + 121 },
+      );
+      expect((await servicePost(
+        "/api/v1/product-links/signals/claim",
+        { contractVersion: LINK_CONTRACT_VERSION, authorizationCode: authorization.authorizationCode },
+        excessiveLifetimeAssertion,
+      )).status).toBe(401);
+      const arrayAudienceAssertion = claimAssertion(
+        authorization.authorizationCode,
+        authorization.journalAttemptLabel,
+        subject,
+        { aud: ["tradify-journal-link-v1-dev"] },
+      );
+      expect((await servicePost(
+        "/api/v1/product-links/signals/claim",
+        { contractVersion: LINK_CONTRACT_VERSION, authorizationCode: authorization.authorizationCode },
+        arrayAudienceAssertion,
+      )).status).toBe(401);
+      const clientSuppliedIdentity = await servicePost(
+        "/api/v1/product-links/signals/claim",
+        {
+          contractVersion: LINK_CONTRACT_VERSION,
+          authorizationCode: authorization.authorizationCode,
+          userId: linkingEmail,
+        },
+        claimAssertion(authorization.authorizationCode, authorization.journalAttemptLabel, subject),
+      );
+      expect(clientSuppliedIdentity.status).toBe(400);
+
+      const claimAssertionToken = claimAssertion(
+        authorization.authorizationCode,
+        authorization.journalAttemptLabel,
+        subject,
+      );
+      const claimResponse = await servicePost(
+        "/api/v1/product-links/signals/claim",
+        {
+          contractVersion: LINK_CONTRACT_VERSION,
+          authorizationCode: authorization.authorizationCode,
+        },
+        claimAssertionToken,
+      );
       expect(claimResponse.status).toBe(201);
-      const linked = await claimResponse.json();
-      expect(linked).toMatchObject({ status: "linked" });
-      expect(linked.linkId).toBeTruthy();
-      expect(JSON.stringify(linked)).not.toContain(linkingEmail);
-      expect(JSON.stringify(linked)).not.toContain("signals-user-opaque-001");
+      const pending = await claimResponse.json();
+      expect(pending).toMatchObject({
+        state: "awaiting_journal_confirmation",
+        signalsAttemptLabel: "SIG-ABCDEFG2345",
+      });
+      expect(JSON.stringify(pending)).not.toContain(linkingEmail);
+      const exactClaimRetry = await servicePost(
+        "/api/v1/product-links/signals/claim",
+        {
+          contractVersion: LINK_CONTRACT_VERSION,
+          authorizationCode: authorization.authorizationCode,
+        },
+        claimAssertionToken,
+      );
+      expect(exactClaimRetry.status).toBe(200);
+      expect(await exactClaimRetry.json()).toMatchObject({
+        linkId: pending.linkId,
+        state: "awaiting_journal_confirmation",
+      });
+      const originalJti = JSON.parse(
+        Buffer.from(claimAssertionToken.split(".")[1], "base64url").toString("utf8"),
+      ).jti;
+      const changedSameJti = claimAssertion(
+        authorization.authorizationCode,
+        authorization.journalAttemptLabel,
+        subject,
+        { jti: originalJti, signals_attempt_label: "SIG-BCDEFG234567" },
+      );
+      expect((await servicePost(
+        "/api/v1/product-links/signals/claim",
+        { contractVersion: LINK_CONTRACT_VERSION, authorizationCode: authorization.authorizationCode },
+        changedSameJti,
+      )).status).toBe(409);
 
-      const replayedAssertion = await request("/api/v1/product-links/signals/claim", {
+      const otherEmail = `${emailPrefix}-wrong-link-owner@example.invalid`;
+      await registerAndVerify(otherEmail, "Synthetic Different Account");
+      const otherSession = await login(otherEmail);
+      const otherCsrf = await setCsrf(otherSession.cookie);
+      const otherConfirm = await request("/api/v1/product-links/signals/confirm", {
         method: "POST",
-        headers: { authorization: `Bearer ${assertion}` },
-        json: { authorizationCode: authorization.authorizationCode },
+        cookie: otherSession.cookie,
+        headers: { "x-csrf-token": otherCsrf },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          linkId: pending.linkId,
+          consent: true,
+          consentVersion: JOURNAL_CONFIRMATION_CONSENT_VERSION,
+        },
       });
-      expect(replayedAssertion.status).toBe(200);
-      expect(await replayedAssertion.json()).toMatchObject({ linkId: linked.linkId, status: "linked" });
-
-      const linkStatus = await request("/api/v1/product-links/signals", {
-        cookie: journalSession.cookie,
-      });
-      expect(linkStatus.status).toBe(200);
-      expect(await linkStatus.json()).toMatchObject({ linked: true });
-
-      const expiredAuthorizationResponse = await request("/api/v1/product-links/signals/authorization", {
+      expect(otherConfirm.status).toBe(404);
+      const missingFinalConsent = await request("/api/v1/product-links/signals/confirm", {
         method: "POST",
         cookie: journalSession.cookie,
-        json: { consent: true, consentVersion },
+        headers: { "x-csrf-token": csrfToken },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          linkId: pending.linkId,
+          consent: false,
+          consentVersion: JOURNAL_CONFIRMATION_CONSENT_VERSION,
+        },
       });
-      const expiredAuthorization = await expiredAuthorizationResponse.json();
-      const expiredDigest = crypto.createHash("sha256").update(expiredAuthorization.authorizationCode).digest("hex");
+      expect(missingFinalConsent.status).toBe(400);
+      const finalConfirmation = await request("/api/v1/product-links/signals/confirm", {
+        method: "POST",
+        cookie: journalSession.cookie,
+        headers: { "x-csrf-token": csrfToken },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          linkId: pending.linkId,
+          consent: true,
+          consentVersion: JOURNAL_CONFIRMATION_CONSENT_VERSION,
+        },
+      });
+      expect(finalConfirmation.status).toBe(200);
+      expect(await finalConfirmation.json()).toMatchObject({ linkId: pending.linkId, state: "active" });
+
+      const statusToken = signSignalsAssertion(baseClaims(subject, "status", { link_id: pending.linkId }));
+      const serviceStatus = await servicePost(
+        "/api/v1/product-links/signals/status",
+        { contractVersion: LINK_CONTRACT_VERSION, linkId: pending.linkId },
+        statusToken,
+      );
+      expect(serviceStatus.status).toBe(200);
+      expect(await serviceStatus.json()).toMatchObject({ linkId: pending.linkId, state: "active" });
+      const wrongStatusSubject = signSignalsAssertion(baseClaims(signalsSubject(), "status", { link_id: pending.linkId }));
+      expect((await servicePost(
+        "/api/v1/product-links/signals/status",
+        { contractVersion: LINK_CONTRACT_VERSION, linkId: pending.linkId },
+        wrongStatusSubject,
+      )).status).toBe(404);
+
+      const unlink = await request(`/api/v1/product-links/signals/${pending.linkId}`, {
+        method: "DELETE",
+        cookie: journalSession.cookie,
+        headers: { "x-csrf-token": csrfToken },
+      });
+      expect(unlink.status).toBe(202);
+      const unlinkBody = await unlink.json();
+      expect(unlinkBody).toMatchObject({
+        linkId: pending.linkId,
+        state: "revocation_pending",
+      });
+      const pendingStatus = await request("/api/v1/product-links/signals", { cookie: journalSession.cookie });
+      expect(await pendingStatus.json()).toMatchObject({ state: "revocation_pending" });
+
+      const outboundAttempts: Array<{ token: string; body: string }> = [];
+      const captureDelivery = async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const authorizationHeader = new Headers(init?.headers).get("authorization") ?? "";
+        const token = authorizationHeader.replace(/^Bearer /, "");
+        outboundAttempts.push({ token, body: String(init?.body) });
+        if (outboundAttempts.length === 1) {
+          return new Response("{}", { status: 503, headers: { "content-type": "application/json" } });
+        }
+        const body = JSON.parse(String(init?.body));
+        return new Response(JSON.stringify({
+          contractVersion: LINK_CONTRACT_VERSION,
+          linkId: body.linkId,
+          state: "revoked",
+          eventId: body.eventId,
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      };
+      const firstPass = await drainProductLinkOutboxOnce({ fetchImpl: captureDelivery as typeof fetch });
+      expect(firstPass).toEqual({ claimed: 1, delivered: 0, retried: 1 });
+      const afterFailure = await testPool.query<{ state: string; attempt_count: number }>(
+        `SELECT state, attempt_count FROM product_link_revocation_outbox WHERE event_id = $1`,
+        [unlinkBody.eventId],
+      );
+      expect(afterFailure.rows[0]).toMatchObject({ state: "retry", attempt_count: 1 });
+      await testPool.query(
+        `UPDATE product_link_revocation_outbox SET next_attempt_at = NOW() WHERE event_id = $1`,
+        [unlinkBody.eventId],
+      );
+      const secondPass = await drainProductLinkOutboxOnce({ fetchImpl: captureDelivery as typeof fetch });
+      expect(secondPass).toEqual({ claimed: 1, delivered: 1, retried: 0 });
+      expect(outboundAttempts).toHaveLength(2);
+      expect(outboundAttempts[0].body).toBe(outboundAttempts[1].body);
+      const parseJwt = (token: string) => {
+        const [headerPart, claimPart, signaturePart] = token.split(".");
+        const claims = JSON.parse(Buffer.from(claimPart, "base64url").toString("utf8"));
+        expect(verify(
+          "RSA-SHA256",
+          Buffer.from(`${headerPart}.${claimPart}`),
+          journalKeys.publicKey,
+          Buffer.from(signaturePart, "base64url"),
+        )).toBe(true);
+        return claims;
+      };
+      const firstOutgoingClaims = parseJwt(outboundAttempts[0].token);
+      const secondOutgoingClaims = parseJwt(outboundAttempts[1].token);
+      expect(firstOutgoingClaims).toMatchObject({
+        iss: JOURNAL_DEV_ISSUER,
+        aud: SIGNALS_LINK_AUDIENCE,
+        sub: JOURNAL_LINK_SERVICE_SUBJECT,
+        action: "revoke",
+        link_id: pending.linkId,
+        event_id: unlinkBody.eventId,
+        reason: "user_unlinked",
+      });
+      expect(secondOutgoingClaims.event_id).toBe(firstOutgoingClaims.event_id);
+      expect(secondOutgoingClaims.link_id).toBe(firstOutgoingClaims.link_id);
+      expect(secondOutgoingClaims.reason).toBe(firstOutgoingClaims.reason);
+      expect(secondOutgoingClaims.jti).not.toBe(firstOutgoingClaims.jti);
+      const revoked = await testPool.query<{ state: string; partner_subject: string | null }>(
+        `SELECT state, partner_subject FROM product_account_links WHERE id = $1`,
+        [pending.linkId],
+      );
+      expect(revoked.rows[0]).toEqual({ state: "revoked", partner_subject: null });
+
+      const inboundLink = await createActiveLink(
+        `${emailPrefix}-inbound-revoke@example.invalid`,
+        "Synthetic Inbound User",
+      );
+      const eventId = (await import("node:crypto")).randomUUID();
+      const reason = "security_action";
+      const revokeClaims = (eventReason: string) => baseClaims(
+        SIGNALS_LINK_SERVICE_SUBJECT,
+        "revoke",
+        { link_id: inboundLink.linkId, event_id: eventId, reason: eventReason },
+      );
+      const firstRevocationAssertion = signSignalsAssertion(revokeClaims(reason));
+      const revocationBody = {
+        contractVersion: LINK_CONTRACT_VERSION,
+        linkId: inboundLink.linkId,
+        eventId,
+        reason,
+      };
+      const firstRevocation = await servicePost(
+        "/api/v1/product-links/signals/revocations",
+        revocationBody,
+        firstRevocationAssertion,
+      );
+      expect(firstRevocation.status).toBe(200);
+      const retriedRevocation = await servicePost(
+        "/api/v1/product-links/signals/revocations",
+        revocationBody,
+        signSignalsAssertion(revokeClaims(reason)),
+      );
+      expect(retriedRevocation.status).toBe(200);
+      const changedEventBody = await servicePost(
+        "/api/v1/product-links/signals/revocations",
+        { ...revocationBody, reason: "user_unlinked" },
+        signSignalsAssertion(revokeClaims("user_unlinked")),
+      );
+      expect(changedEventBody.status).toBe(409);
+
+      const deletionLink = await createActiveLink(
+        `${emailPrefix}-deleted-link@example.invalid`,
+        "Synthetic Deleted Account",
+      );
+      const deletionRole = await testPool.query<{ id: number }>(
+        "SELECT id FROM user_role WHERE user_id = $1 LIMIT 1",
+        [`${emailPrefix}-deleted-link@example.invalid`],
+      );
+      await prepareProductLinkAccountLifecycle(deletionRole.rows[0].id, "account_deleted");
+      expect((await testPool.query(
+        "SELECT 1 FROM product_account_links WHERE id = $1",
+        [deletionLink.linkId],
+      )).rowCount).toBe(0);
+      expect((await testPool.query(
+        `SELECT 1 FROM product_link_revocation_outbox
+          WHERE link_id = $1 AND reason = 'account_deleted' AND state = 'pending'`,
+        [deletionLink.linkId],
+      )).rowCount).toBe(1);
+      expect((await testPool.query(
+        "SELECT 1 FROM product_link_tombstones WHERE link_id = $1",
+        [deletionLink.linkId],
+      )).rowCount).toBe(1);
+
+      const suspensionLink = await createActiveLink(
+        `${emailPrefix}-suspended-link@example.invalid`,
+        "Synthetic Suspended Account",
+      );
+      await prepareProductLinkAccountLifecycle(
+        (await testPool.query<{ id: number }>(
+          "SELECT id FROM user_role WHERE user_id = $1 LIMIT 1",
+          [`${emailPrefix}-suspended-link@example.invalid`],
+        )).rows[0].id,
+        "account_suspended",
+      );
+      expect((await testPool.query<{ state: string }>(
+        "SELECT state FROM product_account_links WHERE id = $1",
+        [suspensionLink.linkId],
+      )).rows[0].state).toBe("revocation_pending");
+      expect((await testPool.query(
+        `SELECT 1 FROM product_link_revocation_outbox
+          WHERE link_id = $1 AND reason = 'account_suspended' AND state = 'pending'`,
+        [suspensionLink.linkId],
+      )).rowCount).toBe(1);
+
+      const expiryEmail = `${emailPrefix}-expired-authorization@example.invalid`;
+      await registerAndVerify(expiryEmail, "Synthetic Expiring Authorization");
+      const expirySession = await login(expiryEmail);
+      const expiryCsrf = await setCsrf(expirySession.cookie);
+      const expiringAuthorizationResponse = await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: expirySession.cookie,
+        headers: { "x-csrf-token": expiryCsrf },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          consent: true,
+          consentVersion: JOURNAL_INITIATION_CONSENT_VERSION,
+        },
+      });
+      expect(expiringAuthorizationResponse.status).toBe(201);
+      const expiringAuthorization = await expiringAuthorizationResponse.json();
+      const expiredDigest = sha256(expiringAuthorization.authorizationCode);
       await testPool.query(
         `UPDATE product_link_authorizations
-         SET created_at = NOW() - INTERVAL '10 minutes',
-             expires_at = NOW() - INTERVAL '1 second'
-         WHERE authorization_code_sha256 = $1`,
+            SET created_at = NOW() - INTERVAL '10 minutes',
+                expires_at = NOW() - INTERVAL '1 second'
+          WHERE authorization_code_sha256 = $1`,
         [expiredDigest],
       );
-      const expiredAssertion = createAssertion(buildClaims(expiredAuthorization.authorizationCode));
-      expect((await request("/api/v1/product-links/signals/claim", {
-        method: "POST",
-        headers: { authorization: `Bearer ${expiredAssertion}` },
-        json: { authorizationCode: expiredAuthorization.authorizationCode },
-      })).status).toBe(409);
+      const expiredCodeAssertion = claimAssertion(
+        expiringAuthorization.authorizationCode,
+        expiringAuthorization.journalAttemptLabel,
+        signalsSubject(),
+      );
+      const expiredCodeClaim = await servicePost(
+        "/api/v1/product-links/signals/claim",
+        {
+          contractVersion: LINK_CONTRACT_VERSION,
+          authorizationCode: expiringAuthorization.authorizationCode,
+        },
+        expiredCodeAssertion,
+      );
+      expect(expiredCodeClaim.status).toBe(409);
     } finally {
       for (const key of envKeys) {
         const value = savedEnv[key];

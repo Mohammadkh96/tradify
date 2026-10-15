@@ -196,6 +196,7 @@ export function getJournalSigningConfig(): JournalSigningConfig | null {
       apiBaseUrl.protocol !== "https:" ||
       apiBaseUrl.username ||
       apiBaseUrl.password ||
+      apiBaseUrl.pathname !== "/" ||
       apiBaseUrl.search ||
       apiBaseUrl.hash
     ) {
@@ -344,7 +345,23 @@ function validTimeClaims(claims: JsonObject, nowSeconds: number): claims is Json
 
 export function verifySignalsAssertion(
   token: string | undefined,
-  action: "claim" | "status" | "revoke",
+  action: "claim",
+): Extract<VerifiedSignalsAssertion, { action: "claim" }> | null;
+export function verifySignalsAssertion(
+  token: string | undefined,
+  action: "status",
+): Extract<VerifiedSignalsAssertion, { action: "status" }> | null;
+export function verifySignalsAssertion(
+  token: string | undefined,
+  action: "revoke",
+): Extract<VerifiedSignalsAssertion, { action: "revoke" }> | null;
+export function verifySignalsAssertion(
+  token: string | undefined,
+  action: VerifiedSignalsAssertion["action"],
+): VerifiedSignalsAssertion | null;
+export function verifySignalsAssertion(
+  token: string | undefined,
+  action: VerifiedSignalsAssertion["action"],
 ): VerifiedSignalsAssertion | null {
   if (!token || token.length > 8192) return null;
   const parts = token.split(".");

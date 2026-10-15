@@ -1,0 +1,45 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL — DEVELOPMENT ACCOUNT LINKING HANDOFF
+
+Tradify Signals has implemented its initial Account-Linking V1 API foundation but cannot proceed with cross-service testing until Journal provides its development trust configuration.
+
+As product owner, I approve Journal's development-only RS256 signing-key configuration and the previously accepted Account-Linking V1 contract.
+
+Please complete the JOURNAL side of the handoff.
+
+1. Verify that you are working in the original TradifyApp Journal repository, NOT Tradify Signals.
+
+2. Generate Journal's own development-only RS256 key pair. Store the private key exclusively in Journal's secure development secrets. Never print or commit it.
+
+3. Assign an immutable development key ID (kid).
+
+4. Provide the Journal PUBLIC verification key in PEM format and its exact kid for secure configuration in Signals.
+
+5. Identify and verify the actual Journal development HTTPS API origin, including a reachable read-only endpoint. Do not confuse it with the JWT issuer.
+
+6. Use the approved Journal issuer:
+https://linking-dev.journal.tradifyapp.com
+
+7. Use the approved Journal → Signals audience:
+tradify-signals-link-v1-dev
+
+8. Confirm the Journal-side linking endpoints, versioned schema and migrations match the accepted contract.
+
+9. Implement the approved revocation retry behavior: new signed JWT per attempt, immutable event ID and canonical payload hash.
+
+10. Confirm the remaining work required to connect Journal to the existing Signals development API.
+
+CRITICAL SAFETY REQUIREMENTS:
+
+- Do not access or modify Journal's production Neon database.
+- Do not modify Tradify Signals or its tradify_mt5_demo database.
+- Do not run migrations against an unverified database.
+- Do not publish, change DNS or provision paid hosting.
+- Do not enable live linking.
+- Use existing isolated development infrastructure when safe.
+- Stop and request approval if any new paid resource is required.
+
+DELIVERABLE:
+
+Return the exact Journal development API origin, public-key PEM, immutable kid, implementation status, test results, commit hash and remaining blockers.
+
+Keep the feature fail-closed until both applications have validated each other's public-key pins and transport origins.

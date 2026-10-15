@@ -39,6 +39,7 @@ import { Link } from "wouter";
 import { TierBadge } from "@/components/EliteBadge";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { AlertSettingsCard } from "@/components/AlertSettingsCard";
+import { ProductLinkingCard } from "@/components/ProductLinkingCard";
 
 const countries = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
@@ -728,6 +729,8 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
+          <ProductLinkingCard />
 
           <LanguageSection initial={user?.language || "en"} />
 

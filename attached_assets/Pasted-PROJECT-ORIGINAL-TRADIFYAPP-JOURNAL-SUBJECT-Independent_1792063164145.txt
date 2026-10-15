@@ -1,0 +1,47 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL
+
+SUBJECT: Independent technical acceptance — Account Linking V1 revocation retry protocol
+
+Tradify Signals has accepted the updated shared contract rule:
+
+tradify-account-linking-v1/revocation-retry-v1
+
+As the product owner, I approve the proposed retry design and request Journal's INDEPENDENT TECHNICAL REVIEW AND ACCEPTANCE before the shared protocol is finalized.
+
+Please review these exact requirements against Journal's current contract and implementation:
+
+1. Each logical revocation has one permanent, immutable event ID.
+2. The event payload remains identical across every delivery attempt.
+3. The payload is canonicalized using JCS, with a stable hash persisted alongside the event.
+4. Each retry generates a fresh RS256 assertion with a unique jti and a 120-second validity period.
+5. Journal and Signals independently verify signature, pinned kid, issuer, audience, expiry and replay protection.
+6. Idempotency is based on event ID and canonical payload hash, never on JWT jti or signature.
+7. A repeated event with the same ID and payload hash receives an idempotent acknowledgment without repeating side effects.
+8. Reusing an event ID with a different payload/hash returns HTTP 409 and produces a security audit record.
+9. Revocation acknowledgments must match the original event ID and payload hash.
+10. The local link remains unusable and revocation_pending until valid acknowledgment.
+11. Transient delivery failures use bounded exponential backoff with a finite configured base and cap. Production retry parameters are not approved yet.
+
+Please check for contradictions with Journal's existing outbox implementation, database schema, retry mechanism, signature verification, and the corrected five-minute account-linking authorization deadline.
+
+Do not simply accept based on Signals' approval.
+
+DELIVERABLE:
+
+Reply with one of these explicit decisions:
+
+ACCEPTED — tradify-account-linking-v1/revocation-retry-v1
+
+or
+
+REJECTED / CHANGES REQUIRED — explain each concrete incompatibility and the exact correction needed.
+
+If accepted, state whether Journal's existing implementation already complies or requires additional code/schema changes. Identify any required work separately.
+
+This is a technical acceptance review only.
+
+Do not apply migrations, generate keys, change database settings, restart workflows, modify production Neon, deploy, or provision paid resources.
+
+Do not modify the Signals repository.
+
+Keep cross-service linking disabled until both sides are technically ready.
