@@ -146,6 +146,12 @@ export function registerStripeRoutes(app: Express, requireAuth: any) {
   // Frontend redirects to Stripe Checkout. On success Stripe webhook flips
   // the tier; the user is redirected back to /checkout?subscription=success.
   app.post("/api/stripe/subscribe", requireAuth, async (req: Request, res: Response) => {
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.LIVE_BILLING_ENABLED !== "true"
+    ) {
+      return res.status(503).json({ error: "New subscriptions are temporarily unavailable." });
+    }
     try {
       const userId = req.session.userId!;
       const { tier: tierRaw = "PRO", period: periodRaw = "monthly" } = req.body || {};

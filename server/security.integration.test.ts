@@ -417,7 +417,9 @@ describe("application security boundaries against a disposable local PostgreSQL 
         [aliceEmail],
       );
       const originalNodeEnv = process.env.NODE_ENV;
+      const originalBillingFlag = process.env.LIVE_BILLING_ENABLED;
       process.env.NODE_ENV = "production";
+      process.env.LIVE_BILLING_ENABLED = "true";
       vi.mocked(capturePaypalOrder).mockImplementationOnce(async (_req, res) => {
         res.status(200).json({ status: "COMPLETED", id: `ORDER-${testRunId}` });
       });
@@ -436,6 +438,8 @@ describe("application security boundaries against a disposable local PostgreSQL 
         });
       } finally {
         process.env.NODE_ENV = originalNodeEnv;
+        if (originalBillingFlag === undefined) delete process.env.LIVE_BILLING_ENABLED;
+        else process.env.LIVE_BILLING_ENABLED = originalBillingFlag;
         vi.mocked(capturePaypalOrder).mockReset();
       }
     } finally {
@@ -451,6 +455,87 @@ describe("application security boundaries against a disposable local PostgreSQL 
          WHERE user_id = $1`,
         [aliceEmail],
       );
+    }
+  });
+
+  it("keeps production billing, MT5 sync, registration, and email recovery off by default", async () => {
+    const alice = await login(aliceEmail);
+    const envKeys = [
+      "NODE_ENV",
+      "LIVE_BILLING_ENABLED",
+      "EMAIL_DELIVERY_ENABLED",
+      "SMTP_USER",
+      "SMTP_APP_PASSWORD",
+      "MT5_SYNC_ENABLED",
+    ] as const;
+    const savedEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+    const disabledEmail = `${emailPrefix}-signup-disabled@example.invalid`;
+    try {
+      process.env.NODE_ENV = "production";
+      process.env.LIVE_BILLING_ENABLED = "false";
+      process.env.EMAIL_DELIVERY_ENABLED = "false";
+      process.env.MT5_SYNC_ENABLED = "false";
+      delete process.env.SMTP_USER;
+      delete process.env.SMTP_APP_PASSWORD;
+
+      const registration = await request("/api/auth/register", {
+        method: "POST",
+        json: {
+          email: disabledEmail,
+          password: testPassword,
+          fullName: "Registration Disabled",
+          country: "US",
+          timezone: "UTC",
+        },
+      });
+      expect(registration.status).toBe(503);
+      expect((await testPool.query(
+        "SELECT user_id FROM user_role WHERE user_id = $1",
+        [disabledEmail],
+      )).rowCount).toBe(0);
+
+      expect((await request("/api/auth/resend-verification", {
+        method: "POST",
+        json: { email: aliceEmail },
+      })).status).toBe(503);
+      expect((await request("/api/user/reset-password-request", {
+        method: "POST",
+        json: { email: aliceEmail },
+      })).status).toBe(503);
+
+      expect((await request("/api/stripe/subscribe", {
+        method: "POST",
+        cookie: alice.cookie,
+        json: { tier: "PRO", period: "monthly" },
+      })).status).toBe(503);
+      expect((await request("/api/paypal/subscribe", {
+        method: "POST",
+        cookie: alice.cookie,
+        json: { tier: "PRO", period: "monthly" },
+      })).status).toBe(503);
+      expect((await request("/api/paypal/setup", {
+        cookie: alice.cookie,
+      })).status).toBe(503);
+      expect((await request("/api/paypal/order", {
+        method: "POST",
+        cookie: alice.cookie,
+        json: { amount: "1.00", currency: "USD", intent: "CAPTURE" },
+      })).status).toBe(503);
+      expect((await request(`/api/paypal/order/ORDER-${testRunId}/capture`, {
+        method: "POST",
+        cookie: alice.cookie,
+        json: {},
+      })).status).toBe(503);
+      expect((await request("/api/mt5/sync", {
+        method: "POST",
+        json: { userId: aliceEmail, token: "synthetic-token" },
+      })).status).toBe(503);
+    } finally {
+      for (const key of envKeys) {
+        const value = savedEnv[key];
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
     }
   });
 

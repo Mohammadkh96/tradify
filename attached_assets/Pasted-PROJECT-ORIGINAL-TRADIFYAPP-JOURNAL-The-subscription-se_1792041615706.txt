@@ -1,0 +1,39 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL
+
+The subscription security fixes in commits acf869e and c0464df are accepted.
+
+Stop working on branding, subscription refactoring, and general architecture for now.
+
+Our immediate objective is to restore tradifyapp.com safely using the existing secured application and original Neon production database.
+
+FOCUS: PRODUCTION HOSTING AND DEPLOYMENT CONFIGURATION.
+
+1. Review the current .replit deployment configuration and confirm the exact build command, start command, listening port, host binding and required runtime settings.
+
+2. Investigate the DNS and HTTPS issue using safe public diagnostics and existing deployment metadata. Do not assume a Google Cloud IP identifies the actual hosting application. Clearly identify what information is still needed from my Namecheap or hosting account.
+
+3. Determine whether the website should be restored using Replit Autoscale or whether an existing hosting service can safely be recovered. Compare cost, compatibility and recovery implications before recommending a choice.
+
+4. Confirm the application can run with the existing Neon PostgreSQL schema without automatic migrations, sample data, scheduled jobs or startup writes.
+
+5. Prepare a secure procedure for verifying that the intended production DATABASE_URL maps to the previously confirmed Neon production endpoint. Do not expose credentials, read secret values without separate approval, or wake production compute.
+
+6. Verify that the release build includes the authentication, MT5 security, payment entitlement and zero-AI-runtime fixes.
+
+7. Prepare a minimal restoration configuration that keeps live payment processing, outbound emails, MT5 automation and background workers disabled until independently configured and tested. Identify any customer functions that would be unavailable or unsafe under that configuration, especially registration and password recovery.
+
+8. Produce the exact deployment steps, expected Replit hosting costs, HTTPS/domain configuration procedure, post-deployment checks and rollback plan.
+
+9. Separate the steps that can be done in development from those requiring my approval.
+
+Do not create another database, paid snapshot or hosting service.
+
+Do not change DNS, publish, activate payments or start workers.
+
+Do not touch Tradify Signals.
+
+DELIVERABLE:
+
+Provide the exact hosting decision, remaining information needed from me, expected cost, release prerequisites and a controlled restoration plan.
+
+Avoid another general readiness audit. Focus on getting the secured Journal application ready for a specific approved hosting destination.

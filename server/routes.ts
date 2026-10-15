@@ -59,6 +59,17 @@ import pathNode from "node:path";
 
 const PostgresStore = connectPg(session);
 
+function isProductionFeatureEnabled(flagName: string): boolean {
+  return process.env.NODE_ENV === "production" && process.env[flagName] === "true";
+}
+
+function isProductionEmailReady(): boolean {
+  return process.env.NODE_ENV !== "production" || (
+    process.env.EMAIL_DELIVERY_ENABLED === "true" &&
+    Boolean(process.env.SMTP_USER && process.env.SMTP_APP_PASSWORD)
+  );
+}
+
 declare module "express-session" {
   interface SessionData {
     userId: string;
@@ -665,6 +676,9 @@ ${blogPosts.map(p => `  <url>
   // Registration Endpoint
   app.post("/api/auth/register", authLimiter, async (req, res) => {
     try {
+      if (!isProductionEmailReady()) {
+        return res.status(503).json({ message: "Registration is temporarily unavailable." });
+      }
       const { email, password, fullName, country, phoneNumber, timezone, utm_source, utm_campaign } = req.body;
       
       if (!email || !password || !fullName || !country || !timezone) {
@@ -937,6 +951,9 @@ ${blogPosts.map(p => `  <url>
   // Resend verification email
   app.post("/api/auth/resend-verification", async (req, res) => {
     try {
+      if (!isProductionEmailReady()) {
+        return res.status(503).json({ message: "Email verification is temporarily unavailable." });
+      }
       const { email } = req.body;
       const normalizedEmail = email.toLowerCase();
 
@@ -1159,22 +1176,22 @@ ${blogPosts.map(p => `  <url>
   });
 
   app.get("/api/paypal/setup", requireAuth, async (req, res) => {
-    if (process.env.NODE_ENV !== "production") {
-      return res.status(503).json({ error: "PayPal order setup is disabled in development." });
+    if (!isProductionFeatureEnabled("LIVE_BILLING_ENABLED")) {
+      return res.status(503).json({ error: "PayPal payment setup is disabled." });
     }
     await loadPaypalDefault(req, res);
   });
 
   app.post("/api/paypal/order", requireAuth, async (req, res) => {
-    if (process.env.NODE_ENV !== "production") {
-      return res.status(503).json({ error: "PayPal orders are disabled in development." });
+    if (!isProductionFeatureEnabled("LIVE_BILLING_ENABLED")) {
+      return res.status(503).json({ error: "PayPal payments are disabled." });
     }
     await createPaypalOrder(req, res);
   });
 
   app.post("/api/paypal/order/:orderID/capture", requireAuth, async (req, res) => {
-    if (process.env.NODE_ENV !== "production") {
-      return res.status(503).json({ error: "PayPal order capture is disabled in development." });
+    if (!isProductionFeatureEnabled("LIVE_BILLING_ENABLED")) {
+      return res.status(503).json({ error: "PayPal payments are disabled." });
     }
     // One-time order capture is not proof of a Tradify subscription. Only the
     // provider-verified subscription activation/webhook paths may grant a tier.
@@ -1233,6 +1250,9 @@ ${blogPosts.map(p => `  <url>
 
   app.post("/api/paypal/subscribe", requireAuth, async (req, res) => {
     try {
+      if (!isProductionFeatureEnabled("LIVE_BILLING_ENABLED")) {
+        return res.status(503).json({ error: "New subscriptions are temporarily unavailable." });
+      }
       const userId = req.session.userId!;
       const { tier = 'PRO', period = 'monthly' } = req.body;
       const upper = String(tier).toUpperCase();
@@ -1743,6 +1763,12 @@ ${blogPosts.map(p => `  <url>
   // MT5 Bridge Sync Endpoint (REST API for Python Connector)
   // SINGLE SOURCE OF TRUTH: This is the ONLY endpoint for MT5 data ingestion
   app.post("/api/mt5/sync", async (req, res) => {
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.MT5_SYNC_ENABLED !== "true"
+    ) {
+      return res.status(503).json({ message: "MT5 synchronization is temporarily disabled." });
+    }
     if (
       process.env.NODE_ENV !== "production" &&
       process.env.DEV_MT5_SYNC_ENABLED !== "true"
@@ -5985,6 +6011,9 @@ End with: "Review your charts for current market structure."`;
 
   app.post("/api/user/reset-password-request", async (req, res) => {
     try {
+      if (!isProductionEmailReady()) {
+        return res.status(503).json({ message: "Password recovery is temporarily unavailable." });
+      }
       const { email } = req.body;
       if (!email) {
         return res.status(400).json({ message: "Email is required." });

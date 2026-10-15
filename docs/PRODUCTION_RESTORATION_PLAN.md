@@ -219,3 +219,54 @@ Verification performed locally with synthetic users, mocked payment transports, 
 The prior approved aggregate-only production check found 27 PRO accounts: 1 with `founding_member_access` and 26 with a null subscription status. No customer-level entitlement/provider rows were reviewed, and this change does not alter production records. The exact legitimate entitlement basis for those 26 null-status accounts therefore remains unverified. Preserve their current access until their provider evidence or original grant records are reviewed; do not infer that null means paid-active, cancelled, or expired. Stripe's current entitlement path handles completed subscription checkout and deletion, but does not reconcile intermediate states such as `past_due` or `unpaid`; define and verify a grace/revocation policy before enabling production billing.
 
 Paid cancellation grace also depends on receiving the provider's expiration event. If that event is delayed or absent, a cancelled paid account may retain its existing tier until provider state is reconciled. This verification did not contact either payment provider or inspect individual production subscriptions.
+
+## 11. Focused hosting preparation (15 October 2026)
+
+### Deployment and runtime
+
+The existing `.replit` target remains Autoscale, with build `npm run build` and run `node ./dist/index.cjs`. The production bundle runs on Node.js 20, listens on `PORT` (configured as `5000`) and binds to `0.0.0.0`. The current deployment service reports no active deployment and no production URL. The application uses the existing external Neon connection; it does not provision a replacement database.
+
+Startup registers routes and serves the production client. It does not call `ensureSchemaColumns`, run migrations, seed sample data, or start the separate worker. The Postgres session store has `createTableIfMissing: false`. The web process logs that scheduled work is separate. `/api/health` is process liveness only, not a database-readiness check. Normal customer requests can write their relevant records; in particular, `/api/user` can downgrade an explicitly expired founding grant when that route is requested.
+
+### Safe production defaults prepared in development
+
+Production environment defaults now set `LIVE_BILLING_ENABLED`, `EMAIL_DELIVERY_ENABLED`, `MT5_SYNC_ENABLED`, and `BACKGROUND_JOBS_ENABLED` to false. Code checks fail closed when the live-billing or MT5 flags are absent. New Stripe/PayPal checkouts and one-time PayPal order operations return 503 while billing is disabled; existing verified webhook/activation and cancellation routes are not disabled. MT5 history remains available, but inbound bridge sync returns 503 until explicitly enabled. The worker is not part of the web run command and still requires both its environment flag and `--confirm-live`.
+
+Email delivery remains disabled unless the explicit flag and both SMTP credentials are present. While it is off, registration, verification-email resend, and password-recovery requests return 503 before creating accounts or reset tokens. Existing verified users can still log in and use the app; authenticated password changes and consumption of a previously issued valid reset token remain available. These defaults are development-only until a separately approved publish.
+
+The release build and focused local route tests cover authentication/verification, MT5 ownership and disabled sync, Stripe/PayPal entitlement paths, the disabled production gates, and retired AI endpoints. No production app startup or database connection was made for these checks.
+
+### Current public route and hosting choice
+
+Public DNS currently resolves the root to `34.111.179.208`; `www` is a CNAME to the root. The nameservers are `dns1.registrar-servers.com` and `dns2.registrar-servers.com`. The zone has existing verification and mail-related TXT records; preserve them unless their owners explicitly approve a change. A new public check on 15 October 2026 again found HTTP redirecting to HTTPS and the HTTPS connection closing before the server returned a certificate. The DNS address does not identify the application, cloud project, or owner. A Replit verification TXT record exists, but that does not establish an active Replit deployment.
+
+**Recommended target: the already configured Replit Autoscale deployment**, after the owner confirms the destination and approves publication. The Express API serves a stateless web app and connects to external Neon; it does not need a continuously running worker. The old DNS target is not a safe recovery choice until its actual hosting service is identified and its TLS/application health can be confirmed. If the owner identifies and can access that service, compare it again before choosing; do not redirect traffic to it based only on the IP.
+
+Current Replit documentation (effective 1 August 2026) lists Autoscale charges of `$1/month` base, `$0.60 per million compute units`, `$0.40 per million requests`, and `$0.05/GiB` outbound transfer. Actual cost cannot be estimated without expected traffic, account credits, and usage. These charges exclude Neon usage, Namecheap domain renewal, payment-provider fees, and any legacy host costs.
+
+### Production database URL verification without connecting
+
+No production secret value was read and the existing `DATABASE_URL` mapping remains unverified. At a separately approved time, run a no-network fingerprint in the intended production environment: parse `DATABASE_URL` in memory, print only its hostname/endpoint identifier, port, database name, and role, and compare those fields with the previously verified Neon project `green-art-19890518`, branch `br-empty-wildflower-ahbsfyzr`, endpoint `ep-sparkling-moon-ahtc0gbu`, database `neondb`, and role `tradify_app`. Never print the URL, password, query parameters, or full connection string. Stop on any mismatch. Only a later separately approved database-backed smoke test may open a connection and wake Neon compute.
+
+### Controlled restoration steps
+
+**Development-only work already completed:** preserve the current Autoscale/build/run configuration; keep production feature flags false; test the built artifact and route gates on the isolated development database; do not connect to Neon or create a deployment.
+
+**Requires separate owner approval:**
+
+1. Confirm access to the Namecheap DNS zone and identify any Google Cloud, Vercel, or other hosting account that may own the old endpoint. Do not share credentials; the owner can confirm the account/service and inspect it directly.
+2. Choose a Replit publishing geography before the first publish if the account permits it; Replit documents that geography cannot be changed after the first publish. No geography or account plan was inspected.
+3. Approve the offline production `DATABASE_URL` fingerprint. Approve separately before any request that would connect to production Neon or wake its compute.
+4. Approve publication to the generated Replit URL. Verify build health and production gates there before attaching `tradifyapp.com`.
+5. In Replit Publishing → Domains, add the domain and use only the exact A/TXT values Replit supplies. Configure `www` as Replit directs. At Namecheap, first record existing records and TTL; only then, with separate DNS approval, replace conflicting website records. Preserve mail/verification TXT records and retain Replit's required TXT record for certificate renewals.
+6. Wait for Replit's TLS certificate status to become valid before routing customers. Check root and `www` over HTTPS, login with an existing verified account, health/liveness, authentication, MT5-disabled response, and payment/email-disabled responses. A database-backed smoke test needs its own Neon-wake approval.
+7. Enable billing, email, MT5 sync, or jobs only through separate approvals after the relevant production credentials, webhooks, SMTP sender, and test procedures are verified. Do not enable them as part of the first restoration.
+
+**Rollback:** before any DNS change, save the exact old records and TTL. If a Replit build fails, use Replit's prior successful deployment for rollback. If the app works but domain routing or TLS fails, correct the Replit-provided DNS values; do not assume restoring the old records restores service, because the current endpoint fails TLS and its owner is unknown. Any DNS rollback still requires explicit approval.
+
+### Information still needed
+
+- Confirm that the owner can access Namecheap and manage the `tradifyapp.com` DNS zone.
+- Identify whether the current `34.111.179.208` endpoint belongs to a recoverable Google Cloud project, Vercel app, or other host; provide the service name/project identifier, not credentials.
+- Choose the desired Replit geography (if available on the account) before first publication.
+- Separately approve the offline database URL fingerprint, production compute wake for any actual DB smoke test, and eventually publication/DNS changes.
