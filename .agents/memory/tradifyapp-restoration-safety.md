@@ -44,3 +44,9 @@ As of 15 October 2026, the user confirms access to Namecheap DNS only; the hosti
 **Why:** Domain control does not establish ownership or access to the service currently serving the application.
 
 **How to apply:** Do not claim the old host can be restored or redirect DNS to a guessed provider. Identify the hosting service and get separate approval before any DNS or publishing action.
+
+Keep provider-verified Stripe and PayPal subscription updates active while new checkout is disabled; the user confirmed this policy on 15 October 2026.
+
+**Why:** The user wants existing paid subscription changes to keep reconciling while new purchases remain blocked.
+
+**How to apply:** Do not treat `LIVE_BILLING_ENABLED=false` as a global webhook pause. Only add a separate entitlement-update gate if the user explicitly changes this decision.
