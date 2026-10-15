@@ -38,3 +38,9 @@ For ecosystem branding, the parent brand is Tradify; Tradify Journal retains its
 **Why:** The user explicitly set this product-brand direction and asked that Signals remain an independent product.
 
 **How to apply:** Keep prototypes in the Journal development workspace, use a launch-pending state for unfinished Signals destinations, and do not change Signals assets, code, or release state.
+
+As of 15 October 2026, the user confirms access to Namecheap DNS only; the hosting service/account behind the current domain IP is unidentified.
+
+**Why:** Domain control does not establish ownership or access to the service currently serving the application.
+
+**How to apply:** Do not claim the old host can be restored or redirect DNS to a guessed provider. Identify the hosting service and get separate approval before any DNS or publishing action.

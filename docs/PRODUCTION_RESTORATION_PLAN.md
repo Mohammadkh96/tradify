@@ -230,7 +230,7 @@ Startup registers routes and serves the production client. It does not call `ens
 
 ### Safe production defaults prepared in development
 
-Production environment defaults now set `LIVE_BILLING_ENABLED`, `EMAIL_DELIVERY_ENABLED`, `MT5_SYNC_ENABLED`, and `BACKGROUND_JOBS_ENABLED` to false. Code checks fail closed when the live-billing or MT5 flags are absent. New Stripe/PayPal checkouts and one-time PayPal order operations return 503 while billing is disabled; existing verified webhook/activation and cancellation routes are not disabled. MT5 history remains available, but inbound bridge sync returns 503 until explicitly enabled. The worker is not part of the web run command and still requires both its environment flag and `--confirm-live`.
+Production environment defaults now set `LIVE_BILLING_ENABLED`, `EMAIL_DELIVERY_ENABLED`, `MT5_SYNC_ENABLED`, and `BACKGROUND_JOBS_ENABLED` to false. Code checks fail closed when the live-billing or MT5 flags are absent. New Stripe/PayPal checkouts and one-time PayPal order operations return 503 while billing is disabled. **This is not a global subscription-write switch:** provider-signed Stripe and PayPal webhooks remain enabled and can update entitlements/statuses for existing subscriptions. Stripe's authenticated success-return activation and PayPal's authenticated provider-lookup activation routes also remain available for a customer's already completed checkout. These paths are intentionally retained to keep existing subscriptions in sync; a verified delayed activation can still grant an entitlement while new checkout is off. MT5 history remains available, but inbound bridge sync returns 503 until explicitly enabled. The worker is not part of the web run command and still requires both its environment flag and `--confirm-live`.
 
 Email delivery remains disabled unless the explicit flag and both SMTP credentials are present. While it is off, registration, verification-email resend, and password-recovery requests return 503 before creating accounts or reset tokens. Existing verified users can still log in and use the app; authenticated password changes and consumption of a previously issued valid reset token remain available. These defaults are development-only until a separately approved publish.
 
@@ -242,7 +242,7 @@ Public DNS currently resolves the root to `34.111.179.208`; `www` is a CNAME to 
 
 **Recommended target: the already configured Replit Autoscale deployment**, after the owner confirms the destination and approves publication. The Express API serves a stateless web app and connects to external Neon; it does not need a continuously running worker. The old DNS target is not a safe recovery choice until its actual hosting service is identified and its TLS/application health can be confirmed. If the owner identifies and can access that service, compare it again before choosing; do not redirect traffic to it based only on the IP.
 
-Current Replit documentation (effective 1 August 2026) lists Autoscale charges of `$1/month` base, `$0.60 per million compute units`, `$0.40 per million requests`, and `$0.05/GiB` outbound transfer. Actual cost cannot be estimated without expected traffic, account credits, and usage. These charges exclude Neon usage, Namecheap domain renewal, payment-provider fees, and any legacy host costs.
+Current Replit documentation lists Autoscale charges of `$1/month` base, `$3.20 per million compute units`, `$1.20 per million requests`, and `$0.10/GiB` outbound transfer. Replit says monthly subscription credits are applied automatically and usage charges apply after those credits are exhausted. The account's current remaining credit balance is not available to this workspace, so coverage cannot be confirmed; the owner can check **Settings → Usage**. The minimum billable deployment floor is `$1/month` before credits and usage; actual cost cannot be estimated without expected traffic and the account's remaining credits. These charges exclude Neon usage, Namecheap domain renewal, payment-provider fees, and any legacy host costs.
 
 ### Production database URL verification without connecting
 
@@ -264,9 +264,24 @@ No production secret value was read and the existing `DATABASE_URL` mapping rema
 
 **Rollback:** before any DNS change, save the exact old records and TTL. If a Replit build fails, use Replit's prior successful deployment for rollback. If the app works but domain routing or TLS fails, correct the Replit-provided DNS values; do not assume restoring the old records restores service, because the current endpoint fails TLS and its owner is unknown. Any DNS rollback still requires explicit approval.
 
+### Namecheap DNS change sheet (prepared, not applied)
+
+The current public baseline is root `A` → `34.111.179.208` and `www` `CNAME` → the root domain. The exact Replit replacement values do not exist until the domain is added to the Replit Publishing → Domains tool after publishing; do not substitute guessed IPs or CNAMEs.
+
+After separate publish and DNS approval:
+
+| Namecheap host | Current website record | Approved action after Replit provides values |
+|---|---|---|
+| `@` (apex) | `A` → `34.111.179.208` | Replace only this website `A` value with the exact Replit-provided apex `A` value. Do not use an apex CNAME. |
+| `@` (apex) | Existing TXT records, including mail and verification records | Add the exact Replit-provided TXT verification value if requested. Preserve every existing TXT value; do not replace the TXT set. Keep Replit's required TXT record for certificate renewals. |
+| `www` | `CNAME` → `tradifyapp.com` | Add `www` separately in Replit Domains, then change only the `www` record to the exact record/type/value Replit displays. |
+| Mail and other subdomains | Existing MX, SPF/DKIM/DMARC, and unrelated records | Leave unchanged. |
+
+No DNS record has been changed. Before any cutover, capture all current records and TTLs; verify Replit's TLS certificate is active before sending visitors to the new target.
+
 ### Information still needed
 
-- Confirm that the owner can access Namecheap and manage the `tradifyapp.com` DNS zone.
-- Identify whether the current `34.111.179.208` endpoint belongs to a recoverable Google Cloud project, Vercel app, or other host; provide the service name/project identifier, not credentials.
+- The owner confirms Namecheap DNS access only. The service/account behind `34.111.179.208` remains unidentified; no hosting-console access has been confirmed.
+- Identify whether the current endpoint belongs to a recoverable Google Cloud project, Vercel app, or other host; provide the service name/project identifier, not credentials.
 - Choose the desired Replit geography (if available on the account) before first publication.
 - Separately approve the offline database URL fingerprint, production compute wake for any actual DB smoke test, and eventually publication/DNS changes.
