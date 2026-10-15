@@ -2,9 +2,9 @@
 
 **Contract version:** `tradify-account-linking-v1`
 
-**Status:** Journal implements the versioned revocation retry rule `tradify-account-linking-v1/revocation-retry-v1` in isolated-development code and regression tests. Signals previously reported acceptance, but both products must independently confirm this exact specification before real cross-service testing. This remains isolated-development scope and does not authorize production use.
+**Status:** Journal accepts and implements the exact versioned revocation retry rule `tradify-account-linking-v1/revocation-retry-v1`. The Signals Agent reports that Signals has implemented and tested the same rule and independently accepts it. The Journal focused isolated test passes. This protocol acceptance does not authorize live cross-service testing or production use; Journal's private signing key and Signals' public trust configuration are not configured because development-secret isolation is still being resolved.
 
-**Important compatibility note:** Journal linking remains default-off. The local implementation is not approval for real cross-service testing: both products must independently confirm the exact contract, and secure development trust configuration must be reviewed first. No production migration, key exchange, Signals API call, or deployment is authorized here.
+**Important compatibility note:** Journal linking remains default-off. Both projects have accepted the `revocation-retry-v1` rule, but that is not acceptance of every account-linking V1 detail or approval for real cross-service testing. Secure development trust configuration and the remaining product/API decisions must be reviewed first. No production migration, key exchange, Signals API call, or deployment is authorized here.
 
 ## 1. Purpose and security boundaries
 
@@ -50,7 +50,7 @@ Signals has approved the isolated-development policy direction. Identifiers that
 - Reserved Journal development `kid`: `journal-dev-20261015-5814c6a3c529416a`. It is not yet attached to a key or configured; Signals must not pin it until the matching public key is generated and verified.
 - No Journal private key, Signals public key, or Signals API base URL is configured in the development environment. The feature flag is also unset, so linking remains off. Key material is never stored in this document.
 - If an isolated development signer is later configured, the private key variable is `DEV_TRADIFY_JOURNAL_PRIVATE_KEY`. Production startup fails closed if either that development-only variable or the legacy `TRADIFY_JOURNAL_PRIVATE_KEY` variable is present. Replit documents that development secrets may sync into deployment settings at publish time, so a development secret must still be explicitly absent from the Production deployment configuration before publishing; a variable name or runtime guard alone cannot prevent the platform from copying it.
-- Revocation retry rule: `tradify-account-linking-v1/revocation-retry-v1`. Both Journal and Signals must independently accept this exact version before real cross-service testing.
+- Revocation retry rule: `tradify-account-linking-v1/revocation-retry-v1`. Journal and Signals have independently accepted this exact rule; secure key exchange and API configuration are still required before real cross-service testing.
 - Staging and production issuers, audiences, and keys are out of scope and are not defined by this development contract.
 
 Signals must create the stable `sub` on its server using 32 cryptographically random bytes encoded as unpadded base64url. It must persist that subject against the authenticated Signals account and reuse it on later link attempts. It must never derive `sub` from or accept it as a client-provided `userId`, email, or profile value. Journal stores that opaque subject with the exact configured Signals issuer.
@@ -390,7 +390,7 @@ After validating the assertion and recomputed hash:
 - A repeat with the same event ID and hash returns the same idempotent acknowledgement without repeating side effects, even though the new attempt has a different valid assertion and `jti`.
 - Reuse of an event ID with a different payload hash returns `409` and records a security-relevant mismatch using only non-sensitive event/hash metadata. It must not change the existing event or link state.
 
-The successful `200` acknowledgement contains `contractVersion`, `eventId`, `linkId`, `payloadHash`, and `state: "revoked"`. The sender verifies that the acknowledgement matches its persisted event ID and payload hash before changing its local link from `revocation_pending` to `revoked`. Transient failures use bounded exponential backoff with a finite base and cap; production retry values require separate approval. Do not weaken any authentication, expiry, or replay checks to support retries.
+The successful `200` acknowledgement contains `contractVersion`, `eventId`, `linkId`, `payloadHash`, and `state: "revoked"`. The sender verifies that the acknowledgement matches its persisted event ID and payload hash before changing its local link from `revocation_pending` to `revoked`. Transient network errors and retryable HTTP statuses use bounded exponential backoff with a finite base and cap; permanent conflicts or invalid acknowledgements remain pending and are blocked for manual reconciliation. Production retry values require separate approval. Do not weaken any authentication, expiry, or replay checks to support retries.
 
 Sanitized Signals-to-Journal revocation assertion claims:
 
@@ -555,7 +555,7 @@ Errors must not echo the authorization code, JWT, email, subject, or key materia
 - A customer can unlink from either product while authenticated to that product. Require fresh local authentication for the operation if the product's session policy says the session is stale.
 - On customer unlink, the initiating product immediately makes the local association unusable, sets `revocation_pending`, and writes a signed event to its own transactional outbox. Only after the other service acknowledges the event does the initiating product transition it to `revoked`.
 - While remote revocation is pending, the association cannot be used and a replacement link for that pair is blocked. A receiver applies the event idempotently and acknowledges it. Do not silently reactivate or discard a pending event.
-- Each product owns delivery of its own outbound events and its authenticated inbound revocation handler. If the partner is unavailable, retry the same immutable event ID, canonical payload, and hash with a fresh 120-second assertion and unique `jti` for each attempt. Both products must independently confirm `tradify-account-linking-v1/revocation-retry-v1` before real cross-service testing. Production backoff parameters remain a separate decision.
+- Each product owns delivery of its own outbound events and its authenticated inbound revocation handler. If the partner is unavailable, retry the same immutable event ID, canonical payload, and hash with a fresh 120-second assertion and unique `jti` for each attempt. Both agents have accepted `tradify-account-linking-v1/revocation-retry-v1`; secure trust configuration remains a prerequisite for real cross-service testing. Production backoff parameters remain a separate decision.
 - For isolated development tests, use a deterministic outbox drain or an explicitly started manual development worker. Never start a worker by default in the Journal web process, and do not activate production background jobs.
 - Account deletion must not wait for the other product: disable the local association, persist the signed revocation event and minimal pseudonymous audit tombstone, then continue the local deletion/anonymization. Retry remote delivery asynchronously. Do not rely on an account foreign-key cascade that silently erases the event.
 - Account suspension immediately disables the link and sends a revocation event. Unsuspension does not automatically relink; both products require a new consent flow.
@@ -617,7 +617,7 @@ Required Journal and Signals contract cases before activation:
 
 ## 11. Development implementation handoff
 
-The Journal-only implementation sequence is documented in [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). Implementation is blocked until Signals confirms the exact development audience, securely provides the development issuer/key ID/public key, and gives final written acceptance; the Journal owner must also approve.
+The Journal-only implementation sequence is documented in [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). The Journal retry-v1 implementation is complete and accepted. Real cross-service tests remain blocked until Signals' exact development audience, issuer, key ID/public key, and API base URL are securely confirmed, and the broader account-linking contract decisions are accepted.
 
 The development configuration must be isolated from production and exchanged through secure configuration only. Signals implements Signals-owned work in its own project; Journal implements Journal-owned work in this project. A development-only manual/deterministic outbox drain may run only when explicitly started for tests.
 
@@ -627,7 +627,7 @@ No production deployment, paid service, production database change, DNS change, 
 
 Signals has approved the isolated-development policy direction described in its review: five-minute codes, 120-second maximum assertion lifetime, 30-second future issuance tolerance, zero expiration grace, up to seven days of key overlap, immediate emergency revocation, separate consent, no email matching, no shared credentials or entitlements, and the unlink/deletion/outbox responsibilities recorded above.
 
-Before implementation, the remaining development gates are:
+Before real cross-service testing, the remaining development gates are:
 
 - Signals confirms whether `tradify-journal-link-v1-dev` is the exact development audience and supplies the exact HTTPS development issuer, `kid`, and public key through secure configuration.
 - Signals confirms the reverse audience for Journal-signed requests to Signals; this document intentionally does not invent it.

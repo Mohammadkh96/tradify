@@ -1,6 +1,6 @@
 # Tradify Journal–Signals V1 Linking: Journal Implementation Plan
 
-**Status:** Journal's default-off implementation and isolated regression coverage now implement `tradify-account-linking-v1/revocation-retry-v1`. Signals previously reported acceptance, but both products must independently confirm this exact version before real cross-service testing.
+**Status:** Journal accepts and implements `tradify-account-linking-v1/revocation-retry-v1`. The Signals Agent reports that Signals has implemented and tested the same rule and independently accepts it. Live cross-service testing remains blocked by development signing-key isolation and secure trust configuration.
 
 **Scope:** Journal repository only. Signals changes remain the responsibility of the Signals Agent in the Signals project.
 
@@ -8,7 +8,7 @@
 
 1. Use the agreed development identities: Signals issuer `https://linking-dev.signals.tradifyapp.com`, Journal issuer `https://linking-dev.journal.tradifyapp.com`, Signals-to-Journal audience `tradify-journal-link-v1-dev`, and Journal-to-Signals audience `tradify-signals-link-v1-dev`.
 2. Signals' public signing key and `kid`, Journal's public signing key and `kid`, and the actual Signals HTTPS API base URL still require a secure exchange. Issuer URLs are not API URLs. No permanent Journal private key is configured. Replit may sync Development secrets into deployment settings when publishing; verify the Production deployment secret list explicitly, and keep linking blocked until the development-only key is absent from Production.
-3. Both Journal and Signals independently confirm the exact version `tradify-account-linking-v1/revocation-retry-v1`; no real cross-service testing occurs before confirmation.
+3. Both Journal and Signals have independently confirmed the exact version `tradify-account-linking-v1/revocation-retry-v1`. No live cross-service request is authorized until the development trust configuration and API endpoint are securely verified.
 4. Use isolated development databases and synthetic `.invalid` accounts for contract testing. No production connection or customer records.
 5. Store development-only configuration outside Git. Keep runtime feature flags default-off; never reuse production issuers, keys, audiences, or credentials.
 
@@ -84,7 +84,8 @@ The Signals Agent must run the matching contract tests against its own isolated 
 
 Journal development work is ready for review only when:
 
-- Journal and Signals have independently confirmed the exact retry-v1 version; development keys, key IDs, and the Signals API base URL have been exchanged securely.
+- Journal and Signals have independently confirmed the exact retry-v1 version.
+- Development keys, key IDs, and the Signals API base URL are securely exchanged and verified before any real cross-service test.
 - The reviewed Journal migration has been applied only to an isolated development database.
 - Journal and Signals contract tests pass with synthetic data, and default-off behavior is verified before and after testing.
 - Manual/deterministic revocation draining is tested without a production worker.

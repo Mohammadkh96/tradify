@@ -882,11 +882,11 @@ describe("application security boundaries against a disposable local PostgreSQL 
           linkId: body.linkId,
           state: "revoked",
           eventId: body.eventId,
-          payloadHash: outboundAttempts.length === 2 ? "0".repeat(64) : body.payloadHash,
+          payloadHash: body.payloadHash,
         }), { status: 200, headers: { "content-type": "application/json" } });
       };
       const firstPass = await drainProductLinkOutboxOnce({ fetchImpl: captureDelivery as typeof fetch });
-      expect(firstPass).toEqual({ claimed: 1, delivered: 0, retried: 1 });
+      expect(firstPass).toEqual({ claimed: 1, delivered: 0, retried: 1, blocked: 0 });
       const afterFailure = await testPool.query<{ state: string; attempt_count: number; canonical_payload: string; payload_hash: string }>(
         `SELECT state, attempt_count, canonical_payload, payload_hash
            FROM product_link_revocation_outbox WHERE event_id = $1`,
@@ -921,20 +921,9 @@ describe("application security boundaries against a disposable local PostgreSQL 
         [unlinkBody.eventId],
       );
       const secondPass = await drainProductLinkOutboxOnce({ fetchImpl: captureDelivery as typeof fetch });
-      expect(secondPass).toEqual({ claimed: 1, delivered: 0, retried: 1 });
-      expect((await testPool.query<{ state: string }>(
-        "SELECT state FROM product_account_links WHERE id = $1",
-        [pending.linkId],
-      )).rows[0].state).toBe("revocation_pending");
-      await testPool.query(
-        `UPDATE product_link_revocation_outbox SET next_attempt_at = NOW() WHERE event_id = $1`,
-        [unlinkBody.eventId],
-      );
-      const thirdPass = await drainProductLinkOutboxOnce({ fetchImpl: captureDelivery as typeof fetch });
-      expect(thirdPass).toEqual({ claimed: 1, delivered: 1, retried: 0 });
-      expect(outboundAttempts).toHaveLength(3);
+      expect(secondPass).toEqual({ claimed: 1, delivered: 1, retried: 0, blocked: 0 });
+      expect(outboundAttempts).toHaveLength(2);
       expect(outboundAttempts[0].body).toBe(outboundAttempts[1].body);
-      expect(outboundAttempts[1].body).toBe(outboundAttempts[2].body);
       const parseJwt = (token: string) => {
         const [headerPart, claimPart, signaturePart] = token.split(".");
         const claims = JSON.parse(Buffer.from(claimPart, "base64url").toString("utf8"));
@@ -963,13 +952,44 @@ describe("application security boundaries against a disposable local PostgreSQL 
       expect(secondOutgoingClaims.jti).not.toBe(firstOutgoingClaims.jti);
       expect(secondOutgoingClaims.exp - secondOutgoingClaims.iat).toBe(120);
       expect(firstOutgoingClaims.payload_sha256).toBe(afterFailure.rows[0].payload_hash);
-      expect(parseJwt(outboundAttempts[2].token).jti).not.toBe(secondOutgoingClaims.jti);
-      expect(parseJwt(outboundAttempts[2].token).exp - parseJwt(outboundAttempts[2].token).iat).toBe(120);
       const revoked = await testPool.query<{ state: string; partner_subject: string | null }>(
         `SELECT state, partner_subject FROM product_account_links WHERE id = $1`,
         [pending.linkId],
       );
       expect(revoked.rows[0]).toEqual({ state: "revoked", partner_subject: null });
+
+      const invalidAckLink = await createActiveLink(
+        `${emailPrefix}-mismatched-ack@example.invalid`,
+        "Synthetic Mismatched Acknowledgement User",
+      );
+      const invalidAckUnlink = await request(`/api/v1/product-links/signals/${invalidAckLink.linkId}`, {
+        method: "DELETE",
+        cookie: invalidAckLink.session.cookie,
+        headers: { "x-csrf-token": invalidAckLink.csrfToken },
+      });
+      expect(invalidAckUnlink.status).toBe(202);
+      const mismatchedAckDelivery = async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body));
+        return new Response(JSON.stringify({
+          contractVersion: LINK_CONTRACT_VERSION,
+          linkId: body.linkId,
+          eventId: body.eventId,
+          payloadHash: "0".repeat(64),
+          state: "revoked",
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      };
+      const invalidAckPass = await drainProductLinkOutboxOnce({
+        fetchImpl: mismatchedAckDelivery as typeof fetch,
+      });
+      expect(invalidAckPass).toEqual({ claimed: 1, delivered: 0, retried: 0, blocked: 1 });
+      expect((await testPool.query<{ state: string }>(
+        "SELECT state FROM product_account_links WHERE id = $1",
+        [invalidAckLink.linkId],
+      )).rows[0].state).toBe("revocation_pending");
+      expect((await testPool.query<{ state: string }>(
+        "SELECT state FROM product_link_revocation_outbox WHERE event_id = $1",
+        [(await invalidAckUnlink.json()).eventId],
+      )).rows[0].state).toBe("blocked");
 
       const inboundLink = await createActiveLink(
         `${emailPrefix}-inbound-revoke@example.invalid`,

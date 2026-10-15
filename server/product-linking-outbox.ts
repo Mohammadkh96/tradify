@@ -29,6 +29,7 @@ export type ProductLinkOutboxResult = {
   claimed: number;
   delivered: number;
   retried: number;
+  blocked: number;
 };
 
 const MAX_BATCH_SIZE = 25;
@@ -128,9 +129,22 @@ async function scheduleRetry(event: DueEvent, errorCode: string): Promise<void> 
         SET state = 'retry',
             next_attempt_at = NOW() + ($2::bigint * INTERVAL '1 millisecond'),
             last_error_code = $3
-      WHERE event_id = $1 AND state <> 'delivered'`,
+       WHERE event_id = $1 AND state = 'retry'`,
     [event.event_id, backoffMs, errorCode],
   );
+}
+
+async function blockEvent(event: DueEvent, errorCode: string): Promise<void> {
+  await pool.query(
+    `UPDATE product_link_revocation_outbox
+        SET state = 'blocked', last_error_code = $2
+      WHERE event_id = $1 AND state = 'retry'`,
+    [event.event_id, errorCode],
+  );
+}
+
+function isRetryableHttpStatus(status: number): boolean {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
 }
 
 /**
@@ -155,11 +169,12 @@ export async function drainProductLinkOutboxOnce(
   const events = await claimDueEvents(limit);
   let delivered = 0;
   let retried = 0;
+  let blocked = 0;
 
   for (const event of events) {
     if (event.partner_issuer !== SIGNALS_DEV_ISSUER) {
-      await scheduleRetry(event, "UNAPPROVED_PARTNER_ISSUER");
-      retried += 1;
+      await blockEvent(event, "UNAPPROVED_PARTNER_ISSUER");
+      blocked += 1;
       continue;
     }
 
@@ -181,8 +196,8 @@ export async function drainProductLinkOutboxOnce(
         persistedPayload.reason !== event.reason ||
         persistedPayload.contractVersion !== LINK_CONTRACT_VERSION
       ) {
-        await scheduleRetry(event, "OUTBOX_PAYLOAD_INTEGRITY_FAILURE");
-        retried += 1;
+        await blockEvent(event, "OUTBOX_PAYLOAD_INTEGRITY_FAILURE");
+        blocked += 1;
         continue;
       }
       body = { ...persistedPayload, payloadHash: event.payload_hash };
@@ -222,9 +237,15 @@ export async function drainProductLinkOutboxOnce(
       if (validAcknowledgement) {
         await recordDelivery(event);
         delivered += 1;
-      } else {
-        await scheduleRetry(event, response.status === 409 ? "PARTNER_CONFLICT" : "PARTNER_UNAVAILABLE");
+      } else if (isRetryableHttpStatus(response.status)) {
+        await scheduleRetry(event, `PARTNER_HTTP_${response.status}`);
         retried += 1;
+      } else {
+        await blockEvent(
+          event,
+          response.status === 409 ? "PARTNER_CONFLICT" : "PARTNER_ACKNOWLEDGEMENT_INVALID",
+        );
+        blocked += 1;
       }
     } catch {
       await scheduleRetry(event, "PARTNER_UNAVAILABLE");
@@ -232,5 +253,5 @@ export async function drainProductLinkOutboxOnce(
     }
   }
 
-  return { claimed: events.length, delivered, retried };
+  return { claimed: events.length, delivered, retried, blocked };
 }

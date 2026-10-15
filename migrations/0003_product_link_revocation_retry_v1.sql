@@ -25,6 +25,13 @@ ALTER TABLE product_link_revocation_outbox
   ALTER COLUMN canonical_payload SET NOT NULL,
   ALTER COLUMN payload_hash SET NOT NULL;
 
+ALTER TABLE product_link_revocation_outbox
+  DROP CONSTRAINT IF EXISTS product_link_revocation_outbox_state_check;
+
+ALTER TABLE product_link_revocation_outbox
+  ADD CONSTRAINT product_link_revocation_outbox_state_check
+  CHECK (state IN ('pending', 'retry', 'delivered', 'blocked'));
+
 ALTER TABLE product_link_revocation_inbox
   ADD COLUMN IF NOT EXISTS canonical_payload TEXT,
   ADD COLUMN IF NOT EXISTS payload_hash CHAR(64);
