@@ -238,13 +238,21 @@ Email delivery remains disabled unless the explicit flag and both SMTP credentia
 
 The release build and focused local route tests cover authentication/verification, MT5 ownership and disabled sync, Stripe/PayPal entitlement paths, the disabled production gates, and retired AI endpoints. No production app startup or database connection was made for these checks.
 
+### Provider webhook readiness
+
+The owner approved keeping verified subscription updates active while new checkout is disabled. The production routes still require provider verification, but the current production secret inventory has no `STRIPE_WEBHOOK_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_CLIENT_ID`, or `PAYPAL_CLIENT_SECRET`. Their values were not read. Therefore, the code policy is retained, but live webhook verification cannot work until those values are configured through Replit Secrets and provider endpoints are confirmed. Do not infer that installing the Stripe connector supplies its webhook signing secret.
+
+### Temporary Replit URL
+
+The generated `*.replit.app` URL does not exist until the first publish, and no custom domain is required to use it. The app's request-derived public base prefers Replit's `REPLIT_DOMAINS`; `APP_URL` in production still names `https://tradifyapp.com` and is used for email links. With email off, those messages are not delivered; before enabling email on a temporary deployment, set `APP_URL` to that generated URL. Stripe and PayPal webhook destinations do not automatically move to the temporary URL.
+
 ### Current public route and hosting choice
 
 Public DNS currently resolves the root to `34.111.179.208`; `www` is a CNAME to the root. The nameservers are `dns1.registrar-servers.com` and `dns2.registrar-servers.com`. The zone has existing verification and mail-related TXT records; preserve them unless their owners explicitly approve a change. A new public check on 15 October 2026 again found HTTP redirecting to HTTPS and the HTTPS connection closing before the server returned a certificate. The DNS address does not identify the application, cloud project, or owner. A Replit verification TXT record exists, but that does not establish an active Replit deployment.
 
 **Recommended target: the already configured Replit Autoscale deployment**, after the owner confirms the destination and approves publication. The Express API serves a stateless web app and connects to external Neon; it does not need a continuously running worker. The old DNS target is not a safe recovery choice until its actual hosting service is identified and its TLS/application health can be confirmed. If the owner identifies and can access that service, compare it again before choosing; do not redirect traffic to it based only on the IP.
 
-Current Replit documentation lists Autoscale charges of `$1/month` base, `$3.20 per million compute units`, `$1.20 per million requests`, and `$0.10/GiB` outbound transfer. Replit says monthly subscription credits are applied automatically and usage charges apply after those credits are exhausted. The account's current remaining credit balance is not available to this workspace, so coverage cannot be confirmed; the owner can check **Settings → Usage**. The minimum billable deployment floor is `$1/month` before credits and usage; actual cost cannot be estimated without expected traffic and the account's remaining credits. These charges exclude Neon usage, Namecheap domain renewal, payment-provider fees, and any legacy host costs.
+Current Replit documentation lists Autoscale charges of `$1/month` base, `$0.60 per million compute units`, `$0.40 per million requests`, and `$0.05/GiB` outbound transfer (rates effective 1 August 2026). Replit says monthly subscription credits are applied automatically and usage charges apply after those credits are exhausted. The account's current remaining credit balance is not available to this workspace, so coverage cannot be confirmed; the owner can check **Settings → Usage** and set a monthly spending limit there. The minimum billable deployment floor is `$1/month` before credits and usage; actual cost cannot be estimated without expected traffic and the account's remaining credits. These charges exclude Neon usage, Namecheap domain renewal, payment-provider fees, and any legacy host costs.
 
 ### Production database URL verification without connecting
 
