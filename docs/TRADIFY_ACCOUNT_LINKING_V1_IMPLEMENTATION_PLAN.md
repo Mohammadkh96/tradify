@@ -1,18 +1,18 @@
 # Tradify Journal–Signals V1 Linking: Journal Implementation Plan
 
-**Status:** The Journal owner approves `tradify-account-linking-v1/revocation-retry-v1`. Signals previously reported acceptance, but both products must independently confirm this exact version before it is finalized. Journal's default-off implementation still requires schema, delivery, inbox, audit, and acknowledgement changes to comply.
+**Status:** Journal's default-off implementation and isolated regression coverage now implement `tradify-account-linking-v1/revocation-retry-v1`. Signals previously reported acceptance, but both products must independently confirm this exact version before real cross-service testing.
 
 **Scope:** Journal repository only. Signals changes remain the responsibility of the Signals Agent in the Signals project.
 
 ## 1. Interoperability preconditions
 
 1. Use the agreed development identities: Signals issuer `https://linking-dev.signals.tradifyapp.com`, Journal issuer `https://linking-dev.journal.tradifyapp.com`, Signals-to-Journal audience `tradify-journal-link-v1-dev`, and Journal-to-Signals audience `tradify-signals-link-v1-dev`.
-2. Signals' public signing key and `kid`, Journal's public signing key and `kid`, and the actual Signals HTTPS API base URL still require a secure exchange. Issuer URLs are not API URLs.
+2. Signals' public signing key and `kid`, Journal's public signing key and `kid`, and the actual Signals HTTPS API base URL still require a secure exchange. Issuer URLs are not API URLs. No permanent Journal private key is configured. Replit may sync Development secrets into deployment settings when publishing; verify the Production deployment secret list explicitly, and keep linking blocked until the development-only key is absent from Production.
 3. Both Journal and Signals independently confirm the exact version `tradify-account-linking-v1/revocation-retry-v1`; no real cross-service testing occurs before confirmation.
 4. Use isolated development databases and synthetic `.invalid` accounts for contract testing. No production connection or customer records.
 5. Store development-only configuration outside Git. Keep runtime feature flags default-off; never reuse production issuers, keys, audiences, or credentials.
 
-Before bidirectional revocation tests, Journal must also establish its own exact development issuer and key ID, keep its private key in Journal's development secret store, and share only the corresponding public key with Signals through the approved secure configuration exchange.
+Before bidirectional revocation tests, Journal must establish its own exact development issuer and key ID, configure a development-only private key under `DEV_TRADIFY_JOURNAL_PRIVATE_KEY`, prove that it is absent from Production deployment settings, and share only the corresponding public key with Signals through the approved secure configuration exchange.
 
 The API, schema source, profile UI, and explicit manual outbox drain are implemented. Until these interoperability preconditions are met, keep the feature disabled and do not send service requests or expose the linking UI.
 
@@ -27,7 +27,7 @@ The API, schema source, profile UI, and explicit manual outbox drain are impleme
 
 ### B. Replace the Journal prototype's data model
 
-- `migrations/0002_tradify_account_linking_v1.sql` is the Journal-only source migration for authorization digests, separate initiation/final consent, link states, attempt labels, replay fingerprints, lifecycle timestamps, inbound/outbound revocation records, and deletion-safe tombstones. Tests apply it only to a disposable local database.
+- `migrations/0002_tradify_account_linking_v1.sql` and `migrations/0003_product_link_revocation_retry_v1.sql` are Journal-only source migrations for authorization digests, consent, link states, replay protection, lifecycle records, immutable canonical revocation payloads and hashes, mismatch auditing, and deletion-safe tombstones. Tests apply them only to a disposable local database.
 - Remove cascade behavior that could erase a pending revocation or replay/audit record when a Journal user is deleted.
 - Store no raw authorization code, bearer assertion, private key, or Signals account data beyond the scoped opaque subject required by the contract.
 - Enforce one active/pending association per Journal account and partner subject with database constraints.

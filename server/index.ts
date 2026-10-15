@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { assertDevelopmentSigningKeyNotInProduction } from "./product-linking-assertions";
 
 
 const app = express();
@@ -58,6 +59,7 @@ app.use((req, res, next) => {
 const isProd = process.env.NODE_ENV === "production" || process.env.APP_ENV === "production";
 
 async function initializeApp() {
+  assertDevelopmentSigningKeyNotInProduction();
   // Production schema changes must be applied through reviewed migrations,
   // never with the application's runtime database role during startup.
   
@@ -91,6 +93,9 @@ async function initializeApp() {
 }
 
 // Start the application
-initializeApp().catch(console.error);
+initializeApp().catch((error) => {
+  console.error(error instanceof Error ? error.message : "Application startup failed.");
+  process.exitCode = 1;
+});
 
 export default app;

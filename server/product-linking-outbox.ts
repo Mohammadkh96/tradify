@@ -3,7 +3,9 @@ import {
   LINK_CONTRACT_VERSION,
   SIGNALS_DEV_ISSUER,
   SIGNALS_LINK_AUDIENCE,
+  canonicalizeRevocationPayload,
   getJournalSigningConfig,
+  sha256,
   signJournalAssertion,
   type RevocationReason,
 } from "./product-linking-assertions";
@@ -14,6 +16,8 @@ type DueEvent = {
   partner_issuer: string;
   reason: RevocationReason;
   attempt_count: number;
+  canonical_payload: string;
+  payload_hash: string;
 };
 
 type DrainOptions = {
@@ -30,6 +34,12 @@ export type ProductLinkOutboxResult = {
 const MAX_BATCH_SIZE = 25;
 const DELIVERY_LEASE_MS = 2 * 60 * 1000;
 const MAX_BACKOFF_MS = 6 * 60 * 60 * 1000;
+
+export function boundedRevocationRetryDelayMs(attemptCount: number): number {
+  const attempt = Number.isFinite(attemptCount) ? Math.trunc(attemptCount) : 1;
+  const exponent = Math.min(Math.max(attempt - 1, 0), 12);
+  return Math.min(MAX_BACKOFF_MS, 10_000 * (2 ** exponent));
+}
 
 function assertManualDevelopmentContext(): void {
   if (!["development", "test"].includes(process.env.NODE_ENV ?? "")) {
@@ -61,7 +71,8 @@ async function claimDueEvents(limit: number): Promise<DueEvent[]> {
          FROM due
         WHERE outbox.event_id = due.event_id
        RETURNING outbox.event_id, outbox.link_id, outbox.partner_issuer,
-                 outbox.reason, outbox.attempt_count`,
+                  outbox.reason, outbox.attempt_count, outbox.canonical_payload,
+                  outbox.payload_hash`,
       [limit, DELIVERY_LEASE_MS],
     );
     await client.query("COMMIT");
@@ -78,12 +89,17 @@ async function recordDelivery(event: DueEvent): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    await client.query(
+    const markedDelivered = await client.query(
       `UPDATE product_link_revocation_outbox
           SET state = 'delivered', delivered_at = NOW(), last_error_code = NULL
-        WHERE event_id = $1`,
-      [event.event_id],
+        WHERE event_id = $1 AND payload_hash = $2
+          AND canonical_payload = $3 AND state = 'retry'
+        RETURNING event_id`,
+      [event.event_id, event.payload_hash, event.canonical_payload],
     );
+    if (markedDelivered.rowCount !== 1) {
+      throw new Error("Revocation outbox event changed before acknowledgement was committed.");
+    }
     await client.query(
       `UPDATE product_account_links
           SET state = 'revoked', partner_subject = NULL, revoked_at = NOW()
@@ -106,8 +122,7 @@ async function recordDelivery(event: DueEvent): Promise<void> {
 }
 
 async function scheduleRetry(event: DueEvent, errorCode: string): Promise<void> {
-  const exponent = Math.min(Math.max(event.attempt_count - 1, 0), 12);
-  const backoffMs = Math.min(MAX_BACKOFF_MS, 10_000 * (2 ** exponent));
+  const backoffMs = boundedRevocationRetryDelayMs(event.attempt_count);
   await pool.query(
     `UPDATE product_link_revocation_outbox
         SET state = 'retry',
@@ -148,17 +163,34 @@ export async function drainProductLinkOutboxOnce(
       continue;
     }
 
-    const body = {
-      contractVersion: LINK_CONTRACT_VERSION,
-      linkId: event.link_id,
-      eventId: event.event_id,
-      reason: event.reason,
+    let body: {
+      contractVersion: typeof LINK_CONTRACT_VERSION;
+      linkId: string;
+      eventId: string;
+      reason: RevocationReason;
+      payloadHash: string;
     };
     try {
+      const persistedPayload = JSON.parse(event.canonical_payload) as Omit<typeof body, "payloadHash">;
+      const canonicalPayload = canonicalizeRevocationPayload(persistedPayload);
+      if (
+        canonicalPayload !== event.canonical_payload ||
+        sha256(canonicalPayload) !== event.payload_hash ||
+        persistedPayload.eventId !== event.event_id ||
+        persistedPayload.linkId !== event.link_id ||
+        persistedPayload.reason !== event.reason ||
+        persistedPayload.contractVersion !== LINK_CONTRACT_VERSION
+      ) {
+        await scheduleRetry(event, "OUTBOX_PAYLOAD_INTEGRITY_FAILURE");
+        retried += 1;
+        continue;
+      }
+      body = { ...persistedPayload, payloadHash: event.payload_hash };
       const assertion = signJournalAssertion(config, "revoke", {
         linkId: event.link_id,
         eventId: event.event_id,
         reason: event.reason,
+        payloadHash: event.payload_hash,
       });
       const endpoint = new URL("/api/v1/product-links/journal/revocations", config.apiBaseUrl);
       const response = await fetchImpl(endpoint, {
@@ -184,6 +216,7 @@ export async function drainProductLinkOutboxOnce(
         (responseBody as Record<string, unknown>).contractVersion === LINK_CONTRACT_VERSION &&
         (responseBody as Record<string, unknown>).linkId === event.link_id &&
         (responseBody as Record<string, unknown>).eventId === event.event_id &&
+        (responseBody as Record<string, unknown>).payloadHash === event.payload_hash &&
         (responseBody as Record<string, unknown>).state === "revoked",
       );
       if (validAcknowledgement) {

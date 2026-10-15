@@ -9,6 +9,7 @@ import {
   LINK_CONTRACT_VERSION,
   SIGNALS_CONSENT_VERSION,
   SIGNALS_DEV_ISSUER,
+  canonicalizeRevocationPayload,
   constantTimeHexEqual,
   createAttemptLabel,
   getSignalsKeyring,
@@ -283,11 +284,17 @@ async function createRevocationOutboxEvent(
   );
   if (previous.rows[0]) return previous.rows[0].event_id;
   const eventId = randomUUID();
+  const canonicalPayload = canonicalizeRevocationPayload({
+    contractVersion: LINK_CONTRACT_VERSION,
+    eventId,
+    linkId,
+    reason,
+  });
   await client.query(
     `INSERT INTO product_link_revocation_outbox
-       (event_id, link_id, partner_issuer, reason)
-     VALUES ($1, $2, $3, $4)`,
-    [eventId, linkId, partnerIssuer, reason],
+       (event_id, link_id, partner_issuer, reason, canonical_payload, payload_hash)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [eventId, linkId, partnerIssuer, reason, canonicalPayload, sha256(canonicalPayload)],
   );
   return eventId;
 }
@@ -638,19 +645,19 @@ export function registerProductLinkingRoutes(
           role: string;
           email_verified: boolean;
         }>(
-          `SELECT authorization.id, authorization.journal_user_role_id,
-                  authorization.journal_initiation_consent_version,
-                  authorization.journal_initiation_consent_at,
-                  authorization.journal_attempt_label, authorization.expires_at,
+          `SELECT authz.id, authz.journal_user_role_id,
+                  authz.journal_initiation_consent_version,
+                  authz.journal_initiation_consent_at,
+                  authz.journal_attempt_label, authz.expires_at,
                   user_role.role, user_role.email_verified
-             FROM product_link_authorizations authorization
-             JOIN user_role ON user_role.id = authorization.journal_user_role_id
-            WHERE authorization.authorization_code_sha256 = $1
-              AND authorization.consumed_at IS NULL
-              AND authorization.revoked_at IS NULL
-              AND authorization.expires_at > NOW()
+             FROM product_link_authorizations AS authz
+             JOIN user_role ON user_role.id = authz.journal_user_role_id
+            WHERE authz.authorization_code_sha256 = $1
+              AND authz.consumed_at IS NULL
+              AND authz.revoked_at IS NULL
+              AND authz.expires_at > NOW()
             LIMIT 1
-            FOR UPDATE OF authorization, user_role`,
+            FOR UPDATE OF authz, user_role`,
           [codeDigest],
         );
         const authorization = authorizationResult.rows[0];
@@ -945,20 +952,33 @@ export function registerProductLinkingRoutes(
       if (!isEnabled()) return disabled(res);
       if (!serviceRequestAllowed(req, res)) return;
       if (
-        !exactObjectKeys(req.body, ["contractVersion", "linkId", "eventId", "reason"]) ||
+        !exactObjectKeys(req.body, ["contractVersion", "linkId", "eventId", "reason", "payloadHash"]) ||
         req.body.contractVersion !== LINK_CONTRACT_VERSION ||
         !isUuid(req.body.linkId) ||
         !isUuid(req.body.eventId) ||
-        !isRevocationReason(req.body.reason)
+        !isRevocationReason(req.body.reason) ||
+        typeof req.body.payloadHash !== "string" ||
+        !/^[a-f0-9]{64}$/.test(req.body.payloadHash)
       ) {
         return errorResponse(res, 400, "INVALID_REQUEST", "A valid revocation event is required.");
+      }
+      const canonicalPayload = canonicalizeRevocationPayload({
+        contractVersion: req.body.contractVersion,
+        eventId: req.body.eventId,
+        linkId: req.body.linkId,
+        reason: req.body.reason,
+      });
+      const payloadHash = sha256(canonicalPayload);
+      if (req.body.payloadHash !== payloadHash) {
+        return errorResponse(res, 400, "PAYLOAD_HASH_INVALID", "The revocation payload hash is invalid.");
       }
       const assertion = verifySignalsAssertion(bearerToken(req), "revoke");
       if (
         !assertion ||
         assertion.linkId !== req.body.linkId ||
         assertion.eventId !== req.body.eventId ||
-        assertion.reason !== req.body.reason
+        assertion.reason !== req.body.reason ||
+        assertion.payloadHash !== payloadHash
       ) {
         return errorResponse(res, 401, "ASSERTION_INVALID", "The revocation could not be verified.");
       }
@@ -976,20 +996,17 @@ export function registerProductLinkingRoutes(
             LIMIT 1 FOR UPDATE`,
           [assertion.issuer, assertion.audience, assertion.jti],
         );
-        if (
-          replay.rows[0] &&
-          (
-            replay.rows[0].action !== "revoke" ||
-            replay.rows[0].link_id !== assertion.linkId ||
-            !constantTimeHexEqual(replay.rows[0].assertion_sha256, assertion.fingerprint)
-          )
-        ) {
+        if (replay.rows[0]) {
           await client.query("ROLLBACK");
           return errorResponse(res, 409, "REPLAY_CONFLICT", "This signed request was already used.");
         }
 
-        const prior = await client.query<{ link_id: string; reason: RevocationReason }>(
-          `SELECT link_id, reason
+        const prior = await client.query<{
+          link_id: string;
+          reason: RevocationReason;
+          payload_hash: string;
+        }>(
+          `SELECT link_id, reason, payload_hash
              FROM product_link_revocation_inbox
             WHERE partner_issuer = $1 AND event_id = $2
             LIMIT 1 FOR UPDATE`,
@@ -998,18 +1015,33 @@ export function registerProductLinkingRoutes(
         if (prior.rows[0]) {
           if (
             prior.rows[0].link_id !== assertion.linkId ||
-            prior.rows[0].reason !== assertion.reason
+            prior.rows[0].reason !== assertion.reason ||
+            !constantTimeHexEqual(prior.rows[0].payload_hash, payloadHash)
           ) {
-            await client.query("ROLLBACK");
+            await client.query(
+              `INSERT INTO product_link_revocation_mismatches
+                 (partner_issuer, event_id, link_id, expected_payload_hash, received_payload_hash)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [
+                assertion.issuer,
+                assertion.eventId,
+                assertion.linkId,
+                prior.rows[0].payload_hash,
+                payloadHash,
+              ],
+            );
+            await saveReplay(client, assertion, assertion.linkId, null);
+            await client.query("COMMIT");
             return errorResponse(res, 409, "REPLAY_CONFLICT", "This revocation event was already used.");
           }
-          if (!replay.rows[0]) await saveReplay(client, assertion, assertion.linkId, null);
+          await saveReplay(client, assertion, assertion.linkId, null);
           await client.query("COMMIT");
           return res.json({
             contractVersion: LINK_CONTRACT_VERSION,
             linkId: assertion.linkId,
             state: "revoked",
             eventId: assertion.eventId,
+            payloadHash,
           });
         }
 
@@ -1034,9 +1066,18 @@ export function registerProductLinkingRoutes(
         }
         await client.query(
           `INSERT INTO product_link_revocation_inbox
-             (partner_issuer, event_id, link_id, reason, assertion_sha256)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [assertion.issuer, assertion.eventId, assertion.linkId, assertion.reason, assertion.fingerprint],
+             (partner_issuer, event_id, link_id, reason, assertion_sha256,
+              canonical_payload, payload_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            assertion.issuer,
+            assertion.eventId,
+            assertion.linkId,
+            assertion.reason,
+            assertion.fingerprint,
+            canonicalPayload,
+            payloadHash,
+          ],
         );
         if (linkResult.rows[0]) {
           await client.query(
@@ -1063,6 +1104,7 @@ export function registerProductLinkingRoutes(
           linkId: assertion.linkId,
           state: "revoked",
           eventId: assertion.eventId,
+          payloadHash,
         });
       } catch (error) {
         await client.query("ROLLBACK").catch(() => undefined);

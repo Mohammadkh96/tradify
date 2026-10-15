@@ -18,9 +18,15 @@ import {
   SIGNALS_DEV_ISSUER,
   SIGNALS_LINK_AUDIENCE,
   SIGNALS_LINK_SERVICE_SUBJECT,
+  assertDevelopmentSigningKeyNotInProduction,
+  canonicalizeRevocationPayload,
+  getJournalSigningConfig,
   sha256,
 } from "./product-linking-assertions";
-import { drainProductLinkOutboxOnce } from "./product-linking-outbox";
+import {
+  boundedRevocationRetryDelayMs,
+  drainProductLinkOutboxOnce,
+} from "./product-linking-outbox";
 import { prepareProductLinkAccountLifecycle } from "./product-linking-routes";
 
 const { isolatedEmailService, capturedPasswordResetLink } = vi.hoisted(() => {
@@ -157,6 +163,8 @@ beforeAll(async () => {
   await testPool.query(outboxMigration);
   const productLinkingMigration = await readFile("migrations/0002_tradify_account_linking_v1.sql", "utf8");
   await testPool.query(productLinkingMigration);
+  const revocationRetryMigration = await readFile("migrations/0003_product_link_revocation_retry_v1.sql", "utf8");
+  await testPool.query(revocationRetryMigration);
 
   const app = express();
   app.set("trust proxy", 1);
@@ -447,6 +455,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
       "TRADIFY_JOURNAL_ISSUER",
       "TRADIFY_JOURNAL_AUDIENCE",
       "TRADIFY_JOURNAL_KEY_ID",
+      "DEV_TRADIFY_JOURNAL_PRIVATE_KEY",
       "TRADIFY_JOURNAL_PRIVATE_KEY",
       "TRADIFY_SIGNALS_API_BASE_URL",
     ] as const;
@@ -555,6 +564,9 @@ describe("application security boundaries against a disposable local PostgreSQL 
     };
 
     try {
+      expect(boundedRevocationRetryDelayMs(1)).toBe(10_000);
+      expect(boundedRevocationRetryDelayMs(2)).toBe(20_000);
+      expect(boundedRevocationRetryDelayMs(10_000)).toBe(6 * 60 * 60 * 1000);
       process.env.NODE_ENV = "test";
       delete process.env.DEV_PRODUCT_LINKING_ENABLED;
       const disabledResponse = await request("/api/v1/product-links/signals/configuration");
@@ -570,6 +582,14 @@ describe("application security boundaries against a disposable local PostgreSQL 
 
       process.env.DEV_PRODUCT_LINKING_ENABLED = "true";
       process.env.NODE_ENV = "production";
+      process.env.TRADIFY_JOURNAL_ISSUER = JOURNAL_DEV_ISSUER;
+      process.env.TRADIFY_JOURNAL_AUDIENCE = SIGNALS_LINK_AUDIENCE;
+      process.env.TRADIFY_JOURNAL_KEY_ID = journalKid;
+      process.env.DEV_TRADIFY_JOURNAL_PRIVATE_KEY = journalPrivatePem;
+      expect(getJournalSigningConfig()).toBeNull();
+      expect(() => assertDevelopmentSigningKeyNotInProduction()).toThrow(
+        /development-only Journal signing key/,
+      );
       expect(await (await request("/api/v1/product-links/signals/configuration", {
         cookie: journalSession.cookie,
       })).json()).toEqual({ enabled: false });
@@ -584,7 +604,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
       process.env.TRADIFY_JOURNAL_ISSUER = JOURNAL_DEV_ISSUER;
       process.env.TRADIFY_JOURNAL_AUDIENCE = SIGNALS_LINK_AUDIENCE;
       process.env.TRADIFY_JOURNAL_KEY_ID = journalKid;
-      process.env.TRADIFY_JOURNAL_PRIVATE_KEY = journalPrivatePem;
+      process.env.DEV_TRADIFY_JOURNAL_PRIVATE_KEY = journalPrivatePem;
       process.env.TRADIFY_SIGNALS_API_BASE_URL = "https://signals.test.invalid";
       expect(await (await request("/api/v1/product-links/signals/configuration", {
         cookie: journalSession.cookie,
@@ -746,7 +766,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
       const pending = await claimResponse.json();
       expect(pending).toMatchObject({
         state: "awaiting_journal_confirmation",
-        signalsAttemptLabel: "SIG-ABCDEFG2345",
+        signalsAttemptLabel: "SIG-ABCDEFG23456",
       });
       expect(JSON.stringify(pending)).not.toContain(linkingEmail);
       const exactClaimRetry = await servicePost(
@@ -862,23 +882,59 @@ describe("application security boundaries against a disposable local PostgreSQL 
           linkId: body.linkId,
           state: "revoked",
           eventId: body.eventId,
+          payloadHash: outboundAttempts.length === 2 ? "0".repeat(64) : body.payloadHash,
         }), { status: 200, headers: { "content-type": "application/json" } });
       };
       const firstPass = await drainProductLinkOutboxOnce({ fetchImpl: captureDelivery as typeof fetch });
       expect(firstPass).toEqual({ claimed: 1, delivered: 0, retried: 1 });
-      const afterFailure = await testPool.query<{ state: string; attempt_count: number }>(
-        `SELECT state, attempt_count FROM product_link_revocation_outbox WHERE event_id = $1`,
+      const afterFailure = await testPool.query<{ state: string; attempt_count: number; canonical_payload: string; payload_hash: string }>(
+        `SELECT state, attempt_count, canonical_payload, payload_hash
+           FROM product_link_revocation_outbox WHERE event_id = $1`,
         [unlinkBody.eventId],
       );
       expect(afterFailure.rows[0]).toMatchObject({ state: "retry", attempt_count: 1 });
+      const storedOutboundPayload = {
+        contractVersion: LINK_CONTRACT_VERSION,
+        eventId: unlinkBody.eventId,
+        linkId: pending.linkId,
+        reason: "user_unlinked",
+      };
+      expect(afterFailure.rows[0].canonical_payload).toBe(canonicalizeRevocationPayload(storedOutboundPayload));
+      expect(afterFailure.rows[0].payload_hash).toBe(sha256(afterFailure.rows[0].canonical_payload));
+      await expect(testPool.query(
+        `UPDATE product_link_revocation_outbox
+            SET reason = 'security_action' WHERE event_id = $1`,
+        [unlinkBody.eventId],
+      )).rejects.toThrow(/immutable/i);
+      const retryDelay = await testPool.query<{ milliseconds: number }>(
+        `SELECT EXTRACT(EPOCH FROM (next_attempt_at - NOW())) * 1000 AS milliseconds
+           FROM product_link_revocation_outbox WHERE event_id = $1`,
+        [unlinkBody.eventId],
+      );
+      expect(Number(retryDelay.rows[0].milliseconds)).toBeGreaterThan(8_000);
+      expect((await testPool.query<{ state: string }>(
+        "SELECT state FROM product_account_links WHERE id = $1",
+        [pending.linkId],
+      )).rows[0].state).toBe("revocation_pending");
       await testPool.query(
         `UPDATE product_link_revocation_outbox SET next_attempt_at = NOW() WHERE event_id = $1`,
         [unlinkBody.eventId],
       );
       const secondPass = await drainProductLinkOutboxOnce({ fetchImpl: captureDelivery as typeof fetch });
-      expect(secondPass).toEqual({ claimed: 1, delivered: 1, retried: 0 });
-      expect(outboundAttempts).toHaveLength(2);
+      expect(secondPass).toEqual({ claimed: 1, delivered: 0, retried: 1 });
+      expect((await testPool.query<{ state: string }>(
+        "SELECT state FROM product_account_links WHERE id = $1",
+        [pending.linkId],
+      )).rows[0].state).toBe("revocation_pending");
+      await testPool.query(
+        `UPDATE product_link_revocation_outbox SET next_attempt_at = NOW() WHERE event_id = $1`,
+        [unlinkBody.eventId],
+      );
+      const thirdPass = await drainProductLinkOutboxOnce({ fetchImpl: captureDelivery as typeof fetch });
+      expect(thirdPass).toEqual({ claimed: 1, delivered: 1, retried: 0 });
+      expect(outboundAttempts).toHaveLength(3);
       expect(outboundAttempts[0].body).toBe(outboundAttempts[1].body);
+      expect(outboundAttempts[1].body).toBe(outboundAttempts[2].body);
       const parseJwt = (token: string) => {
         const [headerPart, claimPart, signaturePart] = token.split(".");
         const claims = JSON.parse(Buffer.from(claimPart, "base64url").toString("utf8"));
@@ -905,6 +961,10 @@ describe("application security boundaries against a disposable local PostgreSQL 
       expect(secondOutgoingClaims.link_id).toBe(firstOutgoingClaims.link_id);
       expect(secondOutgoingClaims.reason).toBe(firstOutgoingClaims.reason);
       expect(secondOutgoingClaims.jti).not.toBe(firstOutgoingClaims.jti);
+      expect(secondOutgoingClaims.exp - secondOutgoingClaims.iat).toBe(120);
+      expect(firstOutgoingClaims.payload_sha256).toBe(afterFailure.rows[0].payload_hash);
+      expect(parseJwt(outboundAttempts[2].token).jti).not.toBe(secondOutgoingClaims.jti);
+      expect(parseJwt(outboundAttempts[2].token).exp - parseJwt(outboundAttempts[2].token).iat).toBe(120);
       const revoked = await testPool.query<{ state: string; partner_subject: string | null }>(
         `SELECT state, partner_subject FROM product_account_links WHERE id = $1`,
         [pending.linkId],
@@ -917,24 +977,54 @@ describe("application security boundaries against a disposable local PostgreSQL 
       );
       const eventId = (await import("node:crypto")).randomUUID();
       const reason = "security_action";
+      const revokePayload = (eventReason: string) => ({
+        contractVersion: LINK_CONTRACT_VERSION,
+        eventId,
+        linkId: inboundLink.linkId,
+        reason: eventReason,
+      });
+      const revokePayloadHash = (eventReason: string) =>
+        sha256(canonicalizeRevocationPayload(revokePayload(eventReason)));
       const revokeClaims = (eventReason: string) => baseClaims(
         SIGNALS_LINK_SERVICE_SUBJECT,
         "revoke",
-        { link_id: inboundLink.linkId, event_id: eventId, reason: eventReason },
+        {
+          link_id: inboundLink.linkId,
+          event_id: eventId,
+          reason: eventReason,
+          payload_sha256: revokePayloadHash(eventReason),
+        },
       );
       const firstRevocationAssertion = signSignalsAssertion(revokeClaims(reason));
       const revocationBody = {
-        contractVersion: LINK_CONTRACT_VERSION,
-        linkId: inboundLink.linkId,
-        eventId,
-        reason,
+        ...revokePayload(reason),
+        payloadHash: revokePayloadHash(reason),
       };
+      const invalidPayloadHash = await servicePost(
+        "/api/v1/product-links/signals/revocations",
+        { ...revocationBody, payloadHash: "0".repeat(64) },
+        firstRevocationAssertion,
+      );
+      expect(invalidPayloadHash.status).toBe(400);
       const firstRevocation = await servicePost(
         "/api/v1/product-links/signals/revocations",
         revocationBody,
         firstRevocationAssertion,
       );
       expect(firstRevocation.status).toBe(200);
+      expect(await firstRevocation.json()).toMatchObject({
+        contractVersion: LINK_CONTRACT_VERSION,
+        linkId: inboundLink.linkId,
+        state: "revoked",
+        eventId,
+        payloadHash: revocationBody.payloadHash,
+      });
+      const replayedJwt = await servicePost(
+        "/api/v1/product-links/signals/revocations",
+        revocationBody,
+        firstRevocationAssertion,
+      );
+      expect(replayedJwt.status).toBe(409);
       const retriedRevocation = await servicePost(
         "/api/v1/product-links/signals/revocations",
         revocationBody,
@@ -943,10 +1033,19 @@ describe("application security boundaries against a disposable local PostgreSQL 
       expect(retriedRevocation.status).toBe(200);
       const changedEventBody = await servicePost(
         "/api/v1/product-links/signals/revocations",
-        { ...revocationBody, reason: "user_unlinked" },
+        {
+          ...revokePayload("user_unlinked"),
+          payloadHash: revokePayloadHash("user_unlinked"),
+        },
         signSignalsAssertion(revokeClaims("user_unlinked")),
       );
       expect(changedEventBody.status).toBe(409);
+      expect((await testPool.query(
+        `SELECT 1 FROM product_link_revocation_mismatches
+          WHERE partner_issuer = $1 AND event_id = $2
+            AND expected_payload_hash = $3 AND received_payload_hash = $4`,
+        [SIGNALS_DEV_ISSUER, eventId, revocationBody.payloadHash, revokePayloadHash("user_unlinked")],
+      )).rowCount).toBe(1);
 
       const deletionLink = await createActiveLink(
         `${emailPrefix}-deleted-link@example.invalid`,
@@ -1012,7 +1111,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
       await testPool.query(
         `UPDATE product_link_authorizations
             SET created_at = NOW() - INTERVAL '10 minutes',
-                expires_at = NOW() - INTERVAL '1 second'
+                expires_at = NOW() - INTERVAL '6 minutes'
           WHERE authorization_code_sha256 = $1`,
         [expiredDigest],
       );

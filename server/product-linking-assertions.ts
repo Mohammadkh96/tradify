@@ -94,15 +94,35 @@ export type VerifiedSignalsAssertion =
       linkId: string;
       eventId: string;
       reason: RevocationReason;
+      payloadHash: string;
       fingerprint: string;
     };
 
 type JsonObject = Record<string, unknown>;
 
+export type RevocationPayload = {
+  contractVersion: typeof LINK_CONTRACT_VERSION;
+  eventId: string;
+  linkId: string;
+  reason: RevocationReason;
+};
+
 function enabledForIsolatedDevelopment(): boolean {
   return process.env.NODE_ENV !== "production" &&
+    process.env.APP_ENV !== "production" &&
     (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") &&
     process.env.DEV_PRODUCT_LINKING_ENABLED === "true";
+}
+
+export function assertDevelopmentSigningKeyNotInProduction(): void {
+  const production = process.env.NODE_ENV === "production" || process.env.APP_ENV === "production";
+  const hasDevelopmentPrivateKey = Boolean(
+    process.env.DEV_TRADIFY_JOURNAL_PRIVATE_KEY?.trim() ||
+    process.env.TRADIFY_JOURNAL_PRIVATE_KEY?.trim(),
+  );
+  if (production && hasDevelopmentPrivateKey) {
+    throw new Error("Refusing production startup: a development-only Journal signing key is configured.");
+  }
 }
 
 function canonicalHttpsIdentity(value: string | undefined, expected: string): value is string {
@@ -179,7 +199,7 @@ export function getJournalSigningConfig(): JournalSigningConfig | null {
   if (process.env.TRADIFY_JOURNAL_AUDIENCE !== SIGNALS_LINK_AUDIENCE) return null;
 
   const keyId = process.env.TRADIFY_JOURNAL_KEY_ID?.trim();
-  const privatePem = process.env.TRADIFY_JOURNAL_PRIVATE_KEY?.replace(/\\n/g, "\n").trim();
+  const privatePem = process.env.DEV_TRADIFY_JOURNAL_PRIVATE_KEY?.replace(/\\n/g, "\n").trim();
   const apiBase = process.env.TRADIFY_SIGNALS_API_BASE_URL?.trim();
   if (!keyId || keyId.length > 128 || !privatePem || !apiBase) return null;
 
@@ -216,6 +236,13 @@ export function getJournalSigningConfig(): JournalSigningConfig | null {
 
 export function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+export function canonicalizeRevocationPayload(payload: RevocationPayload): string {
+  const ordered = Object.fromEntries(
+    Object.entries(payload).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0),
+  );
+  return JSON.stringify(ordered);
 }
 
 export function createAttemptLabel(product: "JRN" | "SIG"): string {
@@ -506,6 +533,7 @@ export function verifySignalsAssertion(
       "iss",
       "jti",
       "link_id",
+      "payload_sha256",
       "reason",
       "sub",
     ];
@@ -517,7 +545,9 @@ export function verifySignalsAssertion(
       typeof jwtClaims.event_id !== "string" ||
       !UUID.test(jwtClaims.event_id) ||
       typeof jwtClaims.reason !== "string" ||
-      !ALLOWED_REVOCATION_REASONS.has(jwtClaims.reason)
+      !ALLOWED_REVOCATION_REASONS.has(jwtClaims.reason) ||
+      typeof jwtClaims.payload_sha256 !== "string" ||
+      !SHA256_HEX.test(jwtClaims.payload_sha256)
     ) {
       return null;
     }
@@ -528,6 +558,7 @@ export function verifySignalsAssertion(
       linkId: jwtClaims.link_id,
       eventId: jwtClaims.event_id,
       reason: jwtClaims.reason as RevocationReason,
+      payloadHash: jwtClaims.payload_sha256,
     };
   } catch {
     return null;
@@ -541,6 +572,7 @@ export function signJournalAssertion(
     linkId: string;
     eventId?: string;
     reason?: RevocationReason;
+    payloadHash?: string;
     subject?: string;
   },
 ): string {
@@ -557,7 +589,7 @@ export function signJournalAssertion(
       ? JOURNAL_LINK_SERVICE_SUBJECT
       : operationClaims.subject,
     iat: nowSeconds,
-    exp: nowSeconds + 90,
+    exp: nowSeconds + MAX_ASSERTION_LIFETIME_SECONDS,
     jti: randomBytes(24).toString("base64url"),
     action,
     contract_version: LINK_CONTRACT_VERSION,
@@ -566,6 +598,7 @@ export function signJournalAssertion(
   if (action === "revoke") {
     claims.event_id = operationClaims.eventId;
     claims.reason = operationClaims.reason;
+    claims.payload_sha256 = operationClaims.payloadHash;
   }
   if (
     typeof claims.sub !== "string" ||
@@ -575,7 +608,9 @@ export function signJournalAssertion(
       !operationClaims.eventId ||
       !UUID.test(operationClaims.eventId) ||
       !operationClaims.reason ||
-      !ALLOWED_REVOCATION_REASONS.has(operationClaims.reason)
+      !ALLOWED_REVOCATION_REASONS.has(operationClaims.reason) ||
+      !operationClaims.payloadHash ||
+      !SHA256_HEX.test(operationClaims.payloadHash)
     ))
   ) {
     throw new Error("Invalid Journal assertion operation.");

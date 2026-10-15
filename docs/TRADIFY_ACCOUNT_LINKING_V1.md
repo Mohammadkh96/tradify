@@ -2,9 +2,9 @@
 
 **Contract version:** `tradify-account-linking-v1`
 
-**Status:** The Journal owner approves the versioned revocation retry rule `tradify-account-linking-v1/revocation-retry-v1`. Signals previously reported acceptance of this retry rule, but both products must independently confirm acceptance of this exact specification before it is finalized or used for real cross-service testing. Journal's implementation does not yet satisfy all payload-hash and acknowledgement requirements. This remains isolated-development scope and does not authorize production use.
+**Status:** Journal implements the versioned revocation retry rule `tradify-account-linking-v1/revocation-retry-v1` in isolated-development code and regression tests. Signals previously reported acceptance, but both products must independently confirm this exact specification before real cross-service testing. This remains isolated-development scope and does not authorize production use.
 
-**Important compatibility note:** Journal's linking implementation remains default-off and does not yet implement every requirement in `revocation-retry-v1`. Do not use it for cross-service testing until the code/schema changes are complete and both products independently confirm acceptance. No production migration, key exchange, Signals API call, or deployment is authorized here.
+**Important compatibility note:** Journal linking remains default-off. The local implementation is not approval for real cross-service testing: both products must independently confirm the exact contract, and secure development trust configuration must be reviewed first. No production migration, key exchange, Signals API call, or deployment is authorized here.
 
 ## 1. Purpose and security boundaries
 
@@ -49,6 +49,7 @@ Signals has approved the isolated-development policy direction. Identifiers that
 - Read-only reachability check: `GET /api/health` returned HTTP 200 with process-liveness status. This endpoint does not verify database readiness and is distinct from the Journal JWT issuer above.
 - Reserved Journal development `kid`: `journal-dev-20261015-5814c6a3c529416a`. It is not yet attached to a key or configured; Signals must not pin it until the matching public key is generated and verified.
 - No Journal private key, Signals public key, or Signals API base URL is configured in the development environment. The feature flag is also unset, so linking remains off. Key material is never stored in this document.
+- If an isolated development signer is later configured, the private key variable is `DEV_TRADIFY_JOURNAL_PRIVATE_KEY`. Production startup fails closed if either that development-only variable or the legacy `TRADIFY_JOURNAL_PRIVATE_KEY` variable is present. Replit documents that development secrets may sync into deployment settings at publish time, so a development secret must still be explicitly absent from the Production deployment configuration before publishing; a variable name or runtime guard alone cannot prevent the platform from copying it.
 - Revocation retry rule: `tradify-account-linking-v1/revocation-retry-v1`. Both Journal and Signals must independently accept this exact version before real cross-service testing.
 - Staging and production issuers, audiences, and keys are out of scope and are not defined by this development contract.
 
@@ -586,7 +587,7 @@ The Journal migration source is implemented and is applied by integration tests 
 
 Signals schema names and migration details must be chosen by the Signals Agent in its own project. Do not connect to, inspect, migrate, or write the Signals database from Journal.
 
-The Journal migration `migrations/0002_tradify_account_linking_v1.sql` contains the V1 schema and is run only by the disposable integration-test setup. The outbox and tombstones are independent of customer-account foreign keys; account lifecycle code records the revocation before removing local links. No production migration has been applied.
+The Journal migrations `migrations/0002_tradify_account_linking_v1.sql` and `migrations/0003_product_link_revocation_retry_v1.sql` contain the V1 schema and are run only by the disposable integration-test setup. The outbox and tombstones are independent of customer-account foreign keys; account lifecycle code records the revocation before removing local links. No production migration has been applied.
 
 ## 10. Contract-test plan and current coverage
 
