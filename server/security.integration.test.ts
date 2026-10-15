@@ -455,6 +455,16 @@ describe("application security boundaries against a disposable local PostgreSQL 
       expect((await request("/api/v1/product-links/signals", {
         cookie: journalSession.cookie,
       })).status).toBe(503);
+      expect((await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: journalSession.cookie,
+        json: { consent: true, consentVersion },
+      })).status).toBe(503);
+      expect((await request("/api/v1/product-links/signals/claim", {
+        method: "POST",
+        headers: { authorization: "Bearer not-a-real-assertion" },
+        json: { authorizationCode: "a".repeat(64) },
+      })).status).toBe(503);
 
       process.env.NODE_ENV = "production";
       process.env.PRODUCT_LINKING_ENABLED = "true";

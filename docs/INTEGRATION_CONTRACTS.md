@@ -37,7 +37,7 @@ Consider a standards-based identity provider and versioned identity-claims contr
 
 ### Journal/Signals account association
 
-The Journal-only development protocol is specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md). It associates opaque account identifiers after separate authentication and consent; it is not SSO. It remains disabled until Signals and both product owners approve the issuer, signing key/rotation, consent UX, and unlink/recovery lifecycle.
+The revised development proposal is specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md). It defines a proposed two-sided consent, preview, claim, final-confirmation, and lifecycle contract; it is not SSO and is not the behavior of the current disabled Journal prototype. Do not enable or implement the revised contract until Signals and both product owners accept its issuer/audience, assertion, consent, key-rotation, account-pairing, and unlink/recovery rules.
 
 ### Subscription bundles
 

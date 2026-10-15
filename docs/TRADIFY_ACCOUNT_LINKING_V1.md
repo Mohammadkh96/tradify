@@ -2,84 +2,200 @@
 
 **Contract version:** `tradify-account-linking-v1`
 
-**Status:** Journal-side development implementation; proposed for Signals review. Not jointly approved, not enabled by default, and not approved for production.
+**Status:** Revised implementation proposal for Signals and product-owner review. It is not jointly accepted, is not approved for production, and does not authorize enabling the existing Journal feature.
 
-**Scope:** Associate one Journal account with one Signals account using explicit consent and opaque identifiers. This is not shared login or single sign-on.
+**Important compatibility note:** The current Journal code is a disabled-by-default prototype of the earlier draft. It does not implement this revised two-sided confirmation, preview, bidirectional unlink, or lifecycle contract. Do not enable it or apply its existing migration. Any implementation work must wait for Signals' written acceptance and the product owner's approval.
 
-## Ownership and non-goals
+## 1. Purpose and security boundaries
 
-- Journal remains authoritative for Journal accounts, sessions, trades, challenges, billing and Journal entitlements.
-- Signals remains authoritative for Signals accounts, sessions, strategies, signal events and Signals entitlements.
-- Each product authenticates its own user. Neither product receives the other's password, password hash, session cookie, reset token, email address, billing details, or database credentials.
-- V1 stores only Journal's internal `user_role.id` key (not its email-based session identifier), the Signals issuer and opaque Signals subject, consent version, consent timestamps, and link lifecycle timestamps.
-- V1 does not synchronize customer data, trades, MT5 records, subscriptions, entitlements, payments, or admin permissions.
-- Never match users by email, name, phone number, or similar profile fields.
-- No Journal change authorizes a change to the Signals codebase or database.
+V1 associates one independently authenticated Journal account with one independently authenticated Signals account. It is an account association only—not shared login, SSO, shared authorization, entitlement synchronization, or a payment integration.
 
-## User flow
+- Journal is authoritative for Journal identities, sessions, trades, challenges, billing, Journal entitlements, and Journal administration.
+- Signals is authoritative for Signals identities, sessions, strategies, signal events, Signals entitlements, and Signals administration.
+- Each service stores its own local account ID. Neither service receives the other service's password, password hash, session, reset token, email address, billing data, or database credentials.
+- The only cross-product account key is a server-generated opaque subject, scoped to the issuing product and environment. It is not a database ID or client-supplied registration `userId`.
+- Never match or merge accounts by email, name, phone number, payment information, or other profile fields.
+- Linking or unlinking never copies or deletes the other product's account, trades, MT5 data, entitlements, subscriptions, payment state, or Admin permissions.
+- Each product may modify only its own repository, database, keys, and deployments.
 
-1. The customer is signed in to Journal and explicitly approves linking in Journal.
-2. Journal creates a cryptographically random, single-use authorization code, valid for five minutes. Journal stores only its SHA-256 digest.
-3. The customer signs in to Signals independently and explicitly approves linking there.
-4. Signals sends the authorization code and a short-lived signed assertion to Journal over HTTPS.
-5. Journal verifies the pinned Signals key and assertion, then consumes the authorization and creates the link in one database transaction.
-6. A repeated delivery with the same assertion ID is idempotent. Reuse with different contents, an expired code, or a second competing link is rejected.
-7. Journal's signed-in status endpoint reports only whether a link exists and when it was created. It does not return either product's user identifier.
+## 2. Responsibilities
 
-The UI wording and consent text must be reviewed by both product owners before the feature is exposed. The Journal consent version in this development contract is `tradify-account-linking-v1`.
+| Responsibility | Journal | Signals |
+| --- | --- | --- |
+| Authenticate account | Own Journal session and recovery | Own Signals session and recovery |
+| Local identity | Keep Journal user-role ID private; bind it to the authorization code | Create and persist a stable opaque Signals subject server-side; never accept it from the browser |
+| Consent | Record versioned initiation and final confirmation | Record its own versioned consent after showing the exact pairing |
+| Link state | Store Journal's local link row and opaque Signals subject | Store Signals' local link row and opaque Journal reference |
+| Claim validation | Verify Signals signature, environment, subject, consent, code, and replay state | Sign only after authenticating the current Signals user and recording consent |
+| Unlink | Immediately disable the local association; send a signed revocation event | Immediately disable the local association; send a signed revocation event |
+| Account lifecycle | Revoke on Journal deletion/suspension; retain a minimal audit tombstone | Revoke on Signals deletion/suspension; retain a minimal audit tombstone |
 
-## Journal endpoints
+Neither product is allowed to query the other's database or reuse the other's session or credentials.
 
-Base path: `/api/v1/product-links/signals`
+## 3. Proposed identifiers, consent versions, and state machine
 
-### Read the current user's link status
+The strings below are proposed contract values. They require Signals acceptance before implementation.
 
-`GET /api/v1/product-links/signals`
+- Contract: `tradify-account-linking-v1`
+- Journal initiation consent: `tradify-journal-link-initiation-v1`
+- Journal final-confirmation consent: `tradify-journal-link-confirmation-v1`
+- Signals consent: `tradify-signals-link-consent-v1`
+- Journal audience: `tradify-journal-link-v1:<environment>`
+- Signals audience for Journal-signed revocation: `tradify-signals-link-v1:<environment>`
+- Supported environment suffixes: exactly `development`, `staging`, and `production`. A deployment without an explicitly configured matching issuer, audience, and pinned key fails closed.
 
-Requires the user's Journal session. Returns either:
+Signals must create the stable `sub` on its server using 32 cryptographically random bytes encoded as unpadded base64url. It must persist that subject against the authenticated Signals account and reuse it on later link attempts. It must never derive `sub` from or accept it as a client-provided `userId`, email, or profile value. Journal stores that opaque subject with the exact configured Signals issuer.
 
-```json
-{ "linked": false }
+For the confirmation UI, each attempt has:
+
+- `journalAttemptLabel`: `JRN-` plus 12 CSPRNG-generated characters from `[A-Z2-7]`, generated by Journal and shown on both products for this attempt.
+- `signalsAttemptLabel`: `SIG-` plus 12 CSPRNG-generated characters from `[A-Z2-7]`, generated by Signals and shown on both products for this attempt.
+
+These temporary labels identify the pair to the customer; they are not account IDs and must not be reused as stable identifiers. Each product displays its own account's local sign-in label only within that product. The Signals page shows its current local account and the Journal attempt label. The final Journal confirmation shows the Journal local account and the Signals attempt label. The customer must confirm the pair on both products before the link becomes active. No email or internal user ID crosses the boundary.
+
+State transitions:
+
+```text
+unlinked
+  -> awaiting_signals_consent
+  -> awaiting_journal_confirmation
+  -> active
+
+awaiting_* -> cancelled | expired
+active -> revocation_pending -> revoked
 ```
 
-or:
+A pending confirmation expires after 10 minutes (proposed). A code is single-use and expires after five minutes. A revoked, cancelled, or expired link cannot be reactivated; the customer starts a fresh two-sided flow.
 
-```json
-{ "linked": true, "linkedAt": "2026-10-15T12:00:00.000Z" }
-```
+## 4. Customer flow and safe code transfer
 
-The response intentionally contains no email, Signals subject, or Journal user ID.
+1. The customer signs in to Journal using Journal's own authentication. Journal displays the current local account label and explains that linking does not share sign-in or entitlements.
+2. The customer gives Journal consent to initiate a link. Journal records `tradify-journal-link-initiation-v1`, its timestamp, and the current internal Journal account ID. Journal creates a random 32-byte code, stores only its SHA-256 digest, and returns the code and `journalAttemptLabel` in a `Cache-Control: no-store` response.
+3. Journal renders the code only in the active page's memory. It does not put the code in a URL, redirect, browser storage, cookie, referrer, analytics event, browser log, server log, tracing span, or error report. The UI does not copy the code to the clipboard automatically.
+4. The customer opens the Signals linking page separately, signs in to Signals, and manually pastes or enters the code into a form. The code is submitted only in a JSON request body. The page uses `autocomplete="off"`, clears the input after submission, and does not persist the value in local/session storage, IndexedDB, a service-worker cache, or navigation state.
+5. The Signals server sends the code to Journal's preview endpoint over HTTPS in a POST body. The preview returns only the Journal attempt label and expiry—not an email, Journal user ID, or database ID.
+6. Signals displays its own current account label and both attempt labels. The customer explicitly consents to that pairing. Signals records its own consent version and timestamp, then creates the signed assertion using the subject loaded from its own authenticated account record.
+7. Signals sends the code and signed assertion to Journal's claim endpoint. Journal validates them and atomically consumes the authorization into `awaiting_journal_confirmation`; it does not yet mark the link active.
+8. Journal shows its current local account and the Signals attempt label. The customer gives final Journal consent (`tradify-journal-link-confirmation-v1`) to this exact pair. Journal stores the final consent record and changes the link to `active`.
+9. Signals learns the final state through its signed status call. Both products show the link status without exposing the other product's subject or local account ID.
 
-### Create a Journal-approved authorization
+All browser-facing state-changing requests require that product's own authenticated session, CSRF protection, and an exact allowed `Origin`. Service-to-service calls use HTTPS and signed assertions, never browser session cookies. CORS must not allow arbitrary origins.
+
+## 5. Versioned API contracts
+
+All dates are UTC ISO-8601 strings. JSON request bodies are size-limited, validated against exact schemas, and never logged. All endpoints below are proposed; the current disabled prototype does not implement the complete set.
+
+### 5.1 Journal: start authorization
 
 `POST /api/v1/product-links/signals/authorization`
 
-Requires the user's Journal session and an explicit consent body:
+Owner: Journal. Requires a verified Journal session, a session-bound CSRF token, and exact same-origin validation.
 
 ```json
 {
+  "contractVersion": "tradify-account-linking-v1",
   "consent": true,
-  "consentVersion": "tradify-account-linking-v1"
+  "consentVersion": "tradify-journal-link-initiation-v1"
 }
 ```
 
-Success (`201`) returns:
+Success (`201`):
 
 ```json
 {
-  "authorizationCode": "<32 random bytes encoded as 64 lowercase hex characters>",
-  "expiresAt": "2026-10-15T12:05:00.000Z",
-  "consentVersion": "tradify-account-linking-v1"
+  "contractVersion": "tradify-account-linking-v1",
+  "authorizationCode": "<64 lowercase hex characters>",
+  "journalAttemptLabel": "JRN-7M4PK9D2W3QF",
+  "expiresAt": "2026-10-15T12:05:00.000Z"
 }
 ```
 
-The authorization code must be sent only in the HTTPS request body to the claim endpoint, never in a URL, analytics event, browser log, or application log. A new authorization invalidates the user's previous unconsumed authorization.
+The response contains no Journal ID or email. Issuing a new code revokes any previous unconsumed authorization for that Journal account.
 
-### Claim the authorization from Signals
+### 5.2 Journal: preview the Journal-side account
+
+`POST /api/v1/product-links/signals/preview`
+
+Owner: Journal. Called server-to-server by Signals after the customer submits the code. The code is a 256-bit, short-lived bearer credential; the endpoint is TLS-only, rate-limited, body-only, and must never log the request body.
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "authorizationCode": "<code returned by Journal>"
+}
+```
+
+Success (`200`):
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "state": "awaiting_signals_consent",
+  "journalAttemptLabel": "JRN-7M4PK9D2W3QF",
+  "expiresAt": "2026-10-15T12:05:00.000Z"
+}
+```
+
+Preview does not consume or extend the authorization. It returns no account ID, email, profile, or other Journal data.
+
+### 5.3 Signals: preview and accept the customer's code
+
+Proposed Signals-owned browser preview route: `POST /api/v1/product-links/journal/preview`.
+
+The request requires the customer's Signals session and CSRF token. The only customer-supplied field is the Journal code:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "authorizationCode": "<code entered by the customer>"
+}
+```
+
+Signals obtains the subject and account label from its authenticated server-side account record. It must ignore/reject any client-supplied `userId`, `sub`, email, or account mapping. After previewing and showing the pair, Signals records its separate consent before making the service-to-service claim.
+
+The preview route calls Journal's preview endpoint from the Signals server and returns:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "state": "awaiting_signals_consent",
+  "journalAttemptLabel": "JRN-7M4PK9D2W3QF",
+  "signalsAttemptLabel": "SIG-6P8TR2K5M9WX",
+  "expiresAt": "2026-10-15T12:05:00.000Z"
+}
+```
+
+This preview is not consent and does not create a link. The Signals UI displays both attempt labels beside the current local Signals account label. The code remains only in transient page memory until the customer submits or cancels.
+
+After the customer gives explicit Signals consent, the Signals UI calls `POST /api/v1/product-links/journal/claim` with the same local session and CSRF protection:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "authorizationCode": "<code entered by the customer>",
+  "consent": true,
+  "consentVersion": "tradify-signals-link-consent-v1"
+}
+```
+
+Signals records that separate consent, obtains `sub` from its authenticated server-side account record, signs the claim assertion, and calls Journal's service-to-service claim endpoint. The Signals browser endpoint returns:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "state": "awaiting_journal_confirmation",
+  "signalsAttemptLabel": "SIG-6P8TR2K5M9WX",
+  "expiresAt": "2026-10-15T12:15:00.000Z"
+}
+```
+
+It does not accept or return a client-supplied `userId`, `sub`, email, or internal account mapping.
+
+### 5.4 Journal: claim the authorization
 
 `POST /api/v1/product-links/signals/claim`
 
-Service-to-service HTTPS request. It does not accept a Journal user ID or email:
+Owner: Journal; called only by the Signals server over HTTPS. It accepts no Journal user ID, email, or Signals subject in the JSON body.
 
 ```http
 Authorization: Bearer <short-lived-Signals-signed-JWT>
@@ -87,65 +203,395 @@ Content-Type: application/json
 ```
 
 ```json
-{ "authorizationCode": "<code returned by Journal>" }
-```
-
-Success (`201`, or `200` for an identical retry) returns only:
-
-```json
 {
-  "linkId": "<opaque Journal link ID>",
-  "status": "linked",
-  "linkedAt": "2026-10-15T12:00:00.000Z"
+  "contractVersion": "tradify-account-linking-v1",
+  "authorizationCode": "<code returned by Journal>"
 }
 ```
 
-## Signals assertion
+Success (`201`) creates a pending link, not an active one:
 
-The current Journal implementation accepts an RS256 JWT with:
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "linkId": "<opaque Journal-generated UUID>",
+  "state": "awaiting_journal_confirmation",
+  "signalsAttemptLabel": "SIG-6P8TR2K5M9WX",
+  "expiresAt": "2026-10-15T12:15:00.000Z"
+}
+```
 
-| Header/claim | Requirement |
-| --- | --- |
-| `alg` | Exactly `RS256` |
-| `typ` | Exactly `JWT` |
-| `kid` | Matches the operator-pinned `TRADIFY_SIGNALS_KEY_ID` |
-| `iss` | Exact match for the operator-pinned HTTPS `TRADIFY_SIGNALS_ISSUER` |
-| `aud` | `tradify-journal-link-v1` |
-| `sub` | Stable, opaque Signals account ID; 1–255 characters; must not be an email address |
-| `iat`, `exp` | Integer Unix seconds; assertion lifetime at most 120 seconds; reject expired or materially future-dated assertions |
-| `jti` | Unique random assertion ID, 16–128 URL-safe characters; used for replay protection |
-| `consent` | `true`, set only after Signals has authenticated the user and recorded their explicit approval |
-| `consent_at` | Integer Unix seconds for the Signals approval, within the short assertion window |
-| `consent_version` | `tradify-account-linking-v1` |
-| `code_sha256` | Lowercase hex SHA-256 of the exact authorization code in the request body |
+Signals retries an identical claim with the same code and exact signed assertion and receives `200` with the same `linkId` and current state. It must not create a second link.
 
-The private signing key stays in Signals. Journal receives only the verified public key through its environment configuration. Key rotation, key overlap, and emergency revocation must be agreed before production activation.
+### 5.5 Journal: final confirmation and customer status
 
-## Errors and security behavior
+`POST /api/v1/product-links/signals/confirm`
+
+Owner: Journal. Requires the same authenticated Journal account that initiated the authorization, a session-bound CSRF token, and explicit final consent:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "linkId": "<opaque Journal-generated UUID>",
+  "consent": true,
+  "consentVersion": "tradify-journal-link-confirmation-v1"
+}
+```
+
+Success (`200`):
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "linkId": "<opaque Journal-generated UUID>",
+  "state": "active",
+  "linkedAt": "2026-10-15T12:01:00.000Z"
+}
+```
+
+`GET /api/v1/product-links/signals` requires the Journal session and returns only the current user's state:
+
+```json
+{ "state": "unlinked" }
+```
+
+or:
+
+```json
+{
+  "state": "active",
+  "linkId": "<opaque Journal-generated UUID>",
+  "linkedAt": "2026-10-15T12:01:00.000Z",
+  "signalsAttemptLabel": "SIG-6P8TR2K5M9WX"
+}
+```
+
+Pending confirmation is returned only to the initiating Journal session:
+
+```json
+{
+  "state": "awaiting_journal_confirmation",
+  "linkId": "<opaque Journal-generated UUID>",
+  "signalsAttemptLabel": "SIG-6P8TR2K5M9WX",
+  "expiresAt": "2026-10-15T12:15:00.000Z"
+}
+```
+
+The response never returns either product's local user ID, email, subject, or credentials.
+
+`DELETE /api/v1/product-links/signals/authorization` cancels the current user's unconsumed authorization. It requires that user's Journal session and CSRF token, returns `204`, and cannot cancel another account's code.
+
+### 5.6 Service status
+
+Signals checks the final Journal state using a signed service request:
+
+`POST /api/v1/product-links/signals/status`
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "linkId": "<opaque Journal-generated UUID>"
+}
+```
+
+The request's signed assertion uses `action: "status"` and the same strict issuer, audience, key, clock, and replay rules. A successful response (`200`) contains only:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "linkId": "<opaque Journal-generated UUID>",
+  "state": "active",
+  "linkedAt": "2026-10-15T12:01:00.000Z"
+}
+```
+
+It does not return a local user ID or email.
+
+Signals exposes `GET /api/v1/product-links/journal` to its own signed-in customer for local status. It returns the same state vocabulary and only that user's link state; it never returns a Journal user ID, email, or subject.
+
+Example (`200`):
+
+```json
+{
+  "state": "active",
+  "signalsAttemptLabel": "SIG-6P8TR2K5M9WX",
+  "linkedAt": "2026-10-15T12:01:00.000Z"
+}
+```
+
+The status assertion is an RS256 JWT with `iss`, `aud`, `sub`, `iat`, `exp`, `jti`, `action: "status"`, `contract_version`, and `link_id`. It is signed by Signals for Journal's exact environment audience. Journal rejects a status token with a claim action, or one whose subject does not match the Signals subject on that link.
+
+### 5.7 Unlink endpoints
+
+- Journal customer: `DELETE /api/v1/product-links/signals/{linkId}` with Journal session and CSRF protection.
+- Signals customer: `DELETE /api/v1/product-links/journal/{linkId}` with Signals session and CSRF protection.
+- Signals-to-Journal service notification: `POST /api/v1/product-links/signals/revocations`.
+- Journal-to-Signals service notification: `POST /api/v1/product-links/journal/revocations`.
+
+An authenticated customer delete returns `202`:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "linkId": "<opaque Journal-generated UUID>",
+  "state": "revocation_pending",
+  "eventId": "<UUID generated once by the initiating product>"
+}
+```
+
+Service revocation body:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "linkId": "<opaque Journal-generated UUID>",
+  "eventId": "<UUID generated once by the sending product>",
+  "reason": "user_unlinked"
+}
+```
+
+Allowed `reason` values are `user_unlinked`, `account_deleted`, `account_suspended`, and `security_action`. The body is authenticated by a product-signed assertion with `action: "revoke"`, the same `linkId` and `eventId`, and the correct pinned issuer/key/audience. Repeating the same event and exact assertion is idempotent; reusing its `eventId` with different contents returns `409`.
+
+Sanitized Signals-to-Journal revocation assertion claims:
+
+```json
+{
+  "iss": "<exact configured HTTPS Signals issuer for this environment>",
+  "aud": "tradify-journal-link-v1:development",
+  "sub": "tradify-signals-link-service",
+  "iat": 1792065600,
+  "exp": 1792065690,
+  "jti": "<16-128 URL-safe random characters>",
+  "action": "revoke",
+  "contract_version": "tradify-account-linking-v1",
+  "link_id": "<opaque Journal-generated UUID>",
+  "event_id": "<UUID generated once by Signals>",
+  "reason": "user_unlinked"
+}
+```
+
+Journal-to-Signals uses the same shape signed by Journal, with the exact Journal issuer, `sub: "tradify-journal-link-service"`, and `aud: "tradify-signals-link-v1:development"`. Both directions use their own pinned key IDs and environment-specific keys. The service `sub` identifies the signing service, not a customer. A receiver compares the signed claims with the POST body before applying the event.
+
+A successful service revocation returns `200` with `{ "linkId": "<opaque UUID>", "state": "revoked", "eventId": "<same UUID>" }`. A repeated identical event returns the same state. If the receiver is unavailable, the sender keeps its own link unusable and returns `202` while its outbox retries.
+
+### 5.8 Standard error envelope
+
+Proposed error response:
+
+```json
+{
+  "error": {
+    "code": "LINK_AUTHORIZATION_EXPIRED",
+    "message": "This linking request expired. Start a new request."
+  }
+}
+```
+
+Use the HTTP status table in Section 7. Messages remain generic and never include the code, token, subject, email, or whether a particular account exists.
+
+## 6. Signed assertions and environment configuration
+
+Signals signs assertions on its server using RS256. Journal verifies them on its server using public keys pinned out of band. No key discovery from the token, request, DNS, or an untrusted `jku`/`x5u` URL is permitted.
+
+### JWT header
+
+```json
+{
+  "alg": "RS256",
+  "typ": "JWT",
+  "kid": "<operator-pinned Signals key ID for this environment>"
+}
+```
+
+Reject any other algorithm or type, unknown `kid`, duplicate JSON keys, unsupported critical headers, `jku`, `x5u`, or malformed signature.
+
+### Claim request
+
+The following sanitized claim shape is signed only after Signals records the customer's explicit consent:
+
+```json
+{
+  "iss": "<exact configured HTTPS Signals issuer for this environment>",
+  "aud": "tradify-journal-link-v1:development",
+  "sub": "<43-character base64url server-generated opaque Signals subject>",
+  "iat": 1792065600,
+  "exp": 1792065690,
+  "jti": "<16-128 URL-safe random characters>",
+  "action": "claim",
+  "contract_version": "tradify-account-linking-v1",
+  "consent": true,
+  "consent_at": 1792065595,
+  "consent_version": "tradify-signals-link-consent-v1",
+  "journal_initiation_consent_version": "tradify-journal-link-initiation-v1",
+  "journal_attempt_label": "JRN-7M4PK9D2W3QF",
+  "signals_attempt_label": "SIG-6P8TR2K5M9WX",
+  "code_sha256": "<64 lowercase hex characters>"
+}
+```
+
+For `status` and `revoke`, use a separately scoped `action` and the relevant `link_id`/`event_id`; do not reuse a claim assertion for another operation.
+
+### Status assertion
+
+```json
+{
+  "iss": "<exact configured HTTPS Signals issuer for this environment>",
+  "aud": "tradify-journal-link-v1:development",
+  "sub": "<43-character base64url Signals subject already stored on this link>",
+  "iat": 1792065600,
+  "exp": 1792065690,
+  "jti": "<16-128 URL-safe random characters>",
+  "action": "status",
+  "contract_version": "tradify-account-linking-v1",
+  "link_id": "<opaque Journal-generated UUID>"
+}
+```
+
+Status assertions contain no consent or authorization-code claims. Journal requires the subject to match the subject already bound to the requested link.
+
+### Revocation assertion
+
+The example in Section 5.7 is the exact proposed revocation claim shape. Its `sub` is the sending service identity, not an end-user subject; the opaque `link_id` identifies the association being revoked.
+
+### Issuer and audience rules
+
+- Each environment has a distinct Signals issuer URL, pinned key set, and audience. Development keys must never verify production assertions.
+- Audiences are exact single strings: `tradify-journal-link-v1:development`, `tradify-journal-link-v1:staging`, or `tradify-journal-link-v1:production`, matching the receiving environment. Do not accept arrays, aliases, prefixes, or wildcards.
+- `iss` must exactly equal the canonical HTTPS Signals issuer configured for that environment. The actual development, staging, and production issuer URLs must be provided and approved by the Signals Agent; this Journal project does not guess or fetch them.
+- Journal-to-Signals revocation uses the corresponding exact audience `tradify-signals-link-v1:<environment>` and a separately pinned Journal signing key.
+- Issuer, audience, `kid`, and public key are fixed by deployment configuration, never derived from request headers or a client payload.
+
+### Exact time rules
+
+All times are integer Unix seconds and both services must use synchronized UTC clocks.
+
+- `exp` must be strictly greater than verifier `now`; there is no post-expiration grace period.
+- `exp` must be greater than `iat`; `exp - iat` must be at most 120 seconds.
+- `iat` must be no earlier than `now - 120` and no later than `now + 30`.
+- `consent_at` must be no earlier than `now - 120`, no later than `now + 30`, and no later than `iat + 30`.
+- Any missing/non-integer timestamp, expired assertion, or value outside these bounds is rejected.
+
+These 30-second future-skew and zero-expiry-grace rules are proposed exact values and require Signals acceptance.
+
+### Key custody, rotation, and emergency revocation
+
+- Each product owns its private key. Private keys remain in that product's managed secret store and are never exported to the other product.
+- Use separate RSA keys of at least 2048 bits for each environment and direction. Share only the public key through an authenticated out-of-band configuration change.
+- `kid` values are unique, immutable, and pinned to an exact public key and environment. Do not trust keys supplied in requests.
+- Proposed normal rotation: publish and pin the next public key out of band; accept old and new keys for no more than seven days; switch the signer; then remove the old key. Never overlap development and production keys.
+- Emergency revocation: remove the compromised `kid` immediately, reject its assertions, cancel pending authorizations and pending links signed with it, and review links created during the suspected compromise window. Record the event in each product's own audit log.
+- Key rotation and emergency-revocation procedures must be exercised with synthetic keys before activation.
+
+## 7. Replay, substitution, CSRF, and failure behavior
+
+- Authorization codes contain 32 random bytes, are sent only in POST bodies over HTTPS, are stored as SHA-256 digests, expire after five minutes, and are consumed once.
+- Journal consumes the code, creates the pending link, and stores the replay record in one database transaction with a row lock. Concurrent claims cannot both succeed.
+- The replay table has a unique key on `(issuer, audience, jti)`. Store only the SHA-256 fingerprint of the exact compact signed assertion, never the raw bearer JWT.
+- An identical retry requires the same `jti`, exact assertion fingerprint, authorization-code digest, issuer, audience, Signals subject, labels, and action. It returns the original result. Any changed claim or body with the same `jti` returns `409`.
+- Enforce uniqueness for one active/pending Journal account per Signals issuer and one active/pending Signals subject per issuer. A revoked link cannot be reactivated by replay.
+- Signals derives `sub` from the authenticated server-side account record. Journal ignores any client-supplied account IDs, emails, or subjects. The final Journal confirmation is bound to the exact pending `linkId` and both displayed attempt labels.
+- Browser mutations require the owning product's session-bound CSRF token, same-origin `Origin` validation, and normal session protections. Service-to-service routes reject browser cookies and require a correctly signed operation-specific assertion.
+- Apply rate limits to authorization, preview, claim, status, and revocation. Return generic errors that do not reveal whether a subject or authorization code exists.
+- Set `Cache-Control: no-store` and `Referrer-Policy: no-referrer` on linking pages and sensitive API responses. Redact request/response bodies, authorization headers, codes, JWTs, and subjects from all access logs, analytics, traces, and error reporting.
 
 | HTTP status | Meaning |
 | --- | --- |
-| `400` | Missing/malformed request or missing explicit Journal consent |
-| `401` | Missing or invalid Signals assertion, signature, issuer, audience, key ID, consent, or code digest |
-| `409` | Expired/revoked/consumed authorization, replay conflict, or an already-linked account |
-| `503` | Feature is disabled or required verified configuration is absent |
+| `400` | `INVALID_REQUEST` or `CONSENT_REQUIRED`: malformed body, unsupported contract version, or invalid consent |
+| `401` | `AUTHENTICATION_REQUIRED` or `ASSERTION_INVALID`: missing/invalid local session or signed assertion |
+| `403` | `CSRF_ORIGIN_FAILED` or `ACCOUNT_MISMATCH`: failed CSRF/origin check or wrong local account |
+| `409` | `AUTHORIZATION_EXPIRED`, `REPLAY_CONFLICT`, or `LINK_EXISTS`: expired/used code, changed replay, or duplicate active link |
+| `429` | `RATE_LIMITED`: request limit exceeded |
+| `503` | `LINKING_DISABLED` or `PARTNER_UNAVAILABLE`: feature/configuration is unavailable or counterpart cannot be reached |
 
-The claim endpoint consumes the authorization and stores the link and assertion ID in one transaction. Journal stores its internal numeric user-role primary key rather than the email address used as the session identifier. A database uniqueness constraint prevents one active Signals subject or one active Journal account from being linked twice under the same issuer. Replaying the same assertion ID with the same code and subject returns the original link result; changing any of those values is rejected.
+Errors must not echo the authorization code, JWT, email, subject, or key material.
 
-## Journal configuration and migration
+## 8. Unlinking, deletion, suspension, recovery, and reconciliation
 
-The Journal code requires all of the following:
+- A customer can unlink from either product while authenticated to that product. Require fresh local authentication for the operation if the product's session policy says the session is stale.
+- The initiating product marks the local association revoked immediately and writes a signed revocation event to its transactional outbox. It does not delete the other account or change its subscriptions, entitlements, or permissions.
+- While remote revocation is pending, the local state is `revocation_pending`; the association cannot be used and a replacement link for the same pair is blocked. A receiver applies the event idempotently and acknowledges it.
+- If the partner is unavailable, retry the same event ID with bounded exponential backoff (proposed: 1 minute, 5 minutes, 15 minutes, 1 hour, then every 6 hours). Keep the event pending until acknowledged or manually resolved by both product owners. Do not silently reactivate or discard it.
+- The retry mechanism must be a separately reviewed worker/scheduled deployment, not an unapproved timer in the Journal web process. This document does not start or enable such a worker.
+- Account deletion triggers local unlink and remote revocation before removing the local account mapping. Keep only a minimal pseudonymous tombstone so delayed revocation and audit remain possible; do not rely on an account foreign-key cascade that silently erases the event.
+- Account suspension immediately disables the link and sends a revocation event. Unsuspension does not automatically relink; both products require a new consent flow.
+- Account recovery remains product-local. Signals cannot recover Journal access and Journal cannot recover Signals access. Recovery never uses email matching or transfers reset tokens. Any lost-access recovery or suspected-compromise recovery revokes active links and invalidates pending authorizations; ordinary authenticated password changes do not count as recovery. Require fresh linking consent after the owner regains access.
+- Interrupted linking creates no active link. The five-minute authorization and proposed 10-minute pending-confirmation record expire; the customer starts over. A new code invalidates the previous one.
+- Proposed retention: delete expired authorization digests and attempt labels within 24 hours; retain replay fingerprints for 30 days; retain minimal revoked-link audit tombstones for 90 days, then delete or irreversibly anonymize them according to each product's retention policy. These durations require both product owners' approval.
+- Reconciliation compares only versioned link/event states by `linkId` and event ID. It never copies account data or entitlements. Conflicts fail closed and require both owners to review.
 
-- Development: `DEV_PRODUCT_LINKING_ENABLED=true`.
-- Production: both `PRODUCT_LINKING_ENABLED=true` and `PRODUCT_LINKING_VERIFIED=true`.
-- Both modes: `TRADIFY_SIGNALS_ISSUER`, `TRADIFY_SIGNALS_KEY_ID`, and `TRADIFY_SIGNALS_PUBLIC_KEY`.
+## 9. Required schema changes (proposal only)
 
-Missing configuration fails closed with `503`. These flags are not enabled in the project configuration. The Journal schema migration is `migrations/0002_tradify_account_linking_v1.sql`; it is reviewed source only and is not run automatically or applied to production.
+No migration is included or applied by this document.
 
-## Approval and remaining contract decisions
+**Journal database changes expected after acceptance:**
 
-**Approved for this Journal development task:** develop a local, disabled-by-default Journal implementation; preserve independent product authentication; use explicit consent, opaque identifiers, signed assertions, short-lived one-time authorization, and replay protection.
+- Authorization record: local Journal foreign key, code digest, Journal consent version/time, attempt label, creation/expiry/consume/revoke times, and state. Never store the raw code.
+- Link record: opaque `linkId`, Journal local foreign key, exact Signals issuer and opaque subject, both attempt labels, separate consent versions/times, pinned signing `kid`, state (`awaiting_journal_confirmation`, `active`, `revocation_pending`, `revoked`), and lifecycle timestamps.
+- Replay record: issuer, audience, `jti`, exact assertion fingerprint, code digest, link/event references, `kid`, and creation time; unique constraint on issuer/audience/`jti`.
+- Transactional outbox/inbox: event ID, link ID, operation, signed-message fingerprint, delivery state, retry timestamps, and acknowledgement. Never store a raw JWT.
+- Deletion-safe audit tombstone: minimal pseudonymous link/event reference and revocation time. Replace any cascade behavior that would erase an unsent revocation.
+- Partial uniqueness constraints for one active/pending Journal account per issuer and one active/pending partner subject per issuer.
 
-**Awaiting Signals Agent and product-owner approval:** Signals' issuer and stable subject definition; its consent UX and wording; signing-key custody/rotation; error and retry handling; account unlink/revocation and recovery behavior; retention and cleanup policy; whether any user-facing link UI is wanted; and the migration/activation plan. The current implementation intentionally provides no unlink endpoint or user-facing linking UI until the two-sided lifecycle is agreed.
+**Signals database changes expected after acceptance:**
 
-Until these items are reviewed and the counterpart is independently verified, do not configure the production flags, apply the production migration, display linking controls, or treat an account as linked in either product.
+- Signals-owned stable opaque subject generated and persisted server-side for each local account.
+- Signals-owned consent record with its own consent version, timestamp, authenticated local account reference, contract version, attempt labels, and revocation state.
+- Signals-owned link record containing its local account reference, Journal issuer/opaque link reference, state, timestamps, and local audit metadata.
+- Signals-owned transactional revocation outbox/inbox and minimal deletion tombstones.
+
+Signals schema names and migration details must be chosen by the Signals Agent in its own project. Do not connect to, inspect, migrate, or write the Signals database from Journal.
+
+The existing Journal migration `migrations/0002_tradify_account_linking_v1.sql` is source only and has not been applied. It does not contain the full state, separate consent versions, two-phase confirmation, or revocation-outbox fields described here. After acceptance, review it and prepare a new/replacement Journal migration; do not edit production data or apply any production migration without separate explicit approval.
+
+## 10. Contract-test plan and current coverage
+
+Contract tests must use two isolated development databases, synthetic `.invalid` accounts, ephemeral RSA key pairs, and mocked service-to-service calls. Never point them at production or live customer data.
+
+Required Journal and Signals contract cases before activation:
+
+1. Both services independently require authenticated local sessions and separate versioned consent; missing, false, stale, or wrong-version consent is rejected.
+2. Signals ignores a browser-supplied `userId`, `sub`, email, or account mapping and derives its subject from the authenticated server-side account.
+3. A customer sees and confirms the exact Journal/Signals attempt-label pair on both consent surfaces; a changed label or account between preview and claim is rejected.
+4. Authorization codes never appear in URL, browser storage, cookies, logs, analytics, traces, or error reports; preview does not consume or extend them.
+5. Valid RS256 claim, status, and revocation assertions pass only for their exact environment issuer, audience, pinned `kid`, action, and operation.
+6. Negative JWT cases: wrong algorithm/type/key/issuer/audience/action, unknown or revoked `kid`, `jku`/`x5u`, invalid signature, malformed or duplicate claims, email-like/client-selected subject, wrong code digest, missing consent, wrong consent version, bad labels, future/expired/malformed timestamps, and lifetime over 120 seconds.
+7. Clock boundaries exactly test `iat = now+30`, `iat = now+31`, `iat = now-120`, `iat = now-121`, `exp = now`, `exp = now+1`, and `exp-iat = 120/121`.
+8. Single-use and concurrency: two simultaneous claims for one code yield one pending link; replay with the exact same assertion returns that link; same `jti` with any changed claim/body returns `409`.
+9. Duplicate Journal or Signals accounts, code substitution, changed subject, changed issuer, and cross-environment assertions cannot create or confirm a link.
+10. Journal final confirmation is restricted to the original Journal account and exact pending link. No link becomes active before both consent records exist.
+11. Unlink from either side, duplicate revocation, changed event replay, remote outage/retry, suspension, deletion, interrupted flow, recovery, and reconciliation all leave accounts and entitlements unchanged.
+12. Responses and logs contain no passwords, emails from the other product, database IDs, raw authorization codes, raw JWTs, or private keys.
+
+**Tests added in this Journal change:** the existing local security integration test now confirms that the Journal status, authorization, and claim endpoints all return `503` while the feature is disabled by default.
+
+**Existing prototype test:** the Journal security integration suite also temporarily enables the earlier prototype inside an isolated test process/database with synthetic accounts. That test is not production configuration, does not apply a migration, and does not establish acceptance of this revised protocol. Its current generic audience and immediate-link behavior do not satisfy this revised contract. Replace/extend those assertions only after Signals accepts the proposal.
+
+**Current runtime gate:** the existing Journal prototype is off unless `DEV_PRODUCT_LINKING_ENABLED=true` in development/test. Production additionally requires `PRODUCT_LINKING_ENABLED=true`, `PRODUCT_LINKING_VERIFIED=true`, and configured `TRADIFY_SIGNALS_ISSUER`, `TRADIFY_SIGNALS_KEY_ID`, and `TRADIFY_SIGNALS_PUBLIC_KEY`. This change sets none of these flags or values. The existing gate is not approval of the revised contract. Signals' gate remains for the Signals Agent to define in its own project.
+
+## 11. Development implementation handoff
+
+After Signals accepts this contract and the Journal owner separately approves implementation:
+
+1. Signals supplies verified development issuer URL, audience, pinned public key ID, and public key through its approved secret/configuration flow. Journal must not guess a Signals domain.
+2. Each project uses its own isolated development database and synthetic accounts. Use separate development signing keys, never production keys or production URLs.
+3. Implement Signals subject generation, consent UI/records, code entry, preview, claim, status, and revocation in Signals' repository only.
+4. Implement the revised state machine, Journal consent/confirmation UI, endpoints, schema migration source, inbox/outbox, and test suite in Journal only.
+5. Run shared contract fixtures and the full two-database test matrix in development. Verify default-off behavior before and after every test.
+6. Review logs and network traces for redaction, test failure/retry and emergency key rotation, and confirm both projects' status views agree.
+7. Keep all flags false and never apply a production migration until Signals acceptance, both product owners' written approval, a separate production plan, and a rollback/recovery review are complete.
+
+No production deployment, paid service, database change, DNS change, email, billing, MT5 sync, or background worker is authorized by this handoff.
+
+## 12. Decisions requiring Signals acceptance
+
+This document proposes exact protocol mechanics to make the handoff reviewable. The following must be explicitly confirmed by the Signals Agent and both product owners before implementation:
+
+- Exact issuer URLs for development, staging (if used), and production. They are intentionally not guessed in this Journal project.
+- The three proposed audience strings and separate per-environment key sets.
+- Server-generated subject format, attempt-label display, manual code-transfer UX, preview endpoint, and the two-step confirmation flow.
+- Separate consent wording/versions and how the two products present the exact account pair.
+- The 30-second future clock skew, strict expiry, 10-minute pending confirmation, key-rotation overlap, retry schedule, and 24-hour/30-day/90-day retention proposals.
+- Bidirectional signed revocation/status contracts, account deletion/suspension/recovery rules, and ownership of the scheduled outbox worker.
+- Journal and Signals schema changes, contract fixtures, error behavior, monitoring, incident response, and rollout/rollback order.
+
+Until Signals and the Journal owner accept these items, do not enable the feature, change its runtime behavior, apply any migration, configure production keys/flags, expose linking UI, or treat any account as linked.
