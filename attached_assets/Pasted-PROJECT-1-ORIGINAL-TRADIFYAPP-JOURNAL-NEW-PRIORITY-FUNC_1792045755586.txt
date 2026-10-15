@@ -1,0 +1,66 @@
+PROJECT 1 — ORIGINAL TRADIFYAPP JOURNAL
+
+NEW PRIORITY: FUNCTIONAL DEVELOPMENT AND TRADIFY ECOSYSTEM INTEGRATION.
+
+We are postponing deployment decisions for now.
+
+Our objective is to make Tradify Journal fully functional and prepare real, secure integration with Tradify Signals.
+
+Please stop repeating general deployment and architecture audits unless a specific blocker requires investigation.
+
+PHASE A — COMPLETE JOURNAL FUNCTIONALITY
+
+Using only the isolated development database and synthetic accounts:
+
+1. Verify and fix registration, email verification, login, logout, password recovery and session management. Use local email capture or mocks; never send real messages.
+2. Verify the trading journal works end to end: create, edit, delete and display trades.
+3. Verify MT5 account connection and trade synchronization using a secure non-production bridge or synthetic broker fixtures.
+4. Confirm imported MT5 trades display correctly in the customer dashboard.
+5. Verify performance analytics, risk calculations and prop-firm challenges.
+6. Verify Admin operations, permissions and audit records.
+7. Verify Free, Pro, Elite and Coach access restrictions and subscription flows using synthetic provider events.
+8. Preserve zero generative-AI runtime usage and all previously implemented security fixes.
+
+Fix confirmed development defects, not just document them.
+
+PHASE B — CONNECT JOURNAL WITH SIGNALS
+
+We want to begin actual cross-product integration.
+
+Journal and Signals must remain separate applications and databases.
+
+Please prepare the first versioned, secure integration contract for:
+
+- Cross-product navigation.
+- Explicit customer account linking.
+- Checking whether an authenticated customer has linked the other product.
+- Future product-specific entitlement summaries.
+- Future central Admin access through audited APIs.
+
+The initial account-linking flow must require the customer to authenticate separately with BOTH products and explicitly approve linking. Do not match or merge accounts solely by email address.
+
+Use short-lived, single-use linking authorization and server-side verification. No shared passwords, session cookies, or database credentials.
+
+Implement Journal's side in development after defining the contract. Keep the integration disabled unless the counterpart is available and verified.
+
+Provide the precise API contract, security requirements and implementation handoff for the Signals Replit Agent.
+
+PHASE C — VERIFICATION
+
+Show working end-to-end evidence, not only route availability.
+
+For every core feature report:
+- Working.
+- Fixed and tested.
+- Blocked by missing external configuration.
+- Not yet implemented.
+
+Use disposable data for mutating tests, preserve the existing Neon production database and keep all production services unchanged.
+
+Do not deploy, modify DNS, use live customer data, activate payments or email, or start production workers.
+
+Do not touch the Signals codebase.
+
+Deliver implemented fixes, automated tests, browser verification, integration API contract, commit hashes and next steps.
+
+Prioritize functioning software over additional planning documents.

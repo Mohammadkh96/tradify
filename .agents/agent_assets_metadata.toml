@@ -189,3 +189,31 @@ mtime_ms = 1791961245739
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/bc805ee4-5fd6-4416-8437-3ff3ddce21e2/292eb6d3-176d-43b4-b487-ddfb30978458"
 storage_version_token = "1791961272400172"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "2zuick9JtV1nlXZ5Ry38j"
+uri = "file://docs/TRADIFY_ACCOUNT_LINKING_V1.md"
+type = "text"
+title = "Tradify Journal–Signals Account-Linking Contract v1"
+description = "Development-only contract and Signals handoff. Linking remains disabled until counterpart review and approval."
+logical_id = "e0f3580d-7c10-46ca-9302-b017149e0986"
+content_hash = "sha256:f60251cd6994ea38c8cf8649e55312d5efdde795777f91041860f1dd1e214a38"
+size = 7901
+mtime_ms = 1792047444751
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/e0f3580d-7c10-46ca-9302-b017149e0986/e9d5b22d-6893-445a-88fd-53a6d32bd16f"
+storage_version_token = "1792047490881480"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "MMZU5EgQcmq1MprUGZbAq"
+uri = "file://docs/INTEGRATION_CONTRACTS.md"
+type = "text"
+title = "Tradify Integration Contracts"
+description = "Journal integration inventory with the proposed V1 account-linking contract status."
+logical_id = "55ef3c99-fa56-4974-ad6d-c296b54cef75"
+content_hash = "sha256:580bc6314e9c6becdd19005a4ac8cad7d8478c8a907c461f19217183fe18787e"
+size = 6462
+mtime_ms = 1792046556135
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/55ef3c99-fa56-4974-ad6d-c296b54cef75/88c1b3f3-969e-4ccb-accb-565f1139c56a"
+storage_version_token = "1792047492099532"
+content_type = "text/markdown"
