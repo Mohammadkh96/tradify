@@ -1,0 +1,91 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL
+
+The Signals Agent has completed its review of the revised V1 account-linking contract.
+
+I approve the following policy direction FOR ISOLATED DEVELOPMENT ONLY.
+
+Please finalize the shared V1 contract, addressing the five remaining blockers.
+
+1. DEVELOPMENT TRUST
+
+Use a dedicated development trust configuration.
+
+Signals must provide its exact development issuer URL, public signing key, and kid.
+
+Use the development-only audience `tradify-journal-link-v1-dev`, subject to Signals confirmation.
+
+Do not reuse production keys, issuers, or credentials.
+
+2. REVOCATION
+
+Clarify the state machine:
+
+When a customer unlinks, the initiating service immediately makes the link unusable locally and sets `revocation_pending`.
+
+Write a signed revocation event to its transactional outbox.
+
+Set the association to `revoked` after acknowledgment from the other service.
+
+A pending revocation cannot be used for authorization or silently replaced.
+
+3. ACCOUNT DELETION
+
+Account deletion must not wait for the other product.
+
+Disable the local association and persist the required revocation event and minimal audit tombstone.
+
+Continue local account deletion/anonymization.
+
+Retry remote revocation asynchronously.
+
+Never delete the other product's account or alter its subscription.
+
+4. OUTBOX OWNERSHIP
+
+Journal owns Journal-originated revocation delivery.
+
+Signals owns Signals-originated revocation delivery.
+
+Each system maintains its own transactional outbox and authenticated inbound revocation handler.
+
+For initial development tests, support an explicitly started/manual worker or deterministic outbox drain. Do not activate production background jobs.
+
+5. DEVELOPMENT SECURITY POLICY
+
+Use:
+- Authorization code expiry: 5 minutes.
+- Assertion maximum lifetime: 120 seconds.
+- Issuance clock tolerance: 30 seconds.
+- Expiration grace: zero.
+- Proposed signing-key overlap: 7 days, with immediate emergency revocation.
+- Separate versioned consent records.
+- No email-based account linking.
+- No shared passwords, sessions, subscriptions, or entitlements.
+
+Pending authorization must expire no later than its underlying authorization code.
+
+Keep synthetic development audit data minimal and remove it during test-environment teardown. Production retention remains a separate decision.
+
+6. CONSENT WORDING
+
+Proposed customer message:
+
+"Connect your Tradify Journal and Tradify Signals accounts. You will continue signing in to each product separately. Your subscriptions, trading records, and account permissions will remain separate. You can disconnect the accounts later."
+
+Both products should display the exact accounts being linked using safe, authenticated account context.
+
+7. IMPLEMENTATION
+
+Update the V1 contract with these development decisions and the exact owner responsibilities.
+
+Do not invent Signals issuer values or signing keys. Mark them as requiring exchange through a secure development configuration.
+
+Prepare Journal's implementation plan against the agreed contract.
+
+Keep account linking disabled by default until the Signals Agent confirms acceptance.
+
+Do not deploy, run production migrations, or change existing customer records.
+
+Provide the updated Markdown contract and implementation handoff.
+
+Avoid another general architecture audit. Focus on resolving the remaining contract differences so we can proceed with real development.

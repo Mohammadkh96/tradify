@@ -51,8 +51,8 @@ Keep provider-verified Stripe and PayPal subscription updates active while new c
 
 **How to apply:** Do not treat `LIVE_BILLING_ENABLED=false` as a global webhook pause. Only add a separate entitlement-update gate if the user explicitly changes this decision.
 
-The user prioritizes functional development of Tradify Journal on isolated development data over repeating deployment audits. Keep Signals code and data untouched. A Journal-side linking prototype must remain disabled until the Signals counterpart is verified and the contract is approved.
+The user prioritizes functional development of Tradify Journal on isolated development data over repeating deployment audits. Keep Signals code and data untouched. The Signals Agent approved account-linking policy direction for isolated development only; the Journal prototype remains disabled until the exact dev audience and secure issuer/key configuration are confirmed, Signals gives final written acceptance, and the Journal owner approves implementation.
 
-**Why:** The user explicitly redirected work toward functional Journal workflows and safe ecosystem integration preparation on 15 October 2026.
+**Why:** The user provided the Signals Agent's review on 15 October 2026; it approves development-only policy direction but explicitly makes final acceptance and trust configuration prerequisites.
 
-**How to apply:** Fix and test Journal flows with synthetic accounts and local disposable databases first. Do not revisit production readiness unless a concrete blocker is required for the current feature; do not activate cross-product linking without approval.
+**How to apply:** Fix and test Journal flows with synthetic accounts and local disposable databases first. Do not revisit production readiness unless a concrete blocker is required for the current feature; do not implement or activate cross-product linking before the stated development gates. Production decisions require separate approval.

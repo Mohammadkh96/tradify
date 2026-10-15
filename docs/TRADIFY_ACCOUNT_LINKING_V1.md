@@ -2,9 +2,9 @@
 
 **Contract version:** `tradify-account-linking-v1`
 
-**Status:** Revised implementation proposal for Signals and product-owner review. It is not jointly accepted, is not approved for production, and does not authorize enabling the existing Journal feature.
+**Status:** Signals has approved the policy direction for isolated development only. Final development trust details and written acceptance of the exact contract remain pending. This is not production approval and does not authorize enabling the existing Journal feature.
 
-**Important compatibility note:** The current Journal code is a disabled-by-default prototype of the earlier draft. It does not implement this revised two-sided confirmation, preview, bidirectional unlink, or lifecycle contract. Do not enable it or apply its existing migration. Any implementation work must wait for Signals' written acceptance and the product owner's approval.
+**Important compatibility note:** The current Journal code is a disabled-by-default prototype of the earlier draft. It does not implement this revised two-sided confirmation, preview, bidirectional unlink, or lifecycle contract. Do not enable it or apply its existing migration. Journal implementation must wait for Signals to confirm the development audience and provide the exact development issuer, key ID, and public key through secure configuration, followed by final written acceptance and Journal-owner approval.
 
 ## 1. Purpose and security boundaries
 
@@ -34,15 +34,15 @@ Neither product is allowed to query the other's database or reuse the other's se
 
 ## 3. Proposed identifiers, consent versions, and state machine
 
-The strings below are proposed contract values. They require Signals acceptance before implementation.
+Signals has approved the isolated-development policy direction. Identifiers that Signals has not explicitly confirmed remain provisional and block implementation until confirmed.
 
 - Contract: `tradify-account-linking-v1`
 - Journal initiation consent: `tradify-journal-link-initiation-v1`
 - Journal final-confirmation consent: `tradify-journal-link-confirmation-v1`
 - Signals consent: `tradify-signals-link-consent-v1`
-- Journal audience: `tradify-journal-link-v1:<environment>`
-- Signals audience for Journal-signed revocation: `tradify-signals-link-v1:<environment>`
-- Supported environment suffixes: exactly `development`, `staging`, and `production`. A deployment without an explicitly configured matching issuer, audience, and pinned key fails closed.
+- Development audience for Signals assertions to Journal: `tradify-journal-link-v1-dev` (proposed by Signals; exact value still requires Signals confirmation).
+- Development audience for Journal-signed requests to Signals: not specified here; Signals must confirm the exact value before development configuration.
+- Staging and production issuers, audiences, and keys are out of scope and are not defined by this development contract.
 
 Signals must create the stable `sub` on its server using 32 cryptographically random bytes encoded as unpadded base64url. It must persist that subject against the authenticated Signals account and reuse it on later link attempts. It must never derive `sub` from or accept it as a client-provided `userId`, email, or profile value. Journal stores that opaque subject with the exact configured Signals issuer.
 
@@ -65,11 +65,16 @@ awaiting_* -> cancelled | expired
 active -> revocation_pending -> revoked
 ```
 
-A pending confirmation expires after 10 minutes (proposed). A code is single-use and expires after five minutes. A revoked, cancelled, or expired link cannot be reactivated; the customer starts a fresh two-sided flow.
+A code is single-use and expires five minutes after Journal issues it. A pending confirmation expires at the same authorization's original `expiresAt`; it receives no additional post-claim time. A revoked, cancelled, or expired link cannot be reactivated; the customer starts a fresh two-sided flow.
 
 ## 4. Customer flow and safe code transfer
 
 1. The customer signs in to Journal using Journal's own authentication. Journal displays the current local account label and explains that linking does not share sign-in or entitlements.
+
+   Proposed customer wording from the Signals review (final UI copy still requires product-owner approval):
+
+   > Connect your Tradify Journal and Tradify Signals accounts. You will continue signing in to each product separately. Your subscriptions, trading records, and account permissions will remain separate. You can disconnect the accounts later.
+
 2. The customer gives Journal consent to initiate a link. Journal records `tradify-journal-link-initiation-v1`, its timestamp, and the current internal Journal account ID. Journal creates a random 32-byte code, stores only its SHA-256 digest, and returns the code and `journalAttemptLabel` in a `Cache-Control: no-store` response.
 3. Journal renders the code only in the active page's memory. It does not put the code in a URL, redirect, browser storage, cookie, referrer, analytics event, browser log, server log, tracing span, or error report. The UI does not copy the code to the clipboard automatically.
 4. The customer opens the Signals linking page separately, signs in to Signals, and manually pastes or enters the code into a form. The code is submitted only in a JSON request body. The page uses `autocomplete="off"`, clears the input after submission, and does not persist the value in local/session storage, IndexedDB, a service-worker cache, or navigation state.
@@ -185,7 +190,7 @@ Signals records that separate consent, obtains `sub` from its authenticated serv
   "contractVersion": "tradify-account-linking-v1",
   "state": "awaiting_journal_confirmation",
   "signalsAttemptLabel": "SIG-6P8TR2K5M9WX",
-  "expiresAt": "2026-10-15T12:15:00.000Z"
+  "expiresAt": "2026-10-15T12:05:00.000Z"
 }
 ```
 
@@ -217,7 +222,7 @@ Success (`201`) creates a pending link, not an active one:
   "linkId": "<opaque Journal-generated UUID>",
   "state": "awaiting_journal_confirmation",
   "signalsAttemptLabel": "SIG-6P8TR2K5M9WX",
-  "expiresAt": "2026-10-15T12:15:00.000Z"
+  "expiresAt": "2026-10-15T12:05:00.000Z"
 }
 ```
 
@@ -273,7 +278,7 @@ Pending confirmation is returned only to the initiating Journal session:
   "state": "awaiting_journal_confirmation",
   "linkId": "<opaque Journal-generated UUID>",
   "signalsAttemptLabel": "SIG-6P8TR2K5M9WX",
-  "expiresAt": "2026-10-15T12:15:00.000Z"
+  "expiresAt": "2026-10-15T12:05:00.000Z"
 }
 ```
 
@@ -357,7 +362,7 @@ Sanitized Signals-to-Journal revocation assertion claims:
 ```json
 {
   "iss": "<exact configured HTTPS Signals issuer for this environment>",
-  "aud": "tradify-journal-link-v1:development",
+  "aud": "tradify-journal-link-v1-dev",
   "sub": "tradify-signals-link-service",
   "iat": 1792065600,
   "exp": 1792065690,
@@ -370,7 +375,7 @@ Sanitized Signals-to-Journal revocation assertion claims:
 }
 ```
 
-Journal-to-Signals uses the same shape signed by Journal, with the exact Journal issuer, `sub: "tradify-journal-link-service"`, and `aud: "tradify-signals-link-v1:development"`. Both directions use their own pinned key IDs and environment-specific keys. The service `sub` identifies the signing service, not a customer. A receiver compares the signed claims with the POST body before applying the event.
+Journal-to-Signals uses the same shape signed by Journal, with the exact Journal development issuer, `sub: "tradify-journal-link-service"`, and the development audience that Signals confirms. Do not invent that reverse audience. Both directions use their own pinned development key IDs. The service `sub` identifies the signing service, not a customer. A receiver compares the signed claims with the POST body before applying the event.
 
 A successful service revocation returns `200` with `{ "linkId": "<opaque UUID>", "state": "revoked", "eventId": "<same UUID>" }`. A repeated identical event returns the same state. If the receiver is unavailable, the sender keeps its own link unusable and returns `202` while its outbox retries.
 
@@ -412,7 +417,7 @@ The following sanitized claim shape is signed only after Signals records the cus
 ```json
 {
   "iss": "<exact configured HTTPS Signals issuer for this environment>",
-  "aud": "tradify-journal-link-v1:development",
+  "aud": "tradify-journal-link-v1-dev",
   "sub": "<43-character base64url server-generated opaque Signals subject>",
   "iat": 1792065600,
   "exp": 1792065690,
@@ -436,7 +441,7 @@ For `status` and `revoke`, use a separately scoped `action` and the relevant `li
 ```json
 {
   "iss": "<exact configured HTTPS Signals issuer for this environment>",
-  "aud": "tradify-journal-link-v1:development",
+  "aud": "tradify-journal-link-v1-dev",
   "sub": "<43-character base64url Signals subject already stored on this link>",
   "iat": 1792065600,
   "exp": 1792065690,
@@ -455,11 +460,12 @@ The example in Section 5.7 is the exact proposed revocation claim shape. Its `su
 
 ### Issuer and audience rules
 
-- Each environment has a distinct Signals issuer URL, pinned key set, and audience. Development keys must never verify production assertions.
-- Audiences are exact single strings: `tradify-journal-link-v1:development`, `tradify-journal-link-v1:staging`, or `tradify-journal-link-v1:production`, matching the receiving environment. Do not accept arrays, aliases, prefixes, or wildcards.
-- `iss` must exactly equal the canonical HTTPS Signals issuer configured for that environment. The actual development, staging, and production issuer URLs must be provided and approved by the Signals Agent; this Journal project does not guess or fetch them.
-- Journal-to-Signals revocation uses the corresponding exact audience `tradify-signals-link-v1:<environment>` and a separately pinned Journal signing key.
-- Issuer, audience, `kid`, and public key are fixed by deployment configuration, never derived from request headers or a client payload.
+- For isolated development, Signals must provide the exact canonical HTTPS development issuer, public signing key, and `kid` through an approved secure configuration exchange. The development audience candidate is `tradify-journal-link-v1-dev`; Signals must confirm it before either service configures trust.
+- Journal must likewise configure its own exact development issuer, `kid`, and signing key for Journal-originated revocation, then provide only its public key to Signals through the same secure exchange. No issuer URL or key is guessed or stored in this document.
+- Journal accepts only the exact confirmed development issuer, `kid`, and single-string audience. Reject audience arrays, aliases, prefixes, wildcards, unknown keys, and any production/staging trust material.
+- The reverse development audience for Journal-signed requests to Signals must be provided or explicitly confirmed by Signals. It is intentionally not guessed in this contract.
+- Development issuer, audience, `kid`, and public key are fixed by development-only configuration, never derived from request headers or client payloads. Do not put key material in Git, this document, or application logs.
+- Staging and production trust configuration, key sets, and audiences require separate review and are not approved or specified here.
 
 ### Exact time rules
 
@@ -471,15 +477,15 @@ All times are integer Unix seconds and both services must use synchronized UTC c
 - `consent_at` must be no earlier than `now - 120`, no later than `now + 30`, and no later than `iat + 30`.
 - Any missing/non-integer timestamp, expired assertion, or value outside these bounds is rejected.
 
-These 30-second future-skew and zero-expiry-grace rules are proposed exact values and require Signals acceptance.
+Signals approved the 30-second future issuance tolerance, 120-second maximum assertion lifetime, and zero expiration grace for isolated development. Production policy remains a separate decision.
 
 ### Key custody, rotation, and emergency revocation
 
 - Each product owns its private key. Private keys remain in that product's managed secret store and are never exported to the other product.
-- Use separate RSA keys of at least 2048 bits for each environment and direction. Share only the public key through an authenticated out-of-band configuration change.
+- For isolated development, use separate RSA key pairs of at least 2048 bits for each product/signing direction. Share only public keys through an authenticated out-of-band configuration change; production/staging key choices are outside this document.
 - `kid` values are unique, immutable, and pinned to an exact public key and environment. Do not trust keys supplied in requests.
-- Proposed normal rotation: publish and pin the next public key out of band; accept old and new keys for no more than seven days; switch the signer; then remove the old key. Never overlap development and production keys.
-- Emergency revocation: remove the compromised `kid` immediately, reject its assertions, cancel pending authorizations and pending links signed with it, and review links created during the suspected compromise window. Record the event in each product's own audit log.
+- For isolated development, Signals approved a maximum seven-day key overlap; publish and pin the next public key out of band, switch the signer, then remove the old key. Never overlap development and production keys.
+- Emergency revocation is immediate: remove the compromised `kid`, reject its assertions, cancel pending authorizations and pending links signed with it, and review links created during the suspected compromise window. Record the event in each product's own audit log.
 - Key rotation and emergency-revocation procedures must be exercised with synthetic keys before activation.
 
 ## 7. Replay, substitution, CSRF, and failure behavior
@@ -508,15 +514,15 @@ Errors must not echo the authorization code, JWT, email, subject, or key materia
 ## 8. Unlinking, deletion, suspension, recovery, and reconciliation
 
 - A customer can unlink from either product while authenticated to that product. Require fresh local authentication for the operation if the product's session policy says the session is stale.
-- The initiating product marks the local association revoked immediately and writes a signed revocation event to its transactional outbox. It does not delete the other account or change its subscriptions, entitlements, or permissions.
-- While remote revocation is pending, the local state is `revocation_pending`; the association cannot be used and a replacement link for the same pair is blocked. A receiver applies the event idempotently and acknowledges it.
-- If the partner is unavailable, retry the same event ID with bounded exponential backoff (proposed: 1 minute, 5 minutes, 15 minutes, 1 hour, then every 6 hours). Keep the event pending until acknowledged or manually resolved by both product owners. Do not silently reactivate or discard it.
-- The retry mechanism must be a separately reviewed worker/scheduled deployment, not an unapproved timer in the Journal web process. This document does not start or enable such a worker.
-- Account deletion triggers local unlink and remote revocation before removing the local account mapping. Keep only a minimal pseudonymous tombstone so delayed revocation and audit remain possible; do not rely on an account foreign-key cascade that silently erases the event.
+- On customer unlink, the initiating product immediately makes the local association unusable, sets `revocation_pending`, and writes a signed event to its own transactional outbox. Only after the other service acknowledges the event does the initiating product transition it to `revoked`.
+- While remote revocation is pending, the association cannot be used and a replacement link for that pair is blocked. A receiver applies the event idempotently and acknowledges it. Do not silently reactivate or discard a pending event.
+- Each product owns delivery of its own outbound events and its authenticated inbound revocation handler. If the partner is unavailable, retry the same event ID asynchronously. Any production retry schedule remains a separate decision.
+- For isolated development tests, use a deterministic outbox drain or an explicitly started manual development worker. Never start a worker by default in the Journal web process, and do not activate production background jobs.
+- Account deletion must not wait for the other product: disable the local association, persist the signed revocation event and minimal pseudonymous audit tombstone, then continue the local deletion/anonymization. Retry remote delivery asynchronously. Do not rely on an account foreign-key cascade that silently erases the event.
 - Account suspension immediately disables the link and sends a revocation event. Unsuspension does not automatically relink; both products require a new consent flow.
 - Account recovery remains product-local. Signals cannot recover Journal access and Journal cannot recover Signals access. Recovery never uses email matching or transfers reset tokens. Any lost-access recovery or suspected-compromise recovery revokes active links and invalidates pending authorizations; ordinary authenticated password changes do not count as recovery. Require fresh linking consent after the owner regains access.
-- Interrupted linking creates no active link. The five-minute authorization and proposed 10-minute pending-confirmation record expire; the customer starts over. A new code invalidates the previous one.
-- Proposed retention: delete expired authorization digests and attempt labels within 24 hours; retain replay fingerprints for 30 days; retain minimal revoked-link audit tombstones for 90 days, then delete or irreversibly anonymize them according to each product's retention policy. These durations require both product owners' approval.
+- Interrupted linking creates no active link. Authorization and pending-confirmation state expire no later than the original five-minute authorization-code deadline; the customer starts over. A new code invalidates the previous one.
+- Keep synthetic development audit data minimal and remove it during test-environment teardown. Production retention and any customer-data retention periods remain undecided and require a separate review.
 - Reconciliation compares only versioned link/event states by `linkId` and event ID. It never copies account data or entitlements. Conflicts fail closed and require both owners to review.
 
 ## 9. Required schema changes (proposal only)
@@ -541,11 +547,11 @@ No migration is included or applied by this document.
 
 Signals schema names and migration details must be chosen by the Signals Agent in its own project. Do not connect to, inspect, migrate, or write the Signals database from Journal.
 
-The existing Journal migration `migrations/0002_tradify_account_linking_v1.sql` is source only and has not been applied. It does not contain the full state, separate consent versions, two-phase confirmation, or revocation-outbox fields described here. After acceptance, review it and prepare a new/replacement Journal migration; do not edit production data or apply any production migration without separate explicit approval.
+The existing Journal migration `migrations/0002_tradify_account_linking_v1.sql` is source only and has not been applied. It does not contain the full state, separate consent versions, two-phase confirmation, or revocation-outbox fields described here, and its account foreign keys use `ON DELETE CASCADE`, which can erase required revocation records. After acceptance, replace or revise it for isolated development so deletion preserves the outbox event and tombstone. Do not apply it to production or change production data.
 
 ## 10. Contract-test plan and current coverage
 
-Contract tests must use two isolated development databases, synthetic `.invalid` accounts, ephemeral RSA key pairs, and mocked service-to-service calls. Never point them at production or live customer data.
+Contract tests must use two isolated development databases, synthetic `.invalid` accounts, ephemeral RSA key pairs, and mocked service-to-service calls. Use a deterministic outbox drain or an explicitly started manual worker in the isolated test environment; never start it automatically. Tear down synthetic audit data with the test environment. Never point tests at production or live customer data.
 
 Required Journal and Signals contract cases before activation:
 
@@ -570,28 +576,23 @@ Required Journal and Signals contract cases before activation:
 
 ## 11. Development implementation handoff
 
-After Signals accepts this contract and the Journal owner separately approves implementation:
+The Journal-only implementation sequence is documented in [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). Implementation is blocked until Signals confirms the exact development audience, securely provides the development issuer/key ID/public key, and gives final written acceptance; the Journal owner must also approve.
 
-1. Signals supplies verified development issuer URL, audience, pinned public key ID, and public key through its approved secret/configuration flow. Journal must not guess a Signals domain.
-2. Each project uses its own isolated development database and synthetic accounts. Use separate development signing keys, never production keys or production URLs.
-3. Implement Signals subject generation, consent UI/records, code entry, preview, claim, status, and revocation in Signals' repository only.
-4. Implement the revised state machine, Journal consent/confirmation UI, endpoints, schema migration source, inbox/outbox, and test suite in Journal only.
-5. Run shared contract fixtures and the full two-database test matrix in development. Verify default-off behavior before and after every test.
-6. Review logs and network traces for redaction, test failure/retry and emergency key rotation, and confirm both projects' status views agree.
-7. Keep all flags false and never apply a production migration until Signals acceptance, both product owners' written approval, a separate production plan, and a rollback/recovery review are complete.
+The development configuration must be isolated from production and exchanged through secure configuration only. Signals implements Signals-owned work in its own project; Journal implements Journal-owned work in this project. A development-only manual/deterministic outbox drain may run only when explicitly started for tests.
 
-No production deployment, paid service, database change, DNS change, email, billing, MT5 sync, or background worker is authorized by this handoff.
+No production deployment, paid service, production database change, DNS change, email, billing, MT5 sync, or production background worker is authorized by this handoff. Production retention and rollout require a separate decision.
 
 ## 12. Decisions requiring Signals acceptance
 
-This document proposes exact protocol mechanics to make the handoff reviewable. The following must be explicitly confirmed by the Signals Agent and both product owners before implementation:
+Signals has approved the isolated-development policy direction described in its review: five-minute codes, 120-second maximum assertion lifetime, 30-second future issuance tolerance, zero expiration grace, up to seven days of key overlap, immediate emergency revocation, separate consent, no email matching, no shared credentials or entitlements, and the unlink/deletion/outbox responsibilities recorded above.
 
-- Exact issuer URLs for development, staging (if used), and production. They are intentionally not guessed in this Journal project.
-- The three proposed audience strings and separate per-environment key sets.
-- Server-generated subject format, attempt-label display, manual code-transfer UX, preview endpoint, and the two-step confirmation flow.
-- Separate consent wording/versions and how the two products present the exact account pair.
-- The 30-second future clock skew, strict expiry, 10-minute pending confirmation, key-rotation overlap, retry schedule, and 24-hour/30-day/90-day retention proposals.
-- Bidirectional signed revocation/status contracts, account deletion/suspension/recovery rules, and ownership of the scheduled outbox worker.
-- Journal and Signals schema changes, contract fixtures, error behavior, monitoring, incident response, and rollout/rollback order.
+Before implementation, the remaining development gates are:
+
+- Signals confirms whether `tradify-journal-link-v1-dev` is the exact development audience and supplies the exact HTTPS development issuer, `kid`, and public key through secure configuration.
+- Signals confirms the reverse audience for Journal-signed requests to Signals; this document intentionally does not invent it.
+- Signals gives final written acceptance of this exact contract, and the Journal owner separately approves implementation.
+- Product owners approve the proposed customer-facing wording and review the detailed Journal and Signals schemas/API fixtures.
+
+Production/staging trust values, retention periods, migrations, rollout, and background jobs are not approved here and require a separate decision.
 
 Until Signals and the Journal owner accept these items, do not enable the feature, change its runtime behavior, apply any migration, configure production keys/flags, expose linking UI, or treat any account as linked.

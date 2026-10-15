@@ -1,6 +1,6 @@
 # Tradify Integration Contracts
 
-**Status:** A Journal-only development implementation of account linking is proposed in `TRADIFY_ACCOUNT_LINKING_V1.md`; no cross-project contract is jointly approved or production-enabled.
+**Status:** The Signals Agent approved the account-linking policy direction for isolated development only. Final development trust configuration and written acceptance of the exact contract remain pending; nothing is production-enabled.
 **Last reviewed:** 15 October 2026
 
 This document describes Journal interfaces verified in this repository and proposals for future review. The local account-linking implementation is disabled by default and does not authorize changes to the separate Signals project. Compare the contract with the Signals project's report before activation.
@@ -37,7 +37,7 @@ Consider a standards-based identity provider and versioned identity-claims contr
 
 ### Journal/Signals account association
 
-The revised development proposal is specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md). It defines a proposed two-sided consent, preview, claim, final-confirmation, and lifecycle contract; it is not SSO and is not the behavior of the current disabled Journal prototype. Do not enable or implement the revised contract until Signals and both product owners accept its issuer/audience, assertion, consent, key-rotation, account-pairing, and unlink/recovery rules.
+The revised development proposal and Journal work sequence are specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md) and [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). Signals approved policy direction for isolated development, but the exact audience/trust configuration and final written acceptance remain pending. The proposal is not SSO and is not the behavior of the current disabled Journal prototype; do not enable it or implement cross-project behavior before those gates are met.
 
 ### Subscription bundles
 

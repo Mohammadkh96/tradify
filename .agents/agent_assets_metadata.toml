@@ -195,13 +195,13 @@ id = "2zuick9JtV1nlXZ5Ry38j"
 uri = "file://docs/TRADIFY_ACCOUNT_LINKING_V1.md"
 type = "text"
 title = "Tradify Journal–Signals Account-Linking V1 Contract"
-description = "Revised implementation-ready proposal for Signals review. Linking remains disabled; no migration or production change is authorized."
+description = "Revised for isolated development only. Signals policy direction is recorded; exact trust configuration and final acceptance remain pending."
 logical_id = "e0f3580d-7c10-46ca-9302-b017149e0986"
-content_hash = "sha256:54dc9e8cdc3da7f05a5e5817c61d41b28a582aec077fdc888e6dabd0673367bd"
-size = 38388
-mtime_ms = 1792051835420
-storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/e0f3580d-7c10-46ca-9302-b017149e0986/5604a866-c34f-4945-86bc-af57b376946a"
-storage_version_token = "1792051878387126"
+content_hash = "sha256:28ab0c007274c6bc9d96e08bc373159f374955f903468d20df4fe8cdbc1abd54"
+size = 39733
+mtime_ms = 1792053075980
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/e0f3580d-7c10-46ca-9302-b017149e0986/3cdf616d-5c2e-495c-bbc2-d564851320c2"
+storage_version_token = "1792053119186922"
 content_type = "text/markdown"
 
 [[outputs]]
@@ -329,3 +329,17 @@ mtime_ms = 1792050506112
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/428361ca-d4ca-4fba-a8a0-9bbaef8e8f49/893f3b69-1726-4521-a602-a2a09c31ac0e"
 storage_version_token = "1792050685503863"
 content_type = "image/png"
+
+[[outputs]]
+id = "S42lO3EzOtq2QMfyEa5Ls"
+uri = "file://docs/TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md"
+type = "text"
+title = "Journal V1 Account-Linking Implementation Plan"
+description = "Journal-only development plan with explicit acceptance gates, default-off behavior, synthetic testing, and no production activation."
+logical_id = "16a096ca-7252-4ca8-99a7-147e8f94e87b"
+content_hash = "sha256:744356fa21a54979f180d0a3bf02d36024f61cedd11b5408d312e84bd1a25af7"
+size = 8541
+mtime_ms = 1792053075416
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/16a096ca-7252-4ca8-99a7-147e8f94e87b/334a5c59-4a5c-49e7-b9a9-ec1c76a02b40"
+storage_version_token = "1792053120543896"
+content_type = "text/markdown"
