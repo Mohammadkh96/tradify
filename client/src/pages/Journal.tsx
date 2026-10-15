@@ -1,7 +1,7 @@
 import { useTrades, useDeleteTrade } from "@/hooks/use-trades";
 import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Trash2, History as HistoryIcon, Plus, Calendar, Monitor, Brain, AlertTriangle } from "lucide-react";
+import { Trash2, History as HistoryIcon, Plus, Calendar, Monitor, Brain, AlertTriangle, Pencil } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import CsvImportDialog from "@/components/CsvImportDialog";
+import EditJournalTradeDialog from "@/components/EditJournalTradeDialog";
+import { OPEN_QUICK_ADD_TRADE_EVENT } from "@/components/QuickAddTradeFab";
 import { TradeChartUploader } from "@/components/TradeChartUploader";
 import { useSampleMode } from "@/hooks/useSampleMode";
 import { getSampleTrades } from "@/lib/sampleData";
@@ -285,6 +287,7 @@ export default function Journal() {
   
   const TRADES_PER_PAGE = 30;
   const [visibleCount, setVisibleCount] = useState(TRADES_PER_PAGE);
+  const [editingTrade, setEditingTrade] = useState<any | null>(null);
   
   useEffect(() => { setVisibleCount(TRADES_PER_PAGE); }, [searchTerm, filterOutcome, dateFilter, customStartDate, customEndDate]);
   
@@ -428,15 +431,14 @@ export default function Journal() {
               </Popover>
             </div>
             <CsvImportDialog />
-            <Link to="/strategies/validate">
-              <Button 
-                data-testid="button-log-trade"
-                className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs uppercase transition-all shadow-lg shadow-emerald-500/20 px-6 h-10 rounded-xl"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {t("journal.logTrade")}
-              </Button>
-            </Link>
+            <Button
+              data-testid="button-log-trade"
+              onClick={() => window.dispatchEvent(new Event(OPEN_QUICK_ADD_TRADE_EVENT))}
+              className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs uppercase transition-all shadow-lg shadow-emerald-500/20 px-6 h-10 rounded-xl"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {t("journal.logTrade")}
+            </Button>
           </div>
         </header>
 
@@ -472,14 +474,27 @@ export default function Journal() {
         <div className="space-y-3">
           {paginatedTrades.map((trade: any) => (
             <div key={trade.id} className="bg-card border border-border rounded-xl p-5 hover:border-emerald-500/30 transition-colors group relative">
-              {!sampleMode.active && (
-                <button
-                  onClick={() => deleteTrade.mutate(trade.id)}
-                  className="absolute top-2 right-2 p-1.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500 hover:text-white z-10"
-                  data-testid={`button-delete-trade-${trade.id}`}
-                >
-                  <Trash2 size={14} />
-                </button>
+              {!sampleMode.active && trade.source === "Manual" && (
+                <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
+                  <button
+                    onClick={() => setEditingTrade(trade)}
+                    className="p-1.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white"
+                    data-testid={`button-edit-trade-${trade.id}`}
+                    aria-label={t("journal.editTrade")}
+                    title={t("journal.editTrade")}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => deleteTrade.mutate(trade.id)}
+                    className="p-1.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-lg hover:bg-rose-500 hover:text-white"
+                    data-testid={`button-delete-trade-${trade.id}`}
+                    aria-label={t("journal.deleteTrade")}
+                    title={t("journal.deleteTrade")}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               )}
               {sampleMode.active && (
                 <span
@@ -677,6 +692,12 @@ export default function Journal() {
             </p>
           )}
         </div>
+        {editingTrade && (
+          <EditJournalTradeDialog
+            trade={editingTrade}
+            onClose={() => setEditingTrade(null)}
+          />
+        )}
       </main>
     </div>
   );

@@ -13,6 +13,7 @@ import { useLocation } from "wouter";
 
 const PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD", "NAS100", "US30", "SPX500", "OIL"];
 const TIMEFRAMES = ["M1", "M5", "M15", "M30", "H1", "H4", "D1"];
+export const OPEN_QUICK_ADD_TRADE_EVENT = "tradify:open-quick-add-trade";
 
 interface QuickTrade {
   pair: string;
@@ -48,6 +49,12 @@ export default function QuickAddTradeFab() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  useEffect(() => {
+    const openQuickAdd = () => setOpen(true);
+    window.addEventListener(OPEN_QUICK_ADD_TRADE_EVENT, openQuickAdd);
+    return () => window.removeEventListener(OPEN_QUICK_ADD_TRADE_EVENT, openQuickAdd);
   }, []);
 
   const create = useMutation({

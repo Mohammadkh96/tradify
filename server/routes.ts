@@ -9434,7 +9434,7 @@ Guidelines:
       const studentId = req.session.userId!;
       const links = await pool.query(
         `SELECT cs.id, cs.status, cs.invited_at, cs.accepted_at, cs.coach_id,
-                ur.email AS coach_email, ur.username AS coach_username
+                 ur.user_id AS coach_email, NULL::text AS coach_username
          FROM coach_student cs
          LEFT JOIN user_role ur ON ur.user_id = cs.coach_id
          WHERE cs.student_id = $1 AND cs.status IN ('invited','active')

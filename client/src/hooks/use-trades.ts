@@ -51,6 +51,7 @@ export function useCreateTrade() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.trades.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/heatmap"] });
       toast({
         title: "Trade Logged",
         description: "Your trade has been successfully recorded in the journal.",
@@ -91,6 +92,7 @@ export function useUpdateTrade() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.trades.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/heatmap"] });
       toast({
         title: "Trade Updated",
         description: "Journal entry has been updated.",
@@ -122,6 +124,7 @@ export function useDeleteTrade() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.trades.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/heatmap"] });
       toast({
         title: "Trade Deleted",
         description: "The entry has been removed from your journal.",

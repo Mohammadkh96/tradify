@@ -298,6 +298,13 @@ describe("application security boundaries against a disposable local PostgreSQL 
     expect(ownUser.status).toBe(200);
     const userJson = await ownUser.json();
     expect(userJson).toMatchObject({ userId: aliceEmail, emailVerified: true });
+    const coachInfo = await request("/api/student/coach", { cookie: alice.cookie });
+    expect(coachInfo.status).toBe(200);
+    expect(await coachInfo.json()).toEqual({
+      invites: [],
+      activeCoach: null,
+      recentFeedback: [],
+    });
     for (const field of [
       "password",
       "syncToken",
