@@ -37,7 +37,7 @@ Consider a standards-based identity provider and versioned identity-claims contr
 
 ### Journal/Signals account association
 
-The revised development proposal and Journal work sequence are specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md) and [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). Signals approved policy direction for isolated development, but the exact audience/trust configuration and final written acceptance remain pending. The proposal is not SSO and is not the behavior of the current disabled Journal prototype; do not enable it or implement cross-project behavior before those gates are met.
+The Journal/Signals V1 contract and Journal implementation status are specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md) and [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). The Journal owner approves `tradify-account-linking-v1/revocation-retry-v1`; both products must independently confirm this exact version before it is finalized or used for real cross-service testing. Journal's current default-off implementation still needs the specified hash-based retry and acknowledgement changes. Secure development key exchange and the Signals API base URL remain outstanding. No production trust or deployment is authorized.
 
 ### Subscription bundles
 

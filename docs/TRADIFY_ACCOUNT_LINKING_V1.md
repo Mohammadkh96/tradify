@@ -2,9 +2,9 @@
 
 **Contract version:** `tradify-account-linking-v1`
 
-**Status:** Signals has approved the policy direction for isolated development only. Final development trust details and written acceptance of the exact contract remain pending. This is not production approval and does not authorize enabling the existing Journal feature.
+**Status:** The Journal owner approves the versioned revocation retry rule `tradify-account-linking-v1/revocation-retry-v1`. Signals previously reported acceptance of this retry rule, but both products must independently confirm acceptance of this exact specification before it is finalized or used for real cross-service testing. Journal's implementation does not yet satisfy all payload-hash and acknowledgement requirements. This remains isolated-development scope and does not authorize production use.
 
-**Important compatibility note:** The current Journal code is a disabled-by-default prototype of the earlier draft. It does not implement this revised two-sided confirmation, preview, bidirectional unlink, or lifecycle contract. Do not enable it or apply its existing migration. Journal implementation must wait for Signals to confirm the development audience and provide the exact development issuer, key ID, and public key through secure configuration, followed by final written acceptance and Journal-owner approval.
+**Important compatibility note:** Journal's linking implementation remains default-off and does not yet implement every requirement in `revocation-retry-v1`. Do not use it for cross-service testing until the code/schema changes are complete and both products independently confirm acceptance. No production migration, key exchange, Signals API call, or deployment is authorized here.
 
 ## 1. Purpose and security boundaries
 
@@ -40,8 +40,16 @@ Signals has approved the isolated-development policy direction. Identifiers that
 - Journal initiation consent: `tradify-journal-link-initiation-v1`
 - Journal final-confirmation consent: `tradify-journal-link-confirmation-v1`
 - Signals consent: `tradify-signals-link-consent-v1`
-- Development audience for Signals assertions to Journal: `tradify-journal-link-v1-dev` (proposed by Signals; exact value still requires Signals confirmation).
-- Development audience for Journal-signed requests to Signals: not specified here; Signals must confirm the exact value before development configuration.
+- Signals development issuer: `https://linking-dev.signals.tradifyapp.com`.
+- Journal development issuer: `https://linking-dev.journal.tradifyapp.com`.
+- Audience for Signals assertions to Journal: `tradify-journal-link-v1-dev`.
+- Audience for Journal assertions to Signals: `tradify-signals-link-v1-dev`.
+- These are logical JWT identities, not service deployment URLs. The Signals API base URL is separately configured and has not been supplied.
+- Current Journal development HTTPS origin observed on 2026-10-15: `https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev`. It is a Replit development origin and may change; verify it again before configuring Signals.
+- Read-only reachability check: `GET /api/health` returned HTTP 200 with process-liveness status. This endpoint does not verify database readiness and is distinct from the Journal JWT issuer above.
+- Reserved Journal development `kid`: `journal-dev-20261015-5814c6a3c529416a`. It is not yet attached to a key or configured; Signals must not pin it until the matching public key is generated and verified.
+- No Journal private key, Signals public key, or Signals API base URL is configured in the development environment. The feature flag is also unset, so linking remains off. Key material is never stored in this document.
+- Revocation retry rule: `tradify-account-linking-v1/revocation-retry-v1`. Both Journal and Signals must independently accept this exact version before real cross-service testing.
 - Staging and production issuers, audiences, and keys are out of scope and are not defined by this development contract.
 
 Signals must create the stable `sub` on its server using 32 cryptographically random bytes encoded as unpadded base64url. It must persist that subject against the authenticated Signals account and reuse it on later link attempts. It must never derive `sub` from or accept it as a client-provided `userId`, email, or profile value. Journal stores that opaque subject with the exact configured Signals issuer.
@@ -351,11 +359,37 @@ Service revocation body:
   "contractVersion": "tradify-account-linking-v1",
   "linkId": "<opaque Journal-generated UUID>",
   "eventId": "<UUID generated once by the sending product>",
+  "reason": "user_unlinked",
+  "payloadHash": "<lowercase SHA-256 hex of the canonical four-field event payload>"
+}
+```
+
+Allowed `reason` values are `user_unlinked`, `account_deleted`, `account_suspended`, and `security_action`. Every logical revocation gets one permanent `eventId`; retries must not create a replacement event.
+
+### Versioned retry rule: `tradify-account-linking-v1/revocation-retry-v1`
+
+The canonical event payload is exactly this object, with no additional members:
+
+```json
+{
+  "contractVersion": "tradify-account-linking-v1",
+  "eventId": "<permanent UUID for this logical revocation>",
+  "linkId": "<opaque UUID>",
   "reason": "user_unlinked"
 }
 ```
 
-Allowed `reason` values are `user_unlinked`, `account_deleted`, `account_suspended`, and `security_action`. The body is authenticated by a product-signed assertion with `action: "revoke"`, the same `linkId` and `eventId`, and the correct pinned issuer/key/audience. Repeating the same event and exact assertion is idempotent; reusing its `eventId` with different contents returns `409`.
+Serialize that object using RFC 8785 JSON Canonicalization Scheme (JCS). `payloadHash` is the lowercase hexadecimal SHA-256 digest of the UTF-8 canonical JSON bytes. Persist both the exact canonical payload and its hash with the outbox event before delivery; retries reuse both unchanged. The HTTP request body contains the four fields above plus `payloadHash`. Receivers reject unknown/missing fields, recompute the JCS serialization and hash, and compare it with the supplied hash.
+
+Every delivery attempt creates a new RS256 assertion with a unique `jti` and exactly 120 seconds between `iat` and `exp`. The assertion includes the same `link_id`, `event_id`, `reason`, and `payload_sha256` as the request body. Every attempt must still pass normal signature, pinned-`kid`, exact issuer/audience, time, and `jti` replay validation. A previously used `jti` is rejected; a retry uses a new one. Event idempotency is separate from JWT replay protection.
+
+After validating the assertion and recomputed hash:
+
+- A previously unseen `(issuer, eventId)` with this hash is processed once, and the receiver records the event and hash durably.
+- A repeat with the same event ID and hash returns the same idempotent acknowledgement without repeating side effects, even though the new attempt has a different valid assertion and `jti`.
+- Reuse of an event ID with a different payload hash returns `409` and records a security-relevant mismatch using only non-sensitive event/hash metadata. It must not change the existing event or link state.
+
+The successful `200` acknowledgement contains `contractVersion`, `eventId`, `linkId`, `payloadHash`, and `state: "revoked"`. The sender verifies that the acknowledgement matches its persisted event ID and payload hash before changing its local link from `revocation_pending` to `revoked`. Transient failures use bounded exponential backoff with a finite base and cap; production retry values require separate approval. Do not weaken any authentication, expiry, or replay checks to support retries.
 
 Sanitized Signals-to-Journal revocation assertion claims:
 
@@ -365,19 +399,20 @@ Sanitized Signals-to-Journal revocation assertion claims:
   "aud": "tradify-journal-link-v1-dev",
   "sub": "tradify-signals-link-service",
   "iat": 1792065600,
-  "exp": 1792065690,
+  "exp": 1792065720,
   "jti": "<16-128 URL-safe random characters>",
   "action": "revoke",
   "contract_version": "tradify-account-linking-v1",
   "link_id": "<opaque Journal-generated UUID>",
   "event_id": "<UUID generated once by Signals>",
-  "reason": "user_unlinked"
+  "reason": "user_unlinked",
+  "payload_sha256": "<same hash as request body payloadHash>"
 }
 ```
 
-Journal-to-Signals uses the same shape signed by Journal, with the exact Journal development issuer, `sub: "tradify-journal-link-service"`, and the development audience that Signals confirms. Do not invent that reverse audience. Both directions use their own pinned development key IDs. The service `sub` identifies the signing service, not a customer. A receiver compares the signed claims with the POST body before applying the event.
+Journal-to-Signals uses the same shape signed by Journal, with the exact Journal development issuer, `sub: "tradify-journal-link-service"`, and audience `tradify-signals-link-v1-dev`. Both directions use their own pinned development key IDs. The service `sub` identifies the signing service, not a customer. A receiver compares the signed claims, recomputed payload hash, and POST body before applying the event.
 
-A successful service revocation returns `200` with `{ "linkId": "<opaque UUID>", "state": "revoked", "eventId": "<same UUID>" }`. A repeated identical event returns the same state. If the receiver is unavailable, the sender keeps its own link unusable and returns `202` while its outbox retries.
+A service revocation returns `200` with the matching `eventId`, `linkId`, `payloadHash`, contract version, and `state: "revoked"`. If the receiver is unavailable, the sender keeps its own link unusable and its durable outbox retries; browser unlink requests return `202`.
 
 ### 5.8 Standard error envelope
 
@@ -460,8 +495,9 @@ The example in Section 5.7 is the exact proposed revocation claim shape. Its `su
 
 ### Issuer and audience rules
 
-- For isolated development, Signals must provide the exact canonical HTTPS development issuer, public signing key, and `kid` through an approved secure configuration exchange. The development audience candidate is `tradify-journal-link-v1-dev`; Signals must confirm it before either service configures trust.
-- Journal must likewise configure its own exact development issuer, `kid`, and signing key for Journal-originated revocation, then provide only its public key to Signals through the same secure exchange. No issuer URL or key is guessed or stored in this document.
+- For isolated development, Journal trusts only the canonical Signals issuer `https://linking-dev.signals.tradifyapp.com` and audience `tradify-journal-link-v1-dev`. Signals supplies its public signing key and `kid` through an approved secure configuration exchange.
+- Journal signs outbound requests with issuer `https://linking-dev.journal.tradifyapp.com` and audience `tradify-signals-link-v1-dev`; Journal supplies only its public key and `kid` to Signals through the same secure exchange.
+- The Signals API base URL is a separately configured HTTPS service endpoint. It is not inferred from either issuer.
 - Journal accepts only the exact confirmed development issuer, `kid`, and single-string audience. Reject audience arrays, aliases, prefixes, wildcards, unknown keys, and any production/staging trust material.
 - The reverse development audience for Journal-signed requests to Signals must be provided or explicitly confirmed by Signals. It is intentionally not guessed in this contract.
 - Development issuer, audience, `kid`, and public key are fixed by development-only configuration, never derived from request headers or client payloads. Do not put key material in Git, this document, or application logs.
@@ -473,6 +509,7 @@ All times are integer Unix seconds and both services must use synchronized UTC c
 
 - `exp` must be strictly greater than verifier `now`; there is no post-expiration grace period.
 - `exp` must be greater than `iat`; `exp - iat` must be at most 120 seconds.
+- Revocation retry assertions use exactly 120 seconds between `iat` and `exp`; each attempt has a newly generated, unique `jti`.
 - `iat` must be no earlier than `now - 120` and no later than `now + 30`.
 - `consent_at` must be no earlier than `now - 120`, no later than `now + 30`, and no later than `iat + 30`.
 - Any missing/non-integer timestamp, expired assertion, or value outside these bounds is rejected.
@@ -492,8 +529,9 @@ Signals approved the 30-second future issuance tolerance, 120-second maximum ass
 
 - Authorization codes contain 32 random bytes, are sent only in POST bodies over HTTPS, are stored as SHA-256 digests, expire after five minutes, and are consumed once.
 - Journal consumes the code, creates the pending link, and stores the replay record in one database transaction with a row lock. Concurrent claims cannot both succeed.
-- The replay table has a unique key on `(issuer, audience, jti)`. Store only the SHA-256 fingerprint of the exact compact signed assertion, never the raw bearer JWT.
-- An identical retry requires the same `jti`, exact assertion fingerprint, authorization-code digest, issuer, audience, Signals subject, labels, and action. It returns the original result. Any changed claim or body with the same `jti` returns `409`.
+- The replay table has a unique key on `(issuer, audience, jti)`. Store only the SHA-256 fingerprint of each exact compact signed assertion, never the raw bearer JWT.
+- Claim and status retries use the same `jti` and exact assertion; altered claims or bodies under that `jti` return `409`. Each revocation attempt uses a fresh assertion and `jti`; reusing a `jti` is rejected independently of event idempotency.
+- Revocation event idempotency is based on `(issuer, eventId, payloadHash)`, where the receiver recomputes the hash from the exact JCS canonical event payload. A repeated event ID with the same hash returns an acknowledgement without repeating side effects. A repeated event ID with a different hash returns `409` and creates a security-relevant mismatch audit record.
 - Enforce uniqueness for one active/pending Journal account per Signals issuer and one active/pending Signals subject per issuer. A revoked link cannot be reactivated by replay.
 - Signals derives `sub` from the authenticated server-side account record. Journal ignores any client-supplied account IDs, emails, or subjects. The final Journal confirmation is bound to the exact pending `linkId` and both displayed attempt labels.
 - Browser mutations require the owning product's session-bound CSRF token, same-origin `Origin` validation, and normal session protections. Service-to-service routes reject browser cookies and require a correctly signed operation-specific assertion.
@@ -516,7 +554,7 @@ Errors must not echo the authorization code, JWT, email, subject, or key materia
 - A customer can unlink from either product while authenticated to that product. Require fresh local authentication for the operation if the product's session policy says the session is stale.
 - On customer unlink, the initiating product immediately makes the local association unusable, sets `revocation_pending`, and writes a signed event to its own transactional outbox. Only after the other service acknowledges the event does the initiating product transition it to `revoked`.
 - While remote revocation is pending, the association cannot be used and a replacement link for that pair is blocked. A receiver applies the event idempotently and acknowledges it. Do not silently reactivate or discard a pending event.
-- Each product owns delivery of its own outbound events and its authenticated inbound revocation handler. If the partner is unavailable, retry the same event ID asynchronously. Any production retry schedule remains a separate decision.
+- Each product owns delivery of its own outbound events and its authenticated inbound revocation handler. If the partner is unavailable, retry the same immutable event ID, canonical payload, and hash with a fresh 120-second assertion and unique `jti` for each attempt. Both products must independently confirm `tradify-account-linking-v1/revocation-retry-v1` before real cross-service testing. Production backoff parameters remain a separate decision.
 - For isolated development tests, use a deterministic outbox drain or an explicitly started manual development worker. Never start a worker by default in the Journal web process, and do not activate production background jobs.
 - Account deletion must not wait for the other product: disable the local association, persist the signed revocation event and minimal pseudonymous audit tombstone, then continue the local deletion/anonymization. Retry remote delivery asynchronously. Do not rely on an account foreign-key cascade that silently erases the event.
 - Account suspension immediately disables the link and sends a revocation event. Unsuspension does not automatically relink; both products require a new consent flow.
@@ -527,14 +565,15 @@ Errors must not echo the authorization code, JWT, email, subject, or key materia
 
 ## 9. Required schema changes (proposal only)
 
-No migration is included or applied by this document.
+The Journal migration source is implemented and is applied by integration tests only to a unique disposable local PostgreSQL database. It is not run at application startup and has not been applied to production or Neon.
 
 **Journal database changes expected after acceptance:**
 
 - Authorization record: local Journal foreign key, code digest, Journal consent version/time, attempt label, creation/expiry/consume/revoke times, and state. Never store the raw code.
 - Link record: opaque `linkId`, Journal local foreign key, exact Signals issuer and opaque subject, both attempt labels, separate consent versions/times, pinned signing `kid`, state (`awaiting_journal_confirmation`, `active`, `revocation_pending`, `revoked`), and lifecycle timestamps.
 - Replay record: issuer, audience, `jti`, exact assertion fingerprint, code digest, link/event references, `kid`, and creation time; unique constraint on issuer/audience/`jti`.
-- Transactional outbox/inbox: event ID, link ID, operation, signed-message fingerprint, delivery state, retry timestamps, and acknowledgement. Never store a raw JWT.
+- Transactional outbox: one permanent event ID, immutable JCS canonical payload, its SHA-256 hash, delivery state, retry timestamps, and acknowledgement. Inbox idempotency is unique by issuer and event ID and records the canonical payload hash. Never store a raw JWT.
+- Security mismatch audit: non-sensitive issuer, event ID, stored hash, received hash, and timestamp when a reused event ID carries a different canonical payload. Do not retain customer email, local account IDs, bearer assertions, or raw payloads containing personal data.
 - Deletion-safe audit tombstone: minimal pseudonymous link/event reference and revocation time. Replace any cascade behavior that would erase an unsent revocation.
 - Partial uniqueness constraints for one active/pending Journal account per issuer and one active/pending partner subject per issuer.
 
@@ -547,7 +586,7 @@ No migration is included or applied by this document.
 
 Signals schema names and migration details must be chosen by the Signals Agent in its own project. Do not connect to, inspect, migrate, or write the Signals database from Journal.
 
-The existing Journal migration `migrations/0002_tradify_account_linking_v1.sql` is source only and has not been applied. It does not contain the full state, separate consent versions, two-phase confirmation, or revocation-outbox fields described here, and its account foreign keys use `ON DELETE CASCADE`, which can erase required revocation records. After acceptance, replace or revise it for isolated development so deletion preserves the outbox event and tombstone. Do not apply it to production or change production data.
+The Journal migration `migrations/0002_tradify_account_linking_v1.sql` contains the V1 schema and is run only by the disposable integration-test setup. The outbox and tombstones are independent of customer-account foreign keys; account lifecycle code records the revocation before removing local links. No production migration has been applied.
 
 ## 10. Contract-test plan and current coverage
 
@@ -563,9 +602,10 @@ Required Journal and Signals contract cases before activation:
 6. Negative JWT cases: wrong algorithm/type/key/issuer/audience/action, unknown or revoked `kid`, `jku`/`x5u`, invalid signature, malformed or duplicate claims, email-like/client-selected subject, wrong code digest, missing consent, wrong consent version, bad labels, future/expired/malformed timestamps, and lifetime over 120 seconds.
 7. Clock boundaries exactly test `iat = now+30`, `iat = now+31`, `iat = now-120`, `iat = now-121`, `exp = now`, `exp = now+1`, and `exp-iat = 120/121`.
 8. Single-use and concurrency: two simultaneous claims for one code yield one pending link; replay with the exact same assertion returns that link; same `jti` with any changed claim/body returns `409`.
+9. Revocation retry v1: same event ID and JCS payload/hash with fresh 120-second assertions and unique `jti`s; same ID/hash is acknowledged without repeated effects; changed hash yields `409` and a security audit; mismatched acknowledgement must not revoke the local link.
 9. Duplicate Journal or Signals accounts, code substitution, changed subject, changed issuer, and cross-environment assertions cannot create or confirm a link.
 10. Journal final confirmation is restricted to the original Journal account and exact pending link. No link becomes active before both consent records exist.
-11. Unlink from either side, duplicate revocation, changed event replay, remote outage/retry, suspension, deletion, interrupted flow, recovery, and reconciliation all leave accounts and entitlements unchanged.
+12. Unlink from either side, duplicate revocation, changed event replay, remote outage/retry, suspension, deletion, interrupted flow, recovery, and reconciliation all leave accounts and entitlements unchanged.
 12. Responses and logs contain no passwords, emails from the other product, database IDs, raw authorization codes, raw JWTs, or private keys.
 
 **Tests added in this Journal change:** the existing local security integration test now confirms that the Journal status, authorization, and claim endpoints all return `503` while the feature is disabled by default.
