@@ -49,7 +49,10 @@ const openai: any = {
   },
 };
 import { authLimiter, passwordResetLimiter, aiLimiter, uploadLimiter, earlyAccessLimiter } from "./rateLimit";
-import { registerProductLinkingRoutes } from "./product-linking";
+import {
+  prepareProductLinkAccountLifecycle,
+  registerProductLinkingRoutes,
+} from "./product-linking-routes";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
 import { trackAIUsage, calculateCost, estimateTokensFromText } from "./ai-cost-tracker";
@@ -542,6 +545,9 @@ ${blogPosts.map(p => `  <url>
   // Stripe webhook MUST be registered BEFORE express.json — needs raw body
   // for signature verification. Uses express.raw() at route level.
   registerStripeWebhook(app);
+  // The linking API carries short-lived bearer codes/assertions and accepts
+  // only small, schema-validated JSON documents.
+  app.use("/api/v1/product-links", express.json({ limit: "8kb" }));
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
@@ -1592,6 +1598,11 @@ ${blogPosts.map(p => `  <url>
       if (user.role === "OWNER") {
         return res.status(403).json({ message: "Cannot delete the Owner account" });
       }
+
+      // Queue partner revocations and write pseudonymous tombstones before
+      // deleting this account. The helper is a no-op until the reviewed
+      // Journal linking migration exists in this environment.
+      await prepareProductLinkAccountLifecycle(user.id, "account_deleted");
 
       await db.delete(schema.emailSequences).where(eq(schema.emailSequences.userId, targetUserId));
       await db.delete(schema.tradeJournal).where(eq(schema.tradeJournal.userId, targetUserId));
@@ -6007,6 +6018,13 @@ End with: "Review your charts for current market structure."`;
   app.post("/api/user/deactivate", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
+      const [role] = await db
+        .select({ id: schema.userRole.id })
+        .from(schema.userRole)
+        .where(eq(schema.userRole.userId, userId))
+        .limit(1);
+      if (!role) return res.status(404).json({ message: "Account not found" });
+      await prepareProductLinkAccountLifecycle(role.id, "account_suspended");
       await db.update(schema.userRole)
         .set({ role: "DEACTIVATED", updatedAt: new Date() })
         .where(eq(schema.userRole.userId, userId));
