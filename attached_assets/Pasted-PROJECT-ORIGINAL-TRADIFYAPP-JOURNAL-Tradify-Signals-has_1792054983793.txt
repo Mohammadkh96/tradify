@@ -1,0 +1,54 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL
+
+Tradify Signals has formally returned:
+
+ACCEPTED FOR ISOLATED DEVELOPMENT IMPLEMENTATION.
+
+As the product owner, I approve the V1 account-linking contract and its development-only implementation.
+
+I approve the following development issuer identifiers:
+
+Journal issuer:
+https://linking-dev.journal.tradifyapp.com
+
+Signals issuer:
+https://linking-dev.signals.tradifyapp.com
+
+Development audiences:
+
+Signals → Journal:
+tradify-journal-link-v1-dev
+
+Journal → Signals:
+tradify-signals-link-v1-dev
+
+These are logical JWT identities, not deployment URLs.
+
+I approve the contract's separate consent wording and account-pair presentation, using the authenticated local account label and both temporary attempt labels. No email address or internal user ID should be transferred between products.
+
+Please begin implementing JOURNAL'S SIDE of account linking.
+
+Use the agreed V1 contract and implementation plan.
+
+Requirements:
+
+1. Keep Journal and Signals authentication separate.
+2. Implement the two-sided consent and final confirmation flow.
+3. Enforce the original five-minute authorization deadline.
+4. Verify pinned, environment-specific RS256 assertions.
+5. Implement atomic claim, replay protection, CSRF safeguards, status and unlinking.
+6. Implement account deletion, revocation outbox/inbox, and minimal audit tombstones.
+7. Update the outdated Journal linking migration for the approved V1 schema.
+8. Apply schema changes ONLY to a unique, isolated, disposable development database.
+9. Preserve existing Journal authentication, MT5 data, subscriptions, Admin permissions and security fixes.
+10. Keep feature flags disabled by default outside the isolated integration-test environment.
+
+Coordinate public verification key and kid exchange securely with Signals. Do not expose private keys in chat, documentation, or Git.
+
+Do not create paid infrastructure or long-running test databases. We are investigating unexpected Replit database-compute charges.
+
+Provide working API tests, migration tests, commit hash, and the exact configuration Signals needs.
+
+Do not publish, apply production migrations, modify production Neon, change DNS or enable live linking.
+
+Proceed with actual development implementation, not another general architecture report.
