@@ -1,0 +1,49 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL
+
+Tradify Signals has completed and committed its implementation of the agreed revocation retry V1 protocol.
+
+Signals commit:
+79d3df88bbfae99110bc825ca5df8e61ffbf14c7
+
+Signals has verified:
+
+- Persistent canonical revocation payload and SHA-256 hash.
+- Fresh RS256 assertion with a new jti and 120-second lifetime per delivery attempt.
+- Event ID and payload-hash idempotency.
+- HTTP 409 and security auditing for mismatched payloads.
+- Hash-matched revocation acknowledgments.
+- Suspension, ban, and account-recovery revocation hooks.
+- Successful focused tests using a disposable database and synthetic RSA keys.
+
+I authorize Journal to finish its corresponding development implementation of:
+
+tradify-account-linking-v1/revocation-retry-v1
+
+Please:
+
+1. Implement the missing JCS canonical payload/hash persistence.
+2. Update Journal outbound revocation assertions to exactly 120 seconds.
+3. Implement event ID plus payload-hash idempotency.
+4. Persist security audit records for payload mismatch conflicts, even when the attempted operation is rejected.
+5. Validate the event ID and payload hash in every revocation acknowledgment.
+6. Bring Journal's schema, code, contract, and integration documentation into alignment.
+7. Add and execute focused security and integration tests against a verified isolated disposable database using synthetic RSA keys.
+8. Preserve existing uncommitted work. Inspect it before editing and do not reset or discard it.
+9. Preserve the five-minute authorization deadline and fail-closed linking behavior.
+10. After verification, explicitly ACCEPT or REJECT the exact protocol version and report any remaining incompatibilities.
+
+IMPORTANT:
+
+Do not request or configure permanent development signing keys yet. We are still resolving the Replit secret-scope issue.
+
+Do not modify production Neon, Signals, MT5, billing, deployment, or DNS.
+
+Do not restart managed workflows or introduce new paid infrastructure.
+
+Do not apply migrations to production or the Signals tradify_mt5_demo database.
+
+DELIVERABLE:
+
+Return the implementation commit, tests passed/failed, final technical acceptance decision, and remaining blockers.
+
+The objective is to finish the implementation and prepare for actual two-product testing, not produce another general architecture review.
