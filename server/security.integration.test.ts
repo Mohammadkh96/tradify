@@ -238,12 +238,21 @@ describe("application security boundaries against a disposable local PostgreSQL 
     const signupState = await testPool.query<{
       founding_member: boolean;
       subscription_status: string | null;
+      founding_member_pro_expiry: Date | null;
+      created_at: Date;
     }>(
-      "SELECT founding_member, subscription_status FROM user_role WHERE user_id = $1",
+      `SELECT founding_member, subscription_status, founding_member_pro_expiry, created_at
+       FROM user_role WHERE user_id = $1`,
       [legacyEmail],
     );
     if (signupState.rows[0]?.founding_member) {
       expect(signupState.rows[0].subscription_status).toBe("founding_member_access");
+      expect(signupState.rows[0].founding_member_pro_expiry).toBeTruthy();
+      const grantDuration =
+        new Date(signupState.rows[0].founding_member_pro_expiry!).getTime() -
+        new Date(signupState.rows[0].created_at).getTime();
+      expect(grantDuration).toBeGreaterThanOrEqual(30 * 24 * 60 * 60 * 1000 - 10_000);
+      expect(grantDuration).toBeLessThanOrEqual(30 * 24 * 60 * 60 * 1000 + 10_000);
     }
 
     await testPool.query(
@@ -275,6 +284,19 @@ describe("application security boundaries against a disposable local PostgreSQL 
         subscription_tier: "PRO",
         subscription_status: null,
       });
+
+      // Once a new grant is explicitly identified, its elapsed 30-day expiry
+      // still downgrades it; the legacy-null exception is not a blanket grant.
+      await testPool.query(
+        `UPDATE user_role
+         SET subscription_status = 'founding_member_access',
+             founding_member_pro_expiry = NOW() - INTERVAL '1 day'
+         WHERE user_id = $1`,
+        [legacyEmail],
+      );
+      const expiredFounder = await request("/api/user", { cookie: legacy.cookie });
+      expect(expiredFounder.status).toBe(200);
+      expect(await expiredFounder.json()).toMatchObject({ subscriptionTier: "FREE" });
     } finally {
       await testPool.query(
         `UPDATE user_role
@@ -284,6 +306,115 @@ describe("application security boundaries against a disposable local PostgreSQL 
              subscription_status = NULL
          WHERE user_id = $1`,
         [legacyEmail],
+      );
+    }
+  });
+
+  it("does not let profile data or request headers alter entitlements and preserves paid cancellation grace", async () => {
+    await testPool.query(
+      `UPDATE user_role
+       SET subscription_tier = 'FREE',
+           subscription_status = NULL,
+           subscription_provider = NULL,
+           founding_member = FALSE,
+           founding_member_pro_expiry = NULL,
+           stripe_subscription_id = NULL,
+           paypal_subscription_id = NULL
+       WHERE user_id = $1`,
+      [aliceEmail],
+    );
+    const alice = await login(aliceEmail);
+    try {
+      const forgedProfile = await request("/api/user/update-profile", {
+        method: "POST",
+        cookie: alice.cookie,
+        headers: { "x-user-id": bobEmail },
+        json: {
+          country: "US",
+          subscriptionTier: "PRO",
+          subscriptionStatus: "active",
+          foundingMember: true,
+          foundingMemberProExpiry: "2099-01-01T00:00:00.000Z",
+          subscriptionProvider: "stripe",
+        },
+      });
+      expect(forgedProfile.status).toBe(200);
+
+      const afterProfileAttempt = await testPool.query<{
+        subscription_tier: string;
+        subscription_status: string | null;
+        founding_member: boolean;
+        founding_member_pro_expiry: Date | null;
+        subscription_provider: string | null;
+      }>(
+        `SELECT subscription_tier, subscription_status, founding_member,
+                founding_member_pro_expiry, subscription_provider
+         FROM user_role WHERE user_id = $1`,
+        [aliceEmail],
+      );
+      expect(afterProfileAttempt.rows[0]).toEqual({
+        subscription_tier: "FREE",
+        subscription_status: null,
+        founding_member: false,
+        founding_member_pro_expiry: null,
+        subscription_provider: null,
+      });
+
+      const forgedRead = await request(
+        "/api/user?subscriptionTier=PRO&subscriptionStatus=active&foundingMemberProExpiry=2099-01-01",
+        {
+          cookie: alice.cookie,
+          headers: { "x-user-id": bobEmail, "x-subscription-tier": "PRO" },
+        },
+      );
+      expect(forgedRead.status).toBe(200);
+      expect(await forgedRead.json()).toMatchObject({
+        userId: aliceEmail,
+        subscriptionTier: "FREE",
+        subscriptionStatus: null,
+      });
+
+      // An expired founder grant cannot override a still-current paid
+      // subscription, including the provider's cancellation grace period.
+      await testPool.query(
+        `UPDATE user_role
+         SET subscription_tier = 'PRO',
+             subscription_status = 'active',
+             subscription_provider = 'stripe',
+             founding_member = TRUE,
+             founding_member_pro_expiry = NOW() - INTERVAL '1 day',
+             stripe_subscription_id = $2
+         WHERE user_id = $1`,
+        [aliceEmail, `sub_active_${testRunId}`],
+      );
+      const paidActive = await request("/api/user", { cookie: alice.cookie });
+      expect((await paidActive.json()).subscriptionTier).toBe("PRO");
+
+      await testPool.query(
+        `UPDATE user_role
+         SET subscription_status = 'cancelled',
+             subscription_provider = 'paypal',
+             paypal_subscription_id = $2
+         WHERE user_id = $1`,
+        [aliceEmail, `I-cancelled-${testRunId}`],
+      );
+      const paidCancelled = await request("/api/user", { cookie: alice.cookie });
+      expect((await paidCancelled.json())).toMatchObject({
+        subscriptionTier: "PRO",
+        subscriptionStatus: "cancelled",
+      });
+    } finally {
+      await testPool.query(
+        `UPDATE user_role
+         SET subscription_tier = 'FREE',
+             subscription_status = NULL,
+             subscription_provider = NULL,
+             founding_member = FALSE,
+             founding_member_pro_expiry = NULL,
+             stripe_subscription_id = NULL,
+             paypal_subscription_id = NULL
+         WHERE user_id = $1`,
+        [aliceEmail],
       );
     }
   });
@@ -517,16 +648,64 @@ describe("application security boundaries against a disposable local PostgreSQL 
     expect(await accepted.json()).toMatchObject({ received: true });
     const afterSigned = await testPool.query<{
       subscription_tier: string;
+      subscription_status: string;
       stripe_customer_id: string;
       stripe_subscription_id: string;
     }>(
-      "SELECT subscription_tier, stripe_customer_id, stripe_subscription_id FROM user_role WHERE user_id = $1",
+      "SELECT subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id FROM user_role WHERE user_id = $1",
       [aliceEmail],
     );
     expect(afterSigned.rows[0]).toMatchObject({
       subscription_tier: "PRO",
+      subscription_status: "active",
       stripe_customer_id: `cus_local_${testRunId}`,
       stripe_subscription_id: `sub_local_${testRunId}`,
+    });
+
+    const deletedEvent = {
+      id: `evt_local_deleted_${testRunId}`,
+      object: "event",
+      api_version: "2025-11-17.clover",
+      created: Math.floor(Date.now() / 1000),
+      data: {
+        object: {
+          id: `sub_local_${testRunId}`,
+          object: "subscription",
+          status: "canceled",
+        },
+      },
+      livemode: false,
+      pending_webhooks: 0,
+      type: "customer.subscription.deleted",
+    };
+    const deletedPayload = JSON.stringify(deletedEvent);
+    const invalidDeletion = await request("/api/stripe/webhook", {
+      method: "POST",
+      headers: { "stripe-signature": "t=1,v1=not-a-valid-signature" },
+      body: deletedPayload,
+    });
+    expect(invalidDeletion.status).toBe(400);
+    expect((await testPool.query(
+      "SELECT subscription_tier FROM user_role WHERE user_id = $1",
+      [aliceEmail],
+    )).rows[0]?.subscription_tier).toBe("PRO");
+
+    const deletionSignature = Stripe.webhooks.generateTestHeaderString({
+      payload: deletedPayload,
+      secret: stripeWebhookSecret,
+    });
+    const verifiedDeletion = await request("/api/stripe/webhook", {
+      method: "POST",
+      headers: { "stripe-signature": deletionSignature },
+      body: deletedPayload,
+    });
+    expect(verifiedDeletion.status).toBe(200);
+    expect((await testPool.query(
+      "SELECT subscription_tier, subscription_status FROM user_role WHERE user_id = $1",
+      [aliceEmail],
+    )).rows[0]).toEqual({
+      subscription_tier: "FREE",
+      subscription_status: "canceled",
     });
   });
 
@@ -549,6 +728,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
     const rawBody = `${JSON.stringify(payload, null, 2)}\n`;
     const providerCalls: string[] = [];
     let verificationStatus: "SUCCESS" | "FAILURE" = "FAILURE";
+    let expectedWebhookEvent: typeof payload = payload;
     const paypalFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : String(input);
       if (!url.startsWith("https://api-m.sandbox.paypal.com/")) {
@@ -563,7 +743,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
       }
       if (url.endsWith("/v1/notifications/verify-webhook-signature")) {
         const body = JSON.parse(String(init?.body));
-        expect(body.webhook_event).toEqual(payload);
+        expect(body.webhook_event).toEqual(expectedWebhookEvent);
         return new Response(JSON.stringify({ verification_status: verificationStatus }), {
           status: 200,
           headers: { "content-type": "application/json" },
@@ -626,6 +806,60 @@ describe("application security boundaries against a disposable local PostgreSQL 
         subscription_tier: "PRO",
         subscription_provider: "paypal",
         paypal_subscription_id: `I-local-${testRunId}`,
+      });
+
+      const deliverVerifiedEvent = async (
+        eventType: "BILLING.SUBSCRIPTION.CANCELLED" | "BILLING.SUBSCRIPTION.EXPIRED",
+        status: "CANCELLED" | "EXPIRED",
+      ) => {
+        const event = {
+          id: `WH-local-${status}-${testRunId}`,
+          event_type: eventType,
+          resource: {
+            id: `I-local-${testRunId}`,
+            status,
+            custom_id: bobEmail,
+            plan_id: `P-local-${testRunId}`,
+          },
+        };
+        expectedWebhookEvent = event as typeof payload;
+        return request("/api/paypal/webhook", {
+          method: "POST",
+          headers: {
+            "paypal-auth-algo": "SHA256withRSA",
+            "paypal-cert-url": "https://example.invalid/test-cert",
+            "paypal-transmission-id": `transmission-${status}-${testRunId}`,
+            "paypal-transmission-sig": "synthetic-signature",
+            "paypal-transmission-time": "2026-10-14T12:00:00Z",
+          },
+          body: JSON.stringify(event),
+        });
+      };
+
+      const cancellation = await deliverVerifiedEvent(
+        "BILLING.SUBSCRIPTION.CANCELLED",
+        "CANCELLED",
+      );
+      expect(cancellation.status).toBe(200);
+      expect((await testPool.query(
+        "SELECT subscription_tier, subscription_status FROM user_role WHERE user_id = $1",
+        [bobEmail],
+      )).rows[0]).toEqual({
+        subscription_tier: "PRO",
+        subscription_status: "cancelled",
+      });
+
+      const expiration = await deliverVerifiedEvent(
+        "BILLING.SUBSCRIPTION.EXPIRED",
+        "EXPIRED",
+      );
+      expect(expiration.status).toBe(200);
+      expect((await testPool.query(
+        "SELECT subscription_tier, subscription_status FROM user_role WHERE user_id = $1",
+        [bobEmail],
+      )).rows[0]).toEqual({
+        subscription_tier: "FREE",
+        subscription_status: "expired",
       });
     } finally {
       vi.unstubAllGlobals();

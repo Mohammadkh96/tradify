@@ -200,3 +200,22 @@ References:
 6. No production application startup, smoke test, live payment, email, DNS cutover, or worker test is authorized or completed.
 
 The approved read-only identity/count check is complete. No further Neon operation, database write, endpoint change, deployment, DNS edit, or activation of email, payment processing, or workers is approved by that check.
+
+## 10. Development-only entitlement protection verification (15 October 2026)
+
+The development release candidate now expires a founding-member Pro grant only when the account is still marked `founding_member = true`, has tier `PRO`, has the explicit status `founding_member_access`, and its recorded grant expiry has passed. New founding-member registrations receive that explicit status and a 30-day expiry. A legacy null status is not treated as proof of either an active paid subscription or an expired grant, so this route leaves it unchanged pending account-level review.
+
+Paid subscription states use their provider paths instead: verified Stripe checkout events grant the tier and verified subscription-deleted events revoke it; verified PayPal activation events grant the tier, cancellation retains the current tier, and the provider's expired event downgrades it. The founding-grant expiry check does not override an active or cancelled paid state. Self-service profile updates accept only profile fields; attempts to submit tier, status, provider, founder flag, expiry date, or identity headers do not alter entitlement data.
+
+Verification performed locally with synthetic users, mocked payment transports, and a disposable loopback-only PostgreSQL cluster:
+
+| Check | Result |
+|---|---|
+| Entitlement/security integration suite | 9 passed |
+| TypeScript check (`npm run check`) | Passed |
+| Production build (`npm run build`) | Passed; existing large-client-chunk and CommonJS `import.meta` warnings remain |
+| Production database, billing, email, DNS, deployment, workers | Not accessed or activated |
+
+The prior approved aggregate-only production check found 27 PRO accounts: 1 with `founding_member_access` and 26 with a null subscription status. No customer-level entitlement/provider rows were reviewed, and this change does not alter production records. The exact legitimate entitlement basis for those 26 null-status accounts therefore remains unverified. Preserve their current access until their provider evidence or original grant records are reviewed; do not infer that null means paid-active, cancelled, or expired.
+
+Paid cancellation grace also depends on receiving the provider's expiration event. If that event is delayed or absent, a cancelled paid account may retain its existing tier until provider state is reconciled. This verification did not contact either payment provider or inspect individual production subscriptions.

@@ -1081,23 +1081,18 @@ ${blogPosts.map(p => `  <url>
     const user = await storage.getUserRole(req.session.userId!);
     if (!user) return res.status(404).json({ message: "User not found" });
     
-    // Check if founding member free Pro has expired
-    if (user && user.foundingMember && user.foundingMemberProExpiry && 
-        user.subscriptionTier === "PRO") {
-      // A missing status is not evidence that a legacy PRO entitlement expired.
-      // Preserve access until an unknown subscription state has been reviewed.
-      const subscriptionStatusIsKnown =
-        user.subscriptionStatus !== null && user.subscriptionStatus !== undefined;
-      const hasActiveSubscription = user.subscriptionStatus === "ACTIVE" || user.subscriptionStatus === "active";
-      if (subscriptionStatusIsKnown && !hasActiveSubscription) {
-        const now = new Date();
-        if (now > new Date(user.foundingMemberProExpiry)) {
-          await db.update(schema.userRole)
-            .set({ subscriptionTier: "FREE", updatedAt: new Date() })
-            .where(eq(schema.userRole.userId, req.session.userId!));
-          user.subscriptionTier = "FREE";
-        }
-      }
+    // Only the explicit, time-limited founding grant expires through this path.
+    // Paid/cancelled subscriptions have their own provider lifecycle, and a
+    // legacy null status is ambiguous; neither should be changed by this check.
+    if (user?.foundingMember &&
+        user.subscriptionTier === "PRO" &&
+        user.subscriptionStatus === "founding_member_access" &&
+        user.foundingMemberProExpiry &&
+        new Date() > new Date(user.foundingMemberProExpiry)) {
+      await db.update(schema.userRole)
+        .set({ subscriptionTier: "FREE", updatedAt: new Date() })
+        .where(eq(schema.userRole.userId, req.session.userId!));
+      user.subscriptionTier = "FREE";
     }
     
     res.json(await getClientUserRole(user));
