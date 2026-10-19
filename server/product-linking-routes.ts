@@ -98,17 +98,47 @@ function hasSecureServiceTransport(req: Request): boolean {
     isLoopback(req);
 }
 
-function sameOrigin(req: Request): boolean {
+type PredicateResult = "PASS" | "FAIL" | "NOT_EVALUATED";
+
+function browserMutationPredicates(req: Request): {
+  originMatches: boolean;
+  csrfMatches: boolean;
+  diagnostic: Record<string, PredicateResult>;
+} {
   const supplied = req.get("origin");
   const host = req.get("host");
-  if (!supplied || !host) return false;
+  const session = req.session as typeof req.session & { productLinkCsrfToken?: string };
+  const sessionToken = session.productLinkCsrfToken;
+  const requestToken = req.get("x-csrf-token");
+  let originSyntaxValid = false;
+  let originCanonical = false;
+  let effectiveOriginMatches = false;
   try {
-    const parsedOrigin = new URL(supplied);
-    const expectedOrigin = new URL(`${req.protocol}://${host}`);
-    return parsedOrigin.origin === supplied && parsedOrigin.origin === expectedOrigin.origin;
-  } catch {
-    return false;
-  }
+    if (supplied && host) {
+      const parsedOrigin = new URL(supplied);
+      const expectedOrigin = new URL(`${req.protocol}://${host}`);
+      originSyntaxValid = true;
+      originCanonical = parsedOrigin.origin === supplied;
+      effectiveOriginMatches =
+        originCanonical && parsedOrigin.origin === expectedOrigin.origin;
+    }
+  } catch {}
+  const originMatches = Boolean(supplied && host && originCanonical && effectiveOriginMatches);
+  const csrfMatches = originMatches && safeTokenEqual(sessionToken, requestToken);
+  return {
+    originMatches,
+    csrfMatches,
+    diagnostic: {
+      origin_header_present: supplied ? "PASS" : "FAIL",
+      host_header_present: host ? "PASS" : "FAIL",
+      origin_syntax_valid: originSyntaxValid ? "PASS" : "FAIL",
+      origin_canonical: originCanonical ? "PASS" : "FAIL",
+      trusted_protocol_host_match: effectiveOriginMatches ? "PASS" : "FAIL",
+      session_csrf_token_present: sessionToken ? "PASS" : "FAIL",
+      csrf_header_present: requestToken ? "PASS" : "FAIL",
+      csrf_token_match: !originMatches ? "NOT_EVALUATED" : csrfMatches ? "PASS" : "FAIL",
+    },
+  };
 }
 
 function safeTokenEqual(left: string | undefined, right: string | undefined): boolean {
@@ -127,12 +157,19 @@ function csrfToken(req: Request): string {
 }
 
 function browserMutationAllowed(req: Request, res: Response): boolean {
-  if (!sameOrigin(req)) {
+  const predicates = browserMutationPredicates(req);
+  if (
+    process.env.NODE_ENV === "test" &&
+    process.env.APP_ENV !== "production" &&
+    process.env.DEV_PRODUCT_LINKING_CSRF_DIAGNOSTICS === "true"
+  ) {
+    console.info(`[product-link-csrf] ${JSON.stringify(predicates.diagnostic)}`);
+  }
+  if (!predicates.originMatches) {
     errorResponse(res, 403, "CSRF_ORIGIN_FAILED", "The request could not be verified.");
     return false;
   }
-  const session = req.session as typeof req.session & { productLinkCsrfToken?: string };
-  if (!safeTokenEqual(session.productLinkCsrfToken, req.get("x-csrf-token"))) {
+  if (!predicates.csrfMatches) {
     errorResponse(res, 403, "CSRF_ORIGIN_FAILED", "The request could not be verified.");
     return false;
   }

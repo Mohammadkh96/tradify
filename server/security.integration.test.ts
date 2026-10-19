@@ -92,6 +92,7 @@ const recoveryEmail = `${emailPrefix}-password-recovery@example.invalid`;
 const linkingEmail = `${emailPrefix}-account-linking@example.invalid`;
 const testPassword = "Local-only-security-test-password-1";
 const stripeWebhookSecret = "whsec_local_only_test";
+const originalReplitDevDomain = process.env.REPLIT_DEV_DOMAIN;
 
 let appServer: Server | undefined;
 let origin = "";
@@ -156,6 +157,7 @@ async function login(email: string, password = testPassword): Promise<{ cookie: 
 }
 
 beforeAll(async () => {
+  process.env.REPLIT_DEV_DOMAIN = "journal-test.replit.dev";
   const existingSchema = await testPool.query<{ table_name: string | null }>(
     "SELECT to_regclass('public.user_role')::text AS table_name",
   );
@@ -171,7 +173,6 @@ beforeAll(async () => {
   await testPool.query(revocationRetryMigration);
 
   const app = express();
-  app.set("trust proxy", 1);
   app.use(express.json({
     limit: "50mb",
     verify: (req, _res, body) => {
@@ -187,6 +188,7 @@ beforeAll(async () => {
   app.use(express.urlencoded({ extended: false }));
   appServer = createServer(app);
   await registerRoutes(appServer, app);
+  expect(app.get("trust proxy")).toBe(1);
   await new Promise<void>((resolve, reject) => {
     appServer!.once("error", reject);
     appServer!.listen(0, "127.0.0.1", resolve);
@@ -205,6 +207,8 @@ afterAll(async () => {
   }
   await testPool.end();
   await applicationPool.end();
+  if (originalReplitDevDomain === undefined) delete process.env.REPLIT_DEV_DOMAIN;
+  else process.env.REPLIT_DEV_DOMAIN = originalReplitDevDomain;
 });
 
 describe("application security boundaries against a disposable local PostgreSQL database", () => {
@@ -447,6 +451,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
     const { randomBytes, generateKeyPairSync, sign, verify, createHash } = await import("node:crypto");
     const envKeys = [
       "NODE_ENV",
+      "APP_ENV",
       "DEV_PRODUCT_LINKING_ENABLED",
       "PRODUCT_LINKING_ENABLED",
       "PRODUCT_LINKING_VERIFIED",
@@ -462,8 +467,16 @@ describe("application security boundaries against a disposable local PostgreSQL 
       "DEV_TRADIFY_JOURNAL_PRIVATE_KEY",
       "TRADIFY_JOURNAL_PRIVATE_KEY",
       "TRADIFY_SIGNALS_API_BASE_URL",
+      "DEV_PRODUCT_LINKING_CSRF_DIAGNOSTICS",
     ] as const;
     const savedEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+    const csrfDiagnosticLines: string[] = [];
+    const csrfDiagnosticSpy = vi.spyOn(console, "info").mockImplementation((...args) => {
+      const line = args[0];
+      if (typeof line === "string" && line.startsWith("[product-link-csrf] ")) {
+        csrfDiagnosticLines.push(line.slice("[product-link-csrf] ".length));
+      }
+    });
     const signalsKeys = generateKeyPairSync("rsa", { modulusLength: 2048 });
     const journalKeys = generateKeyPairSync("rsa", { modulusLength: 2048 });
     const signalsKid = "signals-local-test-key";
@@ -602,6 +615,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
       })).status).toBe(503);
 
       process.env.NODE_ENV = "test";
+      process.env.APP_ENV = "test";
       process.env.TRADIFY_SIGNALS_ISSUER = SIGNALS_DEV_ISSUER;
       process.env.TRADIFY_SIGNALS_KEY_ID = signalsKid;
       process.env.TRADIFY_SIGNALS_PUBLIC_KEY = signalsPublicPem;
@@ -610,6 +624,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
       process.env.TRADIFY_JOURNAL_KEY_ID = journalKid;
       process.env.DEV_TRADIFY_JOURNAL_PRIVATE_KEY = journalPrivatePem;
       process.env.TRADIFY_SIGNALS_API_BASE_URL = "https://signals.test.invalid";
+      process.env.DEV_PRODUCT_LINKING_CSRF_DIAGNOSTICS = "true";
       expect(await (await request("/api/v1/product-links/signals/configuration", {
         cookie: journalSession.cookie,
       })).json()).toEqual({ enabled: true });
@@ -625,6 +640,14 @@ describe("application security boundaries against a disposable local PostgreSQL 
         },
       });
       expect(noCsrf.status).toBe(403);
+      const noCsrfDiagnostic = JSON.parse(csrfDiagnosticLines.at(-1) ?? "{}");
+      expect(noCsrfDiagnostic).toMatchObject({
+        origin_header_present: "PASS",
+        trusted_protocol_host_match: "PASS",
+        session_csrf_token_present: "PASS",
+        csrf_header_present: "FAIL",
+        csrf_token_match: "FAIL",
+      });
       const wrongOrigin = await request("/api/v1/product-links/signals/authorization", {
         method: "POST",
         cookie: journalSession.cookie,
@@ -636,6 +659,13 @@ describe("application security boundaries against a disposable local PostgreSQL 
         },
       });
       expect(wrongOrigin.status).toBe(403);
+      const wrongOriginDiagnostic = JSON.parse(csrfDiagnosticLines.at(-1) ?? "{}");
+      expect(wrongOriginDiagnostic).toMatchObject({
+        origin_header_present: "PASS",
+        origin_canonical: "PASS",
+        trusted_protocol_host_match: "FAIL",
+        csrf_token_match: "NOT_EVALUATED",
+      });
       const noConsent = await request("/api/v1/product-links/signals/authorization", {
         method: "POST",
         cookie: journalSession.cookie,
@@ -647,11 +677,38 @@ describe("application security boundaries against a disposable local PostgreSQL 
         },
       });
       expect(noConsent.status).toBe(400);
+      const proxyOrigin = origin.replace(/^http:/, "https:");
+      const invalidCsrf = await request("/api/v1/product-links/signals/authorization", {
+        method: "POST",
+        cookie: journalSession.cookie,
+        headers: {
+          origin: proxyOrigin,
+          "x-forwarded-proto": "https",
+          "x-csrf-token": "invalid-local-csrf-token",
+        },
+        json: {
+          contractVersion: LINK_CONTRACT_VERSION,
+          consent: true,
+          consentVersion: JOURNAL_INITIATION_CONSENT_VERSION,
+        },
+      });
+      expect(invalidCsrf.status).toBe(403);
+      const invalidCsrfDiagnostic = JSON.parse(csrfDiagnosticLines.at(-1) ?? "{}");
+      expect(invalidCsrfDiagnostic).toMatchObject({
+        trusted_protocol_host_match: "PASS",
+        session_csrf_token_present: "PASS",
+        csrf_header_present: "PASS",
+        csrf_token_match: "FAIL",
+      });
 
       const authorizationResponse = await request("/api/v1/product-links/signals/authorization", {
         method: "POST",
         cookie: journalSession.cookie,
-        headers: { "x-csrf-token": csrfToken },
+        headers: {
+          origin: proxyOrigin,
+          "x-forwarded-proto": "https",
+          "x-csrf-token": csrfToken,
+        },
         json: {
           contractVersion: LINK_CONTRACT_VERSION,
           consent: true,
@@ -659,6 +716,19 @@ describe("application security boundaries against a disposable local PostgreSQL 
         },
       });
       expect(authorizationResponse.status).toBe(201);
+      const validProxyDiagnostic = JSON.parse(csrfDiagnosticLines.at(-1) ?? "{}");
+      expect(validProxyDiagnostic).toMatchObject({
+        origin_header_present: "PASS",
+        host_header_present: "PASS",
+        origin_syntax_valid: "PASS",
+        origin_canonical: "PASS",
+        trusted_protocol_host_match: "PASS",
+        session_csrf_token_present: "PASS",
+        csrf_header_present: "PASS",
+        csrf_token_match: "PASS",
+      });
+      expect(csrfDiagnosticLines.join(" ")).not.toContain(journalSession.cookie);
+      expect(csrfDiagnosticLines.join(" ")).not.toContain(csrfToken);
       const authorization = await authorizationResponse.json();
       expect(authorization.authorizationCode).toMatch(/^[a-f0-9]{64}$/);
       expect(authorization.journalAttemptLabel).toMatch(/^JRN-[A-Z2-7]{12}$/);
@@ -1163,6 +1233,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
       );
       expect(expiredCodeClaim.status).toBe(409);
     } finally {
+      csrfDiagnosticSpy.mockRestore();
       for (const key of envKeys) {
         const value = savedEnv[key];
         if (value === undefined) delete process.env[key];

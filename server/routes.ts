@@ -514,8 +514,11 @@ ${blogPosts.map(p => `  <url>
     }
   });
 
-  // Trust proxy for Vercel (required for secure cookies behind proxy)
-  if (process.env.NODE_ENV === "production") {
+  // Trust exactly the immediate Replit HTTPS proxy in development, identified
+  // by Replit's server-provided domain variable. Do not trust forwarded headers
+  // in arbitrary local environments.
+  const isReplitDevelopment = Boolean(process.env.REPLIT_DEV_DOMAIN);
+  if (process.env.NODE_ENV === "production" || isReplitDevelopment) {
     app.set("trust proxy", 1);
   }
   
