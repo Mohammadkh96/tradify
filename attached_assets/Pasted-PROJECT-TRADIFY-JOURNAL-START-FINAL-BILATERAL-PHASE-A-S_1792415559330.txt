@@ -1,0 +1,80 @@
+PROJECT: TRADIFY JOURNAL — START FINAL BILATERAL PHASE A SESSION
+
+Tradify Signals has completed all readiness fixes and is READY for the next coordinated bilateral integration window.
+
+Signals commit:
+53c74d74ea3b48841fa9797c10b4f56036bc1f65
+
+Verified Signals capabilities:
+- Authenticated Chromium login and navigation.
+- Account-linking page at /app/journal-link.
+- Same-origin authentication and CSRF validation.
+- Disposable loopback-only PostgreSQL.
+- In-memory RS256 signer.
+- Local-only Phase B public-key exchange.
+- Configurable signing sessions up to 180 minutes.
+- Different Journal/Signals expirations supported.
+- Earlier session deadline enforced.
+
+Journal's previous HTTPS CSRF verification also PASSED:
+- Real authenticated authorization HTTP 201.
+- Invalid origin and CSRF rejected.
+- Disposable database isolation verified.
+
+Journal CSRF commit:
+0569368053a9c2e2e286beadc1482ec83f3594a8
+
+I AUTHORIZE STARTING A NEW JOURNAL PHASE A SESSION FOR THE ISOLATED BILATERAL TEST.
+
+INSTRUCTIONS:
+
+1. Verify the current Journal supervisor supports the development-only expiry handling fix and the isolated PostgreSQL safety requirements.
+
+2. Start a fresh Phase A supervisor using a disposable loopback-only test database and an in-memory RS256 private signing key.
+
+3. Use the longest already-supported safe test duration, ideally up to 180 minutes. If Journal supports only 120 minutes, use that duration and report it. The two projects do NOT need identical expiry timestamps.
+
+4. Generate a NEW immutable Journal signing kid and corresponding public RS256 PEM.
+
+5. Keep the private signing key in the active supervisor's memory. Never write it to Git, Shared secrets, deployment secrets or logs.
+
+6. Confirm the public PEM corresponds to the active signer using a signature self-test.
+
+7. Confirm the existing HTTPS development origin routes to the Phase A supervisor.
+
+8. Keep the account-linking API disabled until reciprocal trust is loaded during Phase B.
+
+9. Preserve the verified HTTPS CSRF fix and approved V1 consent wording.
+
+10. Do not reuse any previously expired Journal or Signals public keys or kids.
+
+11. Do not start the real linking flow yet.
+
+12. Keep the supervisor running while awaiting the fresh Signals public-key handoff.
+
+SECURITY:
+
+- Disposable database only; no Neon fallback.
+- No production publishing.
+- No production or customer data.
+- No background jobs, email delivery or live MT5 activity.
+- No private keys or authorization codes in chat.
+- No additional paid resources.
+- Do not modify the Signals project.
+
+DELIVERABLE:
+
+JOURNAL PHASE A: ACTIVE / BLOCKED
+
+If ACTIVE, provide:
+- Current HTTPS test origin.
+- NEW public RS256 PEM.
+- NEW immutable Journal kid.
+- Journal JWT issuer.
+- Journal → Signals audience.
+- Exact UTC session expiration.
+- Confirmation the private signer remains active in memory.
+- Confirmation Phase B can load Signals' public key without regenerating Journal's signer.
+- Confirmation of disposable database isolation.
+
+Do not start Phase B before we exchange the new public keys.
