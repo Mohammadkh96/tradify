@@ -2,7 +2,7 @@
 
 **Contract version:** `tradify-account-linking-v1`
 
-**Status:** Journal accepts and implements the exact versioned revocation retry rule `tradify-account-linking-v1/revocation-retry-v1`. The Signals Agent reports that Signals has implemented and tested the same rule and independently accepts it. The Journal focused isolated test passes. This protocol acceptance does not authorize live cross-service testing or production use; Journal's private signing key and Signals' public trust configuration are not configured because development-secret isolation is still being resolved.
+**Status:** Journal accepts and implements the exact versioned revocation retry rule `tradify-account-linking-v1/revocation-retry-v1`. The Signals Agent reports that Signals has implemented and tested the same rule and independently accepts it. The Journal focused isolated test passes. This protocol acceptance does not authorize live cross-service testing or production use. The active Journal linking code is development/test-only; production enablement has not been implemented.
 
 **Important compatibility note:** Journal linking remains default-off. Both projects have accepted the `revocation-retry-v1` rule, but that is not acceptance of every account-linking V1 detail or approval for real cross-service testing. Secure development trust configuration and the remaining product/API decisions must be reviewed first. No production migration, key exchange, Signals API call, or deployment is authorized here.
 
@@ -34,7 +34,7 @@ Neither product is allowed to query the other's database or reuse the other's se
 
 ## 3. Proposed identifiers, consent versions, and state machine
 
-Signals has approved the isolated-development policy direction. Identifiers that Signals has not explicitly confirmed remain provisional and block implementation until confirmed.
+Signals has approved the isolated-development policy direction. Identifiers that Signals has not explicitly confirmed remain provisional and block cross-service testing and activation until confirmed.
 
 - Contract: `tradify-account-linking-v1`
 - Journal initiation consent: `tradify-journal-link-initiation-v1`
@@ -604,35 +604,56 @@ Required Journal and Signals contract cases before activation:
 7. Clock boundaries exactly test `iat = now+30`, `iat = now+31`, `iat = now-120`, `iat = now-121`, `exp = now`, `exp = now+1`, and `exp-iat = 120/121`.
 8. Single-use and concurrency: two simultaneous claims for one code yield one pending link; replay with the exact same assertion returns that link; same `jti` with any changed claim/body returns `409`.
 9. Revocation retry v1: same event ID and JCS payload/hash with fresh 120-second assertions and unique `jti`s; same ID/hash is acknowledged without repeated effects; changed hash yields `409` and a security audit; mismatched acknowledgement must not revoke the local link.
-9. Duplicate Journal or Signals accounts, code substitution, changed subject, changed issuer, and cross-environment assertions cannot create or confirm a link.
-10. Journal final confirmation is restricted to the original Journal account and exact pending link. No link becomes active before both consent records exist.
+10. Duplicate Journal or Signals accounts, code substitution, changed subject, changed issuer, and cross-environment assertions cannot create or confirm a link.
+11. Journal final confirmation is restricted to the original Journal account and exact pending link. No link becomes active before both consent records exist.
 12. Unlink from either side, duplicate revocation, changed event replay, remote outage/retry, suspension, deletion, interrupted flow, recovery, and reconciliation all leave accounts and entitlements unchanged.
-12. Responses and logs contain no passwords, emails from the other product, database IDs, raw authorization codes, raw JWTs, or private keys.
+13. Responses and logs contain no passwords, emails from the other product, database IDs, raw authorization codes, raw JWTs, or private keys.
 
-**Tests added in this Journal change:** the existing local security integration test now confirms that the Journal status, authorization, and claim endpoints all return `503` while the feature is disabled by default.
+**Journal test status:** the focused Journal account-linking integration test passed against a disposable local database with synthetic accounts and ephemeral RSA keys (one selected test passed; twelve unrelated tests were deselected). This is development/test evidence only.
 
-**Existing prototype test:** the Journal security integration suite also temporarily enables the earlier prototype inside an isolated test process/database with synthetic accounts. That test is not production configuration, does not apply a migration, and does not establish acceptance of this revised protocol. Its current generic audience and immediate-link behavior do not satisfy this revised contract. Replace/extend those assertions only after Signals accepts the proposal.
+**Unrelated integration-suite failures:** the last full security integration run reported 11 passed and 2 failed. These failures are outside account linking and must be fixed in the isolated test harness without weakening or bypassing the checks:
 
-**Current runtime gate:** the existing Journal prototype is off unless `DEV_PRODUCT_LINKING_ENABLED=true` in development/test. Production additionally requires `PRODUCT_LINKING_ENABLED=true`, `PRODUCT_LINKING_VERIFIED=true`, and configured `TRADIFY_SIGNALS_ISSUER`, `TRADIFY_SIGNALS_KEY_ID`, and `TRADIFY_SIGNALS_PUBLIC_KEY`. This change sets none of these flags or values. The existing gate is not approval of the revised contract. Signals' gate remains for the Signals Agent to define in its own project.
+- `provisions a private MT5 token, permits valid bridge sync, and blocks cross-user account reads` expected `403` for a rejected bridge token but received `503` because the MT5 sync gate was disabled in that test runtime. Keep the default-off/production gate; correct the isolated test setup so it exercises the rejection path.
+- `passes the exact PayPal raw body to signature verification while mocking provider HTTP` expected `500` for the invalid verification case but received `200`. The test log reported that `PAYPAL_WEBHOOK_ID` was not set and verification was skipped. Supply a synthetic test-only webhook ID so the verifier path runs; do not bypass verification or use live credentials.
+
+### Current implementation: development/test only
+
+The active V1 routes are mounted by `server/routes.ts`. Their `isEnabled()` check in `server/product-linking-routes.ts` calls `getSignalsKeyring()`. Both `getSignalsKeyring()` and `getJournalSigningConfig()` in `server/product-linking-assertions.ts` require `NODE_ENV` to be `development` or `test`, `APP_ENV` not to be `production`, and `DEV_PRODUCT_LINKING_ENABLED=true`. The outbox's `assertManualDevelopmentContext()` also rejects production and requires that development flag. Therefore, the active V1 routes, signer, and manual outbox cannot be enabled in production today.
+
+`assertDevelopmentSigningKeyNotInProduction()` in `server/index.ts` refuses startup if either `DEV_TRADIFY_JOURNAL_PRIVATE_KEY` or the legacy `TRADIFY_JOURNAL_PRIVATE_KEY` is present in a production runtime. This is a safety guard, not a production linking gate.
+
+**Correction to the earlier wording:** `PRODUCT_LINKING_ENABLED`, `PRODUCT_LINKING_VERIFIED`, and `TRADIFY_SIGNALS_*` do not enable the active V1 route. The active code does not read those production flags. Do not set them expecting production linking to work; production linking is not implemented.
+
+### Future production changes required (not implemented or approved)
+
+1. In `server/product-linking-assertions.ts`, add a distinct, fail-closed production configuration path alongside—not instead of—the existing isolated-development path. It must validate the production issuer, exact audiences, pinned partner `kid`/public-key set, and a separate production Journal signer held only in Production secrets. It must never fall back to development issuers, keys, or audiences.
+2. Define and approve the exact production flag and configuration names. The previously documented `PRODUCT_LINKING_ENABLED` and `PRODUCT_LINKING_VERIFIED` are only candidate names; no active V1 code reads them. Enabling must require both an explicit feature flag and a separately reviewed verification/approval state, plus complete valid production trust configuration. Missing or inconsistent configuration must remain disabled/fail closed.
+3. In `server/product-linking-routes.ts`, change `isEnabled()` to select only the fully validated configuration for the current runtime. Keep development and production keyrings, issuers, audiences, flags, and endpoints disjoint.
+4. Preserve the production startup check in `server/index.ts` that rejects development/legacy private keys, and add validation that production configuration is complete only when production linking is explicitly enabled. Do not print or log key material.
+5. Keep `assertManualDevelopmentContext()` and `drainProductLinkOutboxOnce()` in `server/product-linking-outbox.ts` development/test-only. Any production dispatcher requires a separately reviewed, explicitly approved production execution mechanism, idempotent leasing, bounded retries, monitoring, and an operator stop control; do not add a web-process timer or enable a worker as part of this plan.
+6. Add synthetic tests in `server/security.integration.test.ts` for default-off production behavior, each missing/invalid production setting, environment/key separation, startup refusal when a development key is present, valid production configuration, and production outbox behavior. Test production configuration logic without production credentials or a production database.
+7. Review and approve production schema changes, recovery/rollback, audit retention, monitoring, and rollout separately. Any eventual production migration must be a reviewed migration applied only after a verified recovery point and explicit approval; never run it at application startup.
+
+These are documentation-only future requirements. This change does not add the production path, set flags, configure secrets, alter migrations, or enable linking.
 
 ## 11. Development implementation handoff
 
-The Journal-only implementation sequence is documented in [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). The Journal retry-v1 implementation is complete and accepted. Real cross-service tests remain blocked until Signals' exact development audience, issuer, key ID/public key, and API base URL are securely confirmed, and the broader account-linking contract decisions are accepted.
+The Journal-only implementation sequence is documented in [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). The Journal retry-v1 implementation is complete and accepted. Real cross-service tests remain blocked until the broader account-linking consent and API contract is approved and the exact development audience, issuer, key ID/public key, API base URL, and HTTPS transport are securely confirmed.
 
 The development configuration must be isolated from production and exchanged through secure configuration only. Signals implements Signals-owned work in its own project; Journal implements Journal-owned work in this project. A development-only manual/deterministic outbox drain may run only when explicitly started for tests.
 
 No production deployment, paid service, production database change, DNS change, email, billing, MT5 sync, or production background worker is authorized by this handoff. Production retention and rollout require a separate decision.
 
-## 12. Decisions requiring Signals acceptance
+## 12. Remaining development integration gates
 
-Signals has approved the isolated-development policy direction described in its review: five-minute codes, 120-second maximum assertion lifetime, 30-second future issuance tolerance, zero expiration grace, up to seven days of key overlap, immediate emergency revocation, separate consent, no email matching, no shared credentials or entitlements, and the unlink/deletion/outbox responsibilities recorded above.
+The revocation-retry-v1 rule is accepted by both projects. That acceptance does not approve the complete account-linking customer experience or production use. The following development gates remain:
 
-Before real cross-service testing, the remaining development gates are:
-
-- Signals confirms whether `tradify-journal-link-v1-dev` is the exact development audience and supplies the exact HTTPS development issuer, `kid`, and public key through secure configuration.
-- Signals confirms the reverse audience for Journal-signed requests to Signals; this document intentionally does not invent it.
-- Signals gives final written acceptance of this exact contract, and the Journal owner separately approves implementation.
-- Product owners approve the proposed customer-facing wording and review the detailed Journal and Signals schemas/API fixtures.
+- Product owners approve the exact separate-consent wording, paired-account confirmation, and recovery/unlink customer experience in both products.
+- Signals confirms the exact development issuer, both directional audiences, pinned `kid` and public verification key, and its actual API base URL. Issuer values identify the signer; they are not service URLs.
+- Verify a valid HTTPS endpoint and TLS certificate for the development API; service-to-service calls must use HTTPS. Exchange only public verification keys and non-secret identifiers through the approved secure configuration process.
+- Before configuring `DEV_TRADIFY_JOURNAL_PRIVATE_KEY`, explicitly verify it is absent from Production deployment secrets. Replit may sync Development secrets into deployment settings during publishing. Use only synthetic ephemeral keys until this isolation is verified; the currently reserved Journal `kid` is not attached to a configured key.
+- Run cross-service contract tests against the two separate isolated development databases and synthetic accounts. Preserve the original five-minute authorization deadline, 120-second assertion limit, zero expiration grace, replay checks, revocation-retry-v1 idempotency, mismatch audit, and hash-matched acknowledgement.
+- Keep the Journal and Signals databases, repositories, runtime flags, and secrets separate. Do not activate linking UI, a production worker, or production configuration during development testing.
 
 Production/staging trust values, retention periods, migrations, rollout, and background jobs are not approved here and require a separate decision.
 

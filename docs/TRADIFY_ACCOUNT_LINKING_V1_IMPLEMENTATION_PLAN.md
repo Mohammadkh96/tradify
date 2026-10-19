@@ -92,3 +92,46 @@ Journal development work is ready for review only when:
 - Both products show matching status, and logs/network traces contain no codes, JWTs, keys, cross-product emails, or local account IDs.
 
 Completion does not authorize production configuration, feature activation, production migrations, customer-data changes, deployment, DNS changes, billing/email activity, or background jobs. Those require separate approval and a separate plan.
+
+## 4. Current production status and future gate plan
+
+### Current implementation
+
+- `server/routes.ts` mounts `registerProductLinkingRoutes` from `server/product-linking-routes.ts`.
+- The active route `isEnabled()` calls `getSignalsKeyring()`. Both `getSignalsKeyring()` and `getJournalSigningConfig()` in `server/product-linking-assertions.ts` require `NODE_ENV=development` or `test`, `APP_ENV` not equal to `production`, and `DEV_PRODUCT_LINKING_ENABLED=true`.
+- `assertManualDevelopmentContext()` in `server/product-linking-outbox.ts` rejects production and requires the same development flag. The web process does not schedule the outbox drain.
+- `assertDevelopmentSigningKeyNotInProduction()` in `server/index.ts` rejects a production startup that contains the development-prefixed or legacy Journal private-key variable.
+- Consequently, the active V1 route/keyring/signing/outbox path is development/test-only and returns/behaves disabled in production. The earlier contract wording that `PRODUCT_LINKING_ENABLED=true`, `PRODUCT_LINKING_VERIFIED=true`, and `TRADIFY_SIGNALS_*` values enable production is inaccurate. The active V1 code does not read those production flags. Do not set them expecting linking to work.
+
+### Exact code changes required for a future production release
+
+These are planning notes only. Do not implement, configure, or activate them as part of this documentation change.
+
+1. **Add a separate production configuration path** in `server/product-linking-assertions.ts`, rather than loosening `enabledForIsolatedDevelopment()`. Require production runtime, two explicitly approved production enablement/verification controls, the exact production issuer and directional audiences, pinned production partner key IDs/public keys, and a separate Production-only Journal signing key. Do not fall back to Development values. The production secret variable names and the meaning/owner of the verification control must be approved before implementation.
+2. **Keep the route fail-closed** in `server/product-linking-routes.ts`: resolve a complete environment-specific config, return disabled when either gate is off or any required value is absent/mismatched, and prevent Development and Production trust sets from mixing.
+3. **Preserve and extend startup checks** in `server/index.ts`: keep rejecting development/legacy private keys in Production; if production linking is explicitly enabled, validate the complete Production trust configuration before serving requests. Never log key material.
+4. **Keep outbox execution separately controlled** in `server/product-linking-outbox.ts`: the current manual drain remains development/test-only. A future production dispatcher requires a separately reviewed and approved execution mechanism, bounded retry, idempotent leasing, monitoring, and an operator stop control. Do not add a web-process timer.
+5. **Add an isolated production-config test matrix** in `server/security.integration.test.ts`: default-off production behavior; missing/invalid flag and trust values; no dev-key fallback; development key rejected in production; valid synthetic production configuration; route and dispatcher behavior. Use synthetic keys and no production database.
+6. **Review operations separately:** approve reviewed migrations, recovery/rollback, retention, alerting, key rotation/revocation, and rollout. Apply no production migration until the recovery plan and explicit approval are in place.
+
+The flag names previously shown in this contract (`PRODUCT_LINKING_ENABLED` and `PRODUCT_LINKING_VERIFIED`) are candidate names only; they are not implemented controls today. Do not configure them until the future production gate is implemented, tested, and approved.
+
+## 5. Development-to-production checklist
+
+### Development integration — still blocked
+
+- [ ] Product owners approve the exact initiation/final-consent wording and paired-account confirmation in both products.
+- [ ] Verify Replit Production deployment secrets do not contain a Development signer before configuring `DEV_TRADIFY_JOURNAL_PRIVATE_KEY`. Replit may sync Development secrets during publish; current code blocks use of that key in Production but cannot control platform secret copying.
+- [ ] Securely exchange the development issuer, both directional audiences, immutable `kid`s, matching public verification keys, and the actual Signals API base URL. Keep private keys in their environment secret stores.
+- [ ] Confirm valid HTTPS/TLS for the real development API endpoint. Issuer URLs are identities, not API endpoints.
+- [ ] Run real Journal↔Signals contract tests using separate isolated development databases and synthetic accounts. Preserve the five-minute authorization deadline and accepted retry-v1 behavior; verify consent, expiry, replay, matching acknowledgements, changed-hash 409/audit, and lifecycle revocations.
+- [ ] Fix the unrelated MT5 bridge and PayPal test-fixture failures documented in Section 10 of `TRADIFY_ACCOUNT_LINKING_V1.md`; do not weaken or bypass those checks.
+
+### Production — future approval required
+
+- [ ] Implement and review the explicit Production gate and tests listed above. Leave all production controls unset and linking disabled until that work is approved.
+- [ ] Provision distinct Production trust identities and keys through secure Production configuration; verify Development keys and endpoints cannot be selected by Production.
+- [ ] Approve production migrations, recovery point, rollback procedure, audit retention, monitoring, and an operator-controlled outbox dispatcher.
+- [ ] Obtain separate owner approval before configuring Production secrets/flags, applying migrations, enabling the feature, starting any worker, or deploying.
+
+This plan preserves the accepted `tradify-account-linking-v1/revocation-retry-v1` rule and the original five-minute authorization deadline. It does not authorize feature activation, production changes, or changes to Signals.
