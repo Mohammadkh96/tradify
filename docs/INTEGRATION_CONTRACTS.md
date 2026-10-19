@@ -1,7 +1,7 @@
 # Tradify Integration Contracts
 
-**Status:** The Signals Agent approved the account-linking policy direction for isolated development only. Final development trust configuration and written acceptance of the exact contract remain pending; nothing is production-enabled.
-**Last reviewed:** 15 October 2026
+**Status:** The Signals Agent approved the account-linking policy direction for isolated development only. Both projects have accepted the exact `tradify-account-linking-v1/revocation-retry-v1` rule; final development trust configuration and acceptance of the full account-linking contract remain pending. Nothing is production-enabled.
+**Last reviewed:** 19 October 2026
 
 This document describes Journal interfaces verified in this repository and proposals for future review. The local account-linking implementation is disabled by default and does not authorize changes to the separate Signals project. Compare the contract with the Signals project's report before activation.
 
@@ -37,7 +37,7 @@ Consider a standards-based identity provider and versioned identity-claims contr
 
 ### Journal/Signals account association
 
-The Journal/Signals V1 contract and Journal implementation status are specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md) and [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). The Journal owner approves `tradify-account-linking-v1/revocation-retry-v1`; both products must independently confirm this exact version before it is finalized or used for real cross-service testing. Journal's current default-off implementation still needs the specified hash-based retry and acknowledgement changes. Secure development key exchange and the Signals API base URL remain outstanding. No production trust or deployment is authorized.
+The Journal/Signals V1 contract and Journal implementation status are specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md) and [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). Both products have accepted `tradify-account-linking-v1/revocation-retry-v1`, and Journal's disabled development/test implementation includes immutable event payload/hash retries, fresh assertions, idempotent handling, and hash-matched acknowledgement. Acceptance of the full account-linking contract and secure development trust configuration remain pending. The Signals API base URL and public-key exchange are outstanding. No production trust or deployment is authorized.
 
 ### Subscription bundles
 

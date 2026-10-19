@@ -609,12 +609,7 @@ Required Journal and Signals contract cases before activation:
 12. Unlink from either side, duplicate revocation, changed event replay, remote outage/retry, suspension, deletion, interrupted flow, recovery, and reconciliation all leave accounts and entitlements unchanged.
 13. Responses and logs contain no passwords, emails from the other product, database IDs, raw authorization codes, raw JWTs, or private keys.
 
-**Journal test status:** the focused Journal account-linking integration test passed against a disposable local database with synthetic accounts and ephemeral RSA keys (one selected test passed; twelve unrelated tests were deselected). This is development/test evidence only.
-
-**Unrelated integration-suite failures:** the last full security integration run reported 11 passed and 2 failed. These failures are outside account linking and must be fixed in the isolated test harness without weakening or bypassing the checks:
-
-- `provisions a private MT5 token, permits valid bridge sync, and blocks cross-user account reads` expected `403` for a rejected bridge token but received `503` because the MT5 sync gate was disabled in that test runtime. Keep the default-off/production gate; correct the isolated test setup so it exercises the rejection path.
-- `passes the exact PayPal raw body to signature verification while mocking provider HTTP` expected `500` for the invalid verification case but received `200`. The test log reported that `PAYPAL_WEBHOOK_ID` was not set and verification was skipped. Supply a synthetic test-only webhook ID so the verifier path runs; do not bypass verification or use live credentials.
+**Journal test status:** the full Journal security integration suite passed on 19 October 2026 (13/13) against a disposable loopback PostgreSQL cluster using synthetic accounts, ephemeral RSA/TLS keys, and mocked provider HTTP. The MT5, PayPal, and Stripe webhook tests all exercised their verification paths. Test-only fixtures now supply the development gates and synthetic provider settings; runtime and production gates were not relaxed. This is development/test evidence only and does not establish cross-service interoperability.
 
 ### Current implementation: development/test only
 

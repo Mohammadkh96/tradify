@@ -30,6 +30,10 @@ import {
 import { prepareProductLinkAccountLifecycle } from "./product-linking-routes";
 
 const { isolatedEmailService, capturedPasswordResetLink } = vi.hoisted(() => {
+  process.env.DEV_PAYPAL_CLIENT_ID = "local-only-security-test-client";
+  process.env.DEV_PAYPAL_CLIENT_SECRET = "local-only-security-test-secret";
+  process.env.DEV_PAYPAL_WEBHOOK_ID = "WH-local-only-security-test-id";
+  process.env.DEV_STRIPE_WEBHOOK_SECRET = "whsec_local_only_test";
   const capturedPasswordResetLink = { value: "" };
   return {
     capturedPasswordResetLink,
@@ -1467,6 +1471,9 @@ describe("application security boundaries against a disposable local PostgreSQL 
   });
 
   it("provisions a private MT5 token, permits valid bridge sync, and blocks cross-user account reads", async () => {
+    const originalDevMt5SyncEnabled = process.env.DEV_MT5_SYNC_ENABLED;
+    process.env.DEV_MT5_SYNC_ENABLED = "true";
+    try {
     await registerAndVerify(bobEmail, "Synthetic Bob");
     const alice = await login(aliceEmail);
     const bob = await login(bobEmail);
@@ -1579,6 +1586,13 @@ describe("application security boundaries against a disposable local PostgreSQL 
         }),
       ]),
     );
+    } finally {
+      if (originalDevMt5SyncEnabled === undefined) {
+        delete process.env.DEV_MT5_SYNC_ENABLED;
+      } else {
+        process.env.DEV_MT5_SYNC_ENABLED = originalDevMt5SyncEnabled;
+      }
+    }
   });
 
   it("keeps prop-firm challenges private to their owner", async () => {
