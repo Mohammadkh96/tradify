@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Loader2, RefreshCw, ShieldCheck, Unlink2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -34,7 +34,6 @@ type ProductLinkStatus = {
   linkId?: string;
   journalAttemptLabel?: string;
   signalsAttemptLabel?: string;
-  journalAccountLabel?: string;
   expiresAt?: string;
   linkedAt?: string;
   revokedAt?: string;
@@ -44,7 +43,6 @@ type ProductLinkStatus = {
 type Authorization = {
   code: string;
   journalAttemptLabel: string;
-  journalAccountLabel: string;
   expiresAt: string;
 };
 
@@ -59,7 +57,7 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 export function ProductLinkingCard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [initiationConsent, setInitiationConsent] = useState(false);
   const [confirmationConsent, setConfirmationConsent] = useState(false);
@@ -140,7 +138,6 @@ export function ProductLinkingCard() {
       setAuthorization({
         code: result.authorizationCode,
         journalAttemptLabel: result.journalAttemptLabel,
-        journalAccountLabel: result.journalAccountLabel,
         expiresAt: result.expiresAt,
       });
       setInitiationConsent(false);
@@ -244,8 +241,9 @@ export function ProductLinkingCard() {
               {t("profile.productLinkActive")}
             </p>
             <div className="rounded-lg border border-border bg-background p-4 text-sm space-y-2">
-              <p><span className="text-muted-foreground">{t("profile.productLinkJournalAccount")}: </span>{currentStatus.journalAccountLabel}</p>
+              <p>{t("profile.productLinkJournalAccount")}</p>
               <p><span className="text-muted-foreground">{t("profile.productLinkJournalLabel")}: </span><span className="font-mono">{currentStatus.journalAttemptLabel}</span></p>
+              <p>{t("profile.productLinkSignalsAccount")}</p>
               <p><span className="text-muted-foreground">{t("profile.productLinkSignalsLabel")}: </span><span className="font-mono">{currentStatus.signalsAttemptLabel}</span></p>
             </div>
             <p className="text-xs text-muted-foreground">{t("profile.productLinkSeparateAccounts")}</p>
@@ -282,14 +280,23 @@ export function ProductLinkingCard() {
 
         {currentStatus?.state === "awaiting_journal_confirmation" && (
           <div className="space-y-4" aria-live="polite">
-            <p className="text-sm font-semibold">{t("profile.productLinkNeedsConfirmation")}</p>
+            <p className="text-sm font-semibold text-amber-500" role="status">
+              {t("profile.productLinkStatePending")}
+            </p>
+            <p className="text-sm font-semibold">{t("profile.productLinkPairReviewTitle")}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {t("profile.productLinkPairReviewDescription")}
+            </p>
             <div className="rounded-lg border border-border bg-background p-4 text-sm space-y-2">
-              <p><span className="text-muted-foreground">{t("profile.productLinkJournalAccount")}: </span>{currentStatus.journalAccountLabel}</p>
+              <p>{t("profile.productLinkJournalAccount")}</p>
               <p><span className="text-muted-foreground">{t("profile.productLinkJournalLabel")}: </span><span className="font-mono">{currentStatus.journalAttemptLabel}</span></p>
+              <p>{t("profile.productLinkSignalsAccount")}</p>
               <p><span className="text-muted-foreground">{t("profile.productLinkSignalsLabel")}: </span><span className="font-mono">{currentStatus.signalsAttemptLabel}</span></p>
               {currentStatus.expiresAt && (
                 <p className="text-xs text-muted-foreground">
-                  {t("profile.productLinkExpiresAt", { time: new Date(currentStatus.expiresAt).toLocaleTimeString() })}
+                  {t("profile.productLinkExpiresAt", {
+                    time: new Date(currentStatus.expiresAt).toLocaleString(i18n.resolvedLanguage || i18n.language),
+                  })}
                 </p>
               )}
             </div>
@@ -315,6 +322,9 @@ export function ProductLinkingCard() {
 
         {currentStatus?.state === "awaiting_signals_consent" && !authorization && (
           <div className="space-y-4">
+            <p className="text-sm font-semibold text-amber-500" role="status">
+              {t("profile.productLinkStateAwaitingSignalsConsent")}
+            </p>
             <p className="text-sm text-muted-foreground">{t("profile.productLinkAuthorizationLost")}</p>
             <AlertDialog open={showCancelAuthorization} onOpenChange={setShowCancelAuthorization}>
               <AlertDialogTrigger asChild>
@@ -338,12 +348,17 @@ export function ProductLinkingCard() {
 
         {authorization && (
           <div className="space-y-4">
+            <p className="text-sm font-semibold text-amber-500" role="status">
+              {t("profile.productLinkStateAwaitingSignalsConsent")}
+            </p>
             <p className="text-sm text-muted-foreground">{t("profile.productLinkTransferInstructions")}</p>
             <div className="rounded-lg border border-border bg-background p-4 text-sm space-y-2">
-              <p><span className="text-muted-foreground">{t("profile.productLinkJournalAccount")}: </span>{authorization.journalAccountLabel}</p>
+              <p>{t("profile.productLinkJournalAccount")}</p>
               <p><span className="text-muted-foreground">{t("profile.productLinkJournalLabel")}: </span><span className="font-mono">{authorization.journalAttemptLabel}</span></p>
               <p className="text-xs text-muted-foreground">
-                {t("profile.productLinkExpiresAt", { time: new Date(authorization.expiresAt).toLocaleTimeString() })}
+                {t("profile.productLinkExpiresAt", {
+                  time: new Date(authorization.expiresAt).toLocaleString(i18n.resolvedLanguage || i18n.language),
+                })}
               </p>
             </div>
             <label htmlFor="product-link-authorization-code" className="block text-sm font-semibold">
@@ -390,7 +405,20 @@ export function ProductLinkingCard() {
           currentStatus?.state === "expired" ||
           currentStatus?.state === "cancelled") && !authorization && (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">{t("profile.productLinkSeparateAccounts")}</p>
+            <p className="text-sm font-semibold" role="status">
+              {currentStatus.state === "revoked"
+                ? t("profile.productLinkStateDisconnected")
+                : t("profile.productLinkStateNotConnected")}
+            </p>
+            {currentStatus.state === "expired" && (
+              <p className="text-sm text-muted-foreground" role="status">
+                {t("profile.productLinkExpired")}
+              </p>
+            )}
+            <p className="text-sm font-semibold">{t("profile.productLinkJournalAccount")}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {t("profile.productLinkConsentDisclosure")}
+            </p>
             <label className="flex items-start gap-3 text-sm leading-relaxed">
               <input
                 type="checkbox"

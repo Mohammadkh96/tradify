@@ -662,8 +662,17 @@ describe("application security boundaries against a disposable local PostgreSQL 
       const authorization = await authorizationResponse.json();
       expect(authorization.authorizationCode).toMatch(/^[a-f0-9]{64}$/);
       expect(authorization.journalAttemptLabel).toMatch(/^JRN-[A-Z2-7]{12}$/);
-      expect(authorization.journalAccountLabel).toBe("Synthetic Linking User");
+      expect(authorization.journalAccountLabel).toBe("Journal account");
+      expect(JSON.stringify(authorization)).not.toContain("Synthetic Linking User");
       expect(JSON.stringify(authorization)).not.toContain(linkingEmail);
+      const authorizationStatusResponse = await request("/api/v1/product-links/signals", {
+        cookie: journalSession.cookie,
+      });
+      expect(authorizationStatusResponse.status).toBe(200);
+      const authorizationStatus = await authorizationStatusResponse.json();
+      expect(authorizationStatus.journalAccountLabel).toBe("Journal account");
+      expect(JSON.stringify(authorizationStatus)).not.toContain("Synthetic Linking User");
+      expect(JSON.stringify(authorizationStatus)).not.toContain(linkingEmail);
       const authDigest = sha256(authorization.authorizationCode);
       const storedAuthorization = await testPool.query<{
         created_at: Date;

@@ -62,6 +62,41 @@ For the confirmation UI, each attempt has:
 
 These temporary labels identify the pair to the customer; they are not account IDs and must not be reused as stable identifiers. Each product displays its own account's local sign-in label only within that product. The Signals page shows its current local account and the Journal attempt label. The final Journal confirmation shows the Journal local account and the Signals attempt label. The customer must confirm the pair on both products before the link becomes active. No email or internal user ID crosses the boundary.
 
+### Product-owner-approved consent and pairing copy
+
+The product owner approved the following consent and pair-review wording for isolated Journal and Signals development on 2026-10-19. This copy approval does not enable the feature or authorize production use. The Signals Agent owns implementing the approved copy in the Signals project; Journal does not modify that project.
+
+**Consent screen**
+
+> **Link your Tradify Journal and Tradify Signals accounts**
+>
+> This links the Journal account shown below with the Signals account you are currently signed in to. You will continue signing in to Journal and Signals separately.
+>
+> Linking shares only the account-linking information needed to establish and manage this association: opaque service-specific account references, temporary pairing labels, consent records, and link, unlink, or revocation status. It does not share your email address, password, trades, MT5 accounts or history, strategies, payment details, subscriptions, entitlements, or account permissions. Linking does not change billing or grant access to paid features in the other product.
+>
+> You can disconnect the accounts later. Disconnecting makes the association unusable locally; final revocation synchronization may remain pending if the other service is temporarily unavailable.
+
+- Consent checkbox: **“I consent to link these Journal and Signals accounts.”**
+- Button: **“Link accounts”**
+
+**Pair review screen**
+
+> **Confirm these accounts belong to you**
+>
+> **Tradify Journal account:** `[Journal account label]`<br>
+> **Journal pairing label:** `[JRN-…]`
+>
+> **Tradify Signals account:** `[Signals account label]`<br>
+> **Signals pairing label:** `[SIG-…]`
+>
+> Confirming links only these two accounts. Your sign-ins, trading records, subscriptions, and entitlements remain separate. You can disconnect later.
+>
+> **This request expires at:** `[authorization expiry time]`
+
+The five-minute authorization expiry shown in the review must be the original Journal `expiresAt`; preview or claim must never extend it. Product-owner approval is recorded; Signals UI implementation remains the responsibility of the Signals Agent. Keep all consent UI hidden while the development feature flag and trust configuration are absent.
+
+**Signals rendering:** Use the approved disclosure and consent checkbox on the Signals screen as well. Display only generic “Tradify Journal account” and “Tradify Signals account” labels plus both temporary pairing labels. Neither screen may expose email addresses, internal database IDs, passwords, names, or other sensitive account information. Show the same original Journal authorization deadline; do not extend it.
+
 State transitions:
 
 ```text
@@ -80,9 +115,7 @@ A code is single-use and expires five minutes after Journal issues it. A pending
 
 1. The customer signs in to Journal using Journal's own authentication. Journal displays the current local account label and explains that linking does not share sign-in or entitlements.
 
-   Proposed customer wording from the Signals review (final UI copy still requires product-owner approval):
-
-   > Connect your Tradify Journal and Tradify Signals accounts. You will continue signing in to each product separately. Your subscriptions, trading records, and account permissions will remain separate. You can disconnect the accounts later.
+   Journal displays the approved consent wording in Section 3 before recording initiation consent. Signals renders the approved shared disclosure with its own signed-in account label and the same pairing labels; that implementation belongs to the Signals Agent.
 
 2. The customer gives Journal consent to initiate a link. Journal records `tradify-journal-link-initiation-v1`, its timestamp, and the current internal Journal account ID. Journal creates a random 32-byte code, stores only its SHA-256 digest, and returns the code and `journalAttemptLabel` in a `Cache-Control: no-store` response.
 3. Journal renders the code only in the active page's memory. It does not put the code in a URL, redirect, browser storage, cookie, referrer, analytics event, browser log, server log, tracing span, or error report. The UI does not copy the code to the clipboard automatically.
@@ -633,7 +666,7 @@ These are documentation-only future requirements. This change does not add the p
 
 ## 11. Development implementation handoff
 
-The Journal-only implementation sequence is documented in [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). The Journal retry-v1 implementation is complete and accepted. Real cross-service tests remain blocked until the broader account-linking consent and API contract is approved and the exact development audience, issuer, key ID/public key, API base URL, and HTTPS transport are securely confirmed.
+The Journal-only implementation sequence is documented in [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). The Journal retry-v1 implementation is complete and accepted. The product owner approved the consent and pair-review copy for isolated development in both products on 2026-10-19. Real cross-service tests remain blocked until reciprocal development key IDs/public keys are securely confirmed and the actual link routes are verified over HTTPS. The Signals development API origin is configured in Journal Development and its health endpoint is reachable; health is not proof that the linking routes are ready. Signals UI implementation remains owned by the Signals Agent.
 
 The development configuration must be isolated from production and exchanged through secure configuration only. Signals implements Signals-owned work in its own project; Journal implements Journal-owned work in this project. A development-only manual/deterministic outbox drain may run only when explicitly started for tests.
 
@@ -641,11 +674,11 @@ No production deployment, paid service, production database change, DNS change, 
 
 ## 12. Remaining development integration gates
 
-The revocation-retry-v1 rule is accepted by both projects. That acceptance does not approve the complete account-linking customer experience or production use. The following development gates remain:
+The revocation-retry-v1 rule is accepted by both projects. The product owner approved the consent, pairing, separate-authentication/subscription, metadata-sharing, and disconnect/revocation wording for isolated development on 2026-10-19. This does not authorize production linking, deployment, paid infrastructure, or access to real customer data. The following development gates remain:
 
-- Product owners approve the exact separate-consent wording, paired-account confirmation, and recovery/unlink customer experience in both products.
-- Signals confirms the exact development issuer, both directional audiences, pinned `kid` and public verification key, and its actual API base URL. Issuer values identify the signer; they are not service URLs.
-- Verify a valid HTTPS endpoint and TLS certificate for the development API; service-to-service calls must use HTTPS. Exchange only public verification keys and non-secret identifiers through the approved secure configuration process.
+- Signals implements the approved copy in its own project; recovery-flow details beyond the approved disconnect/revocation explanation remain outside this copy approval.
+- Exchange and confirm both development signing `kid`s and matching public verification keys through the approved secure configuration process. Journal's development API origin, Signals development API origin, issuers, and directional audiences are now recorded above; the Signals API origin and non-secret Journal trust identifiers are configured in Journal Development only. Revalidate the origins before integration tests.
+- Both health endpoints returned HTTP 200 over HTTPS on 2026-10-19. Verify the actual authenticated linking routes and their TLS transport before a cross-service request; health checks alone do not establish route readiness.
 - Before configuring `DEV_TRADIFY_JOURNAL_PRIVATE_KEY`, explicitly verify it is absent from Production deployment secrets. Replit may sync Development secrets into deployment settings during publishing. Use only synthetic ephemeral keys until this isolation is verified; the currently reserved Journal `kid` is not attached to a configured key.
 - Run cross-service contract tests against the two separate isolated development databases and synthetic accounts. Preserve the original five-minute authorization deadline, 120-second assertion limit, zero expiration grace, replay checks, revocation-retry-v1 idempotency, mismatch audit, and hash-matched acknowledgement.
 - Keep the Journal and Signals databases, repositories, runtime flags, and secrets separate. Do not activate linking UI, a production worker, or production configuration during development testing.

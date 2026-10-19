@@ -179,8 +179,8 @@ function bearerToken(req: Request): string | undefined {
   return req.get("authorization")?.match(/^Bearer ([^\s]+)$/i)?.[1];
 }
 
-function localAccountLabel(name: unknown): string {
-  return typeof name === "string" && name.trim() ? name.trim().slice(0, 100) : "Journal account";
+function localAccountLabel(): string {
+  return "Journal account";
 }
 
 function linkResponse(link: LinkRow, accountLabel: string): Record<string, unknown> {
@@ -213,9 +213,9 @@ async function ensureSchemaAvailable(client: PoolClient): Promise<boolean> {
 async function getAuthenticatedJournalRole(
   req: Request,
   requireVerified: boolean,
-): Promise<{ id: number; full_name: string | null } | null> {
-  const result = await pool.query<{ id: number; full_name: string | null }>(
-    `SELECT id, full_name
+): Promise<{ id: number } | null> {
+  const result = await pool.query<{ id: number }>(
+    `SELECT id
        FROM user_role
       WHERE user_id = $1
         AND role <> 'DEACTIVATED'
@@ -360,7 +360,7 @@ export function registerProductLinkingRoutes(
             LIMIT 1`,
           [role.id],
         );
-        if (current.rows[0]) return res.json(linkResponse(current.rows[0], localAccountLabel(role.full_name)));
+        if (current.rows[0]) return res.json(linkResponse(current.rows[0], localAccountLabel()));
 
         const authorization = await pool.query<{
           journal_attempt_label: string;
@@ -381,7 +381,7 @@ export function registerProductLinkingRoutes(
             state: "awaiting_signals_consent",
             journalAttemptLabel: authorization.rows[0].journal_attempt_label,
             expiresAt: authorization.rows[0].expires_at.toISOString(),
-            journalAccountLabel: localAccountLabel(role.full_name),
+            journalAccountLabel: localAccountLabel(),
           });
         }
         return res.json({ state: "unlinked" });
@@ -414,11 +414,8 @@ export function registerProductLinkingRoutes(
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        const account = await client.query<{
-          id: number;
-          full_name: string | null;
-        }>(
-          `SELECT id, full_name
+        const account = await client.query<{ id: number }>(
+          `SELECT id
              FROM user_role
             WHERE user_id = $1 AND email_verified = TRUE AND role <> 'DEACTIVATED'
             LIMIT 1
@@ -480,7 +477,7 @@ export function registerProductLinkingRoutes(
           contractVersion: LINK_CONTRACT_VERSION,
           authorizationCode,
           journalAttemptLabel,
-          journalAccountLabel: localAccountLabel(role.full_name),
+          journalAccountLabel: localAccountLabel(),
           expiresAt: inserted.rows[0].expires_at.toISOString(),
         });
       } catch {
