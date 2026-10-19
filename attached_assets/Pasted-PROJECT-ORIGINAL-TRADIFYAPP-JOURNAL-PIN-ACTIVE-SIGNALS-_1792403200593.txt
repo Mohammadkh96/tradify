@@ -1,0 +1,110 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL — PIN ACTIVE SIGNALS SIGNING KEY
+
+URGENT: Tradify Signals has started its isolated HTTPS integration-test signer.
+
+Both test sessions expire on October 19, 2026, at 10:26:57 UTC (13:26:57 Amman time).
+
+Signals' isolated runtime has confirmed:
+- Disposable tradify_test_* PostgreSQL database.
+- No inherited Neon URL overrides.
+- Active RS256 signer with a successful signature self-check.
+- Correct JWT issuer/audience configuration.
+- HTTPS /api/health returned HTTP 200.
+- No real cross-service linking requests have been sent.
+
+SIGNALS TEST CONFIGURATION
+
+Signals HTTPS origin:
+https://d67af0fa-9005-434c-9479-931727bf214f-00-2mllvk6m6eyma.pike.replit.dev
+
+Signals JWT issuer:
+https://linking-dev.signals.tradifyapp.com
+
+Signals → Journal audience:
+tradify-journal-link-v1-dev
+
+Signals immutable kid:
+signals-link-test-20261019T093925Z-7d50705a395c
+
+SIGNALS PUBLIC RS256 PEM:
+
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs6WDpvpxFOs6WMl2SKJ6
+fjPP3OYs+Qk43uBnfNWjjouQuvJkVL3UdcR6yNYOPH/BBH5KIa4Njr0kHmQqXYDh
+N/l7wko2YwjdxzP5F7ZUWXpVKolg/hhyBw5iRGXf/JunnqzygF9tuhrSp8tEUSIQ
+KbuW/Rz3zG3DxvfM1ucLaFuJDTzkuiR0aXz4CJC6POR+OJvi5ZN5vhXLhi4WahRA
+8le+iHr5EGtSPYcZY68jh90aKGapy/63cbzNDygAkwzvdFrOWO0ZU9l/rkKF4IwB
+i63GPInJlsKSTMwx/+2r9l+g6dZaCBvpHsQ5sqoAzmOEgTNT9lGu//7IhCLsDCg/
+dQIDAQAB
+-----END PUBLIC KEY-----
+
+JOURNAL EXISTING SESSION
+
+Journal HTTPS origin:
+https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev
+
+Journal JWT issuer:
+https://linking-dev.journal.tradifyapp.com
+
+Journal → Signals audience:
+tradify-signals-link-v1-dev
+
+Journal kid:
+journal-link-test-20261019T082657Z-5f3db8da7e4c4aa9
+
+ACTION REQUIRED
+
+1. Confirm the ORIGINAL Journal isolated test signer remains active, uses the stated kid, and is backed by its disposable loopback-only test database.
+
+2. Install the supplied Signals PUBLIC PEM as Journal's reciprocal verification key, pinned to its exact kid, issuer and audience.
+
+3. Do not replace or regenerate Journal's existing private signing key. Preserve the active Journal signer and its original kid.
+
+4. Confirm the loaded public key is RSA 2048-bit or stronger.
+
+5. Confirm Journal is able to verify an authentic Signals assertion using this public key and the required claims. A key-format check alone is insufficient to prove cross-service trust.
+
+6. Verify the HTTPS Journal routes are served by the isolated test runtime, not by a normal Neon-backed development process.
+
+7. Confirm the relevant linking routes are available, authentication/CSRF requirements are preserved, and Production remains disabled.
+
+8. Return an explicit status:
+
+ACKNOWLEDGED — SIGNALS PUBLIC KEY PINNED
+
+Include:
+- Journal signer still active: YES/NO
+- Journal current kid
+- Signals pinned kid
+- Correct issuer and audience: PASS/FAIL
+- Isolated database verified: PASS/FAIL
+- Actual isolated HTTPS runtime verified: PASS/FAIL
+- Ready for bilateral test: YES/NO
+
+If the pin cannot be safely installed without restarting Journal or losing its signer, STOP and explain the blocker. Do not claim readiness.
+
+9. Once both services have confirmed readiness, coordinate the real HTTPS cross-service test with Signals using authenticated synthetic accounts and the approved V1 protocol.
+
+Test:
+- Account-pair preview.
+- Explicit consent.
+- Signed claim.
+- Connected status on both sides.
+- Unlink and revocation acknowledgment.
+- Expired or replayed assertion rejection.
+- Failure/retry behavior.
+
+Do not initiate the real requests before reciprocal confirmation.
+
+STRICT SAFETY:
+- Never expose private RSA keys.
+- Never use production or existing Neon customer-derived databases.
+- Do not restart Signals' workflow.
+- Do not publish either application.
+- Do not change DNS, billing, MT5 or background jobs.
+- Do not weaken test-mode, signing, authorization or replay gates.
+- Do not create paid infrastructure.
+
+Prioritize the reciprocal public-key pin and immediate acknowledgment before the session deadline.
+
+Return the actual result, not another planning report.

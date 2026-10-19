@@ -1,0 +1,67 @@
+PROJECT: TRADIFY JOURNAL — FIX PHASE B SESSION EXPIRY MISMATCH
+
+Journal and Signals both completed Phase A, but Journal's Phase B bootstrap rejected the Signals peer because their test-session expiry timestamps differ.
+
+Journal expiry:
+2026-10-19T12:06:00.000Z
+
+Signals expiry:
+2026-10-19T11:18:21.376Z
+
+Both signers are independently valid, and their public keys and kids were successfully exchanged.
+
+ROOT CAUSE:
+
+Journal's test bootstrap currently requires exact equality of two independently generated session expiry timestamps.
+
+Please fix this DEVELOPMENT-ONLY bootstrap restriction without weakening any security controls.
+
+REQUIRED BEHAVIOR:
+
+1. Accept independently generated Journal and Signals session expirations, provided both are valid and unexpired.
+
+2. Calculate:
+   effectiveTestDeadline = MIN(journalSessionExpiry, signalsSessionExpiry)
+
+3. Require both isolated test runtimes to stop accepting linking requests when that effective deadline is reached. Never extend either session's original expiration.
+
+4. Preserve the existing five-minute account-link authorization deadline. That is a separate security requirement and must not be modified.
+
+5. Preserve all existing production-disable, disposable-database, RS256, kid, issuer, audience, authentication, CSRF and replay-protection checks.
+
+6. Restrict this change to the isolated development-test bootstrap. Do not change production JWT verification behavior.
+
+7. Add tests for:
+   - Equal expiration timestamps.
+   - Journal expiring before Signals.
+   - Signals expiring before Journal.
+   - An already-expired peer session.
+   - Missing or invalid expiry.
+   - Enforcement of the earlier effective deadline.
+
+8. Run the existing security integration tests.
+
+9. Do not restart or destroy an active supervisor just to apply a code change unless its private key can be safely retired and a replacement session established.
+
+10. Once the corrected test bootstrap passes, report whether we can reuse the current active Signals session or must establish a new coordinated test window.
+
+11. If fresh keys are required, perform controlled cleanup first, then return a new active Journal Phase A public PEM, kid and expiry. Never return a public key without an active matching signer.
+
+STRICT SAFETY:
+
+Do not modify Signals, production databases, Neon, Shared secrets, DNS, billing or deployment.
+
+Do not weaken the production safety gates.
+
+Do not initiate cross-service requests until both APIs confirm their reciprocal trust.
+
+DELIVERABLE:
+
+- Root cause corrected: YES/NO
+- Tests passed
+- Files changed and commit
+- Current Journal Phase A status
+- Whether Signals' existing key remains usable
+- Exact next action to enter Phase B
+
+Focus on this specific expiry-comparison bug rather than another architecture review.

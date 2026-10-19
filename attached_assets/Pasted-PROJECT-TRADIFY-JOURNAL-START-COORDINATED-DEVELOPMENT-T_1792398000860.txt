@@ -1,0 +1,34 @@
+PROJECT: TRADIFY JOURNAL — START COORDINATED DEVELOPMENT TRUST SESSION
+
+Signals has completed its isolated linking tests against a disposable tradify_test_* database.
+
+Journal UI commit:
+efac8fa349afcac769b7923f027f58980c09227f
+
+Both development API origins previously returned HTTP 200.
+
+The remaining blocker is active reciprocal RS256 signing and a genuine HTTPS cross-service test.
+
+Please prepare ONE explicitly enabled, temporary integration-test session.
+
+1. Confirm the Journal HTTPS origin is still reachable.
+
+2. Verify Journal can serve its actual linking routes using an exclusively disposable database with synthetic users, independently isolated from production and ordinary development records.
+
+3. Prepare an active, development-only RS256 signer for this test session. Keep its private key only in the isolated test runtime, never in Replit Shared/Production secrets, Git, chat or logs.
+
+4. Generate and return the matching PUBLIC verification PEM and immutable test-session kid. The signer must remain active and use that exact key; do not return an orphaned or discarded test key.
+
+5. Support pinning Signals' reciprocal public PEM and kid, with strict issuer, audience, signature and expiry checks. Ensure that loading the peer key does not discard or silently replace Journal's own active signing key.
+
+6. Verify the linking routes remain disabled in Production and the normal application environment.
+
+7. Do not run cross-service requests until the Signals Agent separately confirms its disposable database, active signer and reciprocal verification settings.
+
+8. Provide the exact test URL, route readiness, public PEM, kid and session lifetime. No private keys, passwords, database URLs or access tokens.
+
+Stop and report the specific blocker if the existing Replit development URL cannot safely serve the isolated test process.
+
+Do not publish, modify production or customer-derived data, change DNS, create paid infrastructure or alter Signals.
+
+DELIVERABLE: Either an actual active isolated Journal test signer with a usable PUBLIC PEM and kid, or the precise implementation blocker. Do not produce another planning-only report.

@@ -1,0 +1,62 @@
+PROJECT: ORIGINAL TRADIFY JOURNAL — INITIATE REAL SYNTHETIC ACCOUNT PAIRING
+
+Signals has completed its live Phase B preflight.
+
+Both isolated HTTPS APIs are healthy, and reciprocal signing-key IDs match.
+
+The first real account-linking test is blocked ONLY because Signals needs a legitimate Journal authorization attempt from an authenticated synthetic Journal customer.
+
+SHARED DEADLINE:
+2026-10-19T11:18:21.376Z (14:18:21 Amman time)
+
+JOURNAL:
+https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev
+
+SIGNALS:
+https://d67af0fa-9005-434c-9479-931727bf214f-00-2mllvk6m6eyma.pike.replit.dev
+
+YOUR TASK:
+
+1. Confirm Journal's existing isolated Phase B runtime is still active, its signer is unchanged, and its disposable database is still selected.
+
+2. Using Journal's NORMAL authenticated development flow, create or sign in to a synthetic Journal customer within its disposable database.
+
+3. Complete any required synthetic account verification through an existing authorized test mechanism. Do not bypass application authentication or account-ownership checks.
+
+4. Initiate a real V1 account-linking authorization from Journal's authenticated UI or existing customer API.
+
+5. Obtain an actual authorized pairing attempt, with its two-service pairing context and original five-minute expiry, using the established contract.
+
+6. Determine the existing supported handoff into Signals: browser redirect, pairing code entry, or another documented V1 mechanism. Do not invent a new protocol.
+
+7. If the flow is ready, provide the exact non-sensitive browser navigation steps so an authenticated synthetic Signals customer can complete the pairing through the normal Signals UI and CSRF-protected endpoints.
+
+8. Do not expose passwords, cookies, bearer tokens, signed assertions or authorization codes in chat, logs or the handoff report.
+
+9. Do not call Signals' linking endpoint with an unauthenticated session or disable CSRF protection.
+
+10. If the flow requires a human to complete both product sign-ins, report the precise UI actions required. Stop at that point rather than fabricating authentication.
+
+11. Once both customer sessions and legitimate consent are available, coordinate a genuine HTTPS claim with Signals, then check Connected status and unlink/revocation on both sides.
+
+IMPORTANT:
+
+The five-minute pairing-authorization expiry is independent of the test-session deadline. Do not extend or bypass either one.
+
+Do not restart either isolated API or regenerate signing keys.
+
+Do not touch production, existing Neon records, billing, MT5, DNS or Shared secrets.
+
+Stop immediately if the shared test session expires.
+
+RETURN:
+
+- Journal synthetic account authenticated: YES/NO
+- Real V1 authorization created: YES/NO
+- Pairing handoff method: exact existing mechanism
+- Signals-side action required: precise navigation or blocker
+- Cross-service HTTPS request completed: YES/NO
+- Actual HTTP status and result, if any
+- Remaining session time and any blocker
+
+Prioritize completing the real authorization flow rather than another readiness review.

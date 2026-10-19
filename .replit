@@ -11,6 +11,10 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 5151
+externalPort = 3002
+
+[[ports]]
 localPort = 23636
 externalPort = 3000
 
@@ -42,9 +46,12 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "bash /tmp/tradify-journal-bootstrap-launch.sh"
 waitForPort = 5000
 
 [agent]

@@ -1,0 +1,102 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL — RECEIVE SIGNALS PHASE A HANDOFF
+
+Tradify Signals has successfully started its NEW Phase A supervisor.
+
+The previous Signals signer was retired. No linking requests have been sent.
+
+SIGNALS PHASE A DETAILS
+
+HTTPS supervisor origin:
+https://d67af0fa-9005-434c-9479-931727bf214f-00-2mllvk6m6eyma.pike.replit.dev
+
+Issuer:
+https://linking-dev.signals.tradifyapp.com
+
+Audience for Signals → Journal:
+tradify-journal-link-v1-dev
+
+NEW Signals immutable kid:
+signals-link-test-20261019T101821Z-c6f8d3979d2e
+
+Signals session expiration:
+2026-10-19T11:18:21.376Z
+(14:18:21 Amman time)
+
+SIGNALS PUBLIC RS256 PEM:
+
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuVYiaL08ExC4zd8JAJzy
+eRIf2U/eHGWslP2/5Vul1KOTntpWdh5Z1egYgv6GyySQjlHVSBZvXttUBBhIAeNQ
+C+h88EH6bFOILQ3NikGeUuSPBAlDDdspDWGBLnWNuZf9xztaVmJQ0sKt4ivPdGmd
+Vsw0gZSgp6cuyJJfSQQhzpIq2WVPRDFElSbpZHG6GyUNJ8O8RZkGDqxYSzezL9au
+Gt7f6wM7FerZKBXs9WDpMmv5GAvA8axAEevkjuiYGM1xjrm744EM1gD1IQEOyaQ5
+DlP+sdxg0+2KQoJX0YM2P2Yyo2SzzQkDd6U2IQvWJIrau2UkvZ4B8AlbWIbMNhoa
+4QIDAQAB
+-----END PUBLIC KEY-----
+
+SIGNALS CURRENT STATE
+
+- Phase A supervisor is running.
+- Private signing key is retained in supervisor memory only.
+- Account-linking API is intentionally not running.
+- The HTTPS endpoint currently serves Phase A health.
+- Claim route returning 404 during Phase A is expected.
+- Signals supports local-only Phase B trust configuration.
+- The supervisor must not be restarted.
+
+JOURNAL'S PREVIOUSLY REPORTED PHASE A
+
+Journal HTTPS origin:
+https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev
+
+Journal kid:
+journal-link-test-20261019T100852Z-6919949c80a2fcf6
+
+Journal issuer:
+https://linking-dev.journal.tradifyapp.com
+
+Audience for Journal → Signals:
+tradify-signals-link-v1-dev
+
+Journal intended expiry:
+2026-10-19T12:06:00Z
+
+ACTION REQUIRED
+
+1. Confirm Journal's Phase A supervisor is STILL RUNNING and holds the matching private signing key in memory.
+
+2. Confirm the existing Journal public PEM and kid have NOT changed.
+
+3. Validate the new Signals public PEM as an RSA-2048-or-stronger key.
+
+4. Prepare Journal's local Phase B configuration to pin this exact Signals public PEM, kid, issuer and audience.
+
+5. Do not restart Journal, regenerate its keypair or expose the private key.
+
+6. The Signals session expires BEFORE the Journal session. The effective shared testing deadline is 2026-10-19T11:18:21.376Z. Confirm this shorter deadline can be respected. If the implementation requires identical expiration timestamps, report that incompatibility before changing either session.
+
+7. Confirm the isolated Journal database is still active and that Phase B will use only this disposable database.
+
+8. DO NOT begin cross-service linking requests yet.
+
+PLEASE RETURN:
+
+- JOURNAL PHASE A: ACTIVE / EXPIRED / BLOCKED
+- Journal current HTTPS origin
+- Journal PUBLIC RS256 PEM
+- Journal immutable kid
+- Journal issuer and audience
+- Journal actual session expiry
+- Private signer still in memory: YES/NO
+- Signals public PEM validated: YES/NO
+- Signals kid recognized: YES/NO
+- Phase B can launch with both trust pins: YES/NO
+- Any exact blocker
+
+Once confirmed, we will give this acknowledgment to Signals so both projects can complete Phase B.
+
+STRICT SAFETY:
+
+Do not publish either application, modify production or existing Neon data, create paid infrastructure, change DNS, or add private keys to Shared secrets.
+
+Do not initiate linking requests before both Phase B runtimes confirm readiness.

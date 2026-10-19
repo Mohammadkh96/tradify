@@ -1,0 +1,118 @@
+PROJECT: ORIGINAL TRADIFY JOURNAL — ACTIVATE PHASE B NOW
+
+Tradify Signals has successfully entered Phase B and is READY for bilateral integration testing.
+
+Signals Phase B verification:
+- Active isolated HTTPS API.
+- Disposable PostgreSQL database: tradify_test_7255_b9ef49ac.
+- Loopback-only database connectivity.
+- No inherited Neon URL overrides.
+- HTTPS health check passed.
+- Protected linking routes returned HTTP 401 when unauthenticated.
+- Journal's NEW public key is pinned.
+- Signals' existing active signing key was retained.
+
+CONFIRMED SIGNALS CONFIGURATION
+
+HTTPS API origin:
+https://d67af0fa-9005-434c-9479-931727bf214f-00-2mllvk6m6eyma.pike.replit.dev
+
+Signals issuer:
+https://linking-dev.signals.tradifyapp.com
+
+Signals → Journal audience:
+tradify-journal-link-v1-dev
+
+Signals active kid:
+signals-link-test-20261019T101821Z-c6f8d3979d2e
+
+SIGNALS PUBLIC RS256 VERIFICATION KEY
+
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQEAuVYiaL08ExC4zd8JAJzy
+eRIf2U/eHGWslP2/5Vul1KOTntpWdh5Z1egYgv6GyySQjlHVSBZvXttUBBhIAeNQ
+C+h88EH6bFOILQ3NikGeUuSPBAlDDdspDWGBLnWNuZf9xztaVmJQ0sKt4ivPdGmd
+Vsw0gZSgp6cuyJJfSQQhzpIq2WVPRDFElSbpZHG6GyUNJ8O8RZkGDqxYSzezL9au
+Gt7f6wM7FerZKBXs9WDpMmv5GAvA8axAEevkjuiYGM1xjrm744EM1gD1IQEOyaQ5
+DlP+sdxg0+2KQoJX0YM2P2Yyo2SzzQkDd6U2IQvWJIrau2UkvZ4B8AlbWIbMNhoa
+4QIDAQAB
+-----END PUBLIC KEY-----
+
+CONFIRMED JOURNAL CONFIGURATION
+
+Journal HTTPS origin:
+https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev
+
+Journal active kid:
+journal-link-test-20261019T103948Z-4424898016c6a893
+
+Journal issuer:
+https://linking-dev.journal.tradifyapp.com
+
+Journal → Signals audience:
+tradify-signals-link-v1-dev
+
+Journal private signer:
+Previously confirmed active in its Phase A supervisor.
+
+SHARED DEADLINE:
+2026-10-19T11:18:21.376Z
+(14:18:21 Amman time)
+
+ACTION — ACTIVATE JOURNAL PHASE B
+
+1. Verify the existing Journal Phase A supervisor still holds the private key corresponding to its current kid.
+
+2. Through Journal's existing LOCAL-ONLY Phase B handoff, install the Signals public PEM, kid, issuer and audience provided above.
+
+3. Retain Journal's existing private signing key. Do not regenerate it.
+
+4. Start Journal's isolated Phase B API without restarting or discarding the supervisor.
+
+5. Confirm the active isolated Journal database is still loopback-only and disposable, with no connection to production or regular development databases.
+
+6. Confirm the actual HTTPS origin serves Journal's Phase B API, not the normal application.
+
+7. Verify:
+   - Journal signing key and kid match.
+   - Signals public verification key and kid are pinned.
+   - Both issuer/audience checks pass.
+   - Effective shared deadline is enforced.
+   - Existing five-minute authorization deadline is unchanged.
+   - Linking endpoints require appropriate authentication and CSRF protection.
+   - Production linking remains disabled.
+
+8. Verify a locally signed assertion using Journal's active key. The Signals public-key pin must also be loaded and ready for real assertion verification.
+
+9. Do not send actual cross-service linking requests until both teams acknowledge that their respective Phase B environments are READY.
+
+10. Do not restart Signals' workflow. Its signing key is held only in its current runtime.
+
+RETURN EXACTLY:
+
+JOURNAL PHASE B: READY / BLOCKED
+
+Journal active kid:
+Signals pinned kid:
+Journal isolated database verified:
+HTTPS health:
+Authenticated linking configuration:
+Effective session deadline:
+Reciprocal trust loaded:
+Ready for real cross-service requests: YES / NO
+
+If READY, explicitly confirm that the current Journal Phase B runtime is using the active signer and Signals' exact verification pin.
+
+If BLOCKED, state the precise failing check. Do not replace keys or restart services without an explicit reason.
+
+STRICT SAFETY:
+
+No Production publishing.
+No Neon or customer database access.
+No Shared private-key secrets.
+No DNS or billing changes.
+No background workers or live MT5 operations.
+No security validation bypasses.
+No additional paid infrastructure.
+
+Prioritize Phase B activation before the shared deadline.

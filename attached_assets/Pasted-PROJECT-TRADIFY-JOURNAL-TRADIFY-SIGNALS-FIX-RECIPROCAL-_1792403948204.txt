@@ -1,0 +1,62 @@
+PROJECT: TRADIFY JOURNAL / TRADIFY SIGNALS — FIX RECIPROCAL TRUST BOOTSTRAP
+
+The bilateral test is BLOCKED because Journal reads its peer verification key at process startup. It cannot install Signals' key while preserving the current running signer.
+
+We will not keep restarting active sessions and invalidating signing keys.
+
+Implement a coordinated TWO-PHASE ISOLATED TEST BOOTSTRAP.
+
+PHASE A — PREPARE BOTH KEYPAIRS
+
+Each project must independently:
+
+1. Start a temporary development-only test supervisor.
+2. Generate its own RSA-2048-or-stronger signing keypair in memory.
+3. Retain the private key only in the isolated supervisor process.
+4. Generate a unique immutable test-session kid.
+5. Return only its public PEM, kid, issuer, audience and intended session expiry.
+6. Do not start the account-linking API yet.
+7. Do not save private keys to files, Shared secrets, deployment secrets, Git, logs or chat.
+
+Exchange the public material between the two projects.
+
+PHASE B — START BOTH ISOLATED APIs
+
+Only after BOTH public keys and kids are available:
+
+1. Each supervisor launches its respective API with its OWN retained private signing key and the OTHER project's pinned public verification key.
+2. Supply both trust configurations BEFORE application startup.
+3. Each API must use an independently verified disposable loopback-only database.
+4. Remove all inherited Neon and production database URL overrides before process startup.
+5. Keep the existing test-mode, database-name, signature, authentication and production-disable gates.
+6. Verify that each running API signs assertions with the exact public key and kid exchanged during Phase A.
+7. Verify issuer, audience, five-minute authorization deadline and peer-key pinning.
+8. Confirm the HTTPS origin actually routes to the isolated API, not a normal Neon-backed development process.
+9. Do not restart either API after successful verification.
+
+PHASE C — REAL CROSS-SERVICE TEST
+
+Once BOTH projects explicitly confirm READY:
+
+Run the approved V1 flow using synthetic authenticated accounts:
+- Preview the account pair.
+- Approve consent.
+- Submit signed claims.
+- Verify Connected on both services.
+- Unlink and verify revocation acknowledgment.
+- Reject expired and replayed assertions.
+- Verify retry and failure handling.
+
+Report actual HTTP statuses, assertions checked, link states and pass/fail results without exposing tokens or credentials.
+
+IMPORTANT:
+
+Do not reuse expired signing sessions.
+
+Do not create a network-accessible endpoint that allows arbitrary callers to inject trusted public keys.
+
+Do not publish either product, change DNS, touch existing customer databases, or purchase infrastructure.
+
+If an in-memory supervisor cannot retain its private key safely between Phase A and Phase B, STOP and explain the precise blocker. Never fabricate a public-key handoff.
+
+Deliver concrete execution results rather than another architecture review.

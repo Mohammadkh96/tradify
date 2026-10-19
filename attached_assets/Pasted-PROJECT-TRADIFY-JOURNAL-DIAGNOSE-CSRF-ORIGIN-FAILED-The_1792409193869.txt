@@ -1,0 +1,57 @@
+PROJECT: TRADIFY JOURNAL — DIAGNOSE CSRF_ORIGIN_FAILED
+
+The first real isolated Journal ↔ Signals test is blocked by Journal's authorization POST returning:
+
+HTTP 403 — CSRF_ORIGIN_FAILED
+
+Confirmed:
+- Synthetic Journal authentication: HTTP 200.
+- Authenticated linking configuration: enabled.
+- CSRF-token endpoint: HTTP 200.
+- Authorization POST: HTTP 403, twice.
+- No pending authorization or pairing code was created.
+- No cross-service request was sent.
+
+IMMEDIATE TASK:
+
+1. Trace the exact middleware and conditions responsible for CSRF_ORIGIN_FAILED.
+
+2. Determine whether the failure is:
+   - Origin validation.
+   - Host/protocol validation behind Replit's HTTPS proxy.
+   - CSRF token/header validation.
+   - CSRF cookie/session binding.
+   - Another condition mapped to the same error code.
+
+3. Add temporary test-only diagnostics reporting individual predicate names and PASS/FAIL, without exposing cookie values, session IDs, tokens, passwords or authentication headers.
+
+4. Verify the authorization flow through the actual authenticated Journal browser at its HTTPS development origin.
+
+5. Confirm that the frontend and authorization request use the same origin and the application's normal CSRF-token and cookie handling.
+
+6. If Replit proxy handling is responsible, correct it using explicitly trusted proxy configuration. Do not globally trust spoofable forwarded headers or weaken origin checks.
+
+7. If there is an application bug, fix the minimal cause and add a regression test showing legitimate authenticated requests succeed while invalid-origin and invalid-CSRF requests remain rejected.
+
+8. Preserve the original five-minute authorization deadline, authentication, consent, rate limits and all signature checks.
+
+SESSION SAFETY:
+
+The current shared session expires at 2026-10-19T11:18:21.376Z.
+
+Do not race the deadline or extend this session.
+
+If insufficient time remains, stop the cross-service attempt. Preserve the diagnosis and fix for a new, coordinated isolated session.
+
+Do not restart active test supervisors unnecessarily, use real customer accounts, access Neon, publish production or weaken security controls.
+
+DELIVERABLE:
+
+- Exact failing CSRF predicate.
+- Root cause and minimal fix.
+- Passing regression and security tests.
+- Whether the real authenticated browser flow works.
+- Commit hash if code changed.
+- Cross-service test status: NOT RUN / PARTIAL / SUCCESS.
+
+Do not generate or reveal an authorization code in the report.
