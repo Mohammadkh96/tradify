@@ -37,7 +37,7 @@ Consider a standards-based identity provider and versioned identity-claims contr
 
 ### Journal/Signals account association
 
-The Journal/Signals V1 contract and Journal implementation status are specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md) and [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). Both products have accepted `tradify-account-linking-v1/revocation-retry-v1`, and Journal's disabled development/test implementation includes immutable event payload/hash retries, fresh assertions, idempotent handling, and hash-matched acknowledgement. Acceptance of the full account-linking contract and secure development trust configuration remain pending. The Signals API base URL and public-key exchange are outstanding. No production trust or deployment is authorized.
+The Journal/Signals V1 contract and Journal implementation status are specified in [`TRADIFY_ACCOUNT_LINKING_V1.md`](TRADIFY_ACCOUNT_LINKING_V1.md) and [`TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md`](TRADIFY_ACCOUNT_LINKING_V1_IMPLEMENTATION_PLAN.md). Both products have accepted `tradify-account-linking-v1/revocation-retry-v1`, and Journal's disabled development/test implementation includes immutable event payload/hash retries, fresh assertions, idempotent handling, and hash-matched acknowledgement. The Signals development API origin and issuer/audience values are configured in Journal Development, but the Signals public-key/`kid` handoff, Journal public-key/`kid` handoff, acceptance of the full account-linking contract, and secure coordinated test setup remain outstanding. No production trust or deployment is authorized.
 
 ### Subscription bundles
 

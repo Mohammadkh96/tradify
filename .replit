@@ -71,6 +71,10 @@ PAYPAL_FM_COACH_ANNUAL_PLAN_ID = "P-7FD10062DY810761LNH3VKTI"
 
 [userenv.development]
 APP_URL = "https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev"
+TRADIFY_JOURNAL_AUDIENCE = "tradify-signals-link-v1-dev"
+TRADIFY_JOURNAL_ISSUER = "https://linking-dev.journal.tradifyapp.com"
+TRADIFY_SIGNALS_API_BASE_URL = "https://d67af0fa-9005-434c-9479-931727bf214f-00-2mllvk6m6eyma.pike.replit.dev"
+TRADIFY_SIGNALS_ISSUER = "https://linking-dev.signals.tradifyapp.com"
 
 [userenv.production]
 APP_URL = "https://tradifyapp.com"
