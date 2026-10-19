@@ -1,0 +1,91 @@
+PROJECT: TRADIFY SIGNALS — JOURNAL ACCOUNT-LINKING HANDOFF
+
+The original TradifyApp Journal project has completed its latest security fixes.
+
+Journal commit:
+2cf7d8cedc1f6a40bb94405a666d649167519ba
+
+Journal's full security integration suite now passes 13/13 using an isolated disposable PostgreSQL database.
+
+Both projects have accepted revocation-retry-v1.
+
+I want to prepare REAL cross-service development integration tests between Journal and Signals.
+
+Please provide the following HANDOFF:
+
+1. SIGNALS DEVELOPMENT API URL
+
+Identify the exact, currently reachable HTTPS API origin for Tradify Signals development.
+
+Verify it with an actual HTTPS health request.
+
+Confirm whether Replit External Access authentication is required and explain how Journal can authenticate without exposing tokens.
+
+Do not confuse the API URL with the JWT issuer identifier.
+
+2. SIGNALS JWT TRUST CONFIGURATION
+
+Confirmed development issuer:
+https://linking-dev.signals.tradifyapp.com
+
+Audience for Signals → Journal:
+tradify-journal-link-v1-dev
+
+Provide:
+- Development public verification key (RS256 PEM).
+- Exact immutable signing key ID (kid).
+- Confirmation that the private key is isolated from Production.
+- Confirmation that Journal can pin this public key securely.
+
+If the signing key does not exist or secure secret isolation remains unresolved, explicitly report that blocker. Do not invent or claim a key is configured.
+
+For isolated tests, investigate short-lived synthetic signing keys instead of storing a private key in Shared secrets.
+
+Never expose private keys.
+
+3. CUSTOMER CONSENT WORDING
+
+Show me the COMPLETE customer-facing Signals consent wording exactly as it will appear in the application.
+
+Also show the account-pair review screen text, including both temporary attempt labels.
+
+The text must explain:
+- Separate Journal and Signals accounts.
+- The purpose of linking.
+- What information is and is not shared.
+- No automatic subscription or entitlement sharing.
+- The ability to unlink later.
+
+Mark this wording as PENDING PRODUCT-OWNER APPROVAL until I explicitly confirm the exact text.
+
+4. IMPLEMENTATION STATUS
+
+Confirm that Signals currently implements:
+- Consent and claim endpoints.
+- Signed assertions and replay prevention.
+- Five-minute authorization deadline.
+- Account-link status.
+- Unlinking and revocation-retry-v1.
+- Suspension and account-recovery revocation.
+
+Identify any missing implementation.
+
+5. SAFE INTEGRATION TEST
+
+Confirm which isolated database and test API runtime can be used without modifying existing customer or production-derived records.
+
+Do not use the production Replit database or mutate existing Neon validation user records.
+
+Do not provision paid infrastructure without approval.
+
+IMPORTANT:
+
+Signals' Neon credential security and secret isolation were previously unresolved. Do not expose another database credential or weaken those security requirements.
+
+Do not enable production linking, publish, change DNS, alter MT5, or touch Journal's repository.
+
+DELIVERABLE:
+
+Return the VERIFIED development API URL, public RS256 PEM, kid, exact proposed consent wording, implementation readiness, and any blockers.
+
+If any item is unavailable, state that explicitly rather than returning a placeholder.
