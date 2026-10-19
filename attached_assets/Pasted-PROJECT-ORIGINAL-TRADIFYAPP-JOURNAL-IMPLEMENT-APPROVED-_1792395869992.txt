@@ -1,0 +1,64 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL — IMPLEMENT APPROVED ACCOUNT-LINKING UI
+
+Tradify Signals has completed its V1 consent and account-pair review implementation.
+
+Signals verification:
+- 175 Jest tests passed.
+- 18 script/server tests passed.
+- TypeScript check passed.
+- Production linking remains disabled.
+
+As product owner, I approve the Account-Linking V1 consent and pairing-review wording already recorded in the shared contract, FOR ISOLATED DEVELOPMENT ONLY.
+
+Please implement the matching Journal-side customer interface in THIS repository.
+
+REQUIREMENTS:
+
+1. Use the exact approved V1 consent and account-pair presentation from docs/TRADIFY_ACCOUNT_LINKING_V1.md.
+
+2. Display:
+   - A clearly identified Tradify Journal account.
+   - The corresponding Tradify Signals account label.
+   - Both temporary pairing labels.
+   - The original five-minute authorization expiry.
+
+3. Never expose email addresses, internal database user IDs, passwords, private keys or sensitive trading information in the pairing labels.
+
+4. Require explicit consent. Reject missing consent, expired attempts, account mismatches and unauthorized users.
+
+5. Implement the Journal-side review and final confirmation UI using the existing V1 API contract. Do not create a second linking protocol.
+
+6. Show accurate states: Not Connected, Pending Confirmation, Connected, Revocation Pending and Disconnected, as applicable to the contract.
+
+7. Explain that authentication, trading records, subscriptions, entitlements and permissions remain separate.
+
+8. Preserve the existing server-side expiry, CSRF, replay-protection and revocation-retry-v1 safeguards.
+
+9. Add component and API tests covering the UI, authentication, consent, expired attempts and connection status.
+
+10. Perform an authenticated visual check using synthetic development accounts where safely possible.
+
+11. Preserve the existing 13/13 Journal security integration results.
+
+IMPORTANT:
+
+- Keep account linking disabled outside isolated test environments.
+- Do not configure permanent signing keys yet.
+- Do not access or modify Signals' repository.
+- Do not touch Journal production Neon.
+- Do not publish, change DNS or create paid infrastructure.
+- Do not modify billing, MT5 sync or background jobs.
+
+DELIVERABLE:
+
+Return:
+- Files changed.
+- Actual Journal UI implementation.
+- Test results.
+- Authenticated visual verification status.
+- Commit hash.
+- Remaining blockers for a genuine Journal-to-Signals development test.
+
+Do not request access to the Signals repository. The accepted V1 contract is the source of truth.
+
+Proceed with implementation rather than another contract or architecture review.
