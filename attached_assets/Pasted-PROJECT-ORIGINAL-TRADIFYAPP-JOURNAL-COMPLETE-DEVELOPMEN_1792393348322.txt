@@ -1,0 +1,60 @@
+PROJECT: ORIGINAL TRADIFYAPP JOURNAL — COMPLETE DEVELOPMENT TRUST HANDOFF
+
+Tradify Signals has successfully verified our Journal development API:
+
+https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev
+
+GET /api/health returned HTTP 200 without an External Access Token.
+
+Signals development API:
+https://d67af0fa-9005-434c-9479-931727bf214f-00-2mllvk6m6eyma.pike.replit.dev
+
+Both URLs are API transport origins, NOT JWT issuers.
+
+We now need to complete the development-only signing-key handoff.
+
+Approved Journal issuer:
+https://linking-dev.journal.tradifyapp.com
+
+Journal → Signals audience:
+tradify-signals-link-v1-dev
+
+Signals issuer:
+https://linking-dev.signals.tradifyapp.com
+
+Signals → Journal audience:
+tradify-journal-link-v1-dev
+
+Please:
+
+1. Verify the Journal development database is isolated from production Neon.
+
+2. Verify the current account-linking code and report the latest 13/13 security test status.
+
+3. Determine a secure method for Journal to generate and use a development-only RS256 signing key without exposing its private key to Replit Shared secrets, Production, source control, chat or logs.
+
+4. Prefer ephemeral test-process signing keys for isolated cross-service testing if permanent secret isolation remains unavailable.
+
+5. Generate an immutable kid and prepare only the PUBLIC RS256 verification PEM for Signals.
+
+6. Confirm the key is actually usable by the Journal test signer and that its private material cannot be accessed by Production.
+
+7. Coordinate reciprocal trust: Journal verifies the Signals public key, and Signals verifies the Journal public key, each with pinned kid, exact issuer and audience.
+
+8. Verify that account-linking routes remain disabled outside the approved isolated test environment.
+
+9. Verify consent, five-minute expiry, replay protection, account status, unlinking, and revocation-retry-v1.
+
+10. Report the precise remaining configuration or implementation blockers.
+
+Do not generate permanent keys through an automatic Replit Add Secrets form.
+
+Do not run cross-service tests against production or production-derived customer accounts.
+
+Do not modify production Neon, publish either app, change DNS, create paid infrastructure, or modify Signals directly.
+
+DELIVERABLE:
+
+Verified Journal public PEM, immutable kid, private-key isolation method, database-isolation confirmation, test status, and readiness for a synthetic two-service test.
+
+Do not claim the handoff is complete if secure signing isolation cannot be demonstrated.
