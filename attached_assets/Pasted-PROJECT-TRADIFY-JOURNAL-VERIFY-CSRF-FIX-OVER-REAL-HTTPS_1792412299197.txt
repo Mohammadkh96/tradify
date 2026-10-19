@@ -1,0 +1,54 @@
+PROJECT: TRADIFY JOURNAL — VERIFY CSRF FIX OVER REAL HTTPS
+
+The CSRF proxy-handling fix has been committed:
+
+0569368053a9c2e2e286beadc1482ec83f3594a8
+
+The security integration suite passed 13/13, but the actual authenticated HTTPS authorization flow remains unverified.
+
+NEXT TASK: Verify the fix independently before coordinating another Signals session.
+
+1. Start a fresh isolated Journal development-test runtime using ONLY a disposable loopback PostgreSQL database and synthetic account.
+
+2. Keep production linking disabled. Do not use ordinary development or production Neon records.
+
+3. Enable DEV_PRODUCT_LINKING_CSRF_DIAGNOSTICS=true only for this isolated test session.
+
+4. Confirm Replit's trusted proxy configuration correctly identifies legitimate HTTPS requests. Do not trust arbitrary client-supplied forwarded headers.
+
+5. Use a real authenticated Chromium browser session at Journal's HTTPS development origin.
+
+6. Navigate through the actual Journal UI:
+   Profile → Account Linking.
+
+7. Exercise the application's normal consent and authorization flow with its existing CSRF token and session handling.
+
+8. Confirm whether the authorization POST succeeds without CSRF_ORIGIN_FAILED.
+
+9. Run negative checks confirming invalid origins, invalid CSRF tokens, and unauthenticated requests are still rejected.
+
+10. Report only safe diagnostic predicate names and PASS/FAIL. Do not reveal cookies, tokens, passwords, authorization codes, or private keys.
+
+11. Do not contact Signals during this test.
+
+12. After verification, clean up any temporary authorization records and test runtime safely.
+
+13. Confirm that the proxy-trust change cannot unintentionally affect Production or permit spoofed forwarded protocol/host headers.
+
+EXPECTED RESULT:
+
+JOURNAL HTTPS CSRF: PASS / FAIL
+
+Include:
+- Actual HTTP authorization status.
+- Origin validation: PASS/FAIL.
+- CSRF token validation: PASS/FAIL.
+- Authenticated browser flow: PASS/FAIL.
+- Invalid origin rejected: YES/NO.
+- Invalid CSRF rejected: YES/NO.
+- Database isolation: PASS/FAIL.
+- Remaining blocker, if any.
+
+Do not start another coordinated Journal–Signals key exchange yet.
+
+Once the real HTTPS flow passes, report READY FOR NEW BILATERAL TEST WINDOW.
