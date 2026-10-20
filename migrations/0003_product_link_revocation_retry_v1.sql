@@ -1,5 +1,5 @@
 -- Journal-local durable revocation retry contract. Apply only to an approved
--- isolated development database; never run this from application startup.
+-- isolated development database; it is not part of ordinary app startup.
 
 BEGIN;
 

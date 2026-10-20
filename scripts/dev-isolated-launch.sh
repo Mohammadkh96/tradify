@@ -95,6 +95,14 @@ env -i \
   DEV_PRODUCT_LINKING_ENABLED=false \
   ./node_modules/.bin/drizzle-kit migrate
 
+# These Journal linking migrations are intentionally kept outside Drizzle's
+# startup journal. Apply them only to this freshly created loopback test DB.
+PGHOST=127.0.0.1 PGPORT="$PG_PORT" PGUSER=tradify_test \
+  PGDATABASE=tradify_journal_dev PGSSLMODE=verify-full PGSSLROOTCERT="$ROOT/ca.crt" \
+  "$PG_BIN/psql" -X -v ON_ERROR_STOP=1 \
+    -f "$WORKSPACE/migrations/0002_tradify_account_linking_v1.sql" \
+    -f "$WORKSPACE/migrations/0003_product_link_revocation_retry_v1.sql"
+
 printf 'Starting Journal isolated development app on port 5000 (ephemeral loopback database; linking disabled).\n'
 env -i \
   PATH="$PATH" HOME="${HOME:-/tmp}" PWD="$WORKSPACE" \

@@ -1,6 +1,6 @@
 -- Journal-local schema for the accepted, development-only V1 account-linking
 -- contract. This source migration is applied only to isolated test databases.
--- It is never run on application startup; production linking remains disabled.
+-- It is not part of ordinary application startup or production deployment.
 
 BEGIN;
 
