@@ -1,0 +1,176 @@
+Now I understand exactly what you're building. This is a much stronger concept than simply connecting Journal and Signals or selling trading signals.
+
+You're proposing that Tradify Signals has two signal sources, powered by the same strategy engine:
+1. Tradify Signals: Strategies run on market data supplied by your own Tradify MT5 Bridge.
+2. My Signals: The same strategies run using market data supplied by the trader's own MT5 Bridge, connected through Tradify Journal.
+And here's the key advantage: when traders use their own MT5 connection, Tradify Journal can analyze their actual trades alongside the signals generated for their broker.
+
+That's the ecosystem I would build.
+1. The architecture you're describing
+One Tradify Account
+
+Register once · Journal + Signals
+
+
+SOURCE 1
+
+Tradify MT5 Bridge
+
+Your market-data feed, symbols, charts and historical prices.
+Global source
+
+
+SOURCE 2
+
+Trader's MT5 Bridge
+
+Their broker's market data plus account, positions and trading history.
+Personal source
+
+
+
+
+One Tradify Strategy Engine
+
+Same algorithms · Same evaluation rules · Source-specific market data
+
+
+Tradify Signals
+
+Signals from your reference feed
+
+
+My Signals
+
+Signals generated from my MT5 feed
+
+
+
+
+Tradify Journal
+
+Actual trades · Signal comparison · P&L · Risk · Performance improvement
+
+
+The diagram is conceptual; the two signal sources do not need two separate strategy engines.
+2. What the customer actually experiences
+Imagine someone registering with Tradify.
+Step A — They register with Tradify
+
+They can immediately open Signals and view opportunities calculated from your own market-data feed.
+
+They do not need an MT5 account to start exploring.
+
+Step B — They connect their MT5 through Journal
+
+Journal discovers their broker, trading account, supported symbols and historical executions. If the bridge supports market-data delivery, it can also make that broker's prices and candles available to Signals with the user's permission.
+
+Step C — Signals unlocks My Signals
+
+The same Tradify strategies now evaluate the customer's selected broker feed.
+
+They can switch between Tradify's signals and their own broker-specific signals.
+
+Step D — They execute trades
+
+The customer continues trading in MT5. Journal automatically imports real executions, associates them with relevant signals where the match is supported, and measures actual performance.
+
+Step E — Tradify helps them improve
+
+They can compare signal performance against actual trading results, identifying entry delays, spread differences, risk sizing and execution mistakes.
+
+3. The Signals source selector
+This is how I would expose the feature inside the redesigned Signals application.
+Trading Signals
+Choose the source your strategies evaluate
+
+
+
+Tradify SignalsMy MT5 Signals
+
+Tradify Market Feed
+
+Reference source
+
+Strategies evaluate market data from Tradify's own bridge. Available without connecting a personal MT5 account.
+
+Provider
+
+Tradify
+
+Strategy engine
+
+Tradify Algorithms
+
+Trade execution tracking
+
+Optional Journal connection
+
+
+This is an illustrative interaction, not a connection to your live platforms.
+I would also let customers compare both sources side by side. That is more valuable than simply switching between them.
+4. An example using Gold (XAUUSD)
+Suppose the same Tradify algorithm runs on two different market feeds.
+	Tradify Signals	My MT5 Signals
+Source	Tradify reference broker	Customer's broker
+Instrument	XAUUSD	XAUUSD
+Strategy	Same algorithm	Same algorithm
+Chart data	Tradify bridge	Customer MT5 bridge
+Entry calculation	Based on Tradify prices	Based on broker prices
+SL / TP	Reference-feed levels	Broker-feed levels
+Actual execution	Not assumed	Journal tracks it
+Performance	Strategy model	Strategy result + real customer executions
+The algorithm can be identical while its outputs differ slightly because brokers have different price feeds, spreads, trading conditions, and candle construction.
+
+For example, a Gold breakout could trigger on the reference feed but not yet trigger on the trader's broker feed. That difference is precisely why a personal-feed signal mode could be valuable.
+
+One important caveat: connecting MT5 for trade-history synchronization does not automatically mean the bridge delivers usable live ticks and historical candles. We need to verify that capability in your existing Tradify Bridge before promising broker-specific signals.
+5. What should remain in Journal versus Signals?
+Tradify Journal owns	Tradify Signals owns
+MT5 account onboarding and connections	Signal source selection
+MT5 credentials and connection health	Strategy engine and calculation rules
+Actual trading accounts and executions	Global and personal signal generation
+Trade history and realized P&L	Chart-based signal conditions
+Risk and prop-firm metrics	Entry, SL, TP, signal lifecycle
+Trade-to-signal attribution	Signal alerts and monitoring
+Execution performance analysis	Comparative signal statistics
+I would not duplicate the complete Journal analytics system inside Signals.
+
+Signals should be the place for what the market and strategies are suggesting. Journal should be the place for what the customer actually did and achieved.
+6. Technical decisions I strongly recommend
+The biggest benefit will come from sharing the strategy engine, not from creating separate algorithms for each customer.
+- One versioned strategy engine: The same strategy definition evaluates Tradify's feed or an individual broker feed. Every resulting signal records its source, strategy version, timeframe and evaluation timestamp.
+- One MT5 Bridge ownership layer: Journal owns customer connections. Signals receives only approved market-data streams and account context; it does not need broker passwords.
+- Separate results per source: A customer-specific signal must never overwrite or be confused with a global Tradify signal.
+- Journal-aware personal signals: Eventually, account risk, drawdown, current positions and prop-firm limits can inform risk warnings or suppress unsuitable setups, while clearly distinguishing this from the underlying market signal.
+- Cost-controlled computation: Evaluate reference-market strategies once where possible; create per-account broker evaluations only for connected, subscribed accounts and necessary instruments/timeframes. Avoid one constant database-polling worker for every trader.
+I would keep both source modes signal-only, with no automatic order execution in V1. The customer's MT5 connection provides data and execution history, not authorization for Tradify to place trades.
+7. The real competitive advantage
+This gives you three layers of value.
+Discover
+
+Tradify provides strategies and trading opportunities without requiring customers to connect a broker.
+
+
+
+Personalize
+
+The trader selects their own MT5 market feed and runs the same algorithms against their broker's actual market data.
+
+
+
+Improve
+
+Journal measures how the trader actually executed, how their performance compares with the signal, and where improvements may be possible.
+
+
+
+This is considerably more differentiated than selling the same signals to everyone.
+
+The customer gets both market-wide strategy insights and a personalized view based on their broker environment, with Journal automatically measuring their real trading results.
+
+The next technical decision is crucial: We need to audit the existing Tradify MT5 Bridge and determine whether it currently sends live prices and OHLC candles, or only positions, orders, deals and account history.
+
+If it supports both, much of your concept may be achievable by extending the current integration. If it only synchronizes trading activity, we'll need to add a properly isolated market-data pipeline before personal signals can work as described.
+
+I would make that the next development milestone—before building more strategy engines or duplicated charts.
