@@ -51,7 +51,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash /tmp/tradify-journal-bootstrap-launch.sh"
+args = "bash scripts/dev-isolated-launch.sh"
 waitForPort = 5000
 
 [agent]
