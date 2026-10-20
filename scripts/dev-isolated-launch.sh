@@ -6,8 +6,14 @@ WORKSPACE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PG_BIN="$(dirname "$(command -v initdb)")"
 PG_PORT="${TRADIFY_LOCAL_PG_PORT:-5562}"
 ROOT="$(mktemp -d /tmp/tradify-journal-dev.XXXXXX)"
+SESSION_MARKER=/tmp/tradify-journal-phase-a-session.json
 PG_STARTED=0
 APP_PID=""
+
+if [[ -e "$SESSION_MARKER" ]]; then
+  echo "A previous Journal Phase A session marker exists; refusing to rotate or reuse its signer."
+  exit 1
+fi
 
 cleanup() {
   status=$?
@@ -94,14 +100,17 @@ env -i \
   PATH="$PATH" HOME="${HOME:-/tmp}" PWD="$WORKSPACE" \
   NODE_ENV=development APP_ENV=development PORT=5000 HOST=0.0.0.0 \
   REPLIT_DEV_DOMAIN="${REPLIT_DEV_DOMAIN:-}" REPLIT_DOMAINS="${REPLIT_DOMAINS:-}" \
+  APP_URL="https://${REPLIT_DEV_DOMAIN:?Replit development domain is required}" \
   SESSION_SECRET="$SESSION_SECRET" \
   DEV_DATABASE_URL="$DATABASE_URL_LOCAL" DATABASE_URL="$FAKE_PRODUCTION_URL" \
-  NODE_EXTRA_CA_CERTS="$ROOT/ca.crt" \
+  NODE_EXTRA_CA_CERTS="$ROOT/ca.crt" PHASEA_ROOT="$ROOT" \
+  PHASEA_CONTROL_SOCKET="$ROOT/phase-a-control.sock" \
+  PHASEA_SESSION_MARKER="$SESSION_MARKER" \
   EMAIL_DELIVERY_ENABLED=false SMTP_ENABLED=false LIVE_BILLING_ENABLED=false \
   STRIPE_ENABLED=false MT5_SYNC_ENABLED=false DEV_MT5_SYNC_ENABLED=false \
   DEV_MT5_MARKET_DATA_ENABLED=false BACKGROUND_WORKERS_ENABLED=false \
   BACKGROUND_JOBS_ENABLED=false EMAIL_BACKFILL_ENABLED=false \
   DEV_PRODUCT_LINKING_ENABLED=false \
-  ./node_modules/.bin/tsx server/index.ts &
+  ./node_modules/.bin/tsx scripts/dev-linking-supervisor.ts &
 APP_PID=$!
 wait "$APP_PID"
