@@ -14,6 +14,7 @@ import time
 import threading
 import os
 import tempfile
+import math
 
 if os.name == 'nt' and os.path.basename(sys.executable).lower() != 'pythonw.exe' and not os.environ.get('TRADIFY_LAUNCHED'):
     pythonw = os.path.join(os.path.dirname(sys.executable), 'pythonw.exe')
@@ -36,7 +37,7 @@ except Exception:
     pass
 
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, ttk, messagebox
 from datetime import datetime
 
 try:
@@ -182,6 +183,24 @@ class TradifyConnector:
         self.mt5_connected = False
         self.account_info_data = None
         self.log_visible = True
+        self.market_data_settings = {
+            "enabled": False,
+            "symbols": [],
+            "history_symbol": "",
+            "history_timeframe": "M1",
+        }
+        self.market_data_lock = threading.Lock()
+        self.market_upload_lock = threading.Lock()
+        self.market_history_request = threading.Event()
+        self.market_discovery_request = threading.Event()
+        self.market_disable_request = threading.Event()
+        self.market_symbols_available = []
+        self.market_timeframes = self._discover_timeframes()
+        self.market_symbols_listbox = None
+        self.market_history_symbol_combo = None
+        self.market_settings_window = None
+        self._market_watch_enabled = set()
+        self._market_disabled_warned = False
 
         self._build_ui()
         self._check_prerequisites()
@@ -255,6 +274,14 @@ class TradifyConnector:
             val.pack(anchor=tk.W, pady=(1, 0))
             self.acct_labels[label.lower()] = val
 
+        self.market_data_btn = tk.Button(
+            content, text="MARKET DATA: OFF — SETTINGS",
+            font=("Segoe UI", 8, "bold"), fg=FG2, bg=BG2,
+            activebackground=BG3, activeforeground=FG,
+            relief=tk.FLAT, cursor="hand2", command=self._open_market_data_settings, pady=7
+        )
+        self.market_data_btn.pack(fill=tk.X, pady=(0, 6))
+
         btn_row = tk.Frame(content, bg=BG)
         btn_row.pack(fill=tk.X, pady=(2, 0))
 
@@ -314,6 +341,373 @@ class TradifyConnector:
 
         self.footer_status = tk.Label(footer, text="Ready", font=("Segoe UI", 7), fg=FG3, bg=BG2)
         self.footer_status.pack(side=tk.RIGHT, padx=(0, 8))
+
+    def _discover_timeframes(self):
+        values = {}
+        if not MT5_AVAILABLE:
+            return values
+        for name in dir(mt5):
+            if not name.startswith("TIMEFRAME_") or name == "TIMEFRAME_CURRENT":
+                continue
+            value = getattr(mt5, name, None)
+            if isinstance(value, int):
+                label = name[len("TIMEFRAME_"):]
+                values[label] = value
+        return dict(sorted(values.items(), key=lambda item: item[1]))
+
+    def _open_market_data_settings(self):
+        if self.market_settings_window and self.market_settings_window.winfo_exists():
+            self.market_settings_window.lift()
+            return
+
+        window = tk.Toplevel(self.root)
+        window.title("Optional MT5 market data")
+        window.geometry("560x610")
+        window.minsize(500, 540)
+        window.configure(bg=BG)
+        window.transient(self.root)
+        self.market_settings_window = window
+        window.protocol("WM_DELETE_WINDOW", lambda: (setattr(self, "market_settings_window", None), window.destroy()))
+
+        with self.market_data_lock:
+            current = {
+                "enabled": self.market_data_settings["enabled"],
+                "symbols": list(self.market_data_settings["symbols"]),
+                "history_symbol": self.market_data_settings["history_symbol"],
+                "history_timeframe": self.market_data_settings["history_timeframe"],
+            }
+
+        tk.Label(
+            window,
+            text="Selected broker data goes to this Journal development environment only. It is not sent to Signals.",
+            bg=BG, fg=FG2, wraplength=520, justify=tk.LEFT,
+            font=("Segoe UI", 9),
+        ).pack(fill=tk.X, padx=16, pady=(16, 8))
+        tk.Label(
+            window,
+            text="This feature sends quotes only for selected symbols. Historical candles are fetched only when requested. Broker passwords are not sent.",
+            bg=BG, fg=FG3, wraplength=520, justify=tk.LEFT,
+            font=("Segoe UI", 8),
+        ).pack(fill=tk.X, padx=16, pady=(0, 10))
+
+        enabled_var = tk.BooleanVar(value=current["enabled"])
+        tk.Checkbutton(
+            window,
+            text="Enable capture of selected market data",
+            variable=enabled_var,
+            bg=BG, fg=FG, selectcolor=BG2, activebackground=BG, activeforeground=FG,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(anchor=tk.W, padx=16, pady=(0, 8))
+
+        tk.Label(window, text="Broker instruments (choose up to 1,000 for live prices)", bg=BG, fg=FG, anchor=tk.W).pack(fill=tk.X, padx=16)
+        symbols_frame = tk.Frame(window, bg=BG)
+        symbols_frame.pack(fill=tk.BOTH, expand=True, padx=16, pady=(4, 8))
+        symbols_box = tk.Listbox(
+            symbols_frame, selectmode=tk.EXTENDED, exportselection=False,
+            bg=BG3, fg=FG, selectbackground="#047857", height=12,
+            font=("Consolas", 9), relief=tk.FLAT, borderwidth=0,
+        )
+        symbols_scroll = tk.Scrollbar(symbols_frame, command=symbols_box.yview)
+        symbols_box.configure(yscrollcommand=symbols_scroll.set)
+        symbols_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        symbols_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.market_symbols_listbox = symbols_box
+        for symbol in self.market_symbols_available:
+            symbols_box.insert(tk.END, symbol)
+        for index, symbol in enumerate(self.market_symbols_available):
+            if symbol in current["symbols"]:
+                symbols_box.selection_set(index)
+
+        tk.Label(window, text="Historical candle request (one symbol and timeframe per request; 500 bars)", bg=BG, fg=FG, anchor=tk.W).pack(fill=tk.X, padx=16, pady=(0, 4))
+        history_frame = tk.Frame(window, bg=BG)
+        history_frame.pack(fill=tk.X, padx=16, pady=(0, 8))
+        history_symbol_var = tk.StringVar(value=current["history_symbol"])
+        history_symbol_combo = ttk.Combobox(
+            history_frame, textvariable=history_symbol_var,
+            values=self.market_symbols_available, state="readonly",
+        )
+        history_symbol_combo.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
+        self.market_history_symbol_combo = history_symbol_combo
+        timeframe_names = list(self.market_timeframes.keys()) or ["M1", "M5"]
+        history_timeframe_var = tk.StringVar(
+            value=current["history_timeframe"] if current["history_timeframe"] in timeframe_names else timeframe_names[0]
+        )
+        history_timeframe_combo = ttk.Combobox(
+            history_frame, textvariable=history_timeframe_var,
+            values=timeframe_names, state="readonly", width=8,
+        )
+        history_timeframe_combo.pack(side=tk.RIGHT)
+
+        def save_settings():
+            selected = [self.market_symbols_available[i] for i in symbols_box.curselection()]
+            if len(selected) > 1000:
+                messagebox.showerror("Too many symbols", "Choose no more than 1,000 live symbols.", parent=window)
+                return False
+            with self.market_data_lock:
+                previously_enabled = self.market_data_settings["enabled"]
+                self.market_data_settings = {
+                    "enabled": bool(enabled_var.get()),
+                    "symbols": selected,
+                    "history_symbol": history_symbol_var.get().strip(),
+                    "history_timeframe": history_timeframe_var.get().strip(),
+                }
+            if enabled_var.get():
+                self.market_disable_request.clear()
+            elif previously_enabled:
+                self.market_disable_request.set()
+                self.market_history_request.clear()
+            state = "ON" if enabled_var.get() else "OFF"
+            self.market_data_btn.configure(text=f"MARKET DATA: {state} — {len(selected)} SYMBOLS")
+            return True
+
+        controls = tk.Frame(window, bg=BG)
+        controls.pack(fill=tk.X, padx=16, pady=(0, 16))
+        tk.Button(
+            controls, text="Refresh broker symbols",
+            command=lambda: self.market_discovery_request.set(),
+            fg=FG, bg=BG2, activebackground=BG3, relief=tk.FLAT, pady=7,
+        ).pack(side=tk.LEFT)
+        tk.Button(
+            controls, text="Fetch candles now",
+            command=lambda: self._request_market_history(window, save_settings),
+            fg="#ffffff", bg=GREEN, activebackground="#059669", relief=tk.FLAT, pady=7,
+        ).pack(side=tk.RIGHT)
+        tk.Button(
+            controls, text="Save",
+            command=lambda: save_settings(),
+            fg=FG, bg=BG2, activebackground=BG3, relief=tk.FLAT, pady=7,
+        ).pack(side=tk.RIGHT, padx=(0, 8))
+
+    def _request_market_history(self, window, save_settings):
+        if not save_settings():
+            return
+        with self.market_data_lock:
+            enabled = self.market_data_settings["enabled"]
+            symbol = self.market_data_settings["history_symbol"]
+            timeframe = self.market_data_settings["history_timeframe"]
+        if not enabled:
+            messagebox.showinfo("Market data is off", "Enable selected market-data capture before requesting candles.", parent=window)
+            return
+        if not symbol or not timeframe:
+            messagebox.showinfo("Choose a request", "Choose a discovered broker symbol and timeframe first.", parent=window)
+            return
+        if not self.is_syncing:
+            messagebox.showinfo("Connector is stopped", "Start the connector before requesting candles.", parent=window)
+            return
+        self.market_history_request.set()
+        self._log(f"Historical candle request queued for {symbol} {timeframe}.", "info")
+
+    def _populate_market_symbols(self, symbols):
+        self.market_symbols_available = symbols
+        if self.market_symbols_listbox is not None:
+            try:
+                box = self.market_symbols_listbox
+                with self.market_data_lock:
+                    selected = set(self.market_data_settings["symbols"])
+                box.delete(0, tk.END)
+                for symbol in symbols:
+                    box.insert(tk.END, symbol)
+                for index, symbol in enumerate(symbols):
+                    if symbol in selected:
+                        box.selection_set(index)
+            except tk.TclError:
+                pass
+        if self.market_history_symbol_combo is not None:
+            try:
+                self.market_history_symbol_combo.configure(values=symbols)
+            except tk.TclError:
+                pass
+
+    def _discover_market_symbols(self):
+        try:
+            discovered = mt5.symbols_get()
+            names = sorted({str(item.name) for item in (discovered or ()) if getattr(item, "name", None)})
+            self.root.after(0, lambda values=names: self._populate_market_symbols(values))
+        except Exception:
+            self.root.after(0, lambda: self._log("Could not discover broker instruments.", "warn"))
+
+    def _market_settings_snapshot(self):
+        with self.market_data_lock:
+            return {
+                "enabled": self.market_data_settings["enabled"],
+                "symbols": list(self.market_data_settings["symbols"]),
+                "history_symbol": self.market_data_settings["history_symbol"],
+                "history_timeframe": self.market_data_settings["history_timeframe"],
+            }
+
+    def _safe_market_float(self, value):
+        try:
+            value = float(value)
+            return value if math.isfinite(value) else 0.0
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _market_symbol_metadata(self, symbol):
+        info = mt5.symbol_info(symbol)
+        if info is None:
+            return None
+        return {
+            "symbol": str(info.name),
+            "description": str(getattr(info, "description", "") or "")[:160],
+            "path": str(getattr(info, "path", "") or "")[:160],
+            "baseCurrency": str(getattr(info, "currency_base", "") or "")[:16],
+            "profitCurrency": str(getattr(info, "currency_profit", "") or "")[:16],
+            "digits": max(0, min(16, int(getattr(info, "digits", 0) or 0))),
+            "point": self._safe_market_float(getattr(info, "point", 0)),
+            "tickSize": self._safe_market_float(getattr(info, "trade_tick_size", 0)),
+        }
+
+    def _post_market_data(self, payload):
+        market_api_url = API_URL.rsplit("/", 1)[0] + "/market-data/sync"
+        try:
+            response = requests.post(market_api_url, json=payload, timeout=(3, 5))
+            if response.status_code == 200:
+                self._market_disabled_warned = False
+                self._log(
+                    f"Market-data batch accepted ({payload['captureMode']}: "
+                    f"{len(payload['quotes'])} quotes, {len(payload['bars'])} candles).",
+                    "success",
+                )
+                return True
+            if response.status_code == 503:
+                if not self._market_disabled_warned:
+                    self._log("Market-data capture is disabled by the Journal development gate.", "warn")
+                    self._market_disabled_warned = True
+                return False
+            self._log(f"Market-data sync rejected (HTTP {response.status_code}).", "warn")
+            return False
+        except requests.exceptions.RequestException as e:
+            self._log(f"Market-data network error: {e}", "warn")
+            return False
+
+    def _queue_market_data(self, payload):
+        if not self.market_upload_lock.acquire(blocking=False):
+            return False
+
+        def send():
+            try:
+                self._post_market_data(payload)
+            finally:
+                self.market_upload_lock.release()
+
+        threading.Thread(target=send, daemon=True, name="mt5-market-data-upload").start()
+        return True
+
+    def _send_live_market_data(self, account_info):
+        settings = self._market_settings_snapshot()
+        if not settings["enabled"] or not settings["symbols"]:
+            return
+
+        symbols = []
+        quotes = []
+        for symbol in settings["symbols"]:
+            if symbol not in self._market_watch_enabled:
+                if not mt5.symbol_select(symbol, True):
+                    continue
+                self._market_watch_enabled.add(symbol)
+            metadata = self._market_symbol_metadata(symbol)
+            if metadata is None:
+                continue
+            symbols.append(metadata)
+            tick = mt5.symbol_info_tick(symbol)
+            if tick is None:
+                continue
+            time_ms = int(getattr(tick, "time_msc", 0) or 0)
+            if time_ms <= 0:
+                time_ms = int(getattr(tick, "time", 0) or 0) * 1000
+            if time_ms <= 0:
+                continue
+            quotes.append({
+                "symbol": symbol,
+                "bid": self._safe_market_float(getattr(tick, "bid", 0)),
+                "ask": self._safe_market_float(getattr(tick, "ask", 0)),
+                "last": self._safe_market_float(getattr(tick, "last", 0)),
+                "volume": self._safe_market_float(getattr(tick, "volume_real", 0)),
+                "timeMs": time_ms,
+            })
+
+        if not symbols:
+            return
+        self._queue_market_data({
+            "userId": USER_ID,
+            "token": SYNC_TOKEN,
+            "accountNumber": str(account_info.login),
+            "version": "tradify-mt5-market-data-v1",
+            "captureEnabled": True,
+            "captureMode": "live",
+            "symbols": symbols,
+            "quotes": quotes,
+            "bars": [],
+        })
+
+    def _send_market_data_disable(self, account_info):
+        queued = self._queue_market_data({
+            "userId": USER_ID,
+            "token": SYNC_TOKEN,
+            "accountNumber": str(account_info.login),
+            "version": "tradify-mt5-market-data-v1",
+            "captureEnabled": True,
+            "captureMode": "live",
+            "symbols": [],
+            "quotes": [],
+            "bars": [],
+        })
+        if not queued:
+            self.market_disable_request.set()
+
+    def _send_requested_market_history(self, account_info):
+        settings = self._market_settings_snapshot()
+        if not settings["enabled"]:
+            return
+        symbol = settings["history_symbol"]
+        timeframe_name = settings["history_timeframe"]
+        timeframe = self.market_timeframes.get(timeframe_name)
+        if not symbol or timeframe is None:
+            self._log("Historical candle request skipped; choose a discovered symbol and timeframe.", "warn")
+            return
+
+        try:
+            if not mt5.symbol_select(symbol, True):
+                self._log(f"Broker symbol is unavailable: {symbol}.", "warn")
+                return
+            metadata = self._market_symbol_metadata(symbol)
+            rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, 500)
+            if metadata is None or rates is None or len(rates) == 0:
+                self._log(f"No historical candles returned for {symbol} {timeframe_name}.", "warn")
+                return
+
+            bars = []
+            for row in rates:
+                bars.append({
+                    "symbol": symbol,
+                    "timeframe": timeframe_name,
+                    "time": int(row["time"]),
+                    "open": self._safe_market_float(row["open"]),
+                    "high": self._safe_market_float(row["high"]),
+                    "low": self._safe_market_float(row["low"]),
+                    "close": self._safe_market_float(row["close"]),
+                    "tickVolume": int(row["tick_volume"]),
+                    "spread": max(0, int(row["spread"])),
+                    "realVolume": max(0, int(row["real_volume"])),
+                })
+            queued = self._queue_market_data({
+                "userId": USER_ID,
+                "token": SYNC_TOKEN,
+                "accountNumber": str(account_info.login),
+                "version": "tradify-mt5-market-data-v1",
+                "captureEnabled": True,
+                "captureMode": "history",
+                "symbols": [metadata],
+                "quotes": [],
+                "bars": bars,
+            })
+            if queued:
+                self._log(f"Historical candle request queued for {symbol} {timeframe_name} ({len(bars)} bars).", "info")
+            else:
+                self.market_history_request.set()
+                self._log("Historical candle upload queued for retry after the current market-data request.", "warn")
+        except Exception as e:
+            self._log(f"Historical candle fetch failed: {e}", "error")
 
     def _toggle_log(self):
         if self.log_visible:
@@ -431,6 +825,7 @@ class TradifyConnector:
         self.root.after(0, lambda: self._update_account(acct))
         self.root.after(0, lambda: self._set_status(True))
         self.root.after(0, lambda: self._log(f"Connected to MT5 account {acct.login}", "success"))
+        self._discover_market_symbols()
 
         from datetime import datetime as dt_cls
         epoch_start = int(dt_cls(2000, 1, 1).timestamp())
@@ -456,6 +851,9 @@ class TradifyConnector:
                     self.root.after(0, lambda: self._log("Reconnected to MT5", "success"))
 
                 self.root.after(0, lambda ai=account_info: self._update_account(ai))
+                if self.market_discovery_request.is_set():
+                    self.market_discovery_request.clear()
+                    self._discover_market_symbols()
 
                 positions = mt5.positions_get()
                 pos_list = []
@@ -521,6 +919,14 @@ class TradifyConnector:
                         self.sync_count_label.configure(text=f"{c} syncs"),
                         self.last_sync_label.configure(text=f"Last sync: {datetime.now().strftime('%H:%M:%S')}")
                     ))
+                    if self.market_disable_request.is_set():
+                        self.market_disable_request.clear()
+                        self._send_market_data_disable(account_info)
+                    else:
+                        self._send_live_market_data(account_info)
+                    if self.market_history_request.is_set():
+                        self.market_history_request.clear()
+                        self._send_requested_market_history(account_info)
                 elif resp.status_code == 403:
                     self.root.after(0, lambda: self._log("Auth error: Invalid or expired token.", "error"))
                     self.root.after(0, lambda: self._log("Generate a new token from the MT5 Bridge page.", "warn"))

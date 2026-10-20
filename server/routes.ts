@@ -53,6 +53,11 @@ import {
   prepareProductLinkAccountLifecycle,
   registerProductLinkingRoutes,
 } from "./product-linking-routes";
+import {
+  isDevMt5MarketDataEnabled,
+  mt5MarketDataPayloadSchema,
+  persistMt5MarketData,
+} from "./mt5MarketData";
 import { isPaidTier, getMaxStrategies, canAccessFeature, getHistoryDays, PLAN_FEATURES } from "@shared/plans";
 import { TRADING_KNOWLEDGE_CONTEXT, AI_SYSTEM_CONTEXT } from "./tradingKnowledge";
 import { trackAIUsage, calculateCost, estimateTokensFromText } from "./ai-cost-tracker";
@@ -1609,6 +1614,9 @@ ${blogPosts.map(p => `  <url>
 
       await db.delete(schema.emailSequences).where(eq(schema.emailSequences.userId, targetUserId));
       await db.delete(schema.tradeJournal).where(eq(schema.tradeJournal.userId, targetUserId));
+      await db.delete(schema.mt5MarketBars).where(eq(schema.mt5MarketBars.userId, targetUserId));
+      await db.delete(schema.mt5MarketQuotes).where(eq(schema.mt5MarketQuotes.userId, targetUserId));
+      await db.delete(schema.mt5MarketSymbols).where(eq(schema.mt5MarketSymbols.userId, targetUserId));
       await db.delete(schema.mt5History).where(eq(schema.mt5History.userId, targetUserId));
       await db.delete(schema.mt5Data).where(eq(schema.mt5Data.userId, targetUserId));
       await db.delete(schema.mt5Accounts).where(eq(schema.mt5Accounts.userId, targetUserId));
@@ -2083,6 +2091,149 @@ ${blogPosts.map(p => `  <url>
     }
   });
 
+  app.post("/api/mt5/market-data/sync", async (req, res) => {
+    if (!isDevMt5MarketDataEnabled()) {
+      return res.status(503).json({ message: "MT5 market-data capture is unavailable." });
+    }
+
+    const parsed = mt5MarketDataPayloadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid market-data batch.",
+        issues: parsed.error.issues.map(({ path, message }) => ({ path, message })),
+      });
+    }
+
+    const { userId, token, accountNumber, ...payload } = parsed.data;
+    try {
+      const user = await storage.getUserRole(userId);
+      if (!user || user.role === "DEACTIVATED" || !syncTokensMatch(user.syncToken, token)) {
+        return res.status(403).json({ message: "Invalid sync credentials." });
+      }
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const account = await client.query(
+          `SELECT 1 FROM mt5_accounts WHERE user_id = $1 AND account_number = $2 LIMIT 1`,
+          [userId, accountNumber],
+        );
+        if (account.rowCount !== 1) {
+          await client.query("ROLLBACK");
+          return res.status(409).json({ message: "Sync this MT5 account before sending market data." });
+        }
+
+        await persistMt5MarketData(client, userId, accountNumber, {
+          ...payload,
+          userId,
+          token,
+          accountNumber,
+        });
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
+
+      return res.json({
+        success: true,
+        version: payload.version,
+        sourceType: "customer_mt5",
+        captureMode: payload.captureMode,
+        symbols: payload.symbols.length,
+        quotes: payload.quotes.length,
+        bars: payload.bars.length,
+      });
+    } catch (error) {
+      console.error("[MT5 Market Data] Batch persistence failed.");
+      return res.status(500).json({ message: "Market-data batch could not be stored." });
+    }
+  });
+
+  app.get(
+    "/api/mt5/market-data/:userId/:accountNumber",
+    requireAuth,
+    requireOwnUserParam(),
+    async (req, res) => {
+      if (!isDevMt5MarketDataEnabled()) {
+        return res.status(503).json({ message: "MT5 market-data access is unavailable." });
+      }
+
+      const { userId, accountNumber } = req.params;
+      const symbol = typeof req.query.symbol === "string" ? req.query.symbol.trim() : undefined;
+      const timeframe = typeof req.query.timeframe === "string" ? req.query.timeframe.trim().toUpperCase() : undefined;
+      const requestedLimit = typeof req.query.limit === "string" ? Number(req.query.limit) : 500;
+      const limit = Number.isInteger(requestedLimit) ? Math.max(1, Math.min(500, requestedLimit)) : 500;
+
+      try {
+        const account = await pool.query(
+          `SELECT 1 FROM mt5_accounts WHERE user_id = $1 AND account_number = $2 LIMIT 1`,
+          [userId, accountNumber],
+        );
+        if (account.rowCount !== 1) {
+          return res.status(404).json({ message: "MT5 account not found." });
+        }
+
+        const symbols = await pool.query(
+          `SELECT broker_symbol, description, path, base_currency, profit_currency,
+                  digits, point, tick_size, source_type, schema_version, is_enabled,
+                  (is_enabled AND last_seen_at >= now() - interval '30 seconds') AS is_live,
+                  last_seen_at, updated_at
+             FROM mt5_market_symbols
+            WHERE user_id = $1 AND mt5_account_id = $2
+            ORDER BY broker_symbol`,
+          [userId, accountNumber],
+        );
+
+        const quotes = await pool.query(
+          `SELECT broker_symbol, bid, ask, last, volume, source_time, received_at,
+                  source_type, schema_version
+             FROM mt5_market_quotes
+            WHERE user_id = $1 AND mt5_account_id = $2
+              AND ($3::text IS NULL OR broker_symbol = $3)
+            ORDER BY broker_symbol
+            LIMIT 100`,
+          [userId, accountNumber, symbol ?? null],
+        );
+
+        const bars = await pool.query(
+          `SELECT broker_symbol, timeframe, open_time, open, high, low, close,
+                  tick_volume, spread, real_volume, received_at,
+                  source_type, schema_version
+             FROM mt5_market_bars
+            WHERE user_id = $1 AND mt5_account_id = $2
+              AND ($3::text IS NULL OR broker_symbol = $3)
+              AND ($4::text IS NULL OR timeframe = $4)
+            ORDER BY open_time DESC
+            LIMIT $5`,
+          [userId, accountNumber, symbol ?? null, timeframe ?? null, limit],
+        );
+
+        const now = Date.now();
+        return res.json({
+          version: "tradify-mt5-market-data-v1",
+          accountNumber,
+          symbols: symbols.rows,
+          quotes: quotes.rows.map((quote: any) => {
+            const sourceAgeMs = now - new Date(quote.source_time).getTime();
+            return {
+              ...quote,
+              receivedAgeMs: Math.max(0, now - new Date(quote.received_at).getTime()),
+              sourceAgeMs,
+              isFresh: sourceAgeMs >= -300_000 && sourceAgeMs <= 30_000,
+            };
+          }),
+          bars: bars.rows,
+        });
+      } catch (error) {
+        console.error("[MT5 Market Data] Read failed.");
+        return res.status(500).json({ message: "Market data could not be read." });
+      }
+    },
+  );
+
   app.get("/api/mt5/status/:userId", requireAuth, requireOwnUserParam(), async (req, res) => {
     try {
       const { userId } = req.params;
@@ -2216,6 +2367,15 @@ ${blogPosts.map(p => `  <url>
             .where(and(eq(schema.propFirmDailyStats.challengeId, cId), eq(schema.propFirmDailyStats.userId, userId)));
         }
       }
+
+      await db.delete(schema.mt5MarketBars)
+        .where(and(eq(schema.mt5MarketBars.userId, userId), eq(schema.mt5MarketBars.mt5AccountId, accountNumber)));
+
+      await db.delete(schema.mt5MarketQuotes)
+        .where(and(eq(schema.mt5MarketQuotes.userId, userId), eq(schema.mt5MarketQuotes.mt5AccountId, accountNumber)));
+
+      await db.delete(schema.mt5MarketSymbols)
+        .where(and(eq(schema.mt5MarketSymbols.userId, userId), eq(schema.mt5MarketSymbols.mt5AccountId, accountNumber)));
 
       await db.delete(schema.mt5History)
         .where(and(eq(schema.mt5History.userId, userId), eq(schema.mt5History.mt5AccountId, accountNumber)));

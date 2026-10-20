@@ -13,6 +13,7 @@ These are Journal-local interfaces; none is a confirmed Signals or Tradigo API:
 | --- | --- | --- |
 | Account access | `POST /api/auth/register`, `POST /api/auth/login`, email verification/reset routes, and an HTTP-only Express session persisted in Journal PostgreSQL | Journal owns its accounts and session authorization |
 | MT5 ingestion | `POST /api/mt5/sync` accepts user/account snapshot and history data with the Journal sync token | Journal owns received account, position snapshot, and MT5 history records |
+| MT5 market-data capture (development only) | `POST /api/mt5/market-data/sync` and owner-scoped `GET /api/mt5/market-data/:userId/:accountNumber`; disabled unless the explicit development flag is set | Journal stores only a customer's explicitly selected broker feed, scoped to that Journal user and MT5 account |
 | Journal analysis | Authenticated Journal routes expose MT5 history, equity curves, performance intelligence, behavioral/strategy-risk checks, and prop-firm challenge state | Journal owns the calculations and resulting Journal/challenge data |
 | Stripe billing | Journal-local subscribe, activation, portal, and `/api/stripe/webhook` routes | Journal owns its customer/provider links and Journal entitlement state |
 | PayPal billing | Journal-local order/subscription/cancellation routes and `/api/paypal/webhook` | Journal owns its PayPal subscription link and Journal entitlement state |
@@ -20,6 +21,8 @@ These are Journal-local interfaces; none is a confirmed Signals or Tradigo API:
 | Email | Journal account and notification flows using Journal email delivery/outbox controls | Journal owns its message triggers and delivery state |
 
 The Journal schema also contains provider-profile, receiver, provider-subscription, and dispute tables. No matching public route family was found in the current route audit. These are Journal-local records, not a cross-product contract, and should be reviewed before reuse.
+
+The development-only market-data capture is documented in [`TRADIFY_MT5_MARKET_DATA_DEV.md`](TRADIFY_MT5_MARKET_DATA_DEV.md). It is not part of the account-linking V1 contract, does not send data to Signals, and does not implement the Signals strategy engine or a Tradify reference-feed identity.
 
 ## Data ownership and provenance
 

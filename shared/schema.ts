@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, uniqueIndex, numeric, bigint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -95,6 +95,71 @@ export const mt5History = pgTable("mt5_history", {
   mistakeCategory: text("mistake_category"),
 }, (table) => ({
   uniqueTicket: uniqueIndex("mt5_history_unique_ticket").on(table.userId, table.mt5AccountId, table.ticket),
+}));
+
+export const mt5MarketSymbols = pgTable("mt5_market_symbols", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  mt5AccountId: text("mt5_account_id").notNull(),
+  brokerSymbol: text("broker_symbol").notNull(),
+  description: text("description").notNull().default(""),
+  path: text("path").notNull().default(""),
+  baseCurrency: text("base_currency").notNull().default(""),
+  profitCurrency: text("profit_currency").notNull().default(""),
+  digits: integer("digits").notNull(),
+  point: numeric("point").notNull().default("0"),
+  tickSize: numeric("tick_size").notNull().default("0"),
+  sourceType: text("source_type").notNull().default("customer_mt5"),
+  schemaVersion: text("schema_version").notNull(),
+  isEnabled: boolean("is_enabled").notNull().default(false),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+}, (table) => ({
+  ownerSymbol: uniqueIndex("mt5_market_symbols_owner_symbol").on(table.userId, table.mt5AccountId, table.brokerSymbol),
+}));
+
+export const mt5MarketQuotes = pgTable("mt5_market_quotes", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  mt5AccountId: text("mt5_account_id").notNull(),
+  brokerSymbol: text("broker_symbol").notNull(),
+  bid: numeric("bid").notNull(),
+  ask: numeric("ask").notNull(),
+  last: numeric("last"),
+  volume: numeric("volume"),
+  sourceTime: timestamp("source_time", { withTimezone: true, mode: "date" }).notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  sourceType: text("source_type").notNull().default("customer_mt5"),
+  schemaVersion: text("schema_version").notNull(),
+}, (table) => ({
+  ownerSymbol: uniqueIndex("mt5_market_quotes_owner_symbol").on(table.userId, table.mt5AccountId, table.brokerSymbol),
+}));
+
+export const mt5MarketBars = pgTable("mt5_market_bars", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  mt5AccountId: text("mt5_account_id").notNull(),
+  brokerSymbol: text("broker_symbol").notNull(),
+  timeframe: text("timeframe").notNull(),
+  openTime: timestamp("open_time", { withTimezone: true, mode: "date" }).notNull(),
+  open: numeric("open").notNull(),
+  high: numeric("high").notNull(),
+  low: numeric("low").notNull(),
+  close: numeric("close").notNull(),
+  tickVolume: bigint("tick_volume", { mode: "number" }).notNull(),
+  spread: integer("spread").notNull(),
+  realVolume: bigint("real_volume", { mode: "number" }).notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  sourceType: text("source_type").notNull().default("customer_mt5"),
+  schemaVersion: text("schema_version").notNull(),
+}, (table) => ({
+  ownerSymbolTimeframeBar: uniqueIndex("mt5_market_bars_owner_symbol_tf_time").on(
+    table.userId,
+    table.mt5AccountId,
+    table.brokerSymbol,
+    table.timeframe,
+    table.openTime,
+  ),
 }));
 
 export const dailyEquitySnapshots = pgTable("daily_equity_snapshots", {

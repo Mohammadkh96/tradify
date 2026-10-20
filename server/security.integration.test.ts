@@ -171,6 +171,8 @@ beforeAll(async () => {
   await testPool.query(productLinkingMigration);
   const revocationRetryMigration = await readFile("migrations/0003_product_link_revocation_retry_v1.sql", "utf8");
   await testPool.query(revocationRetryMigration);
+  const mt5MarketDataMigration = await readFile("migrations/0004_mt5_market_data_v1.sql", "utf8");
+  await testPool.query(mt5MarketDataMigration);
 
   const app = express();
   app.use(express.json({
@@ -1552,6 +1554,7 @@ describe("application security boundaries against a disposable local PostgreSQL 
 
   it("provisions a private MT5 token, permits valid bridge sync, and blocks cross-user account reads", async () => {
     const originalDevMt5SyncEnabled = process.env.DEV_MT5_SYNC_ENABLED;
+    const originalDevMt5MarketDataEnabled = process.env.DEV_MT5_MARKET_DATA_ENABLED;
     process.env.DEV_MT5_SYNC_ENABLED = "true";
     try {
     await registerAndVerify(bobEmail, "Synthetic Bob");
@@ -1666,11 +1669,216 @@ describe("application security boundaries against a disposable local PostgreSQL 
         }),
       ]),
     );
+
+    delete process.env.DEV_MT5_MARKET_DATA_ENABLED;
+    const marketDataPayload = {
+      userId: aliceEmail,
+      token,
+      accountNumber: "SYNTHETIC-MT5-1",
+      version: "tradify-mt5-market-data-v1",
+      captureEnabled: true,
+      captureMode: "live",
+      symbols: [{
+        symbol: "XAUUSD.a",
+        description: "Synthetic Gold",
+        path: "Synthetic\\Metals",
+        baseCurrency: "XAU",
+        profitCurrency: "USD",
+        digits: 2,
+        point: 0.01,
+        tickSize: 0.01,
+      }],
+      quotes: [{
+        symbol: "XAUUSD.a",
+        bid: 2341.25,
+        ask: 2341.35,
+        last: 2341.3,
+        volume: 1,
+        timeMs: Date.now(),
+      }],
+      bars: [],
+    };
+    expect((await request("/api/mt5/market-data/sync", {
+      method: "POST",
+      json: marketDataPayload,
+    })).status).toBe(503);
+
+    process.env.DEV_MT5_MARKET_DATA_ENABLED = "true";
+    const liveMarketData = await request("/api/mt5/market-data/sync", {
+      method: "POST",
+      json: marketDataPayload,
+    });
+    expect(liveMarketData.status).toBe(200);
+    expect(await liveMarketData.json()).toMatchObject({
+      version: "tradify-mt5-market-data-v1",
+      sourceType: "customer_mt5",
+      captureMode: "live",
+      symbols: 1,
+      quotes: 1,
+      bars: 0,
+    });
+
+    const historyMarketData = await request("/api/mt5/market-data/sync", {
+      method: "POST",
+      json: {
+        ...marketDataPayload,
+        captureMode: "history",
+        symbols: [{
+          symbol: "EURUSD.pro",
+          description: "Synthetic Euro",
+          path: "Synthetic\\Forex\\Majors",
+          baseCurrency: "EUR",
+          profitCurrency: "USD",
+          digits: 5,
+          point: 0.00001,
+          tickSize: 0.00001,
+        }],
+        quotes: [],
+        bars: [{
+          symbol: "EURUSD.pro",
+          timeframe: "M5",
+          time: syncTime - 300,
+          open: 1.084,
+          high: 1.086,
+          low: 1.083,
+          close: 1.085,
+          tickVolume: 37,
+          spread: 12,
+          realVolume: 0,
+        }],
+      },
+    });
+    expect(historyMarketData.status).toBe(200);
+    expect(await historyMarketData.json()).toMatchObject({
+      captureMode: "history",
+      symbols: 1,
+      quotes: 0,
+      bars: 1,
+    });
+    const repeatedHistoryRequest = await request("/api/mt5/market-data/sync", {
+      method: "POST",
+      json: {
+        ...marketDataPayload,
+        captureMode: "history",
+        symbols: [{
+          symbol: "EURUSD.pro",
+          description: "Synthetic Euro",
+          path: "Synthetic\\Forex\\Majors",
+          baseCurrency: "EUR",
+          profitCurrency: "USD",
+          digits: 5,
+          point: 0.00001,
+          tickSize: 0.00001,
+        }],
+        quotes: [],
+        bars: [{
+          symbol: "EURUSD.pro",
+          timeframe: "M5",
+          time: syncTime - 300,
+          open: 1.084,
+          high: 1.086,
+          low: 1.083,
+          close: 1.085,
+          tickVolume: 37,
+          spread: 12,
+          realVolume: 0,
+        }],
+      },
+    });
+    expect(repeatedHistoryRequest.status).toBe(200);
+    const cachedHistoryCount = await testPool.query<{ count: string }>(
+      `SELECT count(*) FROM mt5_market_bars
+        WHERE user_id = $1 AND mt5_account_id = $2
+          AND broker_symbol = 'EURUSD.pro' AND timeframe = 'M5'`,
+      [aliceEmail, "SYNTHETIC-MT5-1"],
+    );
+    expect(cachedHistoryCount.rows[0]?.count).toBe("1");
+
+    const marketDataRead = await request(
+      `/api/mt5/market-data/${encodeURIComponent(aliceEmail)}/SYNTHETIC-MT5-1?symbol=XAUUSD.a`,
+      { cookie: alice.cookie },
+    );
+    expect(marketDataRead.status).toBe(200);
+    const marketDataBody = await marketDataRead.json();
+    expect(marketDataBody.symbols).toEqual(
+      expect.arrayContaining([expect.objectContaining({
+        broker_symbol: "XAUUSD.a",
+        is_enabled: true,
+        is_live: true,
+        source_type: "customer_mt5",
+      })]),
+    );
+    expect(marketDataBody.quotes).toEqual(
+      expect.arrayContaining([expect.objectContaining({
+        broker_symbol: "XAUUSD.a",
+        bid: "2341.25",
+        isFresh: true,
+      })]),
+    );
+
+    const historyRead = await request(
+      `/api/mt5/market-data/${encodeURIComponent(aliceEmail)}/SYNTHETIC-MT5-1?symbol=EURUSD.pro&timeframe=M5`,
+      { cookie: alice.cookie },
+    );
+    expect(historyRead.status).toBe(200);
+    expect((await historyRead.json()).bars).toEqual(
+      expect.arrayContaining([expect.objectContaining({ broker_symbol: "EURUSD.pro", timeframe: "M5" })]),
+    );
+    expect((await request(
+      `/api/mt5/market-data/${encodeURIComponent(aliceEmail)}/SYNTHETIC-MT5-1`,
+      { cookie: bob.cookie },
+    )).status).toBe(403);
+
+    expect((await request("/api/mt5/market-data/sync", {
+      method: "POST",
+      json: { ...marketDataPayload, accountNumber: "SYNTHETIC-MT5-OTHER" },
+    })).status).toBe(409);
+
+    const unselectedSymbol = await request("/api/mt5/market-data/sync", {
+      method: "POST",
+      json: {
+        ...marketDataPayload,
+        quotes: [{ ...marketDataPayload.quotes[0], symbol: "NOT-SELECTED" }],
+      },
+    });
+    expect(unselectedSymbol.status).toBe(400);
+
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      expect((await request("/api/mt5/market-data/sync", {
+        method: "POST",
+        json: marketDataPayload,
+      })).status).toBe(503);
+    } finally {
+      if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = originalNodeEnv;
+    }
+
+    const deletedAccount = await request(
+      `/api/mt5/accounts/${encodeURIComponent(aliceEmail)}/SYNTHETIC-MT5-1`,
+      { method: "DELETE", cookie: alice.cookie },
+    );
+    expect(deletedAccount.status).toBe(200);
+    const remainingMarketData = await testPool.query<{ count: string }>(
+      `SELECT
+         (SELECT count(*) FROM mt5_market_symbols WHERE user_id = $1 AND mt5_account_id = $2) +
+         (SELECT count(*) FROM mt5_market_quotes WHERE user_id = $1 AND mt5_account_id = $2) +
+         (SELECT count(*) FROM mt5_market_bars WHERE user_id = $1 AND mt5_account_id = $2)
+         AS count`,
+      [aliceEmail, "SYNTHETIC-MT5-1"],
+    );
+    expect(remainingMarketData.rows[0]?.count).toBe("0");
     } finally {
       if (originalDevMt5SyncEnabled === undefined) {
         delete process.env.DEV_MT5_SYNC_ENABLED;
       } else {
         process.env.DEV_MT5_SYNC_ENABLED = originalDevMt5SyncEnabled;
+      }
+      if (originalDevMt5MarketDataEnabled === undefined) {
+        delete process.env.DEV_MT5_MARKET_DATA_ENABLED;
+      } else {
+        process.env.DEV_MT5_MARKET_DATA_ENABLED = originalDevMt5MarketDataEnabled;
       }
     }
   });
