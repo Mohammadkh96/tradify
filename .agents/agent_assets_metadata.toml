@@ -343,3 +343,17 @@ mtime_ms = 1792053075416
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/16a096ca-7252-4ca8-99a7-147e8f94e87b/3f9e2a0e-c325-4a10-b59d-2390fda86de0"
 storage_version_token = "1792053585047524"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "ToXry1tuIW7QTKQH9_Jfh"
+uri = "file://docs/TRADIFY_CROSS_PROJECT_ALIGNMENT.md"
+type = "text"
+title = "Tradify cross-project alignment checklist"
+description = "Shareable Journal–Signals checklist for product boundaries, accepted account-linking gates, market-data agreement, and production approvals."
+logical_id = "132f54af-e7b7-48b8-a3d8-25ce287b9241"
+content_hash = "sha256:6bb1b0c1db4ed552e6b4012b80844c51f620cfa2c71b054bc954d02cf45ea9c5"
+size = 8273
+mtime_ms = 1792483842497
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:d249d3f6-43db-41f6-9a74-d7c50aa6969b/132f54af-e7b7-48b8-a3d8-25ce287b9241/9f0230c5-71d7-4c09-a7ae-64d105262239"
+storage_version_token = "1792483862000415"
+content_type = "text/markdown"
