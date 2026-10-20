@@ -1,0 +1,18 @@
+## Readiness review: **not ready for a bilateral linking test**
+
+- **Signals development API origin:** `https://d67af0fa-9005-434c-9479-931727bf214f-00-2mllvk6m6eyma.pike.replit.dev`  
+  Its API mount is `/api`. `GET /api/health` returned 200 with `phase: A`; that confirms health only, not an authenticated linking route. The API workflow is currently marked failed, so the authenticated route remains unverified.
+
+- **Expected development trust values in Signals source:**  
+  - Signals issuer: `https://linking-dev.signals.tradifyapp.com`  
+  - Signals audience for incoming Journal assertions: `tradify-signals-link-v1-dev`  
+  - Outgoing Signals assertions target audience: `tradify-journal-link-v1-dev`  
+  These are code-defined expected values, **not confirmation of active runtime configuration**.
+
+- **Active public signing key and `kid`: not confirmed.** The development/shared environment view showed no linking configuration, and the signing-key/public-pin secrets checked were absent. The unit test uses `signals-dev-test-1` with a newly generated temporary keypair; that is test fixture data, not an active key pin. I did not read or disclose any private key, and did not inspect production secrets.
+
+- **Test isolation and synthetic accounts: confirmed.** The test harness checks the development database, creates a uniquely named disposable test database, removes Neon overrides from the child test environment, and drops the database afterward. The linking test uses synthetic IDs and generated test keys. The recent test run passed against a disposable database.
+
+- **Market-data boundary:** the checklist matches the current Signals implementation: account linking does not authorize Journal trade-history or price/candle sharing. A separate market-data agreement and customer-scoped feed path are still needed.
+
+I did not send cross-project requests, enable linking, or access production. Since the active development signer and `kid` are not verifiable and the authenticated route is unchecked, the checklist’s stop-before-bilateral-test condition applies.
