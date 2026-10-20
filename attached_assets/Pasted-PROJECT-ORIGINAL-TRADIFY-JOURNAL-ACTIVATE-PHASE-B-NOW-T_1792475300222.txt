@@ -1,0 +1,113 @@
+PROJECT: ORIGINAL TRADIFY JOURNAL — ACTIVATE PHASE B NOW
+
+Tradify Signals has officially confirmed:
+
+SIGNALS PHASE B: READY
+
+Signals verified:
+- Isolated HTTPS development API is running.
+- HTTP 200 health check.
+- Disposable loopback-only PostgreSQL.
+- No Neon or production database fallback.
+- Original Signals RS256 signer retained.
+- Journal's current public verification key pinned.
+- Issuer/audience directions correct.
+- Effective shared expiry enforced.
+- Unauthenticated request rejected with 401.
+- Invalid origin rejected with 403.
+- Invalid request body rejected with 400.
+- No cross-service linking request sent.
+
+CONFIRMED SIGNALS DETAILS
+
+Signals HTTPS origin:
+https://d67af0fa-9005-434c-9479-931727bf214f-00-2mllvk6m6eyma.pike.replit.dev
+
+Signals active kid:
+signals-link-test-20261020T052953Z-bcc9c8c762f2
+
+Signals issuer:
+https://linking-dev.signals.tradifyapp.com
+
+Signals → Journal audience:
+tradify-journal-link-v1-dev
+
+The matching Signals public RS256 PEM was already delivered to Journal and validated in the previous Phase A handoff. Reuse that exact public key.
+
+CONFIRMED JOURNAL DETAILS
+
+Journal HTTPS origin:
+https://d249d3f6-43db-41f6-9a74-d7c50aa6969b-00-1iqop82skn7hh.spock.replit.dev
+
+Journal active kid:
+journal-dev-20261020-b2735d259a7b088b3fdab2b31c0d536f
+
+Journal issuer:
+https://linking-dev.journal.tradifyapp.com
+
+Journal → Signals audience:
+tradify-signals-link-v1-dev
+
+EFFECTIVE SHARED DEADLINE:
+2026-10-20T08:22:18.025Z
+(11:22:18 AM Amman time)
+
+AUTHORIZATION
+
+I authorize activating JOURNAL PHASE B using the existing active Phase A supervisor.
+
+EXECUTE:
+
+1. Confirm the Journal supervisor is active, unexpired and still holds the private signing key corresponding to its existing kid.
+
+2. Load the exact previously validated Signals PUBLIC RS256 PEM, immutable kid, issuer and audience through Journal's LOCAL-ONLY Phase B control mechanism.
+
+3. Do not regenerate or replace Journal's private signing key.
+
+4. Start Journal's isolated Phase B API using the existing disposable loopback database.
+
+5. Verify that no Neon or production database connection is selected or available as a fallback.
+
+6. Verify the actual Journal HTTPS origin serves the isolated Phase B API.
+
+7. Confirm:
+   - GET /api/health returns HTTP 200.
+   - Authenticated linking configuration is enabled for synthetic accounts.
+   - The current Journal signing kid is unchanged.
+   - The exact Signals verification key and kid are loaded.
+   - Issuer/audience validation passes.
+   - The shared deadline is enforced.
+   - The original five-minute authorization deadline is unchanged.
+   - Unauthenticated linking requests return 401.
+   - Invalid-origin and invalid-CSRF requests are rejected.
+   - Production linking remains disabled.
+
+8. Do not restart Signals or modify its project.
+
+9. Do not make real cross-service claim requests yet. First confirm the Journal Phase B runtime is fully ready.
+
+REPORT:
+
+JOURNAL PHASE B: READY / BLOCKED
+
+Provide:
+- Journal active kid.
+- Signals pinned kid.
+- Signer retained: YES/NO.
+- Database isolation: PASS/FAIL.
+- HTTPS health status.
+- Authentication/CSRF protection status.
+- Effective shared deadline.
+- Both public trust configurations ready: YES/NO.
+- Ready for real HTTPS account linking: YES/NO.
+- Exact blocker if any.
+
+IMPORTANT:
+
+Do not expose private keys, authentication tokens, cookies, passwords or authorization codes.
+
+Do not publish production, touch Neon/customer data, modify DNS or billing, enable background jobs, or create additional paid infrastructure.
+
+Do not restart either supervisor unnecessarily.
+
+If READY, keep the isolated Journal Phase B runtime active and await the immediate bilateral test instruction.
