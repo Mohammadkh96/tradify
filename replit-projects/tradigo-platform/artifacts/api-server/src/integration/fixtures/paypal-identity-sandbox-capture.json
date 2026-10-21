@@ -1,0 +1,104 @@
+{
+  "provider": "PAYPAL",
+  "contract": {
+    "signatureHeader": "x-paypal-identity-signature",
+    "timestampHeader": "x-paypal-identity-timestamp",
+    "signaturePrefix": "sha256=",
+    "signatureEncoding": "lowercase-hex",
+    "timestampUnit": "unix-seconds",
+    "signedBytes": "utf8(`${timestamp}.${rawBody}`)",
+    "decisionField": "resource.verification_status"
+  },
+  "deliveries": [
+    {
+      "name": "approved",
+      "providerStatus": "approved",
+      "expectedDecision": "VERIFIED",
+      "providerReference": "PAYPAL-KYC-APPROVED-REDACTED",
+      "reasonCodes": ["NAME_MATCHED", "LIVENESS_PASSED"],
+      "checks": {
+        "document_name_match": "passed",
+        "document_validity": "PASS",
+        "liveness": "PASS",
+        "sanctions_screening": "clear"
+      },
+      "headers": {
+        "x-identity-provider": "PAYPAL",
+        "x-paypal-identity-timestamp": "{{UNIX_SECONDS}}",
+        "x-paypal-identity-signature": "sha256={{SIGNATURE}}"
+      },
+      "body": {
+        "id": "{{EVENT_ID}}",
+        "event_type": "IDENTITY.REVIEW.UPDATED",
+        "resource": {
+          "id": "{{PROVIDER_REFERENCE}}",
+          "custom_id": "{{APPLICATION_ID}}",
+          "verification_status": "approved",
+          "created_at": "2026-08-26T10:15:00.000Z",
+          "check_results": "{{CHECKS}}",
+          "reason_codes": "{{REASON_CODES}}"
+        }
+      }
+    },
+    {
+      "name": "declined",
+      "providerStatus": "declined",
+      "expectedDecision": "DECLINED",
+      "providerReference": "PAYPAL-KYC-DECLINED-REDACTED",
+      "reasonCodes": ["DOCUMENT_EXPIRED"],
+      "checks": {
+        "document_name_match": "failed",
+        "document_validity": "FAIL",
+        "liveness": "REVIEW",
+        "sanctions_screening": "PASS"
+      },
+      "headers": {
+        "x-identity-provider": "PAYPAL",
+        "x-paypal-identity-timestamp": "{{UNIX_SECONDS}}",
+        "x-paypal-identity-signature": "sha256={{SIGNATURE}}"
+      },
+      "body": {
+        "id": "{{EVENT_ID}}",
+        "event_type": "IDENTITY.REVIEW.UPDATED",
+        "resource": {
+          "id": "{{PROVIDER_REFERENCE}}",
+          "custom_id": "{{APPLICATION_ID}}",
+          "verification_status": "declined",
+          "created_at": "2026-08-26T10:15:00.000Z",
+          "check_results": "{{CHECKS}}",
+          "reason_codes": "{{REASON_CODES}}"
+        }
+      }
+    },
+    {
+      "name": "pending",
+      "providerStatus": "pending",
+      "expectedDecision": "PENDING",
+      "providerReference": "PAYPAL-KYC-PENDING-REDACTED",
+      "reasonCodes": ["MANUAL_REVIEW_REQUIRED"],
+      "checks": {
+        "document_name_match": "PASS",
+        "document_validity": "REVIEW",
+        "liveness": "NOT_CHECKED",
+        "sanctions_screening": "NOT_CHECKED"
+      },
+      "headers": {
+        "x-identity-provider": "PAYPAL",
+        "x-paypal-identity-timestamp": "{{UNIX_SECONDS}}",
+        "x-paypal-identity-signature": "sha256={{SIGNATURE}}"
+      },
+      "body": {
+        "id": "{{EVENT_ID}}",
+        "event_type": "IDENTITY.REVIEW.UPDATED",
+        "resource": {
+          "id": "{{PROVIDER_REFERENCE}}",
+          "custom_id": "{{APPLICATION_ID}}",
+          "verification_status": "pending",
+          "created_at": "2026-08-26T10:15:00.000Z",
+          "check_results": "{{CHECKS}}",
+          "reason_codes": "{{REASON_CODES}}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Tradigo Trading Coaching"
+description = "A real-time trading coaching marketplace where traders discover verified mentors, book instant or scheduled sessions, and connect in focused live coaching rooms."
+version = "1.0.0"
+id = "artifacts/tradigo"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21870
+
+[services.development]
+run = "pnpm --filter @workspace/tradigo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tradigo", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tradigo/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21870"
+BASE_PATH = "/"

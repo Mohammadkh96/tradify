@@ -1,0 +1,244 @@
+.tg-passport-shell{--tg-ink:#173b35;--tg-ink-soft:#315a51;--tg-parchment:#f7f0df;--tg-paper:#fbf8ef;--tg-line:#d9ccb0;--tg-brass:#c58d45;--tg-brass-soft:#ead7ae;--tg-coral:#b86756;color:var(--tg-ink);background:radial-gradient(circle at 15% 10%,rgba(197,141,69,.11),transparent 28rem),#e8e1d0;border:1px solid rgba(23,59,53,.15);border-radius:1.2rem;overflow:hidden;font-family:var(--font-sans)}
+.tg-passport-stage{max-width:72rem;margin:auto;padding:clamp(1.2rem,3vw,2.5rem)}
+.tg-passport-topline{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}.tg-passport-kicker,.tg-page-eyebrow,.tg-entry-label,.tg-profile-label,.tg-record-item dt{color:var(--tg-ink-soft);font-size:.64rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.tg-passport-kicker{display:flex;align-items:center;gap:.55rem}.tg-passport-kicker:before{content:"";width:1.8rem;height:1px;background:var(--tg-brass)}.tg-passport-heading{margin-top:.45rem;max-width:29rem;font-family:Georgia,serif;font-size:clamp(1.6rem,3vw,2.3rem);line-height:1.05;letter-spacing:-.04em}.tg-passport-heading em{color:var(--tg-coral);font-weight:400}.tg-passport-helper{max-width:18rem;margin-top:.4rem;color:var(--tg-ink-soft);font-size:.72rem;line-height:1.5;text-align:right}
+.tg-passport-book{display:grid;grid-template-columns:minmax(13rem,.72fr) minmax(0,1.55fr);min-height:36rem;border:1px solid rgba(23,59,53,.2);border-radius:1.1rem;background:#d8c7a6;box-shadow:0 1.5rem 3rem rgba(60,53,35,.15),0 .3rem .6rem rgba(60,53,35,.1);transition:grid-template-columns .75s cubic-bezier(.2,.75,.2,1)}.tg-passport-book.is-closed{grid-template-columns:1fr;min-height:22rem}.tg-passport-cover{position:relative;z-index:2;display:flex;min-width:0;flex-direction:column;justify-content:space-between;overflow:hidden;padding:clamp(1.3rem,3vw,2.2rem);border-radius:1rem 0 0 1rem;color:var(--tg-paper);background:linear-gradient(125deg,rgba(255,255,255,.06),transparent 40%),var(--tg-ink);transform-origin:left center;transition:transform .8s cubic-bezier(.2,.75,.2,1),border-radius .8s ease}.tg-passport-cover:before{position:absolute;inset:1rem;border:1px solid rgba(234,215,174,.45);border-radius:.7rem;content:"";pointer-events:none}.is-closed .tg-passport-cover{border-radius:1rem}.tg-passport-cover-top,.tg-passport-cover-footer{position:relative;display:flex;justify-content:space-between;color:var(--tg-brass-soft);font-size:.6rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.tg-passport-cover-footer{color:rgba(247,240,223,.65);font-weight:400}.tg-passport-cover-mark{position:relative;width:4rem;height:4rem;margin-bottom:1rem;color:var(--tg-brass)}.tg-passport-cover-title{position:relative;margin-top:auto;margin-bottom:auto;font-family:Georgia,serif;font-size:clamp(2rem,4vw,3rem);line-height:.98;letter-spacing:-.05em}.tg-passport-cover-title span{display:block;margin-top:.75rem;color:var(--tg-brass-soft);font-family:var(--font-sans);font-size:.58rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
+.tg-passport-interior{position:relative;display:grid;grid-template-columns:minmax(13rem,.84fr) minmax(0,1.2fr);min-width:0;opacity:1;transform:translateX(0);transition:opacity .45s ease .2s,transform .75s cubic-bezier(.2,.75,.2,1)}.is-closed .tg-passport-interior{position:absolute;inset:0;overflow:hidden;opacity:0;pointer-events:none;transform:translateX(1rem)}.tg-passport-page{position:relative;min-width:0;padding:clamp(1.3rem,2.5vw,2rem);background:var(--tg-paper)}.tg-passport-left{border-right:1px solid var(--tg-line);background:linear-gradient(90deg,rgba(197,141,69,.06),transparent 13%),var(--tg-parchment)}.tg-passport-right{border-radius:0 1rem 1rem 0;background:radial-gradient(circle at 80% 7%,rgba(197,141,69,.08),transparent 11rem),var(--tg-paper)}.tg-page-eyebrow{color:var(--tg-coral)}.tg-page-name{margin-top:.55rem;font-family:Georgia,serif;font-size:clamp(1.6rem,3vw,2.3rem);line-height:1.05;letter-spacing:-.05em}.tg-page-date{display:flex;align-items:center;gap:.4rem;margin-top:.7rem;color:var(--tg-ink-soft);font-family:monospace;font-size:.65rem}.tg-passport-profile{display:grid;grid-template-columns:2.7rem 1fr;gap:.7rem;align-items:center;margin-top:2.5rem;padding-top:.9rem;border-top:1px solid var(--tg-line)}.tg-profile-initial{display:grid;width:2.7rem;height:2.7rem;place-items:center;border:1px solid var(--tg-brass);border-radius:50%;background:var(--tg-brass-soft);font-family:Georgia,serif}.tg-profile-name{margin-top:.15rem;font-family:Georgia,serif;font-size:1rem}.tg-journey-line{position:absolute;top:9rem;bottom:2rem;left:2.35rem;width:1px;background:linear-gradient(var(--tg-brass),rgba(197,141,69,.05))}.tg-journey-entry{position:relative;margin-top:3.2rem;padding-left:2.35rem}.tg-journey-entry:before{position:absolute;top:.2rem;left:-.28rem;width:.55rem;height:.55rem;border:2px solid var(--tg-paper);border-radius:50%;background:var(--tg-coral);box-shadow:0 0 0 1px var(--tg-coral);content:""}.tg-entry-value{margin-top:.35rem;font-family:Georgia,serif;font-size:1.05rem;line-height:1.3}.tg-entry-note{margin-top:.35rem;color:var(--tg-ink-soft);font-size:.7rem;line-height:1.45}
+.tg-record-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:.8rem;padding-bottom:1rem;border-bottom:1px solid var(--tg-line)}.tg-record-heading h3{margin-top:.3rem;font-family:Georgia,serif;font-size:clamp(1.25rem,2.5vw,1.8rem);line-height:1.08}.tg-stamp{position:relative;display:grid;width:5rem;height:5rem;flex:0 0 auto;place-items:center;border:1px dashed var(--tg-coral);border-radius:50%;color:var(--tg-coral);font-size:.5rem;font-weight:800;letter-spacing:.08em;text-align:center;text-transform:uppercase;transform:rotate(-8deg) scale(1);transition:opacity .35s ease,transform .55s cubic-bezier(.2,1.5,.5,1)}.tg-stamp:before{position:absolute;inset:.3rem;border:1px solid rgba(184,103,86,.6);border-radius:50%;content:""}.tg-stamp.is-hidden{opacity:0;transform:rotate(-8deg) scale(.65)}.tg-record-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin-top:1.2rem}.tg-record-item{min-width:0;padding:.8rem;border:1px solid var(--tg-line);border-radius:.5rem;background:rgba(247,240,223,.5)}.tg-record-item dd{margin-top:.35rem;font-family:Georgia,serif;font-size:.8rem;line-height:1.4}.tg-practice-card{display:flex;gap:.6rem;align-items:flex-start;margin-top:1.1rem;padding:.85rem;border-radius:.5rem;color:var(--tg-paper);background:var(--tg-ink)}.tg-practice-card svg{flex:0 0 auto;color:var(--tg-brass)}.tg-practice-card p{font-size:.7rem;line-height:1.45}.tg-practice-card strong{display:block;margin-bottom:.15rem;color:var(--tg-brass-soft);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase}.tg-passport-actions{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:.65rem;margin-top:1.2rem}.tg-passport-action-note,.tg-passport-privacy{display:flex;align-items:center;gap:.35rem;color:var(--tg-ink-soft);font-size:.64rem}.tg-passport-privacy{margin-top:1rem}.tg-passport-button{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-height:2.5rem;padding:.6rem .9rem;border:1px solid var(--tg-ink);border-radius:999px;color:var(--tg-paper);background:var(--tg-ink);font-size:.72rem;font-weight:700;cursor:pointer;transition:transform .25s ease,background-color .25s ease}.tg-passport-button:hover{transform:translateY(-2px);background:var(--tg-ink-soft)}.tg-passport-button.secondary{border-color:var(--tg-line);color:var(--tg-ink);background:rgba(251,248,239,.58)}.tg-passport-button:focus-visible{outline:3px solid var(--tg-brass);outline-offset:3px}
+@media(max-width:700px){.tg-passport-topline{display:block}.tg-passport-helper{max-width:21rem;margin-top:1rem;text-align:left}.tg-passport-book,.tg-passport-book.is-closed{display:block;min-height:0}.tg-passport-cover,.is-closed .tg-passport-cover{min-height:20rem;border-radius:1rem 1rem 0 0}.tg-passport-interior,.is-closed .tg-passport-interior{position:relative;inset:auto;display:block;min-height:0;opacity:1;overflow:visible;pointer-events:auto;transform:none}.is-closed .tg-passport-interior{display:none}.tg-passport-left{border-right:0;border-bottom:1px solid var(--tg-line)}.tg-passport-right{border-radius:0 0 1rem 1rem}.tg-record-list{grid-template-columns:1fr}.tg-journey-line{top:8rem}}
+@media(prefers-reduced-motion:reduce){.tg-passport-book,.tg-passport-cover,.tg-passport-interior,.tg-stamp,.tg-passport-button{transition:none}}
+.tg-record-item.wide{grid-column:1/-1}
+.tg-note-copy-reveal{animation:tg-handwriting-reveal .58s cubic-bezier(.2,.85,.25,1) both}
+.tg-record-item.is-writing{color:var(--tg-ink-soft)}
+.tg-writing-placeholder{display:grid;gap:.36rem;min-height:3.8rem;align-content:center}
+.tg-writing-placeholder span{display:block;height:.4rem;border-radius:999px;background:var(--tg-line);opacity:.72}
+.tg-writing-placeholder span:nth-child(1){width:92%}.tg-writing-placeholder span:nth-child(2){width:76%}.tg-writing-placeholder span:nth-child(3){width:52%}
+@keyframes tg-handwriting-reveal{0%{opacity:0;transform:translateY(.28rem) rotate(.35deg)}100%{opacity:1;transform:translateY(0) rotate(0)}}
+.tg-writing-status{display:flex;align-items:center;gap:.48rem;min-height:1.25rem;margin-top:.85rem;color:var(--tg-ink-soft);font-family:monospace;font-size:.61rem}
+.tg-writing-status-dot{width:.42rem;height:.42rem;flex:0 0 auto;border-radius:50%;background:var(--tg-brass);box-shadow:0 0 0 .22rem rgba(197,141,69,.12);animation:tg-writing-pulse 1.1s ease-in-out infinite}
+.tg-writing-status-dot.is-complete{background:var(--tg-coral);animation:none}
+@keyframes tg-writing-pulse{0%,100%{opacity:.45;transform:scale(.82)}50%{opacity:1;transform:scale(1)}}
+.tg-passport-button-row{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.5rem}
+.tg-practice-card.is-writing{color:var(--tg-ink);border:1px dashed var(--tg-line);background:rgba(247,240,223,.54)}
+.tg-practice-card.is-writing strong{color:var(--tg-ink-soft)}
+@media(max-width:700px){.tg-passport-button-row{width:100%;justify-content:flex-start}}
+@media(prefers-reduced-motion:reduce){.tg-note-copy-reveal,.tg-writing-status-dot{animation:none}}
+
+/* Live Point passport treatment: midnight cover, signal blue guidance, coral lesson stamps. */
+.tg-passport-shell{--tg-ink:#0a172c;--tg-ink-soft:#43546d;--tg-parchment:#f4f7fb;--tg-paper:#fff;--tg-line:#cbd7e5;--tg-brass:#2f8ded;--tg-brass-soft:#dcecff;--tg-coral:#f66b5d;background:radial-gradient(circle at 15% 10%,rgba(47,141,237,.12),transparent 28rem),radial-gradient(circle at 90% 90%,rgba(246,107,93,.08),transparent 24rem),#e8eef5;border-color:rgba(10,23,44,.15)}
+.tg-passport-book{border-color:rgba(10,23,44,.2);background:#c8d8ea;box-shadow:0 1.5rem 3rem rgba(10,23,44,.16),0 .3rem .6rem rgba(10,23,44,.1)}
+.tg-passport-cover{background:linear-gradient(125deg,rgba(255,255,255,.09),transparent 40%),var(--tg-ink)}
+.tg-passport-cover:before{border-color:rgba(220,236,255,.5)}
+.tg-passport-cover-mark{width:4rem;height:4rem;margin-bottom:1rem}
+.tg-passport-cover-kicker{position:relative;max-width:15rem;margin-bottom:.65rem;color:rgba(220,236,255,.7);font-family:monospace;font-size:.54rem;line-height:1.35;letter-spacing:.08em;text-transform:uppercase}
+.tg-page-meta{display:flex;justify-content:space-between;margin-bottom:1.4rem;color:var(--tg-ink-soft);font-family:monospace;font-size:.56rem;letter-spacing:.1em;text-transform:uppercase}
+.tg-page-folio{position:absolute;right:2rem;bottom:1.35rem;color:var(--tg-ink-soft);font-family:monospace;font-size:.52rem;letter-spacing:.08em}
+.tg-page-folio span{margin-left:.5rem;color:var(--tg-coral)}
+.tg-record-subtitle{max-width:16rem;margin-top:.45rem;color:var(--tg-ink-soft);font-size:.68rem;line-height:1.4}
+.tg-record-item{background:rgba(244,247,251,.7)}
+.tg-passport-button.secondary{background:rgba(255,255,255,.68)}
+.tg-stamp:before{border-color:rgba(246,107,93,.6)}
+
+/* Keep the passport's richer editorial treatment on the shared Live Point tokens. */
+.tg-passport-shell{--tg-ink:var(--brand-midnight,#0a182b);--tg-brass:var(--brand-blue,#2c8af2);--tg-coral:var(--brand-coral,#f5695d);background:radial-gradient(circle at 15% 10%,rgb(44 138 242 / 12%),transparent 28rem),radial-gradient(circle at 90% 90%,rgb(245 105 93 / 8%),transparent 24rem),var(--brand-fog,#edf3f8)}
+
+/* Keep the open spread calm and readable when it sits inside a session detail column. */
+.tg-passport-book{grid-template-columns:minmax(11rem,.62fr) minmax(0,1.7fr);min-height:34rem}
+.tg-passport-interior{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)}
+.tg-passport-page{overflow:hidden}
+.tg-passport-topline{align-items:flex-end}
+.tg-page-meta{flex-wrap:wrap;gap:.45rem .8rem}
+.tg-page-name,.tg-entry-value,.tg-profile-name,.tg-record-item dd,.tg-practice-card p{overflow-wrap:anywhere}
+.tg-record-heading>div:first-child{min-width:0}
+.tg-record-list{grid-template-columns:1fr}
+.tg-record-item.wide{grid-column:auto}
+.tg-stamp{width:4.35rem;height:4.35rem}
+.tg-passport-actions{align-items:flex-start}
+
+@media(max-width:700px){
+  .tg-passport-topline{align-items:flex-start}
+}
+
+/* Approved hybrid: a tactile passport cover opening into a quiet learning atlas. */
+.tg-passport-shell{
+  --tg-ink:var(--brand-midnight,#0a182b);
+  --tg-ink-soft:#53657d;
+  --tg-paper:#fdfcf8;
+  --tg-parchment:#f5f7f4;
+  --tg-line:#d5dfe8;
+  --tg-blue:var(--brand-blue,#2c8af2);
+  --tg-blue-soft:#e3effb;
+  --tg-coral:var(--brand-coral,#f5695d);
+  --tg-coral-soft:#fbe3df;
+  --tg-brass:#d9b36d;
+  --tg-radius:1.1rem;
+  position:relative;
+  overflow:hidden;
+  color:var(--tg-ink);
+  border:1px solid rgb(10 24 43 / 14%);
+  border-radius:1.35rem;
+  background:
+    radial-gradient(circle at 8% 0%,rgb(44 138 242 / 11%),transparent 23rem),
+    radial-gradient(circle at 100% 100%,rgb(245 105 93 / 8%),transparent 24rem),
+    #edf3f8;
+  font-family:var(--font-sans);
+}
+.tg-passport-shell:after{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.17;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+  content:"";
+}
+.tg-passport-stage{position:relative;z-index:1;max-width:76rem;margin:auto;padding:clamp(1.2rem,3vw,2.65rem)}
+.tg-passport-topline{display:flex;align-items:flex-end;justify-content:space-between;gap:1.5rem;margin-bottom:1.35rem}
+.tg-passport-kicker,.tg-page-eyebrow,.tg-entry-label,.tg-profile-label,.tg-record-item dt{
+  color:var(--tg-blue);
+  font-size:.62rem;
+  font-weight:800;
+  letter-spacing:.16em;
+  line-height:1.25;
+  text-transform:uppercase;
+}
+.tg-passport-kicker{display:flex;align-items:center;gap:.6rem}
+.tg-passport-kicker:before{width:2.1rem;height:1px;background:var(--tg-coral);content:""}
+.tg-passport-heading{max-width:31rem;margin-top:.45rem;font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.75rem,3.7vw,2.65rem);font-weight:400;line-height:1;letter-spacing:-.055em}
+.tg-passport-heading em{color:var(--tg-coral);font-weight:400}
+.tg-passport-helper{max-width:19rem;margin:0 0 .15rem;color:var(--tg-ink-soft);font-size:.7rem;line-height:1.55;text-align:right}
+.tg-passport-book{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(14rem,.62fr) minmax(0,1.68fr);
+  min-height:37rem;
+  border:1px solid rgb(10 24 43 / 18%);
+  border-radius:var(--tg-radius);
+  background:#c9d8e7;
+  box-shadow:0 1.6rem 3.4rem rgb(10 24 43 / 14%),0 .25rem .6rem rgb(10 24 43 / 11%);
+  isolation:isolate;
+  transition:grid-template-columns .75s cubic-bezier(.2,.75,.2,1),min-height .5s ease;
+}
+.tg-passport-book:before{
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:clamp(14rem,27%,22rem);
+  z-index:3;
+  width:2px;
+  background:linear-gradient(transparent 4%,rgb(10 24 43 / 11%) 14%,rgb(255 255 255 / 52%) 50%,rgb(10 24 43 / 11%) 86%,transparent 96%);
+  box-shadow:0 0 1rem rgb(10 24 43 / 13%);
+  content:"";
+  pointer-events:none;
+}
+.tg-passport-book.is-closed{grid-template-columns:1fr;min-height:22rem}
+.tg-passport-cover{
+  position:relative;
+  z-index:2;
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  justify-content:space-between;
+  overflow:hidden;
+  padding:clamp(1.45rem,3vw,2.45rem);
+  border-radius:1rem 0 0 1rem;
+  color:var(--tg-paper);
+  background:
+    linear-gradient(145deg,rgb(255 255 255 / 10%),transparent 34%),
+    radial-gradient(circle at 82% 26%,rgb(44 138 242 / 23%),transparent 14rem),
+    var(--tg-ink);
+  box-shadow:inset -1px 0 rgb(255 255 255 / 10%);
+  transform-origin:left center;
+  transition:transform .8s cubic-bezier(.2,.75,.2,1),border-radius .8s ease;
+}
+.tg-passport-cover:before{position:absolute;inset:1rem;border:1px solid rgb(227 239 251 / 42%);border-radius:.72rem;content:"";pointer-events:none}
+.tg-passport-cover:after{position:absolute;right:-3rem;bottom:3rem;width:11rem;height:11rem;border:1px solid rgb(227 239 251 / 12%);border-radius:50%;box-shadow:0 0 0 1.2rem rgb(227 239 251 / 4%),0 0 0 2.4rem rgb(227 239 251 / 3%);content:"";pointer-events:none}
+.is-closed .tg-passport-cover{border-radius:1rem}
+.tg-passport-cover-top,.tg-passport-cover-footer{position:relative;display:flex;justify-content:space-between;gap:1rem;color:var(--tg-blue-soft);font-size:.56rem;font-weight:800;letter-spacing:.15em;line-height:1.35;text-transform:uppercase}
+.tg-passport-cover-footer{color:rgb(253 252 248 / 64%);font-weight:500}
+.tg-passport-cover-mark{position:relative;width:4rem;height:4rem;margin-bottom:1.15rem;color:var(--tg-brass)}
+.tg-passport-cover-kicker{position:relative;max-width:15rem;margin-bottom:.7rem;color:rgb(227 239 251 / 70%);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.54rem;line-height:1.4;letter-spacing:.08em;text-transform:uppercase}
+.tg-passport-cover-title{position:relative;margin-top:auto;margin-bottom:auto;font-family:Georgia,"Times New Roman",serif;font-size:clamp(2.15rem,4.5vw,3.45rem);font-weight:400;line-height:.92;letter-spacing:-.07em}
+.tg-passport-cover-title span{display:block;max-width:12rem;margin-top:1rem;color:var(--tg-blue-soft);font-family:var(--font-sans);font-size:.55rem;font-weight:800;letter-spacing:.15em;line-height:1.35;text-transform:uppercase}
+.tg-passport-interior{position:relative;display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.22fr);min-width:0;opacity:1;transform:translateX(0);transition:opacity .45s ease .2s,transform .75s cubic-bezier(.2,.75,.2,1)}
+.is-closed .tg-passport-interior{position:absolute;inset:0;overflow:hidden;opacity:0;pointer-events:none;transform:translateX(1rem)}
+.tg-passport-page{position:relative;min-width:0;overflow:hidden;padding:clamp(1.35rem,2.5vw,2.15rem);background:var(--tg-paper)}
+.tg-passport-left{border-right:1px solid var(--tg-line);background:linear-gradient(90deg,rgb(44 138 242 / 5%),transparent 16%),var(--tg-parchment)}
+.tg-passport-right{border-radius:0 1rem 1rem 0;background:radial-gradient(circle at 86% 5%,rgb(44 138 242 / 7%),transparent 11rem),var(--tg-paper)}
+.tg-page-meta{display:flex;justify-content:space-between;gap:.5rem .9rem;margin-bottom:1.5rem;color:var(--tg-ink-soft);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.55rem;letter-spacing:.1em;line-height:1.35;text-transform:uppercase}
+.tg-page-meta span:last-child{color:var(--tg-coral)}
+.tg-page-eyebrow{color:var(--tg-coral)}
+.tg-page-name{max-width:20rem;margin-top:.55rem;font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.65rem,3vw,2.35rem);font-weight:400;line-height:1.02;letter-spacing:-.055em}
+.tg-page-date{display:flex;align-items:center;gap:.4rem;margin-top:.7rem;color:var(--tg-ink-soft);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.62rem}
+.tg-passport-profile{display:grid;grid-template-columns:2.65rem 1fr;gap:.7rem;align-items:center;margin-top:1.65rem;padding-top:.9rem;border-top:1px solid var(--tg-line)}
+.tg-profile-initial{display:grid;width:2.65rem;height:2.65rem;place-items:center;border:1px solid var(--tg-blue);border-radius:50%;color:var(--tg-ink);background:var(--tg-blue-soft);font-family:Georgia,"Times New Roman",serif;font-size:.95rem}
+.tg-profile-name{margin-top:.16rem;font-family:Georgia,"Times New Roman",serif;font-size:1rem}
+.tg-route-map{position:relative;display:grid;gap:0;margin-top:1.55rem;padding:.1rem 0 .15rem}
+.tg-route-map:before{position:absolute;top:1.15rem;bottom:1.15rem;left:.66rem;width:1px;background:repeating-linear-gradient(to bottom,var(--tg-blue) 0 5px,transparent 5px 10px);opacity:.65;content:""}
+.tg-route-station,.tg-route-leg{position:relative;display:grid;grid-template-columns:1.35rem minmax(0,1fr);gap:.7rem;align-items:start;padding:.55rem 0}
+.tg-route-pin,.tg-route-leg-mark{position:relative;z-index:1;display:grid;width:1.35rem;height:1.35rem;place-items:center;border:2px solid var(--tg-parchment);border-radius:50%;color:var(--tg-paper);background:var(--tg-coral);box-shadow:0 0 0 1px var(--tg-coral)}
+.tg-route-leg-mark{border:1px solid var(--tg-blue);color:var(--tg-blue);background:var(--tg-blue-soft);box-shadow:none}
+.tg-route-station-next .tg-route-pin{color:var(--tg-ink);background:var(--tg-brass);box-shadow:0 0 0 1px var(--tg-brass)}
+.tg-entry-label{font-size:.57rem}
+.tg-entry-value{margin-top:.28rem;font-family:Georgia,"Times New Roman",serif;font-size:.9rem;line-height:1.35;overflow-wrap:anywhere}
+.tg-route-leg .tg-entry-value{font-family:var(--font-sans);font-size:.72rem;line-height:1.48}
+.tg-route-duration{display:grid;grid-template-columns:auto 1fr;column-gap:.55rem;align-items:baseline;margin-top:1.35rem;padding-top:.85rem;border-top:1px solid var(--tg-line);color:var(--tg-ink-soft);font-size:.62rem}
+.tg-route-duration strong{color:var(--tg-ink);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.64rem;font-weight:700}
+.tg-route-duration small{grid-column:1/-1;margin-top:.32rem;color:var(--tg-ink-soft);font-size:.62rem}
+.tg-page-folio{position:absolute;right:2.15rem;bottom:1.25rem;color:var(--tg-ink-soft);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.5rem;letter-spacing:.08em}
+.tg-page-folio span{margin-left:.5rem;color:var(--tg-coral)}
+.tg-record-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:.85rem;padding-bottom:1rem;border-bottom:1px solid var(--tg-line)}
+.tg-record-heading>div:first-child{min-width:0}
+.tg-record-heading h3{margin-top:.3rem;font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.35rem,2.5vw,1.9rem);font-weight:400;line-height:1.05;letter-spacing:-.045em}
+.tg-record-subtitle{max-width:18rem;margin-top:.45rem;color:var(--tg-ink-soft);font-size:.67rem;line-height:1.45}
+.tg-stamp{position:relative;display:grid;width:4.7rem;height:4.7rem;flex:0 0 auto;place-items:center;border:1px dashed var(--tg-coral);border-radius:50%;color:var(--tg-coral);font-size:.48rem;font-weight:800;letter-spacing:.08em;line-height:1.3;text-align:center;text-transform:uppercase;transform:rotate(-8deg) scale(1);transition:opacity .35s ease,transform .55s cubic-bezier(.2,1.5,.5,1)}
+.tg-stamp:before{position:absolute;inset:.28rem;border:1px solid rgb(245 105 93 / 60%);border-radius:50%;content:""}
+.tg-stamp:after{position:absolute;inset:.04rem;border-top:1px solid rgb(245 105 93 / 30%);border-bottom:1px solid rgb(245 105 93 / 30%);border-radius:50%;content:""}
+.tg-stamp.is-hidden{opacity:0;transform:rotate(-8deg) scale(.65)}
+.tg-writing-status{display:flex;align-items:center;gap:.48rem;min-height:1.25rem;margin-top:.85rem;color:var(--tg-ink-soft);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.6rem}
+.tg-writing-status-dot{width:.42rem;height:.42rem;flex:0 0 auto;border-radius:50%;background:var(--tg-blue);box-shadow:0 0 0 .22rem rgb(44 138 242 / 12%);animation:tg-writing-pulse 1.1s ease-in-out infinite}
+.tg-writing-status-dot.is-complete{background:var(--tg-coral);animation:none}
+.tg-record-list{display:grid;grid-template-columns:1fr;gap:.7rem;margin-top:1.2rem}
+.tg-record-item{min-width:0;padding:.78rem .85rem;border:1px solid var(--tg-line);border-radius:.55rem;background:rgb(245 247 244 / 72%)}
+.tg-record-item dd{margin-top:.35rem;font-family:Georgia,"Times New Roman",serif;font-size:.82rem;line-height:1.42;overflow-wrap:anywhere}
+.tg-record-item.is-writing{color:var(--tg-ink-soft)}
+.tg-writing-placeholder{display:grid;gap:.36rem;min-height:3.55rem;align-content:center}
+.tg-writing-placeholder span{display:block;height:.38rem;border-radius:999px;background:var(--tg-line);opacity:.72}
+.tg-writing-placeholder span:nth-child(1){width:92%}.tg-writing-placeholder span:nth-child(2){width:76%}.tg-writing-placeholder span:nth-child(3){width:52%}
+.tg-practice-card{display:flex;gap:.6rem;align-items:flex-start;margin-top:1.1rem;padding:.9rem;border-radius:.55rem;color:var(--tg-paper);background:var(--tg-ink)}
+.tg-practice-card svg{flex:0 0 auto;color:var(--tg-brass)}
+.tg-practice-card p{font-size:.69rem;line-height:1.48;overflow-wrap:anywhere}
+.tg-practice-card strong{display:block;margin-bottom:.18rem;color:var(--tg-blue-soft);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase}
+.tg-practice-card.is-writing{color:var(--tg-ink);border:1px dashed var(--tg-line);background:rgb(245 247 244 / 65%)}
+.tg-practice-card.is-writing strong{color:var(--tg-ink-soft)}
+.tg-passport-actions{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:.65rem;margin-top:1.2rem}
+.tg-passport-action-note,.tg-passport-privacy{display:flex;align-items:center;gap:.35rem;color:var(--tg-ink-soft);font-size:.62rem;line-height:1.4}
+.tg-passport-action-note svg{color:var(--tg-coral)}
+.tg-passport-privacy{margin-top:1rem}
+.tg-passport-privacy svg{flex:0 0 auto;color:var(--tg-blue)}
+.tg-passport-button{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-height:2.45rem;padding:.6rem .92rem;border:1px solid var(--tg-ink);border-radius:999px;color:var(--tg-paper);background:var(--tg-ink);font-size:.7rem;font-weight:700;cursor:pointer;transition:transform .25s ease,background-color .25s ease}
+.tg-passport-button:hover{transform:translateY(-2px);background:#1c3554}
+.tg-passport-button.secondary{border-color:var(--tg-line);color:var(--tg-ink);background:rgb(255 255 255 / 72%)}
+.tg-passport-button.secondary:hover{background:var(--tg-blue-soft)}
+.tg-passport-button:focus-visible{outline:3px solid var(--tg-coral);outline-offset:3px}
+.tg-passport-button-row{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.5rem}
+.tg-note-copy-reveal{animation:tg-handwriting-reveal .58s cubic-bezier(.2,.85,.25,1) both}
+@keyframes tg-handwriting-reveal{0%{opacity:0;transform:translateY(.28rem) rotate(.35deg)}100%{opacity:1;transform:translateY(0) rotate(0)}}
+@keyframes tg-writing-pulse{0%,100%{opacity:.45;transform:scale(.82)}50%{opacity:1;transform:scale(1)}}
+
+@media(max-width:700px){
+  .tg-passport-topline{display:block}
+  .tg-passport-helper{max-width:22rem;margin-top:1rem;text-align:left}
+  .tg-passport-book,.tg-passport-book.is-closed{display:block;min-height:0}
+  .tg-passport-book:before{display:none}
+  .tg-passport-cover,.is-closed .tg-passport-cover{min-height:21rem;border-radius:1rem 1rem 0 0}
+  .tg-passport-interior,.is-closed .tg-passport-interior{position:relative;inset:auto;display:block;min-height:0;opacity:1;overflow:visible;pointer-events:auto;transform:none}
+  .is-closed .tg-passport-interior{display:none}
+  .tg-passport-left{border-right:0;border-bottom:1px solid var(--tg-line)}
+  .tg-passport-right{border-radius:0 0 1rem 1rem}
+  .tg-route-map{margin-top:1.35rem}
+  .tg-passport-actions{align-items:flex-start}
+  .tg-passport-button-row{width:100%;justify-content:flex-start}
+}
+@media(prefers-reduced-motion:reduce){
+  .tg-passport-book,.tg-passport-cover,.tg-passport-interior,.tg-stamp,.tg-passport-button,.tg-note-copy-reveal,.tg-writing-status-dot{transition:none;animation:none}
+}

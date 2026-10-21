@@ -1,0 +1,1 @@
+export const brandMark = (name: string) => `../../brand_marks/${name}`;

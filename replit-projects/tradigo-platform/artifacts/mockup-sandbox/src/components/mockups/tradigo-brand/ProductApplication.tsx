@@ -1,0 +1,18 @@
+import { useState } from "react";
+import "./_brand.css";
+import { brandMark } from "./assets";
+
+export function ProductApplication() {
+  const [connected, setConnected] = useState(false);
+  return <main className="tg-brand"><div className="tg-brand-stage">
+    <header className="tg-head"><div><div className="tg-kicker">Tradigo / product application 03</div><h1>The brand, <em>in motion.</em></h1></div><p>Quietly confident in the product. The signal system turns a live marketplace into a place people want to return to.</p></header>
+    <section className="tg-panel" style={{padding:"1rem",background:"var(--midnight)"}} aria-label="Tradigo live room application">
+       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:".7rem .8rem",color:"white",borderBottom:"1px solid #273b54"}}><div style={{display:"flex",alignItems:"center",gap:".5rem"}}><img src={brandMark("live-point-focus.svg")} alt="Tradigo mark" style={{width:"2.5rem",height:"1.5rem",filter:"brightness(0) invert(1)"}}/><strong style={{font:"700 1.05rem var(--font-serif)",letterSpacing:"-.06em"}}>tradi<span style={{color:"var(--coral)"}}>go</span></strong></div><span className="tg-mono" style={{fontSize:".63rem",color:"#9bb0c4"}}>LIVE ROOM / 04:32</span></div>
+      <div className="tg-grid" style={{gridTemplateColumns:"1.35fr .65fr",padding:"1.2rem"}}>
+         <div style={{border:"1px solid #29415d",borderRadius:".8rem",padding:"1rem",background:"#10233d"}}><div style={{display:"flex",justifyContent:"space-between",color:"#c8d6e4",fontSize:".75rem"}}><span><i style={{display:"inline-block",width:".45rem",height:".45rem",background:"var(--coral)",borderRadius:"50%",marginRight:".4rem"}}/> Maya is coaching</span><span className="tg-mono">1:1 PRIVATE</span></div><div style={{display:"grid",placeItems:"center",minHeight:"14rem",border:"1px dashed #3a5671",borderRadius:".6rem",marginTop:".8rem",color:"#9bb0c4",textAlign:"center"}}><img src={brandMark("live-point-signal.svg")} alt="" style={{width:"5rem",filter:"brightness(0) invert(1)",opacity:.8}}/><div style={{marginTop:".7rem",font:"500 1.15rem var(--font-serif)",color:"white"}}>Read the room before the chart.</div><small style={{marginTop:".4rem"}}>Coach guidance appears here, in real time.</small></div><button className="tg-btn" onClick={()=>setConnected(!connected)} style={{marginTop:".8rem",background:connected?"var(--coral)":"var(--blue)",borderColor:connected?"var(--coral)":"var(--blue)"}}>{connected?"Connected to Maya":"Join live room"}</button></div>
+        <aside style={{padding:"1rem",borderRadius:".8rem",background:"#f8fbfd"}}><div className="tg-label">Coach beside you</div><div style={{display:"flex",gap:".7rem",alignItems:"center",marginTop:"1rem"}}><div style={{display:"grid",placeItems:"center",width:"2.6rem",height:"2.6rem",borderRadius:"50%",color:"var(--midnight)",background:"#ffd7d2",font:"600 1rem var(--font-serif)"}}>M</div><div><strong style={{fontSize:".82rem"}}>Maya Chen</strong><div className="tg-footnote">Verified coach · 4.9</div></div></div><div style={{marginTop:"2rem",paddingTop:"1rem",borderTop:"1px solid var(--line)"}}><div className="tg-label">Session focus</div><p style={{font:"600 1.05rem var(--font-serif)",marginTop:".5rem"}}>Building a repeatable pre-trade process.</p></div><div className="tg-contrast" style={{marginTop:"1.3rem"}}><span className="tg-dot" style={{background:"var(--blue)"}}/> No predictions. Just practice.</div></aside>
+      </div>
+    </section>
+  </div></main>;
+}
+export default ProductApplication;
