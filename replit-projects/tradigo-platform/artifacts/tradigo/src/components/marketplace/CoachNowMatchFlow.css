@@ -1,0 +1,1094 @@
+.coach-now-shell {
+  --coach-ink: #173047;
+  --coach-ink-soft: #537083;
+  --coach-cyan: #13a9ad;
+  --coach-cyan-deep: #087f8b;
+  --coach-coral: #e56b59;
+  --coach-paper: #f7fbfa;
+  --coach-line: #d4e4e2;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  color: var(--coach-ink);
+}
+
+.coach-now-intro {
+  padding: 1.75rem 0 1.35rem;
+}
+
+.coach-now-eyebrow,
+.coach-now-atlas-label,
+.coach-now-field-kicker {
+  color: var(--coach-cyan-deep);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  line-height: 1;
+}
+
+.coach-now-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.coach-now-eyebrow-dot {
+  width: 0.46rem;
+  height: 0.46rem;
+  border-radius: 50%;
+  background: var(--coach-coral);
+  box-shadow: 0 0 0 4px rgba(229, 107, 89, 0.13);
+}
+
+.coach-now-heading-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 0.85rem;
+}
+
+.coach-now-heading-row h1 {
+  max-width: 690px;
+  margin: 0;
+  color: var(--coach-ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.25rem, 5vw, 4.5rem);
+  font-weight: 400;
+  letter-spacing: -0.065em;
+  line-height: 0.98;
+}
+
+.coach-now-heading-row p {
+  max-width: 610px;
+  margin: 1rem 0 0;
+  color: var(--coach-ink-soft);
+  font-size: 0.93rem;
+  line-height: 1.65;
+}
+
+.coach-now-route-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(19, 169, 173, 0.28);
+  border-radius: 999px;
+  background: rgba(19, 169, 173, 0.07);
+  color: var(--coach-cyan-deep);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.coach-now-route-stamp svg {
+  animation: coach-now-blink 2.2s ease-in-out infinite;
+}
+
+.coach-now-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.13fr) minmax(340px, 0.87fr);
+  overflow: hidden;
+  border: 1px solid var(--coach-line);
+  border-radius: 1.4rem;
+  background: var(--coach-paper);
+  box-shadow: 0 20px 60px rgba(29, 74, 83, 0.1);
+}
+
+.coach-now-form-panel {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(247, 251, 250, 0.94);
+}
+
+.coach-now-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  padding: 0.35rem;
+  border: 1px solid var(--coach-line);
+  border-radius: 0.9rem;
+  background: #eaf4f2;
+}
+
+.coach-now-mode-switch button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.55rem;
+  row-gap: 0.12rem;
+  min-height: 3.7rem;
+  padding: 0.62rem 0.75rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: var(--coach-ink-soft);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.coach-now-mode-switch button:hover {
+  color: var(--coach-ink);
+  transform: translateY(-1px);
+}
+
+.coach-now-mode-switch button.is-active {
+  background: #fbfdfc;
+  color: var(--coach-ink);
+  box-shadow: 0 5px 15px rgba(30, 87, 91, 0.09);
+}
+
+.coach-now-mode-switch button > svg {
+  grid-row: span 2;
+  color: var(--coach-cyan-deep);
+}
+
+.coach-now-mode-switch span {
+  font-size: 0.77rem;
+  font-weight: 800;
+}
+
+.coach-now-mode-switch small {
+  color: var(--coach-ink-soft);
+  font-size: 0.64rem;
+}
+
+.coach-now-picker {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(19, 169, 173, 0.25);
+  border-radius: 1rem;
+  background: #edf8f6;
+}
+
+.coach-now-picker-header,
+.coach-now-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.coach-now-picker h2,
+.coach-now-form-heading h2 {
+  margin: 0.42rem 0 0;
+  color: var(--coach-ink);
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.coach-now-count {
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.45rem;
+  background: rgba(19, 169, 173, 0.12);
+  color: var(--coach-cyan-deep);
+  font-size: 0.67rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.coach-now-coach-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 245px;
+  margin-top: 0.85rem;
+  overflow-y: auto;
+}
+
+.coach-now-coach-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--coach-ink);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.coach-now-coach-row:hover:not(:disabled) {
+  border-color: rgba(19, 169, 173, 0.42);
+  transform: translateX(2px);
+}
+
+.coach-now-coach-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.coach-now-coach-row.is-selected {
+  border-color: rgba(19, 169, 173, 0.62);
+  background: #fbfdfc;
+}
+
+.coach-now-avatar {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #cae7e1;
+  color: var(--coach-cyan-deep);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.coach-now-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coach-now-avatar--large {
+  width: 2.55rem;
+  height: 2.55rem;
+}
+
+.coach-now-coach-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.13rem;
+}
+
+.coach-now-coach-copy strong,
+.coach-now-coach-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-now-coach-copy strong {
+  font-size: 0.75rem;
+}
+
+.coach-now-coach-copy span {
+  color: var(--coach-ink-soft);
+  font-size: 0.65rem;
+}
+
+.coach-now-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #8b766c;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.coach-now-presence span {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: #bea99c;
+}
+
+.coach-now-presence.is-live {
+  color: var(--coach-cyan-deep);
+}
+
+.coach-now-presence.is-live span {
+  background: var(--coach-cyan);
+}
+
+.coach-now-check {
+  display: inline-grid;
+  width: 1.2rem;
+  height: 1.2rem;
+  place-items: center;
+  border: 1px solid #b7d3d0;
+  border-radius: 0.35rem;
+  color: #fff;
+}
+
+.coach-now-coach-row.is-selected .coach-now-check {
+  border-color: var(--coach-cyan);
+  background: var(--coach-cyan);
+}
+
+.coach-now-picker-empty {
+  margin: 0.25rem 0;
+  color: var(--coach-ink-soft);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.coach-now-selected-note {
+  margin: 0.7rem 0 0;
+  color: var(--coach-cyan-deep);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.coach-now-form {
+  margin-top: 1.55rem;
+}
+
+.coach-now-form-heading {
+  margin-bottom: 1.05rem;
+}
+
+.coach-now-form-heading > svg {
+  margin-top: 0.1rem;
+  color: var(--coach-ink-soft);
+}
+
+.coach-now-fields {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.coach-now-fields--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.coach-now-fields--three {
+  grid-template-columns: 1.1fr 0.8fr 1fr;
+}
+
+.coach-now-fields label {
+  position: relative;
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.coach-now-fields label > span:first-child {
+  color: var(--coach-ink);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.coach-now-fields label em {
+  color: var(--coach-ink-soft);
+  font-size: 0.61rem;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.coach-now-fields input,
+.coach-now-fields select,
+.coach-now-fields textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--coach-line);
+  border-radius: 0.6rem;
+  outline: 0;
+  background: #fbfdfc;
+  color: var(--coach-ink);
+  font: inherit;
+  font-size: 0.76rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.coach-now-fields input,
+.coach-now-fields select {
+  height: 2.45rem;
+  padding: 0 0.75rem;
+}
+
+.coach-now-fields select {
+  appearance: none;
+  padding-right: 2rem;
+}
+
+.coach-now-fields textarea {
+  min-height: 4.5rem;
+  padding: 0.7rem 0.75rem;
+  resize: vertical;
+}
+
+.coach-now-fields input:focus,
+.coach-now-fields select:focus,
+.coach-now-fields textarea:focus {
+  border-color: var(--coach-cyan);
+  box-shadow: 0 0 0 3px rgba(19, 169, 173, 0.13);
+}
+
+.coach-now-select-icon {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.72rem;
+  pointer-events: none;
+  color: var(--coach-ink-soft);
+}
+
+.coach-now-input-prefix {
+  position: absolute;
+  bottom: 0.68rem;
+  left: 0.75rem;
+  color: var(--coach-ink-soft);
+  font-size: 0.78rem;
+}
+
+.coach-now-input-prefix + input {
+  padding-left: 1.42rem;
+}
+
+.coach-now-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.coach-now-price-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 365px;
+  color: var(--coach-ink-soft);
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.coach-now-price-note svg {
+  flex: 0 0 auto;
+  margin-top: 0.08rem;
+  color: var(--coach-cyan-deep);
+}
+
+.coach-now-price-note strong {
+  color: var(--coach-ink);
+  font-weight: 800;
+}
+
+.coach-now-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  flex: 0 0 auto;
+  min-height: 2.75rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: var(--coach-ink);
+  color: #effbf8;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(23, 48, 71, 0.15);
+  transition: background-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.coach-now-primary-button:hover:not(:disabled) {
+  background: var(--coach-cyan-deep);
+  transform: translateY(-1px);
+}
+
+.coach-now-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.coach-now-terms {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.85rem 0 0;
+  color: var(--coach-ink-soft);
+  font-size: 0.62rem;
+}
+
+.coach-now-terms svg {
+  flex: 0 0 auto;
+}
+
+.coach-now-atlas-panel {
+  position: relative;
+  display: flex;
+  min-height: 625px;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at 72% 20%, rgba(69, 190, 181, 0.16), transparent 28%),
+    linear-gradient(151deg, #173047 0%, #1b4652 48%, #236b6e 100%);
+  color: #dff5ef;
+}
+
+.coach-now-atlas-panel::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(223, 245, 239, 0.14) 0.7px, transparent 0.7px);
+  background-size: 7px 7px;
+  content: '';
+  opacity: 0.13;
+}
+
+.coach-now-atlas-topline,
+.coach-now-atlas-status,
+.coach-now-live-progress,
+.coach-now-found-card,
+.coach-now-fallback-card,
+.coach-now-cancel-button,
+.coach-now-error {
+  position: relative;
+  z-index: 1;
+}
+
+.coach-now-atlas-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.coach-now-atlas-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #a3e4d7;
+}
+
+.coach-now-atlas-code {
+  color: rgba(223, 245, 239, 0.57);
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+.coach-now-atlas-visual {
+  position: relative;
+  display: grid;
+  width: min(100%, 430px);
+  aspect-ratio: 1 / 0.82;
+  margin: auto;
+  place-items: center;
+}
+
+.coach-now-atlas-ring {
+  position: absolute;
+  border: 1px solid rgba(169, 236, 220, 0.42);
+  border-radius: 50%;
+  transform: perspective(500px) rotateX(57deg);
+}
+
+.coach-now-atlas-ring--outer {
+  width: 88%;
+  height: 88%;
+  border-style: dashed;
+  animation: coach-now-orbit 22s linear infinite;
+}
+
+.coach-now-atlas-ring--inner {
+  width: 63%;
+  height: 63%;
+  border-color: rgba(169, 236, 220, 0.25);
+}
+
+.coach-now-atlas-latitude,
+.coach-now-atlas-longitude {
+  position: absolute;
+  width: 76%;
+  height: 36%;
+  border: 1px solid rgba(169, 236, 220, 0.29);
+  border-radius: 50%;
+}
+
+.coach-now-atlas-latitude--one {
+  transform: rotateX(65deg);
+}
+
+.coach-now-atlas-latitude--two {
+  width: 71%;
+  height: 60%;
+  transform: rotateX(65deg);
+}
+
+.coach-now-atlas-longitude {
+  width: 31%;
+  height: 73%;
+  transform: rotateY(65deg);
+}
+
+.coach-now-atlas-longitude--two {
+  width: 63%;
+  height: 74%;
+  transform: rotateY(65deg);
+}
+
+.coach-now-atlas-contours {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0.64;
+}
+
+.coach-now-atlas-contours path {
+  stroke: #8dd5c7;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.coach-now-atlas-scan {
+  position: absolute;
+  top: 16%;
+  left: 11%;
+  width: 78%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(179, 236, 219, 0.95), transparent);
+  box-shadow: 0 0 14px rgba(159, 233, 215, 0.85);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.coach-now-atlas-panel--finding .coach-now-atlas-scan,
+.coach-now-atlas-panel--contacting .coach-now-atlas-scan,
+.coach-now-atlas-panel--expanding .coach-now-atlas-scan {
+  opacity: 1;
+  animation: coach-now-scan 2.8s ease-in-out infinite;
+}
+
+.coach-now-atlas-panel--finding .coach-now-atlas-signal,
+.coach-now-atlas-panel--contacting .coach-now-atlas-signal {
+  animation: coach-now-signal-pulse 1.8s ease-in-out infinite;
+}
+
+.coach-now-atlas-panel--contacting .coach-now-atlas-signal--two {
+  animation-delay: 320ms;
+}
+
+.coach-now-atlas-panel--contacting .coach-now-atlas-signal--three {
+  animation-delay: 640ms;
+}
+
+.coach-now-atlas-panel--expanding .coach-now-atlas-ring--outer {
+  animation-duration: 9s;
+}
+
+.coach-now-atlas-center-mark,
+.coach-now-atlas-origin,
+.coach-now-atlas-signal {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.coach-now-atlas-center-mark {
+  width: 2.8rem;
+  height: 2.8rem;
+  border: 1px solid rgba(224, 251, 243, 0.8);
+  background: rgba(30, 101, 102, 0.84);
+  color: #dff5ef;
+  box-shadow: 0 0 0 10px rgba(95, 205, 187, 0.1), 0 0 32px rgba(95, 205, 187, 0.34);
+}
+
+.coach-now-atlas-origin {
+  top: 35%;
+  left: 24%;
+  width: 0.48rem;
+  height: 0.48rem;
+  background: var(--coach-coral);
+  box-shadow: 0 0 0 6px rgba(229, 107, 89, 0.2);
+}
+
+.coach-now-atlas-signal {
+  width: 0.42rem;
+  height: 0.42rem;
+  background: #9fe9d7;
+  box-shadow: 0 0 0 5px rgba(159, 233, 215, 0.13);
+  opacity: 0.72;
+}
+
+.coach-now-atlas-signal--one {
+  top: 28%;
+  right: 25%;
+}
+
+.coach-now-atlas-signal--two {
+  right: 17%;
+  bottom: 28%;
+}
+
+.coach-now-atlas-signal--three {
+  bottom: 20%;
+  left: 27%;
+}
+
+.coach-now-atlas-status {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.coach-now-status-icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid rgba(169, 236, 220, 0.35);
+  border-radius: 0.7rem;
+  background: rgba(11, 53, 64, 0.28);
+  color: #b1eddb;
+}
+
+.coach-now-status-kicker {
+  margin: 0.12rem 0 0.3rem;
+  color: #a3e4d7;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.coach-now-atlas-status h2 {
+  margin: 0;
+  color: #f0fffb;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+}
+
+.coach-now-atlas-status > div:last-child > p:last-child {
+  max-width: 350px;
+  margin: 0.35rem 0 0;
+  color: rgba(223, 245, 239, 0.7);
+  font-size: 0.73rem;
+  line-height: 1.55;
+}
+
+.coach-now-status-fallback {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.coach-now-live-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  color: rgba(223, 245, 239, 0.71);
+  font-size: 0.65rem;
+}
+
+.coach-now-progress-line {
+  display: block;
+  width: 2.3rem;
+  height: 1px;
+  background: #a3e4d7;
+  animation: coach-now-progress 1.4s ease-in-out infinite;
+}
+
+.coach-now-found-card,
+.coach-now-fallback-card {
+  margin-top: 1.05rem;
+  border: 1px solid rgba(169, 236, 220, 0.22);
+  border-radius: 0.8rem;
+  background: rgba(8, 42, 53, 0.28);
+}
+
+.coach-now-found-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem;
+}
+
+.coach-now-claim-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(19, 169, 173, 0.28);
+  border-radius: 0.85rem;
+  background: rgba(237, 248, 246, 0.78);
+}
+
+.coach-now-claim-actions p {
+  margin: 0;
+  color: var(--coach-ink-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.coach-now-claim-actions button {
+  min-height: 2.65rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--coach-cyan-deep);
+  border-radius: 0.65rem;
+  background: var(--coach-cyan-deep);
+  color: white;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.coach-now-claim-actions button:hover:not(:disabled) {
+  background: var(--coach-ink);
+}
+
+.coach-now-claim-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.coach-now-claim-actions .coach-now-notify-button {
+  border-color: var(--coach-line);
+  background: transparent;
+  color: var(--coach-ink-soft);
+}
+
+.coach-now-found-card > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.18rem;
+  flex: 1;
+}
+
+.coach-now-found-card strong {
+  color: #f0fffb;
+  font-size: 0.76rem;
+}
+
+.coach-now-found-card div span {
+  overflow: hidden;
+  color: rgba(223, 245, 239, 0.66);
+  font-size: 0.64rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-now-found-card > svg {
+  color: #a3e4d7;
+}
+
+.coach-now-fallback-card {
+  padding: 0.9rem;
+}
+
+.coach-now-fallback-card > div {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #dff5ef;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.coach-now-fallback-card > div svg {
+  color: #f2ae87;
+}
+
+.coach-now-fallback-card p {
+  margin: 0.55rem 0 0.75rem;
+  color: rgba(223, 245, 239, 0.67);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.coach-now-fallback-card button {
+  width: 100%;
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: #b3ecdb;
+  color: #173047;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 800;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.coach-now-fallback-card button:hover {
+  background: #d3f8ec;
+  transform: translateY(-1px);
+}
+
+.coach-now-fallback-card button:disabled {
+  cursor: default;
+  opacity: 0.72;
+  transform: none;
+}
+
+.coach-now-fallback-card .coach-now-notify-button {
+  margin-top: 0.45rem;
+  border: 1px solid rgba(169, 236, 220, 0.35);
+  background: transparent;
+  color: #b3ecdb;
+}
+
+.coach-now-fallback-card .coach-now-notify-button:hover {
+  background: rgba(179, 236, 219, 0.1);
+}
+
+.coach-now-fallback-card .coach-now-retry-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  margin-top: 0.45rem;
+  background: transparent;
+  color: #a3e4d7;
+  font-size: 0.63rem;
+}
+
+.coach-now-fallback-card .coach-now-retry-button:hover {
+  background: rgba(179, 236, 219, 0.1);
+}
+
+.coach-now-error {
+  margin: 0.9rem 0 0;
+  color: #ffc2a9;
+  font-size: 0.67rem;
+  line-height: 1.45;
+}
+
+.coach-now-cancel-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding: 0.7rem 0 0;
+  border: 0;
+  background: transparent;
+  color: rgba(223, 245, 239, 0.67);
+  cursor: pointer;
+  font-size: 0.65rem;
+}
+
+.coach-now-cancel-button:hover:not(:disabled) {
+  color: #f2ae87;
+}
+
+.coach-now-cancel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.coach-now-atlas-panel--found .coach-now-atlas-center-mark {
+  background: rgba(23, 126, 116, 0.9);
+  box-shadow: 0 0 0 10px rgba(95, 205, 187, 0.15), 0 0 42px rgba(95, 205, 187, 0.65);
+}
+
+.coach-now-atlas-panel--no-live-match .coach-now-atlas-center-mark,
+.coach-now-atlas-panel--error .coach-now-atlas-center-mark {
+  border-color: rgba(255, 194, 169, 0.72);
+  color: #ffc2a9;
+}
+
+@keyframes coach-now-orbit {
+  from { transform: perspective(500px) rotateX(57deg) rotateZ(0deg); }
+  to { transform: perspective(500px) rotateX(57deg) rotateZ(360deg); }
+}
+
+@keyframes coach-now-progress {
+  0%, 100% { transform: scaleX(0.35); transform-origin: left; opacity: 0.45; }
+  50% { transform: scaleX(1); transform-origin: left; opacity: 1; }
+}
+
+@keyframes coach-now-scan {
+  0% { transform: translateY(0) scaleX(0.45); opacity: 0; }
+  18%, 82% { opacity: 0.9; }
+  100% { transform: translateY(245px) scaleX(1); opacity: 0; }
+}
+
+@keyframes coach-now-signal-pulse {
+  0%, 100% { transform: scale(0.75); opacity: 0.42; }
+  50% { transform: scale(1.45); opacity: 1; }
+}
+
+@keyframes coach-now-blink {
+  0%, 100% { opacity: 0.48; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-now-route-stamp svg,
+  .coach-now-atlas-ring--outer,
+  .coach-now-progress-line,
+  .coach-now-atlas-scan,
+  .coach-now-atlas-signal {
+    animation: none;
+  }
+
+  .coach-now-mode-switch button,
+  .coach-now-coach-row,
+  .coach-now-primary-button,
+  .coach-now-fallback-card button {
+    transition: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .coach-now-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .coach-now-atlas-panel {
+    min-height: 480px;
+  }
+
+  .coach-now-atlas-visual {
+    width: min(100%, 390px);
+    margin: 1.75rem auto 1.9rem;
+  }
+}
+
+@media (max-width: 620px) {
+  .coach-now-intro {
+    padding-top: 1rem;
+  }
+
+  .coach-now-heading-row {
+    display: block;
+  }
+
+  .coach-now-route-stamp {
+    margin-top: 1rem;
+  }
+
+  .coach-now-fields--two,
+  .coach-now-fields--three {
+    grid-template-columns: 1fr;
+  }
+
+  .coach-now-submit-row {
+    display: grid;
+  }
+
+  .coach-now-primary-button {
+    width: 100%;
+  }
+
+  .coach-now-atlas-panel {
+    min-height: 500px;
+    padding: 1.1rem;
+  }
+
+  .coach-now-coach-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .coach-now-presence {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: -0.45rem;
+  }
+
+  .coach-now-check {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}

@@ -1,0 +1,1 @@
+ALTER TABLE tradigo_session_events ADD COLUMN IF NOT EXISTS recipient_id text;

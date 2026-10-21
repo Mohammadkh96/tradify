@@ -1,0 +1,528 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@import "tailwindcss/utilities";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+@layer base {
+  :root {
+    --brand-midnight: #0a182b;
+    --brand-blue: #2c8af2;
+    --brand-coral: #f5695d;
+    --brand-fog: #edf3f8;
+    --background: #ffffff;
+    --secondary-bg: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: var(--brand-blue);
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #1e293b;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #dcecff;
+    --accent-foreground: #0f172a;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #2f8ded;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --brand-midnight: #0a182b;
+    --brand-blue: #4aa0ff;
+    --brand-coral: #ff796d;
+    --brand-fog: #0a182b;
+    --background: #020617;
+    --secondary-bg: #0f172a;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --popover: #0f172a;
+    --popover-foreground: #f8fafc;
+    --primary: var(--brand-blue);
+    --primary-foreground: #f8fafc;
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --accent: #17385f;
+    --accent-foreground: #f8fafc;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #f8fafc;
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #2f8ded;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family:
+      "Plus Jakarta Sans",
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Live Room - Executive Studio Redesign */
+.tradigo-room-layout {
+  --room-bg: var(--background);
+  --room-surface: var(--card);
+  --room-surface-hover: var(--secondary);
+  --room-border: var(--border);
+  --room-text: var(--foreground);
+  --room-text-muted: var(--muted-foreground);
+  --room-blue: var(--brand-blue);
+  --room-coral: var(--brand-coral);
+  --room-danger: var(--destructive);
+  --room-danger-bg: rgba(239, 68, 68, 0.1);
+
+  position: relative;
+  height: calc(100dvh - 5.5rem);
+  min-height: min(42rem, calc(100dvh - 5.5rem));
+  display: flex;
+  flex-direction: column;
+  background-color: var(--room-bg);
+  color: var(--room-text);
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.tradigo-room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4.5rem;
+  padding: 0 1.5rem;
+  background-color: var(--room-surface);
+  border-bottom: 1px solid var(--room-border);
+  z-index: 10;
+}
+
+.tradigo-room-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--room-text-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  transition: all 0.2s;
+  margin-left: -0.75rem;
+}
+
+.tradigo-room-back:hover {
+  background-color: var(--room-surface-hover);
+  color: var(--room-text);
+}
+
+.tradigo-room-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tradigo-room-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background-color: var(--room-surface);
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--room-text-muted);
+  border: 1px solid var(--room-border);
+}
+
+.tradigo-room-timer {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.tradigo-room-stage {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  overflow: hidden;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  gap: 1.5rem;
+}
+
+.tradigo-room-video-container {
+  flex: 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: #000;
+  box-shadow: inset 0 0 0 1px var(--room-border), 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.tradigo-room-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tradigo-room-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.tradigo-room-state-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  color: var(--room-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.tradigo-room-state-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--room-text);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.tradigo-room-state-desc {
+  color: var(--room-text-muted);
+  max-width: 20rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+  font-size: 0.9375rem;
+}
+
+.tradigo-room-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--room-text);
+  color: var(--room-bg);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.tradigo-room-primary-btn:hover {
+  opacity: 0.9;
+}
+
+/* LiveKit UI Overrides */
+.tradigo-room-layout .lk-room-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  --lk-control-bar-bg: transparent;
+  --lk-bg: #000;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-video-conference {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #000;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-video-conference-inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-grid-layout-wrapper,
+.tradigo-room-layout .lk-room-wrapper .lk-focus-layout-wrapper {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-grid-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  height: 100%;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-participant-tile {
+  background-color: #111;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.tradigo-room-layout .lk-room-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #000;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-participant-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #111;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-participant-placeholder svg {
+  width: 3rem;
+  height: 3rem;
+  color: #444;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-participant-metadata {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Control Bar */
+.tradigo-room-layout .lk-room-wrapper .lk-control-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: #000;
+  border-top: 1px solid #222;
+  overflow: hidden;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-control-bar > * {
+  flex: 0 0 auto !important;
+  min-width: 0;
+  width: auto !important;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-button-group {
+  display: flex !important;
+  flex: 0 0 4.75rem !important;
+  align-items: center;
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 9999px;
+  padding: 0.25rem;
+  gap: 2px;
+  height: 2.75rem;
+  width: 4.75rem !important;
+  max-width: 4.75rem;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-control-bar > .lk-button,
+.tradigo-room-layout .lk-room-wrapper .lk-disconnect-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 9999px;
+  height: 2.75rem;
+  padding: 0;
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.875rem;
+  gap: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 2.75rem !important;
+  max-width: 2.75rem;
+  flex: 0 0 2.75rem !important;
+  font-size: 0;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-button-group > .lk-button {
+  display: inline-flex !important;
+  flex: 0 0 3rem !important;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #fff;
+  border: none;
+  padding: 0;
+  height: 100%;
+  width: 3rem !important;
+  max-width: 3rem;
+  font-size: 0;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-button-group > .lk-button-group-menu {
+  display: inline-flex !important;
+  flex: 0 0 1.125rem !important;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem !important;
+  max-width: 1.125rem;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-button-group > .lk-button-group-menu > button {
+  display: inline-flex !important;
+  flex: 0 0 1.125rem !important;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem !important;
+  max-width: 1.125rem;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  color: #999;
+  border: none;
+  cursor: pointer;
+  font-size: 0;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-button:hover,
+.tradigo-room-layout .lk-room-wrapper .lk-button-group-menu > button:hover,
+.tradigo-room-layout .lk-room-wrapper .lk-button-group-menu:hover,
+.tradigo-room-layout .lk-room-wrapper .lk-control-bar > .lk-button:hover {
+  background-color: #222;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-disconnect-button {
+  background-color: #450a0a;
+  border-color: #7f1d1d;
+  color: #fca5a5;
+  display: none !important; /* We will use our own buttons in header */
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-button[data-lk-source="camera"][data-lk-enabled="false"],
+.tradigo-room-layout .lk-room-wrapper .lk-button[data-lk-source="microphone"][data-lk-enabled="false"] {
+  color: #ef4444;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-button[data-lk-source="camera"][data-lk-enabled="false"]:hover,
+.tradigo-room-layout .lk-room-wrapper .lk-button[data-lk-source="microphone"][data-lk-enabled="false"]:hover {
+  background-color: #450a0a;
+}
+
+.tradigo-room-layout .lk-room-wrapper svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* LiveKit Menus */
+.tradigo-room-layout .lk-room-wrapper .lk-device-menu {
+  background-color: var(--room-surface);
+  border: 1px solid var(--room-border);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  color: var(--room-text);
+  min-width: 12rem;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-device-menu-item {
+  padding: 0.5rem 0.75rem;
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.tradigo-room-layout .lk-room-wrapper .lk-device-menu-item:hover {
+  background-color: var(--room-surface-hover);
+}
+
+@media (max-width: 760px) {
+  .tradigo-room-header {
+    padding: 0 1rem;
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    gap: 1rem;
+  }
+  .tradigo-room-stage {
+    padding: 0.5rem;
+  }
+  .tradigo-room-layout .lk-room-wrapper .lk-control-bar {
+    padding: 0.625rem 0.375rem;
+    gap: 0.375rem;
+  }
+  .tradigo-room-layout .lk-room-wrapper .lk-button-group {
+    height: 2.5rem;
+  }
+  .tradigo-room-layout .lk-room-wrapper .lk-control-bar > .lk-button,
+  .tradigo-room-layout .lk-room-wrapper .lk-disconnect-button {
+    height: 2.5rem;
+  }
+}
