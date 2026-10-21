@@ -1,0 +1,38 @@
+kind = "mobile"
+previewPath = "/"
+title = "Tradify Signals"
+description = "A mobile-first trading intelligence app for active traders, with live market signals, MT5 broker connectivity, watchlists, price alerts, trade planning, performance analytics, membership, and secure administration."
+version = "1.0.0"
+id = "artifacts/tradify-signals"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 22591
+
+[services.development]
+run = "pnpm --filter @workspace/tradify-signals run dev"
+
+[services.production]
+[services.production.build]
+args = [ "pnpm", "--filter", "@workspace/tradify-signals", "run", "build" ]
+
+[services.production.build.env]
+NODE_ENV = "production"
+APP_ENV = "production"
+EXPO_PUBLIC_API_URL = "https://tradify-signals.replit.app"
+EXPO_PUBLIC_DOMAIN = "tradify-signals.replit.app"
+
+[services.production.run]
+args = [ "pnpm", "--filter", "@workspace/tradify-signals", "run", "serve" ]
+
+[services.production.run.env]
+PORT = "22591"
+NODE_ENV = "production"
+APP_ENV = "production"
+
+[services.env]
+PORT = "22591"
+BASE_PATH = "/"

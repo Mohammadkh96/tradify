@@ -1,0 +1,4003 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: market
+    description: Live market data and signals
+  - name: auth
+    description: Trader authentication and account state
+  - name: user
+    description: Authenticated trader data
+  - name: billing
+    description: RevenueCat billing lifecycle callbacks
+  - name: legal
+    description: Public legal and account-deletion resources
+  - name: admin
+    description: Restricted operations and CRM controls
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /market/snapshot:
+    get:
+      operationId: getMarketSnapshot
+      tags: [market]
+      summary: Get the live market snapshot
+      responses:
+        "200":
+          description: Current quotes, bridge status, and signal cards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketSnapshot"
+  /market/quotes:
+    get:
+      operationId: getMarketQuotes
+      tags: [market]
+      summary: Get the latest live broker quotes
+      description: Returns only the in-memory MT5 quote cache. This endpoint never evaluates strategies or calls fallback providers.
+      responses:
+        "200":
+          description: Latest broker quotes and bridge status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketQuotes"
+  /markets/catalog:
+    get:
+      operationId: getMarketsCatalog
+      tags: [market]
+      summary: Get the public instrument catalog
+      description: Browses the 61 MT5 symbols and the existing core markets. Quote-only symbols remain display-only; membership controls quote visibility and watchlist access.
+      responses:
+        "200":
+          description: Public instrument catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketCatalogItem"
+  /market/candles:
+    get:
+      operationId: getMarketCandles
+      tags: [market]
+      summary: Get a market candle series
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: timeframe
+          in: query
+          required: false
+          schema:
+            type: string
+            default: M15
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 1000
+            default: 500
+      responses:
+        "200":
+          description: Customer-safe candle series; provider provenance remains internal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketCandles"
+        "400":
+          description: Invalid symbol or timeframe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketCandleError"
+        "404":
+          description: No candle source is available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketCandleError"
+        "403":
+          description: The membership tier does not include this market or trusted setup levels
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TierAccessError"
+  /signals/evaluate:
+    get:
+      operationId: getSignalEvaluation
+      tags: [market]
+      summary: Evaluate one symbol with the authoritative strategy engine
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: strategy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [DGV8, DGV8_FX, BBB, BBB_GOLD_3S]
+      responses:
+        "200":
+          description: Server-authoritative signal, diagnostic, candle series, and provenance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignalEvaluation"
+        "403":
+          description: The membership tier does not include this market or signal context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TierAccessError"
+  /signals/diagnostic:
+    get:
+      operationId: getSignalDiagnostic
+      tags: [market]
+      summary: Get strategy gates and validation diagnostics
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: strategy
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Strategy diagnostic and market provenance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyDiagnostic"
+  /auth/password-reset/request:
+    post:
+      operationId: requestPasswordReset
+      tags: [auth]
+      summary: Request a password reset for an active staff account
+      description: Returns the same success response whether or not an active staff account matches the email address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequestInput"
+      responses:
+        "200":
+          description: Generic response that does not disclose whether an account exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordResetRequestResponse"
+        "400":
+          description: Email input is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Too many password reset requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Password reset email delivery is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /auth/password-reset/complete:
+    post:
+      operationId: completePasswordReset
+      tags: [auth]
+      summary: Set a new password using a single-use reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetCompleteInput"
+      responses:
+        "200":
+          description: Password updated and existing sessions invalidated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordResetCompleteResponse"
+        "400":
+          description: Reset token is invalid or expired, or the password is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Too many password reset attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Password reset could not be completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /auth/sign-in:
+    post:
+      operationId: signIn
+      tags: [auth]
+      summary: Sign in a trader
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "200":
+          description: Authenticated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /auth/admin-session:
+    get:
+      operationId: getAdminSession
+      tags: [auth]
+      summary: Get the current staff web session
+      responses:
+        "200":
+          description: Current administrator session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSessionResponse"
+        "401":
+          description: Staff session is missing or expired
+    post:
+      operationId: createAdminSession
+      tags: [auth]
+      summary: Sign in to the staff portal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "200":
+          description: Authenticated administrator session; token is set in an HttpOnly cookie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSessionResponse"
+        "401":
+          description: Credentials are invalid
+        "403":
+          description: Account is not an active administrator
+    delete:
+      operationId: logoutAdminSession
+      tags: [auth]
+      summary: End the current staff web session
+      responses:
+        "200":
+          description: Staff session ended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a trader
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "201":
+          description: Registered session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationResponse"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current trader
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Revoke the trader's active sessions
+      responses:
+        "200":
+          description: Sessions revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /user/account:
+    delete:
+      operationId: deleteUserAccount
+      tags: [user]
+      summary: Permanently delete the authenticated trader account
+      description: An authenticated server-owned deletion flow that clears customer workspace data, anonymizes the account, revokes access, and leaves only limited security, billing, fraud-prevention, or audit records where required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountDeletionInput"
+      responses:
+        "200":
+          description: Account deletion completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountDeletionResponse"
+        "400":
+          description: Explicit deletion confirmation is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Authentication is required
+        "409":
+          description: The account changed while deletion was being processed
+        "503":
+          description: Deletion is temporarily unavailable
+  /user/risk-disclaimer/acknowledge:
+    post:
+      operationId: acknowledgeRiskDisclaimer
+      tags: [user]
+      summary: Record the authenticated trader's acknowledgement of the current risk disclaimer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RiskDisclaimerAcknowledgementInput"
+      responses:
+        "200":
+          description: Current disclaimer acknowledgement recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "401":
+          description: Authentication is required
+        "409":
+          description: The disclaimer version changed and must be reviewed again
+  /user/export:
+    get:
+      operationId: exportUserData
+      tags: [user]
+      summary: Export the authenticated trader's account data
+      responses:
+        "200":
+          description: Downloadable JSON export of account-owned data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDataExport"
+  /product-links/journal:
+    get:
+      operationId: getJournalProductLink
+      tags: [user]
+      summary: Get the authenticated user's Journal link status
+      responses:
+        "200":
+          description: Current link status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalLinkStatusResponse"
+        "503":
+          description: Linking is disabled or partner status is unavailable
+  /product-links/journal/preview:
+    post:
+      operationId: previewJournalProductLink
+      tags: [user]
+      summary: Preview a Journal authorization code before separate Signals consent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalLinkPreviewInput"
+      responses:
+        "200":
+          description: Pairing labels and unchanged authorization expiry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalLinkStatusResponse"
+        "400":
+          description: Invalid authorization code
+        "503":
+          description: Linking is disabled or Journal is unavailable
+  /product-links/journal/claim:
+    post:
+      operationId: claimJournalProductLink
+      tags: [user]
+      summary: Record Signals consent and claim a Journal authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalLinkClaimInput"
+      responses:
+        "200":
+          description: Pairing claimed, pending Journal's final confirmation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalLinkStatusResponse"
+        "400":
+          description: Consent is missing or invalid
+        "503":
+          description: Linking is disabled or Journal is unavailable
+  /product-links/journal/{linkId}:
+    delete:
+      operationId: unlinkJournalProductLink
+      tags: [user]
+      summary: Request revocation of the authenticated user's Journal link
+      parameters:
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "202":
+          description: Revocation queued; local link is unusable while pending
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalLinkStatusResponse"
+        "404":
+          description: Link not found
+        "503":
+          description: Linking is disabled
+        "401":
+          description: Authentication is required
+  /user/profile:
+    get:
+      operationId: getUserProfile
+      tags: [user]
+      summary: Get the trader profile
+      responses:
+        "200":
+          description: Trader profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    patch:
+      operationId: patchUserProfile
+      tags: [user]
+      summary: Update the trader profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfilePatch"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+  /membership/status:
+    get:
+      operationId: getMembershipStatus
+      tags: [user]
+      summary: Get membership entitlements
+      responses:
+        "200":
+          description: Membership entitlements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipStatus"
+  /billing/revenuecat/webhook:
+    post:
+      operationId: receiveRevenueCatWebhook
+      tags: [billing]
+      summary: Receive an authenticated RevenueCat lifecycle event
+      security:
+        - RevenueCatWebhook: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueCatWebhookRequest"
+      responses:
+        "200":
+          description: Event accepted or safely ignored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatWebhookResponse"
+        "400":
+          description: Invalid event payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatBillingError"
+        "401":
+          description: Invalid webhook authorization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatBillingError"
+        "503":
+          description: Event could not be persisted and should be retried
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatBillingError"
+  /billing/revenuecat/reconcile:
+    post:
+      operationId: reconcileRevenueCatTransfers
+      tags: [billing]
+      summary: Reconcile pending RevenueCat transfers for the current trader
+      responses:
+        "200":
+          description: Reconciliation result and public recovery outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatReconciliationResponse"
+        "401":
+          description: Authentication is required to reconcile billing transfers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatBillingError"
+        "403":
+          description: Suspended accounts cannot reconcile billing transfers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatBillingError"
+        "503":
+          description: Reconciliation is temporarily unavailable and should be retried
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatBillingError"
+  /membership/sync:
+    post:
+      operationId: syncMembership
+      tags: [user]
+      summary: Verify the current RevenueCat subscription and synchronize server entitlements
+      responses:
+        "200":
+          description: Verified membership state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipStatus"
+  /membership/upgrade:
+    post:
+      operationId: upgradeMembership
+      tags: [user]
+      summary: Change the current trader membership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipUpgradeRequest"
+      responses:
+        "200":
+          description: Updated membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipStatus"
+  /user/alerts:
+    get:
+      operationId: getUserAlerts
+      tags: [user]
+      summary: List price alerts
+      responses:
+        "200":
+          description: User price alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceAlert"
+    post:
+      operationId: createUserAlert
+      tags: [user]
+      summary: Create a price alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriceAlertInput"
+      responses:
+        "201":
+          description: Created alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertResponse"
+        "403":
+          description: Pro membership is required to create price alerts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TierAccessError"
+  /user/alerts/{id}:
+    delete:
+      operationId: deleteUserAlert
+      tags: [user]
+      summary: Delete a price alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /user/notifications:
+    get:
+      operationId: getUserNotifications
+      tags: [user]
+      summary: List the authenticated trader's notification history
+      responses:
+        "200":
+          description: User notification history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /user/notification-preferences:
+    get:
+      operationId: getUserNotificationPreferences
+      tags: [user]
+      summary: Get the authenticated trader's signal notification preferences
+      responses:
+        "200":
+          description: Event categories enabled for account notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+    patch:
+      operationId: updateUserNotificationPreferences
+      tags: [user]
+      summary: Update the authenticated trader's signal notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPreferencesUpdate"
+      responses:
+        "200":
+          description: Updated event preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+  /user/expo-push/device:
+    put:
+      operationId: registerExpoPushDevice
+      tags: [user]
+      summary: Register this authenticated mobile installation for signal push alerts
+      description: Registration is idempotent for the same account and device token. Signal category preferences and current market entitlements still apply at delivery time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpoPushDeviceRegistration"
+      responses:
+        "200":
+          description: Device is registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushDeviceResponse"
+        "201":
+          description: Device was registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushDeviceResponse"
+        "403":
+          description: Account does not currently have signal notification access
+        "409":
+          description: Device token is already assigned to another account
+    delete:
+      operationId: revokeExpoPushDevice
+      tags: [user]
+      summary: Revoke this mobile installation's push registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpoPushDeviceRegistration"
+      responses:
+        "200":
+          description: Device registration revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /user/notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [user]
+      summary: Mark one notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationResponse"
+  /user/notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [user]
+      summary: Mark the authenticated trader's notifications as read
+      responses:
+        "200":
+          description: Notifications marked as read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /user/trades:
+    get:
+      operationId: getUserTrades
+      tags: [user]
+      summary: List saved trades
+      responses:
+        "200":
+          description: User trades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomerTrade"
+    post:
+      operationId: createUserTrade
+      tags: [user]
+      summary: Save a trade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradeInput"
+      responses:
+        "201":
+          description: Created trade
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeResponse"
+        "403":
+          description: The membership tier does not include this market
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TierAccessError"
+  /user/trades/{id}/actions:
+    post:
+      operationId: actOnUserTrade
+      tags: [user]
+      summary: Apply a trade lifecycle action
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradeAction"
+      responses:
+        "200":
+          description: Updated trade
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeResponse"
+        "403":
+          description: The membership tier does not include trade management for this market
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TierAccessError"
+  /watchlist:
+    get:
+      operationId: getWatchlist
+      tags: [user]
+      summary: List watched symbols
+      responses:
+        "200":
+          description: Watched symbols
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    post:
+      operationId: addWatchlistSymbol
+      tags: [user]
+      summary: Add a watched symbol
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SymbolInput"
+      responses:
+        "200":
+          description: Updated watchlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistResponse"
+  /watchlist/{symbol}:
+    delete:
+      operationId: removeWatchlistSymbol
+      tags: [user]
+      summary: Remove a watched symbol
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated watchlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistResponse"
+  /user/watchlist/{symbol}/alert:
+    put:
+      operationId: setWatchlistAlert
+      tags: [user]
+      summary: Set the quick alert state for a watched symbol
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistAlertInput"
+      responses:
+        "200":
+          description: Updated alert state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, active]
+                properties:
+                  ok:
+                    type: boolean
+                  active:
+                    type: boolean
+        "403":
+          description: Pro membership is required to use quick price alerts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TierAccessError"
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Get restricted operations overview
+      responses:
+        "200":
+          description: Engine, bridge, and user summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+  /admin/billing/transfers:
+    get:
+      operationId: getAdminBillingTransfers
+      tags: [admin]
+      summary: View pending billing transfers and reconciliation outcomes
+      description: Returns safe operational metadata for administrators without provider credentials or entitlement data.
+      parameters:
+        - name: failureCategory
+          in: query
+          required: false
+          description: Return outcomes in the selected safe failure category across the recorded billing recovery history. Pending transfers are not filtered.
+          schema:
+            $ref: "#/components/schemas/BillingTransferFailureCategory"
+        - name: accountIds
+          in: query
+          required: false
+          description: Return pending transfers and audited outcomes involving any listed source or destination account ID. Send one or more accountIds query values; comma-separated values are also accepted.
+          schema:
+            type: array
+            minItems: 1
+            uniqueItems: true
+            items:
+              type: string
+              minLength: 1
+        - name: accountId
+          in: query
+          required: false
+          deprecated: true
+          description: Legacy single-account alias. Use accountIds for one or more participating accounts.
+          schema:
+            type: string
+            minLength: 1
+        - name: eventId
+          in: query
+          required: false
+          description: Return only the audited recovery outcome for the exact transfer event ID. Pending transfers are not filtered.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Pending destination identifiers and audited transfer outcomes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBillingTransfersResponse"
+        "400":
+          description: Unsupported failure category
+  /admin/billing/catalog:
+    get:
+      operationId: getAdminRevenueCatPriceSummary
+      tags: [admin]
+      summary: Read the current RevenueCat offering and indicative prices
+      description: Reads the current offering and package products from RevenueCat. Prices are indicative USD/US values when RevenueCat reports them; no catalog or store settings are changed.
+      responses:
+        "200":
+          description: Read-only current offering and product price summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRevenueCatPriceSummary"
+        "503":
+          description: RevenueCat catalog data is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /admin/billing/transfers/handoff:
+    get:
+      operationId: getAdminBillingTransferHandoff
+      tags: [admin]
+      summary: Create a sanitized transfer incident handoff
+      description: Returns a read-only plain-text handoff built from administrator-safe transfer metadata. It never includes provider credentials or entitlement data.
+      parameters:
+        - name: eventId
+          in: query
+          required: true
+          description: Transfer event identifier from the administrator billing recovery list.
+          schema:
+            type: string
+            minLength: 1
+        - name: accountIds
+          in: query
+          required: false
+          description: Preserve source or destination match explanations for the selected account filter.
+          schema:
+            type: array
+            minItems: 1
+            uniqueItems: true
+            items:
+              type: string
+              minLength: 1
+      responses:
+        "200":
+          description: Sanitized administrator incident handoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBillingTransferHandoff"
+        "400":
+          description: Invalid event or account identifier
+        "404":
+          description: Transfer event was not found or did not match the supplied account filter
+  /legal/privacy:
+    get:
+      operationId: getPrivacyPolicy
+      tags: [legal]
+      summary: Get the public Privacy Policy page
+      responses:
+        "200":
+          description: Public HTML Privacy Policy page
+          content:
+            text/html:
+              schema:
+                type: string
+  /legal/terms:
+    get:
+      operationId: getTermsAndConditions
+      tags: [legal]
+      summary: Get the public Terms & Conditions page
+      responses:
+        "200":
+          description: Public HTML Terms & Conditions page
+          content:
+            text/html:
+              schema:
+                type: string
+  /legal/account-deletion:
+    get:
+      operationId: getAccountDeletionPage
+      tags: [legal]
+      summary: Get the public account-deletion request page
+      responses:
+        "200":
+          description: Public HTML account-deletion page
+          content:
+            text/html:
+              schema:
+                type: string
+  /legal/account-deletion/request:
+    post:
+      operationId: requestAccountDeletion
+      tags: [legal]
+      summary: Submit a public account-deletion request
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/PublicAccountDeletionRequest"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicAccountDeletionRequest"
+      responses:
+        "202":
+          description: Request accepted for secure handling
+          content:
+            text/html:
+              schema:
+                type: string
+        "400":
+          description: Invalid email address
+  /admin/engine/status:
+    get:
+      operationId: getAdminEngineStatus
+      tags: [admin]
+      summary: Get current signal engine state
+      responses:
+        "200":
+          description: Signal engine state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EngineState"
+  /admin/engine/pause:
+    post:
+      operationId: pauseAdminEngine
+      tags: [admin]
+      summary: Pause trusted signal generation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnginePauseInput"
+      responses:
+        "200":
+          description: Paused engine state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EngineState"
+        "409":
+          description: The engine changed before this update was saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConcurrentUpdateResponse"
+  /admin/engine/resume:
+    post:
+      operationId: resumeAdminEngine
+      tags: [admin]
+      summary: Resume trusted signal generation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EngineResumeInput"
+      responses:
+        "200":
+          description: Active engine state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EngineState"
+        "409":
+          description: The engine changed before this update was saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConcurrentUpdateResponse"
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      tags: [admin]
+      summary: List users for CRM
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+        - name: role
+          in: query
+          required: false
+          schema: { type: string, enum: [user, admin] }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [active, suspended, banned] }
+        - name: membership
+          in: query
+          required: false
+          schema: { type: string, enum: [Free, Pro, VIP] }
+        - name: subscriptionStatus
+          in: query
+          required: false
+          schema: { type: string, enum: [ACTIVE, TRIALING, CANCELLED, EXPIRED, PAST_DUE] }
+        - name: page
+          in: query
+          required: false
+          schema: { type: number, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: number, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: CRM user list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUsersPage"
+  /admin/users/{id}/password-reset:
+    post:
+      operationId: requestAdminUserPasswordReset
+      tags: [admin]
+      summary: Send a user a secure password reset email
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Reset email accepted for delivery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordResetRequestResponse"
+        "404":
+          description: The target is not a customer account
+        "409":
+          description: The customer account is deleted or otherwise ineligible for password recovery
+        "429":
+          description: Too many reset emails were requested
+        "503":
+          description: Password reset email delivery is unavailable
+  /admin/users/{id}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Update a user's role, membership, status, or entitlements
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserPatch"
+      responses:
+        "200":
+          description: Updated CRM user
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user]
+                properties:
+                  user:
+                    $ref: "#/components/schemas/AdminUser"
+        "409":
+          description: The user changed before this update was saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConcurrentUpdateResponse"
+  /admin/notifications:
+    get:
+      operationId: getAdminNotifications
+      tags: [admin]
+      summary: Inspect push notification delivery operations
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [QUEUED, ACCEPTED, FAILED, SUPPRESSED, EXPIRED] }
+        - name: page
+          in: query
+          schema: { type: number, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: number, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Notification deliveries, with unavailable channels identified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminNotificationsPage"
+  /admin/notifications/{channel}/{id}/retry:
+    post:
+      operationId: retryAdminNotification
+      tags: [admin]
+      summary: Retry an eligible failed push notification delivery
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          schema: { type: string, enum: [WEB, EXPO] }
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminNotificationRetryInput"
+      responses:
+        "200":
+          description: Retry queued and audited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminNotificationRetryResponse"
+        "400":
+          description: Invalid channel, delivery ID, or audit reason
+        "403":
+          description: Staff member lacks notification management capability
+        "404":
+          description: Delivery does not exist
+        "409":
+          description: Delivery already changed or recipient is no longer eligible
+  /admin/audit-log:
+    get:
+      operationId: getAdminAuditLog
+      tags: [admin]
+      summary: List administrator actions
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: number, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        "200":
+          description: Recent administrator actions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAuditEntry"
+  /admin/controls:
+    get:
+      operationId: getAdminControls
+      tags: [admin]
+      summary: Get restricted market controls
+      responses:
+        "200":
+          description: Market controls and bridge buffers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminControlsResponse"
+  /admin/controls/markets/{symbol}:
+    patch:
+      operationId: updateAdminMarket
+      tags: [admin]
+      summary: Update a market enablement or strategy assignment
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMarketPatch"
+      responses:
+        "200":
+          description: Updated market control
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMarketControl"
+  /admin/controls/markets/{symbol}/strategies:
+    patch:
+      operationId: updateAdminMarketStrategies
+      tags: [admin]
+      summary: Update the alternative strategy assignment matrix for a market
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminStrategyMatrixPatch"
+      responses:
+        "200":
+          description: Updated market strategy matrix
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMarketControl"
+  /admin/strategies:
+    get:
+      operationId: getAdminStrategies
+      tags: [admin]
+      summary: List registered strategy engines
+      responses:
+        "200":
+          description: Strategy registry
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminStrategy"
+  /admin/strategies/{strategyId}:
+    patch:
+      operationId: updateAdminStrategy
+      tags: [admin]
+      summary: Update a strategy lifecycle state
+      parameters:
+        - name: strategyId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminStrategyUpdate"
+      responses:
+        "200":
+          description: Updated strategy state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStrategy"
+        "409":
+          description: Strategy changed since it was loaded
+  /admin/symbols:
+    get:
+      operationId: getAdminSymbols
+      tags: [admin]
+      summary: List durable symbol controls
+      responses:
+        "200":
+          description: Persisted symbol state
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminSymbol"
+  /admin/market-access:
+    get:
+      operationId: getAdminMarketAccess
+      tags: [admin]
+      summary: List customer market access tiers
+      responses:
+        "200":
+          description: Customer markets and required membership tiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminMarketAccessItem"
+  /admin/access-policy:
+    get:
+      operationId: getAdminAccessPolicy
+      tags: [admin]
+      summary: Get the shared customer membership access policy
+      responses:
+        "200":
+          description: Current versioned customer access rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccessPolicy"
+    put:
+      operationId: updateAdminAccessPolicy
+      tags: [admin]
+      summary: Update shared customer membership access rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAccessPolicyUpdate"
+      responses:
+        "200":
+          description: Updated customer access policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccessPolicy"
+        "400":
+          description: The submitted policy is invalid
+        "409":
+          description: The policy changed after it was loaded
+  /admin/market-inventory:
+    get:
+      operationId: getAdminMarketInventory
+      tags: [admin]
+      summary: List every configured market with internal catalog and broker details
+      responses:
+        "200":
+          description: Complete strategy and quote-only market inventory for administrators
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminMarketInventoryItem"
+  /admin/symbols/{symbol}:
+    get:
+      operationId: getAdminSymbol
+      tags: [admin]
+      summary: Get durable controls for one symbol
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Persisted symbol state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSymbol"
+    patch:
+      operationId: updateAdminSymbol
+      tags: [admin]
+      summary: Update a symbol mapping or enabled state
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSymbolUpdate"
+      responses:
+        "200":
+          description: Updated symbol state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSymbol"
+        "409":
+          description: Symbol changed since it was loaded
+  /admin/assignments:
+    get:
+      operationId: getAdminAssignments
+      tags: [admin]
+      summary: List durable strategy assignments
+      responses:
+        "200":
+          description: Strategy, symbol, and timeframe assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminStrategyAssignment"
+    post:
+      operationId: createAdminAssignment
+      tags: [admin]
+      summary: Create a strategy and symbol assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminStrategyAssignmentInput"
+      responses:
+        "201":
+          description: Created assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStrategyAssignment"
+        "409":
+          description: Assignment already exists or default assignment conflicts
+  /admin/assignments/{assignmentId}:
+    patch:
+      operationId: updateAdminAssignment
+      tags: [admin]
+      summary: Enable, pause, or update an assignment
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminStrategyAssignmentUpdate"
+      responses:
+        "200":
+          description: Updated assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStrategyAssignment"
+        "409":
+          description: Assignment changed since it was loaded
+  /admin/evaluations:
+    get:
+      operationId: getAdminEvaluations
+      tags: [admin]
+      summary: Search persisted strategy evaluations
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: symbol, in: query, required: false, schema: { type: string } }
+        - { name: strategy, in: query, required: false, schema: { type: string } }
+        - { name: strategyVersion, in: query, required: false, schema: { type: string } }
+        - { name: timeframe, in: query, required: false, schema: { type: string } }
+        - { name: result, in: query, required: false, schema: { type: string } }
+        - { name: generated, in: query, required: false, schema: { type: boolean } }
+        - { name: signalId, in: query, required: false, schema: { type: string } }
+        - { name: error, in: query, required: false, schema: { type: string } }
+        - { name: page, in: query, required: false, schema: { type: number, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: number, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        "200":
+          description: Paginated evaluation history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEvaluationPage"
+  /admin/evaluations/{evaluationId}:
+    get:
+      operationId: getAdminEvaluation
+      tags: [admin]
+      summary: Get evaluation details and its generated signal, if any
+      parameters:
+        - name: evaluationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Evaluation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEvaluationDetail"
+        "404":
+          description: Evaluation not found
+  /admin/staff:
+    get:
+      operationId: getAdminStaff
+      tags: [admin]
+      summary: List staff roles and effective capabilities
+      responses:
+        "200":
+          description: Staff access records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffAccessSummary"
+    post:
+      operationId: createAdminStaff
+      tags: [admin]
+      summary: Grant a user staff access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffAccessCreateInput"
+      responses:
+        "201":
+          description: Staff access granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAccessSummary"
+        "409":
+          description: User already has staff access
+  /admin/staff/{userId}:
+    patch:
+      operationId: updateAdminStaff
+      tags: [admin]
+      summary: Change staff role, active state, or additional capabilities
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffAccessUpdate"
+      responses:
+        "200":
+          description: Updated staff access
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAccessSummary"
+        "409":
+          description: Staff access changed since it was loaded
+  /admin/diagnostics:
+    get:
+      operationId: getAdminDiagnostics
+      tags: [admin]
+      summary: Get market feed diagnostics
+      responses:
+        "200":
+          description: Per-market bridge and buffer diagnostics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminMarketDiagnostic"
+  /admin/diagnostics/candles:
+    get:
+      operationId: getAdminDiagnosticCandles
+      tags: [admin]
+      summary: Inspect an internal bridge candle payload
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema: { type: string }
+        - name: timeframe
+          in: query
+          required: false
+          schema: { type: string, default: M15 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: number, minimum: 1, maximum: 1000, default: 100 }
+      responses:
+        "200":
+          description: Raw internal candle payload
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /admin/lab:
+    get:
+      operationId: getAdminLab
+      tags: [admin]
+      summary: Run a deterministic strategy lab inspection
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema: { type: string }
+        - name: strategy
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Strategy pivots and signal geometry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLabResponse"
+  /admin/users/{id}/notes:
+    get:
+      operationId: getAdminUserNotes
+      tags: [admin]
+      summary: List internal notes for a member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Internal administrator notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUserNote"
+    post:
+      operationId: addAdminUserNote
+      tags: [admin]
+      summary: Add an internal note for a member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserNoteInput"
+      responses:
+        "201":
+          description: Created internal note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserNote"
+  /admin/crm/summary:
+    get:
+      operationId: getAdminCrmSummary
+      tags: [admin]
+      summary: Get global CRM summary metrics
+      responses:
+        "200":
+          description: CRM summary, trend, and account health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCrmSummary"
+  /admin/crm/users/{id}:
+    get:
+      operationId: getAdminUserDetail
+      tags: [admin]
+      summary: Get complete administrator member detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Member detail with notes, trades, metrics, and audit history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+  /admin/crm/users/{id}/trades:
+    get:
+      operationId: getAdminUserTrades
+      tags: [admin]
+      summary: Get a member's trading activity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Trading activity and calculated metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserTradesResponse"
+  /admin/crm/users/{id}/audit-logs:
+    get:
+      operationId: getAdminUserAuditLogs
+      tags: [admin]
+      summary: Get a member's administrator audit history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Member audit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAuditEntry"
+  /admin/crm/users/{id}/membership:
+    patch:
+      operationId: updateAdminUserMembership
+      tags: [admin]
+      summary: Update membership and trial or override dates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMembershipPatch"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserMutationResponse"
+  /admin/crm/users/{id}/entitlements:
+    patch:
+      operationId: updateAdminUserEntitlements
+      tags: [admin]
+      summary: Update manual entitlement grants and denies
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminEntitlementPatch"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserMutationResponse"
+  /admin/crm/users/{id}/role:
+    patch:
+      operationId: updateAdminUserRole
+      tags: [admin]
+      summary: Change a member's administrator role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRolePatch"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserMutationResponse"
+  /admin/crm/users/{id}/account-state:
+    patch:
+      operationId: updateAdminUserAccountState
+      tags: [admin]
+      summary: Suspend, ban, or reactivate a member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAccountStatePatch"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserMutationResponse"
+  /admin/crm/audit-logs:
+    get:
+      operationId: getAdminCrmAuditLogs
+      tags: [admin]
+      summary: Get filtered and paginated global administrator audit history
+      parameters:
+        - name: page
+          in: query
+          schema: { type: number, minimum: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: number, minimum: 1, maximum: 200 }
+        - name: actorId
+          in: query
+          schema: { type: string }
+        - name: targetUserId
+          in: query
+          schema: { type: string }
+        - name: action
+          in: query
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Filtered administrator audit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAuditEntry"
+  /admin/operations/health:
+    get:
+      operationId: getAdminOperationsHealth
+      tags: [admin]
+      summary: Get detailed engine, bridge, validator, and recovery health
+      responses:
+        "200":
+          description: Operations health
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  securitySchemes:
+    RevenueCatWebhook:
+      type: apiKey
+      in: header
+      name: Authorization
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    AuthCredentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        acceptRiskDisclaimer:
+          type: boolean
+        riskDisclaimerVersion:
+          type: string
+    RiskDisclaimerAcknowledgementInput:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version:
+          type: string
+    PasswordResetRequestInput:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+    PasswordResetCompleteInput:
+      type: object
+      additionalProperties: false
+      required: [token, password]
+      properties:
+        token:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: "^[A-Za-z0-9_-]{43}$"
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+    PasswordResetRequestResponse:
+      type: object
+      additionalProperties: false
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+    PasswordResetCompleteResponse:
+      type: object
+      additionalProperties: false
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+    AccountDeletionInput:
+      type: object
+      additionalProperties: false
+      required: [confirmation]
+      properties:
+        confirmation:
+          type: string
+          enum: [DELETE]
+          description: Explicit confirmation that the customer understands the account will be permanently deleted.
+    AccountDeletionResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, requestId, completedAt, subscriptionAction]
+      properties:
+        ok: { type: boolean }
+        requestId: { type: string }
+        completedAt:
+          type: string
+          format: date-time
+        subscriptionAction: { type: string }
+    UserDataExport:
+      type: object
+      additionalProperties: false
+      required: [version, exportedAt, account, profile, watchlist, alertSymbols, alerts, notifications, trades, membership]
+      properties:
+        version: { type: string, enum: ["1"] }
+        exportedAt: { type: string, format: date-time }
+        account:
+          type: object
+          additionalProperties: false
+          required: [id, email, createdAt]
+          properties:
+            id: { type: string }
+            email: { type: string }
+            createdAt: { type: string, format: date-time }
+        profile:
+          type: object
+          additionalProperties: true
+        watchlist:
+          type: array
+          items: { type: string }
+        alertSymbols:
+          type: array
+          items: { type: string }
+        alerts:
+          type: array
+          items: { type: object, additionalProperties: true }
+        notifications:
+          type: array
+          items: { type: object, additionalProperties: true }
+        trades:
+          type: array
+          items: { type: object, additionalProperties: true }
+        membership:
+          type: object
+          additionalProperties: false
+          required: [tier]
+          properties:
+            tier: { type: string }
+            source: { type: ["string", "null"] }
+            status: { type: ["string", "null"] }
+            expiresAt: { type: ["string", "null"], format: date-time }
+            willRenew: { type: ["boolean", "null"] }
+    PublicAccountDeletionRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          pattern: "^[^@\\\\s]+@[^@\\\\s]+\\\\.[^@\\\\s]+$"
+    AuthResponse:
+      type: object
+      required: [ok, user]
+      properties:
+        ok:
+          type: boolean
+        token:
+          type: string
+          description: Omitted when an HttpOnly browser session cookie is issued.
+        user:
+          $ref: "#/components/schemas/UserProfile"
+    AdminSessionResponse:
+      type: object
+      required: [ok, user, staff]
+      properties:
+        ok:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        staff:
+          $ref: "#/components/schemas/StaffAccessSummary"
+    RegistrationResponse:
+      allOf:
+        - $ref: "#/components/schemas/AuthResponse"
+        - type: object
+          required: [recovery]
+          properties:
+            recovery:
+              $ref: "#/components/schemas/RevenueCatTransferRecoveryOutcome"
+    JournalLinkPreviewInput:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, authorizationCode]
+      properties:
+        contractVersion:
+          type: string
+          const: tradify-account-linking-v1
+        authorizationCode:
+          type: string
+          pattern: "^[a-f0-9]{64}$"
+    JournalLinkClaimInput:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, authorizationCode, consent, consentVersion]
+      properties:
+        contractVersion:
+          type: string
+          const: tradify-account-linking-v1
+        authorizationCode:
+          type: string
+          pattern: "^[a-f0-9]{64}$"
+        consent:
+          type: boolean
+          const: true
+        consentVersion:
+          type: string
+          const: tradify-signals-link-consent-v1
+    JournalLinkStatus:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [unlinked, awaiting_signals_consent, awaiting_journal_confirmation, active, revocation_pending, revoked]
+        contractVersion:
+          type: string
+        linkId:
+          type: string
+        journalAttemptLabel:
+          type: string
+        signalsAttemptLabel:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        linkedAt:
+          type: [string, "null"]
+        eventId:
+          type: string
+        duplicate:
+          type: boolean
+        payloadSha256:
+          type: string
+          pattern: "^[a-f0-9]{64}$"
+    JournalLinkStatusResponse:
+      allOf:
+        - $ref: "#/components/schemas/JournalLinkStatus"
+    CurrentUserResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserProfile"
+    UserProfile:
+      type: object
+      required: [id, name, email, accountSize, riskPercent, maxDailyLoss, maxTrades, aggressive, membership, role, status, entitlements, createdAt, lastSeenAt, watchlist, alertSymbols, riskDisclaimerVersion, riskDisclaimerAcceptedAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        accountSize:
+          type: number
+        riskPercent:
+          type: number
+        maxDailyLoss:
+          type: number
+        maxTrades:
+          type: number
+        aggressive:
+          type: boolean
+        membership:
+          type: string
+          enum: [Free, Pro, VIP]
+        role:
+          type: string
+          enum: [user, admin]
+        status:
+          type: string
+          enum: [active, suspended, deleted]
+        riskDisclaimerVersion:
+          type: string
+          nullable: true
+        riskDisclaimerAcceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+        entitlements:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        watchlist:
+          type: array
+          items:
+            type: string
+        alertSymbols:
+          type: array
+          items:
+            type: string
+    UserProfilePatch:
+      type: object
+      properties:
+        name:
+          type: string
+        accountSize:
+          type: number
+        riskPercent:
+          type: number
+        maxDailyLoss:
+          type: number
+        maxTrades:
+          type: number
+        aggressive:
+          type: boolean
+    UserProfileResponse:
+      type: object
+      required: [ok, user]
+      properties:
+        ok:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/UserProfile"
+    MembershipStatus:
+      type: object
+      required: [membership, source, entitlements, billingStatus, expiresAt, willRenew, provider, accessPolicy]
+      properties:
+        membership:
+          type: string
+          enum: [Free, Pro, VIP]
+        source:
+          type: string
+          enum: [UNKNOWN, REVENUECAT, ADMIN_OVERRIDE]
+        entitlements:
+          type: array
+          items:
+            type: string
+        billingStatus:
+          type: string
+          enum: [ACTIVE, CANCELLED, EXPIRED, PAST_DUE, INACTIVE, UNAVAILABLE]
+        expiresAt:
+          type: [string, "null"]
+          format: date-time
+        willRenew:
+          type: boolean
+        provider:
+          type: string
+          enum: [REVENUECAT]
+        accessPolicy:
+          $ref: "#/components/schemas/CustomerAccessPolicy"
+    CustomerMembershipTier:
+      type: string
+      enum: [Free, Pro, VIP]
+    CustomerFeatureMinimumTiers:
+      type: object
+      additionalProperties: false
+      required: [signalContext, trustedSetupLevels, performanceContext, priceAlerts, fullDepthReview]
+      properties:
+        signalContext:
+          $ref: "#/components/schemas/CustomerMembershipTier"
+        trustedSetupLevels:
+          $ref: "#/components/schemas/CustomerMembershipTier"
+        performanceContext:
+          $ref: "#/components/schemas/CustomerMembershipTier"
+        priceAlerts:
+          $ref: "#/components/schemas/CustomerMembershipTier"
+        fullDepthReview:
+          $ref: "#/components/schemas/CustomerMembershipTier"
+    CustomerMarketTiers:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/CustomerMembershipTier"
+    CustomerWatchlistLimits:
+      type: object
+      additionalProperties: false
+      required: [Free, Pro, VIP]
+      properties:
+        Free:
+          type: number
+          minimum: 1
+          maximum: 500
+        Pro:
+          type: number
+          minimum: 1
+          maximum: 500
+        VIP:
+          type: number
+          nullable: true
+    CustomerAccessPolicy:
+      type: object
+      additionalProperties: false
+      required: [rowVersion, featureMinimumTiers, marketTiers, watchlistLimits]
+      properties:
+        rowVersion:
+          type: number
+        featureMinimumTiers:
+          $ref: "#/components/schemas/CustomerFeatureMinimumTiers"
+        marketTiers:
+          $ref: "#/components/schemas/CustomerMarketTiers"
+        watchlistLimits:
+          $ref: "#/components/schemas/CustomerWatchlistLimits"
+    AdminAccessPolicyMarket:
+      type: object
+      additionalProperties: false
+      required: [symbol, name, requiredTier, marketType]
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        requiredTier:
+          $ref: "#/components/schemas/CustomerMembershipTier"
+        marketType:
+          type: string
+          enum: [STRATEGY, QUOTE_ONLY]
+    AdminEstimatedMembershipTierCounts:
+      type: object
+      additionalProperties: false
+      required: [Free, Pro, VIP]
+      properties:
+        Free:
+          type: number
+          minimum: 0
+        Pro:
+          type: number
+          minimum: 0
+        VIP:
+          type: number
+          minimum: 0
+    AdminEstimatedWatchlistSizeBucket:
+      type: object
+      additionalProperties: false
+      required: [membershipTier, savedSymbolCount, customerCount]
+      properties:
+        membershipTier:
+          $ref: "#/components/schemas/CustomerMembershipTier"
+        savedSymbolCount:
+          type: number
+          minimum: 0
+        customerCount:
+          type: number
+          minimum: 0
+    AdminAccessPolicy:
+      type: object
+      additionalProperties: false
+      required: [rowVersion, featureMinimumTiers, marketTiers, watchlistLimits, starterSymbols, markets, estimatedMembershipTierCounts, estimatedWatchlistSizeDistribution]
+      properties:
+        rowVersion:
+          type: number
+        featureMinimumTiers:
+          $ref: "#/components/schemas/CustomerFeatureMinimumTiers"
+        marketTiers:
+          $ref: "#/components/schemas/CustomerMarketTiers"
+        watchlistLimits:
+          $ref: "#/components/schemas/CustomerWatchlistLimits"
+        starterSymbols:
+          type: array
+          items:
+            type: string
+        markets:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAccessPolicyMarket"
+        estimatedMembershipTierCounts:
+          description: Aggregate snapshot of active, non-deleted customer accounts by current membership tier; estimates are not tied to individual identities.
+          $ref: "#/components/schemas/AdminEstimatedMembershipTierCounts"
+        estimatedWatchlistSizeDistribution:
+          description: Aggregate count of active, non-deleted customer accounts grouped by current membership tier and distinct saved-symbol count; no customer identities are included.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminEstimatedWatchlistSizeBucket"
+    AdminAccessPolicyUpdate:
+      type: object
+      additionalProperties: false
+      required: [rowVersion, featureMinimumTiers, marketTiers, watchlistLimits]
+      properties:
+        rowVersion:
+          type: number
+        featureMinimumTiers:
+          $ref: "#/components/schemas/CustomerFeatureMinimumTiers"
+        marketTiers:
+          $ref: "#/components/schemas/CustomerMarketTiers"
+        watchlistLimits:
+          $ref: "#/components/schemas/CustomerWatchlistLimits"
+    MembershipUpgradeRequest:
+      type: object
+      additionalProperties: false
+      required: [membership]
+      properties:
+        membership:
+          type: string
+          enum: [Pro, VIP]
+    RevenueCatWebhookRequest:
+      type: object
+      additionalProperties: false
+      required: [event]
+      properties:
+        event:
+          type: object
+          additionalProperties: true
+          required: [id, type, app_user_id]
+          properties:
+            id: { type: string }
+            type: { type: string }
+            app_user_id: { type: string }
+            entitlement_ids:
+              type: array
+              items: { type: string }
+            event_timestamp_ms:
+              type: number
+            purchased_at_ms:
+              type: number
+            expiration_at_ms:
+              type: number
+            period_type: { type: string }
+    RevenueCatWebhookResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, eventId, result]
+      properties:
+        ok: { type: boolean }
+        eventId: { type: string }
+        result:
+          type: string
+          enum: [processed, duplicate, stale, ignored]
+    RevenueCatReconciliationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, result, recovery]
+      properties:
+        ok: { type: boolean }
+        result:
+          $ref: "#/components/schemas/RevenueCatTransferResult"
+        recovery:
+          $ref: "#/components/schemas/RevenueCatTransferRecoveryOutcome"
+    RevenueCatTransferResult:
+      type: string
+      enum: [processed, duplicate, stale, ignored, deferred]
+    RevenueCatTransferRecoveryOutcome:
+      type: string
+      enum: [recovered, already-recovered, provider-deferred]
+    RevenueCatBillingError:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
+          enum: [AUTH_REQUIRED, USER_SUSPENDED, BILLING_WEBHOOK_UNAUTHORIZED, INVALID_BILLING_WEBHOOK, BILLING_WEBHOOK_RETRY]
+          description: Stable billing failure code. Retry only BILLING_WEBHOOK_RETRY after the temporary provider or persistence failure has cleared.
+    MarketSnapshot:
+      type: object
+      additionalProperties: false
+      required: [timestamp, bridge, quotes, signals, marketSetups]
+      properties:
+        timestamp:
+          type: string
+        bridge:
+          type: object
+          additionalProperties: false
+          required: [connected]
+          properties:
+            connected: { type: boolean }
+        quotes:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/MarketQuote"
+        signals:
+          type: array
+          items:
+            $ref: "#/components/schemas/SignalCard"
+        marketSetups:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketSetupAssignment"
+    MarketQuotes:
+      type: object
+      additionalProperties: false
+      required: [timestamp, bridge, quotes]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        bridge:
+          type: object
+          additionalProperties: false
+          required: [connected]
+          properties:
+            connected: { type: boolean }
+        quotes:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/MarketQuote"
+    MarketQuote:
+      type: object
+      additionalProperties: false
+      required: [symbol, bid, ask, last, price, displayPrice, change, changePercent, time, receivedAt, status, dataState]
+      properties:
+        symbol: { type: string }
+        bid: { type: number }
+        ask: { type: number }
+        last: { type: number }
+        price: { type: number }
+        displayPrice: { type: number }
+        change: { type: number }
+        changePercent: { type: number }
+        changeBasis: { type: string, enum: [STREAM, PREVIOUS_CLOSE, 24H] }
+        time: { type: number }
+        receivedAt: { type: number }
+        status: { type: string, enum: [LIVE, FALLBACK, STALE, UNAVAILABLE] }
+        dataState: { type: string, enum: [LIVE, FALLBACK, STALE, ERROR] }
+        sourceTimestamp: { type: number }
+        sourceAgeSeconds: { type: number, minimum: 0 }
+        referenceState: { type: string, enum: [REFERENCE, STALE, UNAVAILABLE] }
+        referenceCondition: { type: string, enum: [ACTIVE_SOURCE, MARKET_CLOSED, STALE_SOURCE, UNAVAILABLE] }
+        referenceType: { type: string, enum: [REGULAR_MARKET_PRICE, LAST_TRADE, SPOT_REFERENCE] }
+        referenceBasis: { type: string, enum: [PREVIOUS_CLOSE, USDT, XAU_USD] }
+    BrokerSpecification:
+      type: object
+      required: [brokerSymbol, receivedAt]
+      properties:
+        brokerSymbol: { type: string }
+        contractSize: { type: ["number", "null"] }
+        tickSize: { type: ["number", "null"] }
+        tickValue: { type: ["number", "null"] }
+        tickValueProfit: { type: ["number", "null"] }
+        tickValueLoss: { type: ["number", "null"] }
+        volumeMin: { type: ["number", "null"] }
+        volumeMax: { type: ["number", "null"] }
+        volumeStep: { type: ["number", "null"] }
+        digits: { type: ["number", "null"] }
+        point: { type: ["number", "null"] }
+        quoteCurrency: { type: ["string", "null"] }
+        receivedAt: { type: number }
+    BrokerSizingState:
+      type: object
+      required: [status, reason]
+      properties:
+        status: { type: string, enum: [READY, REVIEW_REQUIRED] }
+        reason: { type: string }
+    MarketCatalogItem:
+      type: object
+      additionalProperties: false
+      required: [symbol, name, assetClass, digits, sizingStatus, currentPrice, bid, ask, quoteState, opportunityState, availableSetups, defaultSetupLabel, requiredTier, accessible, strategySupported]
+      properties:
+        symbol: { type: string }
+        name: { type: string }
+        assetClass: { type: string, enum: [FOREX, METALS, INDICES, CRYPTO, COMMODITIES, STOCKS, OTHER] }
+        digits: { type: number }
+        sizingStatus: { type: string, enum: [READY, REVIEW_REQUIRED] }
+        currentPrice: { type: number }
+        bid: { type: number }
+        ask: { type: number }
+        quoteState: { type: string, enum: [LIVE, REFERENCE, SYNCING, DISCONNECTED] }
+        opportunityState: { type: string, enum: [ACTIVE, PAUSED] }
+        availableSetups:
+          type: array
+          items: { type: string, enum: ["Gold setup", "FX setup", "BBB setup", "BBB Gold 3S"] }
+        defaultSetupLabel:
+          type: [string, "null"]
+          enum: ["Gold setup", "FX setup", "BBB setup", "BBB Gold 3S", null]
+        requiredTier: { type: string, enum: [Free, Pro, VIP] }
+        accessible: { type: boolean }
+        strategySupported: { type: boolean }
+    MarketCandle:
+      type: object
+      additionalProperties: false
+      required: [time, open, high, low, close, volume]
+      properties:
+        time:
+          type: number
+        open:
+          type: number
+        high:
+          type: number
+        low:
+          type: number
+        close:
+          type: number
+        volume:
+          type: number
+    MarketCandles:
+      type: object
+      additionalProperties: false
+      required: [symbol, timeframe, timezone, candles, dataState, displayOnly, validation, count, firstTime, lastTime]
+      properties:
+        symbol:
+          type: string
+        timeframe:
+          type: string
+        timezone:
+          type: string
+        count:
+          type: number
+        firstTime:
+          type: [number, "null"]
+        lastTime:
+          type: [number, "null"]
+        candles:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketCandle"
+        dataState:
+          type: string
+          enum: [LIVE, FALLBACK, STALE, ERROR]
+        displayOnly:
+          type: boolean
+          description: True when the series is safe for chart display but must not be used for strategy evaluation.
+        validation:
+          type: object
+          additionalProperties: false
+          required: [valid, candleCount]
+          properties:
+            valid: { type: boolean }
+            candleCount: { type: number }
+            reason: { type: string }
+    MarketCandleError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          enum: [INVALID_SYMBOL, INVALID_TIMEFRAME, NO_CANDLE_DATA]
+        symbol: { type: string }
+        timeframe: { type: string }
+        dataState: { type: string, enum: [ERROR] }
+        displayOnly: { type: boolean, enum: [false] }
+    MarketSetupAssignment:
+      type: object
+      additionalProperties: false
+      required: [symbol, setupLabel, availableSetups]
+      properties:
+        symbol: { type: string }
+        setupLabel:
+          type: [string, "null"]
+          enum: ["Gold setup", "FX setup", "BBB setup", "BBB Gold 3S", null]
+        availableSetups:
+          type: array
+          items: { type: string, enum: ["Gold setup", "FX setup", "BBB setup", "BBB Gold 3S"] }
+    SignalCard:
+      type: object
+      additionalProperties: false
+      required: [id, symbol, name, market, direction, grade, action, lifecycleStatus, qualified, price, entry, stop, tp1, tp2, tp3, targets, session, age, dataState, levels]
+      properties:
+        id: { type: string }
+        symbol: { type: string }
+        name: { type: string }
+        market: { type: string, enum: [FOREX, METALS, INDICES, CRYPTO, COMMODITIES, STOCKS, OTHER] }
+        direction: { type: string, enum: [LONG, SHORT, NONE] }
+        grade: { type: string, enum: [A+, A, B] }
+        action: { type: string }
+        lifecycleStatus: { type: string }
+        qualified: { type: boolean }
+        price: { type: number }
+        entry: { type: number }
+        stop: { type: number }
+        tp1: { type: number }
+        tp2: { type: number }
+        tp3: { type: number }
+        targets:
+          type: array
+          items: { type: number }
+        session: { type: string }
+        age: { type: string }
+        dataState: { type: string, enum: [LIVE, FALLBACK, STALE, ERROR] }
+        setupLabel:
+          type: string
+          enum: ["Gold setup", "FX setup", "BBB setup", "BBB Gold 3S"]
+        levels:
+          type: object
+          additionalProperties: false
+          required: [direction, entry, buyEntry, sellEntry, stop, targets]
+          properties:
+            direction: { type: string, enum: [LONG, SHORT, NONE] }
+            entry: { type: number }
+            buyEntry: { type: [number, "null"] }
+            sellEntry: { type: [number, "null"] }
+            sourceHigh: { type: [number, "null"] }
+            sourceLow: { type: [number, "null"] }
+            pivotResistance: { type: [number, "null"] }
+            pivotSupport: { type: [number, "null"] }
+            stop: { type: number }
+            targets:
+              type: array
+              items: { type: number }
+    StrategyDiagnostic:
+      type: object
+      required: [symbol, strategy, strategyVersion, action, lifecycleStatus, direction, dataState, provider, providerSymbol, provenance, validation, reasons]
+      properties:
+        symbol: { type: string }
+        strategy: { type: string }
+        strategyVersion: { type: string }
+        action: { type: string }
+        lifecycleStatus: { type: string }
+        direction: { type: string, enum: [LONG, SHORT, NONE] }
+        dataState: { type: string, enum: [LIVE, FALLBACK, STALE, ERROR] }
+        provider: { type: string }
+        providerSymbol: { type: string }
+        validation:
+          type: object
+          additionalProperties: true
+        provenance:
+          type: object
+          additionalProperties: true
+        reasons:
+          type: array
+          items: { type: string }
+      additionalProperties: true
+    SignalEvaluation:
+      type: object
+      additionalProperties: false
+      required: [signal, quote, candles]
+      properties:
+        signal:
+          $ref: "#/components/schemas/SignalCard"
+        quote:
+          allOf:
+            - $ref: "#/components/schemas/MarketQuote"
+          nullable: true
+        candles:
+          $ref: "#/components/schemas/MarketCandles"
+    PriceAlert:
+      type: object
+      required: [id, symbol, condition, target, label, active, createdAt]
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        condition:
+          type: string
+          enum: [ABOVE, BELOW, EXACT]
+        target:
+          type: number
+        label:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+    PriceAlertInput:
+      type: object
+      required: [symbol, condition, target, label]
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        condition:
+          type: string
+          enum: [ABOVE, BELOW, EXACT]
+        target:
+          type: number
+        label:
+          type: string
+        active:
+          type: boolean
+    AlertResponse:
+      type: object
+      required: [ok, alert]
+      properties:
+        ok:
+          type: boolean
+        alert:
+          $ref: "#/components/schemas/PriceAlert"
+    Notification:
+      type: object
+      additionalProperties: false
+      required: [id, timestamp, timeLabel, symbol, type, title, message, isRead]
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: number
+        timeLabel:
+          type: string
+        symbol:
+          type: string
+        type:
+          type: string
+          enum: [NEW_SETUP, STATUS_CHANGE, RETEST_READY, TRIGGERED, TP_HIT, SL_HIT, INVALIDATED, MARKET_WARNING]
+        title:
+          type: string
+        message:
+          type: string
+        actionRequired:
+          type: ["string", "null"]
+        isRead:
+          type: boolean
+        signalId:
+          type: ["string", "null"]
+    NotificationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, notification]
+      properties:
+        ok:
+          type: boolean
+        notification:
+          $ref: "#/components/schemas/Notification"
+    NotificationPreferences:
+      type: object
+      additionalProperties: false
+      required: [newSignals, entries, takeProfits, stopLosses, breakevenAndChanges, watchlistPriceAlerts, announcements]
+      properties:
+        newSignals:
+          type: boolean
+        entries:
+          type: boolean
+        takeProfits:
+          type: boolean
+        stopLosses:
+          type: boolean
+        breakevenAndChanges:
+          type: boolean
+        watchlistPriceAlerts:
+          type: boolean
+        announcements:
+          type: boolean
+    NotificationPreferencesUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        newSignals:
+          type: boolean
+        entries:
+          type: boolean
+        takeProfits:
+          type: boolean
+        stopLosses:
+          type: boolean
+        breakevenAndChanges:
+          type: boolean
+        announcements:
+          type: boolean
+    ExpoPushDeviceRegistration:
+      type: object
+      additionalProperties: false
+      required: [pushToken, platform]
+      properties:
+        pushToken:
+          type: string
+          minLength: 10
+          maxLength: 200
+        platform:
+          type: string
+          enum: [ios, android]
+    PushDeviceResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, id]
+      properties:
+        ok:
+          type: boolean
+        id:
+          type: string
+    Trade:
+      type: object
+      required: [id, symbol, direction, entry, stop, target, progress, r, status, createdAt]
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        direction:
+          type: string
+          enum: [LONG, SHORT]
+        entry:
+          type: number
+        stop:
+          type: number
+        target:
+          type: number
+        progress:
+          type: number
+        r:
+          type: number
+        status:
+          type: string
+          enum: [ACTIVE, TP1 HIT, CLOSED]
+        createdAt:
+          type: string
+    CustomerTrade:
+      type: object
+      additionalProperties: false
+      required: [id, symbol, direction, status, locked]
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        direction:
+          type: string
+          enum: [LONG, SHORT]
+        status:
+          type: string
+          enum: [ACTIVE, TP1 HIT, CLOSED]
+        locked:
+          type: boolean
+        entry:
+          type: number
+        stop:
+          type: number
+        target:
+          type: number
+        progress:
+          type: number
+        r:
+          type: number
+        createdAt:
+          type: string
+        closedAt:
+          type: string
+    TradeInput:
+      type: object
+      required: [symbol, direction, entry, stop, target]
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        direction:
+          type: string
+          enum: [LONG, SHORT]
+        entry:
+          type: number
+        stop:
+          type: number
+        target:
+          type: number
+    TradeAction:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+    TradeResponse:
+      type: object
+      required: [ok, trade]
+      properties:
+        ok:
+          type: boolean
+        trade:
+          $ref: "#/components/schemas/CustomerTrade"
+    TierAccessError:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
+          enum: [MARKET_TIER_REQUIRED, FEATURE_TIER_REQUIRED, QUOTE_ONLY_MARKET]
+        requiredTier:
+          type: string
+          enum: [Free, Pro, VIP]
+        feature:
+          type: string
+          enum: [signalContext, trustedSetupLevels, performanceContext, priceAlerts, fullDepthReview]
+    SymbolInput:
+      type: object
+      required: [symbol]
+      properties:
+        symbol:
+          type: string
+    WatchlistResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, watchlist]
+      properties:
+        ok:
+          type: boolean
+        watchlist:
+          type: array
+          items:
+            type: string
+    OkResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+    WatchlistAlertInput:
+      type: object
+      required: [active]
+      properties:
+        active:
+          type: boolean
+    EngineState:
+      type: object
+      required: [mode, reason, updatedAt, updatedBy, version]
+      properties:
+        mode:
+          type: string
+          enum: [ACTIVE, PAUSED_MANUAL, PAUSED_DEGRADED]
+        reason:
+          type: [string, "null"]
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+        version:
+          type: number
+          minimum: 1
+          description: Version used to protect the next administrator engine update.
+    EnginePauseInput:
+      type: object
+      properties:
+        reason:
+          type: string
+        version:
+          type: number
+          minimum: 1
+          description: Version observed by the administrator when opening the control.
+    EngineResumeInput:
+      type: object
+      properties:
+        version:
+          type: number
+          minimum: 1
+          description: Version observed by the administrator when opening the control.
+    AdminOverview:
+      type: object
+      required: [engine, bridge, stats, catalogSize]
+      properties:
+        engine:
+          $ref: "#/components/schemas/EngineState"
+        bridge:
+          type: object
+          additionalProperties: true
+        stats:
+          type: object
+          additionalProperties: true
+        catalogSize:
+          type: number
+        health:
+          $ref: "#/components/schemas/AdminHealth"
+    AdminBillingTransfer:
+      type: object
+      required: [eventId, destinationAppUserIds, receivedAt, expiresAt]
+      properties:
+        eventId:
+          type: string
+        previousAppUserIds:
+          type: array
+          items:
+            type: string
+        destinationAppUserIds:
+          type: array
+          items:
+            type: string
+        transferTimestamp:
+          type: string
+          format: date-time
+          nullable: true
+        receivedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        matchedAccounts:
+          type: array
+          description: Accounts from the active account filter that matched this transfer, including which side of the transfer contained each account.
+          items:
+            $ref: "#/components/schemas/AdminBillingTransferAccountMatch"
+    AdminBillingTransferAccountMatch:
+      type: object
+      required: [accountId, side]
+      properties:
+        accountId:
+          type: string
+        side:
+          type: string
+          enum: [source, destination]
+    AdminBillingTransferHandoff:
+      type: object
+      additionalProperties: false
+      required: [eventId, status, transferTimestamp, previousAppUserIds, destinationAppUserIds, pendingDestinationAppUserIds, matchedAccounts, receivedAt, expiresAt, recordedAt, failureCategory, recoveryState, supportGuidance, summary]
+      properties:
+        eventId: { type: string }
+        status: { type: string, enum: [pending, processed, duplicate, stale, ignored, failed] }
+        transferTimestamp: { type: [string, "null"], format: date-time }
+        previousAppUserIds:
+          type: array
+          items: { type: string }
+        destinationAppUserIds:
+          type: array
+          items: { type: string }
+        pendingDestinationAppUserIds:
+          type: array
+          items: { type: string }
+        matchedAccounts:
+          type: array
+          description: Matching source or destination accounts preserved for the incident handoff.
+          items:
+            $ref: "#/components/schemas/AdminBillingTransferAccountMatch"
+        receivedAt: { type: [string, "null"], format: date-time }
+        expiresAt: { type: [string, "null"], format: date-time }
+        recordedAt: { type: [string, "null"], format: date-time }
+        failureCategory:
+          type: [string, "null"]
+          enum: [PROVIDER_UNAVAILABLE, RECONCILIATION_FAILED, null]
+        recoveryState:
+          type: [string, "null"]
+          enum: [WAIT_FOR_PROVIDER, RETRY_SAFE, DEFERRED_RETRY, ESCALATE, NO_ACTION, null]
+        supportGuidance: { type: string }
+        summary:
+          type: string
+          description: Plain-text administrator handoff with source/destination explanations and recovery guidance.
+    AdminBillingTransfersResponse:
+      type: object
+      required: [pending, outcomes]
+      properties:
+        pending:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminBillingTransfer"
+        outcomes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminBillingTransferOutcome"
+    AdminRevenueCatPriceSummary:
+      type: object
+      required: [fetchedAt, currentOffering, products]
+      properties:
+        fetchedAt: { type: string, format: date-time }
+        currentOffering:
+          type: [object, "null"]
+          required: [id, displayName, lookupKey]
+          properties:
+            id: { type: string }
+            displayName: { type: string }
+            lookupKey: { type: string }
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRevenueCatPriceLine"
+    AdminRevenueCatPriceLine:
+      type: object
+      required: [packageId, packageName, productId, productDisplayName, storeType, storeName, storeProductIdentifier, productState, indicativePrice, priceUnavailableReason]
+      properties:
+        packageId: { type: string }
+        packageName: { type: string }
+        productId: { type: string }
+        productDisplayName: { type: string }
+        storeType: { type: string }
+        storeName: { type: string }
+        storeProductIdentifier: { type: string }
+        productState: { type: [string, "null"] }
+        indicativePrice:
+          type: [object, "null"]
+          required: [amountMicros, currency, country]
+          properties:
+            amountMicros: { type: string }
+            currency: { type: string }
+            country: { type: [string, "null"] }
+        priceUnavailableReason:
+          type: [string, "null"]
+          enum: [STORE_CREDENTIALS_MISSING, PRICE_NOT_REPORTED, null]
+    BillingTransferFailureCategory:
+      type: string
+      enum: [PROVIDER_UNAVAILABLE, RECONCILIATION_FAILED]
+    AdminBillingTransferOutcomeDetails:
+      type: object
+      required: [eventId, outcome, transferTimestamp, destinationAppUserIds, pendingDestinationAppUserIds, failureCategory, failurePhase, lock, recoveryState, safeToRetry, escalationRequired, transferAgeMs, retentionState, retentionExpiresAt, supportGuidance]
+      properties:
+        eventId: { type: string }
+        outcome: { type: string, enum: [processed, duplicate, stale, ignored, failed] }
+        transferTimestamp: { type: [string, "null"], format: date-time }
+        destinationAppUserIds:
+          type: array
+          items: { type: string }
+        pendingDestinationAppUserIds:
+          type: array
+          items: { type: string }
+        matchedAccounts:
+          type: array
+          description: Accounts from the active account filter that matched this transfer, including which side of the transfer contained each account.
+          items:
+            $ref: "#/components/schemas/AdminBillingTransferAccountMatch"
+        failureCategory:
+          type: [string, "null"]
+          enum: [PROVIDER_UNAVAILABLE, RECONCILIATION_FAILED, null]
+        failurePhase:
+          type: [string, "null"]
+          enum: [LOCK, RECONCILIATION, null]
+        lock:
+          type: [object, "null"]
+          required: [outcome, waitMs, participantCount]
+          properties:
+            outcome: { type: string, enum: [ACQUIRED, WAITED, FAILED] }
+            waitMs: { type: number, minimum: 0 }
+            participantCount: { type: number, minimum: 0 }
+        recoveryState:
+          type: string
+          enum: [WAIT_FOR_PROVIDER, RETRY_SAFE, DEFERRED_RETRY, ESCALATE, NO_ACTION]
+          description: Read-only support guidance derived from the failure category and transfer retention age.
+        safeToRetry:
+          type: boolean
+        escalationRequired:
+          type: boolean
+        transferAgeMs:
+          type: [number, "null"]
+          minimum: 0
+        retentionState:
+          type: string
+          enum: [WITHIN_RETENTION, EXPIRED, UNKNOWN]
+        retentionExpiresAt:
+          type: [string, "null"]
+          format: date-time
+        retryAttempt:
+          type: [number, "null"]
+          minimum: 1
+          description: Number of failed delivery attempts recorded for this transfer.
+        retryAfter:
+          type: [string, "null"]
+          format: date-time
+          description: Earliest time the delivery path will be attempted again after backoff.
+        supportGuidance:
+          type: string
+    AdminBillingTransferOutcome:
+      type: object
+      required: [id, actorId, actorEmail, action, details, createdAt]
+      properties:
+        id: { type: string }
+        actorId: { type: string }
+        actorEmail: { type: string }
+        action: { type: string }
+        targetUserId: { type: string }
+        targetEmail: { type: string }
+        details:
+          $ref: "#/components/schemas/AdminBillingTransferOutcomeDetails"
+        createdAt:
+          type: string
+          format: date-time
+    AdminUser:
+      type: object
+      required: [id, email, name, role, status, version, membership, membershipSource, entitlements, createdAt, lastSeenAt, watchlistCount, tradeCount, unreadNotificationCount]
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [user, admin] }
+        status: { type: string, enum: [active, suspended, banned, deleted] }
+        version:
+          type: number
+          minimum: 1
+          description: Version used to protect the next administrator user update.
+        membership: { type: string, enum: [Free, Pro, VIP] }
+        membershipSource: { type: string, enum: [UNKNOWN, REVENUECAT, ADMIN_OVERRIDE] }
+        entitlements:
+          type: array
+          items: { type: string }
+        entitlementGrants:
+          type: array
+          items: { type: string }
+        entitlementDenies:
+          type: array
+          items: { type: string }
+        createdAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+          description: Administrator who made the latest account decision.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Time of the latest account decision.
+        watchlistCount: { type: number }
+        tradeCount: { type: number }
+        unreadNotificationCount: { type: number }
+        subscriptionStatus: { type: string, enum: [ACTIVE, TRIALING, CANCELLED, EXPIRED, PAST_DUE] }
+        trialEndsAt: { type: ["string", "null"], format: date-time }
+        overrideEndsAt: { type: ["string", "null"], format: date-time }
+        adminNotesCount: { type: number }
+    AdminUsersPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        total: { type: number, minimum: 0 }
+        page: { type: number, minimum: 1 }
+        pageSize: { type: number, minimum: 1, maximum: 100 }
+    AdminUserPatch:
+      type: object
+      properties:
+        version: { type: number, minimum: 1, description: Version observed by the administrator when opening the record. }
+        name: { type: string }
+    AdminNotificationDelivery:
+      type: object
+      required: [id, notificationId, userId, channel, status, attempts, lastStatusCode, category, eventType, symbol, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        notificationId: { type: string }
+        userId: { type: string }
+        channel: { type: string, enum: [WEB, EXPO] }
+        status: { type: string, enum: [QUEUED, ACCEPTED, FAILED, SUPPRESSED, EXPIRED], description: ACCEPTED means the push service accepted the request; it does not confirm delivery to a device. }
+        attempts: { type: number, minimum: 0 }
+        lastStatusCode: { type: [number, "null"] }
+        category: { type: string }
+        eventType: { type: string }
+        symbol: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AdminNotificationsPage:
+      type: object
+      required: [items, total, page, pageSize, partial, unavailableChannels]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminNotificationDelivery"
+        total: { type: number }
+        page: { type: number }
+        pageSize: { type: number }
+        partial: { type: boolean }
+        unavailableChannels:
+          type: array
+          items: { type: string, enum: [WEB, EXPO] }
+    AdminNotificationRetryInput:
+      type: object
+      required: [reason]
+      additionalProperties: false
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 500 }
+    AdminNotificationRetryResponse:
+      type: object
+      required: [ok, id, status]
+      properties:
+        ok: { type: boolean }
+        id: { type: string }
+        status: { type: string, enum: [QUEUED] }
+    AdminAuditEntry:
+      type: object
+      required: [id, actorId, actorEmail, action, details, createdAt]
+      properties:
+        id: { type: string }
+        actorId: { type: string }
+        actorEmail: { type: string }
+        action: { type: string }
+        targetUserId: { type: string }
+        targetEmail: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+    AdminHealth:
+      type: object
+      additionalProperties: true
+    AdminMarketControl:
+      type: object
+      required: [symbol, brokerSymbol, enabled, visibleToUsers, archived, strategyId, availableStrategies, defaultStrategyId, bufferCounts, rowVersion]
+      properties:
+        symbol: { type: string }
+        brokerSymbol: { type: string }
+        provider: { type: string }
+        enabled: { type: boolean }
+        visibleToUsers: { type: boolean }
+        archived: { type: boolean }
+        strategyId: { type: [string, "null"] }
+        availableStrategies:
+          type: array
+          items: { type: string }
+        defaultStrategyId: { type: [string, "null"] }
+        rowVersion: { type: number }
+        brokerSpec:
+          type: object
+          additionalProperties: true
+        bufferCounts:
+          type: object
+          additionalProperties:
+            type: number
+        guards:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    AdminStrategyMatrixPatch:
+      type: object
+      required: [availableStrategies, rowVersion]
+      properties:
+        availableStrategies:
+          type: array
+          items: { type: string }
+        rowVersion: { type: number }
+    AdminMarketPatch:
+      type: object
+      required: [rowVersion]
+      properties:
+        enabled: { type: boolean }
+        visibleToUsers: { type: boolean }
+        defaultStrategyId: { type: [string, "null"] }
+        rowVersion: { type: number }
+    AdminControlsResponse:
+      type: object
+      required: [markets, bridge]
+      properties:
+        markets:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminMarketControl"
+        bridge:
+          type: object
+          additionalProperties: true
+    AdminStrategy:
+      type: object
+      required: [id, version, timeframe, assetClasses, description, lifecycleStatus, rowVersion]
+      properties:
+        id: { type: string }
+        version: { type: string }
+        timeframe: { type: string }
+        lifecycleStatus: { type: string, enum: [DRAFT, TESTING, ACTIVE, PAUSED, ARCHIVED] }
+        rowVersion: { type: number }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        activatedAt: { type: ["string", "null"], format: date-time }
+        pausedAt: { type: ["string", "null"], format: date-time }
+        updatedBy: { type: ["string", "null"] }
+        assetClasses:
+          type: array
+          items: { type: string }
+        description: { type: string }
+        assignedMarkets:
+          type: number
+    AdminStrategyUpdate:
+      type: object
+      required: [lifecycleStatus, rowVersion]
+      properties:
+        lifecycleStatus: { type: string, enum: [ACTIVE, PAUSED, ARCHIVED] }
+        rowVersion: { type: number, minimum: 1 }
+        reason: { type: string, maxLength: 1000 }
+    AdminSymbol:
+      type: object
+      required: [symbol, displaySymbol, provider, providerSymbol, assetClass, digits, enabled, visibleToUsers, archived, supportedTimeframes, assignedStrategies, rowVersion, updatedAt]
+      properties:
+        symbol: { type: string }
+        displaySymbol: { type: string }
+        provider: { type: string }
+        providerSymbol: { type: string }
+        assetClass: { type: string }
+        digits: { type: number }
+        enabled: { type: boolean }
+        visibleToUsers: { type: boolean }
+        archived: { type: boolean }
+        supportedTimeframes:
+          type: array
+          items: { type: string }
+        assignedStrategies:
+          type: array
+          items: { type: string }
+        rowVersion: { type: number }
+        updatedAt: { type: string, format: date-time }
+    AdminMarketAccessItem:
+      type: object
+      required: [symbol, name, requiredTier, marketType]
+      properties:
+        symbol: { type: string }
+        name: { type: string }
+        requiredTier: { type: string, enum: [Free, Pro, VIP] }
+        marketType: { type: string, enum: [STRATEGY, QUOTE_ONLY] }
+    AdminMarketInventoryItem:
+      type: object
+      required: [symbol, catalogId, displaySymbol, description, provider, providerSymbol, assetClass, digits, point, tickSize, currencyBase, currencyProfit, tradeMode, chartMode, quoteAvailable, candlesAvailable, strategySupported, strategyConfigured, strategyId, availableStrategies, assignedStrategies, defaultStrategyId, enabled, visibleToUsers, archived, supportedTimeframes, requiredTier, marketType, controlManaged, rowVersion, updatedAt, brokerSpec]
+      properties:
+        symbol: { type: string }
+        catalogId: { type: string }
+        displaySymbol: { type: string }
+        description: { type: string }
+        provider: { type: string }
+        providerSymbol: { type: string }
+        assetClass: { type: string }
+        digits: { type: number }
+        point: { type: ["number", "null"] }
+        tickSize: { type: ["number", "null"] }
+        currencyBase: { type: ["string", "null"] }
+        currencyProfit: { type: ["string", "null"] }
+        tradeMode: { type: ["string", "null"] }
+        chartMode: { type: ["string", "null"] }
+        quoteAvailable: { type: ["boolean", "null"] }
+        candlesAvailable: { type: ["boolean", "null"] }
+        strategySupported: { type: boolean }
+        strategyConfigured: { type: boolean }
+        strategyId: { type: ["string", "null"] }
+        availableStrategies:
+          type: array
+          items: { type: string }
+        assignedStrategies:
+          type: array
+          items: { type: string }
+        defaultStrategyId: { type: ["string", "null"] }
+        enabled: { type: ["boolean", "null"] }
+        visibleToUsers: { type: ["boolean", "null"] }
+        archived: { type: boolean }
+        supportedTimeframes:
+          type: array
+          items: { type: string }
+        requiredTier: { type: string, enum: [Free, Pro, VIP] }
+        marketType: { type: string, enum: [STRATEGY, QUOTE_ONLY] }
+        controlManaged: { type: boolean }
+        rowVersion: { type: ["number", "null"] }
+        updatedAt: { type: ["string", "null"], format: date-time }
+        brokerSpec:
+          oneOf:
+            - $ref: "#/components/schemas/AdminBrokerSymbolSpecification"
+            - type: "null"
+    AdminBrokerSymbolSpecification:
+      type: object
+      required: [brokerSymbol, contractSize, tickSize, tickValue, tickValueProfit, tickValueLoss, volumeMin, volumeMax, volumeStep, digits, point, quoteCurrency, receivedAt, tradingSessions]
+      properties:
+        brokerSymbol: { type: string }
+        contractSize: { type: ["number", "null"] }
+        tickSize: { type: ["number", "null"] }
+        tickValue: { type: ["number", "null"] }
+        tickValueProfit: { type: ["number", "null"] }
+        tickValueLoss: { type: ["number", "null"] }
+        volumeMin: { type: ["number", "null"] }
+        volumeMax: { type: ["number", "null"] }
+        volumeStep: { type: ["number", "null"] }
+        digits: { type: ["number", "null"] }
+        point: { type: ["number", "null"] }
+        quoteCurrency: { type: ["string", "null"] }
+        receivedAt: { type: number }
+        tradingSessions:
+          oneOf:
+            - $ref: "#/components/schemas/AdminBrokerTradingSessionSchedule"
+            - type: "null"
+    AdminBrokerTradingSessionSchedule:
+      type: object
+      required: [source, serverTime, utcTime, serverUtcOffsetSeconds, sessions]
+      properties:
+        source: { type: string, enum: [MT5_SYMBOL_INFO_SESSION_TRADE] }
+        serverTime: { type: number }
+        utcTime: { type: number }
+        serverUtcOffsetSeconds: { type: number }
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminBrokerTradingSessionWindow"
+    AdminBrokerTradingSessionWindow:
+      type: object
+      required: [dayOfWeek, fromSeconds, toSeconds]
+      properties:
+        dayOfWeek: { type: number }
+        fromSeconds: { type: number }
+        toSeconds: { type: number }
+    AdminSymbolUpdate:
+      type: object
+      required: [rowVersion]
+      properties:
+        displaySymbol: { type: string, minLength: 1, maxLength: 48 }
+        provider: { type: string, minLength: 1, maxLength: 32 }
+        providerSymbol: { type: string, minLength: 1, maxLength: 64 }
+        digits: { type: number, minimum: 0, maximum: 12 }
+        enabled: { type: boolean }
+        visibleToUsers: { type: boolean }
+        archived: { type: boolean }
+        rowVersion: { type: number, minimum: 1 }
+        reason: { type: string, maxLength: 1000 }
+    AdminStrategyAssignment:
+      type: object
+      required: [id, strategyId, strategyName, strategyVersion, strategyStatus, symbol, symbolDisplay, symbolEnabled, timeframe, enabled, isDefault, notes, rowVersion, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        strategyId: { type: string }
+        strategyName: { type: string }
+        strategyVersion: { type: string }
+        strategyStatus: { type: string }
+        symbol: { type: string }
+        symbolDisplay: { type: string }
+        symbolEnabled: { type: boolean }
+        timeframe: { type: string }
+        enabled: { type: boolean }
+        isDefault: { type: boolean }
+        notes: { type: ["string", "null"] }
+        rowVersion: { type: number }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        activatedAt: { type: ["string", "null"], format: date-time }
+        deactivatedAt: { type: ["string", "null"], format: date-time }
+    AdminStrategyAssignmentInput:
+      type: object
+      required: [strategyId, strategyVersion, symbol, timeframe, enabled, isDefault]
+      properties:
+        strategyId: { type: string }
+        strategyVersion: { type: string }
+        symbol: { type: string }
+        timeframe: { type: string }
+        enabled: { type: boolean }
+        isDefault: { type: boolean }
+        notes: { type: ["string", "null"], maxLength: 1000 }
+        reason: { type: string, maxLength: 1000 }
+    AdminStrategyAssignmentUpdate:
+      type: object
+      required: [rowVersion]
+      properties:
+        enabled: { type: boolean }
+        isDefault: { type: boolean }
+        notes: { type: ["string", "null"], maxLength: 1000 }
+        rowVersion: { type: number, minimum: 1 }
+        reason: { type: string, maxLength: 1000 }
+    AdminEvaluation:
+      type: object
+      required: [id, createdAt, origin, strategyId, strategyVersion, symbol, timeframe, assignmentId, marketDataAt, dataState, marketDataTrusted, result, signalGenerated, signalId, reason, errorCategory, processingDurationMs, details]
+      properties:
+        id: { type: string }
+        createdAt: { type: string, format: date-time }
+        origin: { type: string }
+        strategyId: { type: ["string", "null"] }
+        strategyVersion: { type: ["string", "null"] }
+        symbol: { type: string }
+        timeframe: { type: string }
+        assignmentId: { type: ["string", "null"] }
+        marketDataAt: { type: ["string", "null"], format: date-time }
+        dataState: { type: string }
+        marketDataTrusted: { type: boolean }
+        result: { type: string }
+        signalGenerated: { type: boolean }
+        signalId: { type: ["string", "null"] }
+        reason: { type: ["string", "null"] }
+        errorCategory: { type: ["string", "null"] }
+        processingDurationMs: { type: number }
+        details:
+          type: object
+          additionalProperties: true
+    AdminEvaluationDetail:
+      allOf:
+        - $ref: "#/components/schemas/AdminEvaluation"
+        - type: object
+          required: [signal]
+          properties:
+            signal:
+              oneOf:
+                - type: object
+                  additionalProperties: true
+                - type: "null"
+    AdminEvaluationPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminEvaluation"
+        total: { type: number }
+        page: { type: number }
+        pageSize: { type: number }
+    StaffAccessSummary:
+      type: object
+      required: [userId, email, name, role, customPermissions, capabilities, active, rowVersion, updatedAt]
+      properties:
+        userId: { type: string }
+        email: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [SUPER_ADMIN, OPERATIONS, SUPPORT, FINANCE, READ_ONLY] }
+        customPermissions:
+          type: array
+          items: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+        active: { type: boolean }
+        rowVersion: { type: number }
+        updatedAt: { type: string, format: date-time }
+        updatedBy: { type: ["string", "null"] }
+    StaffAccessUpdate:
+      type: object
+      required: [role, customPermissions, active, rowVersion]
+      properties:
+        role: { type: string, enum: [SUPER_ADMIN, OPERATIONS, SUPPORT, FINANCE, READ_ONLY] }
+        customPermissions:
+          type: array
+          items:
+            type: string
+            enum: [users.read, users.manage, memberships.read, memberships.manage, payments.read, payments.manage, strategies.read, strategies.manage, strategies.deploy, symbols.read, symbols.manage, signals.read, market_data.read, market_data.manage, notifications.read, notifications.manage, audit.read, staff.read, staff.manage, configuration.read, configuration.manage]
+        active: { type: boolean }
+        rowVersion: { type: number, minimum: 1 }
+        reason: { type: string, maxLength: 1000 }
+    StaffAccessCreateInput:
+      type: object
+      required: [userId, role, customPermissions]
+      properties:
+        userId: { type: string }
+        role: { type: string, enum: [SUPER_ADMIN, OPERATIONS, SUPPORT, FINANCE, READ_ONLY] }
+        customPermissions:
+          type: array
+          items:
+            type: string
+            enum: [users.read, users.manage, memberships.read, memberships.manage, payments.read, payments.manage, strategies.read, strategies.manage, strategies.deploy, symbols.read, symbols.manage, signals.read, market_data.read, market_data.manage, notifications.read, notifications.manage, audit.read, staff.read, staff.manage, configuration.read, configuration.manage]
+        active: { type: boolean, default: true }
+        reason: { type: string, maxLength: 1000 }
+    AdminMarketDiagnostic:
+      type: object
+      required: [symbol, brokerSymbol, enabled, subscriptionRequired, quoteExists, quoteAgeMs, candleBuffers, syncState]
+      properties:
+        symbol: { type: string }
+        brokerSymbol: { type: string }
+        enabled: { type: boolean }
+        subscriptionRequired: { type: boolean }
+        quoteExists: { type: boolean }
+        quoteAgeMs: { type: number }
+        candleBuffers:
+          type: object
+          additionalProperties:
+            type: number
+        syncState: { type: string, enum: [HEALTHY, SYNCING, STALE] }
+    AdminLabResponse:
+      type: object
+      additionalProperties: true
+    AdminUserNote:
+      type: object
+      required: [id, userId, category, body, authorEmail, createdAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        category: { type: string, enum: [GENERAL, BILLING, COMPLIANCE, SUPPORT, RISK] }
+        body: { type: string }
+        authorEmail: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdminUserNoteInput:
+      type: object
+      required: [category, body]
+      properties:
+        category: { type: string, enum: [GENERAL, BILLING, COMPLIANCE, SUPPORT, RISK] }
+        body: { type: string, minLength: 1, maxLength: 2000 }
+    AdminMembershipPatch:
+      type: object
+      required: [membership, reason]
+      properties:
+        membership: { type: string, enum: [Free, Pro, VIP] }
+        subscriptionStatus: { type: string, enum: [ACTIVE, TRIALING, CANCELLED, EXPIRED, PAST_DUE] }
+        trialDays: { type: number, minimum: 0, maximum: 3650 }
+        overrideDays: { type: ["number", "null"], minimum: 1, maximum: 3650 }
+        clearOverride: { type: boolean, description: Reconcile the membership to a verified RevenueCat state and remove the administrator override. }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        version: { type: number, minimum: 1 }
+    AdminEntitlementPatch:
+      type: object
+      required: [grants, denies, reason]
+      properties:
+        grants:
+          type: array
+          items: { type: string }
+        denies:
+          type: array
+          items: { type: string }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        version: { type: number, minimum: 1 }
+    AdminRolePatch:
+      type: object
+      required: [role, reason]
+      properties:
+        role: { type: string, enum: [user, admin] }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        version: { type: number, minimum: 1 }
+    AdminAccountStatePatch:
+      type: object
+      required: [status, reason]
+      properties:
+        status: { type: string, enum: [active, suspended, banned] }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        version: { type: number, minimum: 1 }
+    AdminUserMutationResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/AdminUser"
+    AdminCrmSummary:
+      type: object
+      additionalProperties: true
+    AdminUserTradesResponse:
+      type: object
+      required: [trades, metrics]
+      properties:
+        trades:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        metrics:
+          type: object
+          additionalProperties: true
+    AdminUserDetail:
+      allOf:
+        - $ref: "#/components/schemas/AdminUser"
+        - type: object
+          properties:
+            notes:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminUserNote"
+            trades:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+            tradeMetrics:
+              type: object
+              additionalProperties: true
+            auditLog:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminAuditEntry"
+    ConcurrentUpdateResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum: [CONCURRENT_UPDATE]
+        message:
+          type: string
+        latest:
+          $ref: "#/components/schemas/LatestControlDecision"
+    LatestControlDecision:
+      type: object
+      required: [version, updatedBy, updatedAt]
+      properties:
+        version:
+          type: number
+          minimum: 1
+        updatedBy:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [ACTIVE, PAUSED_MANUAL, PAUSED_DEGRADED]
+        reason:
+          type: [string, "null"]

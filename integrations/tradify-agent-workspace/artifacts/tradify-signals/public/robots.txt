@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /onboarding
+Disallow: /admin
+Disallow: /profile
+Disallow: /settings
+Disallow: /membership
+Disallow: /alerts
+Disallow: /notifications
+Disallow: /performance
+Disallow: /trades
+Disallow: /watchlist
+Disallow: /risk
+Disallow: /signal/
+Disallow: /chart/
+
+Sitemap: https://tradify-signals.replit.app/sitemap.xml

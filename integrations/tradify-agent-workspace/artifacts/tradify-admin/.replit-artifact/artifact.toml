@@ -1,0 +1,36 @@
+kind = "web"
+previewPath = "/tradify-admin/"
+title = "Tradify Admin"
+description = "A separate staff web portal for operating Tradify Signals, connected to the existing protected API for real customer, strategy, market-data, signal diagnostics, and audit information."
+version = "1.0.0"
+id = "artifacts/tradify-admin"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/tradify-admin/" ]
+localPort = 23486
+
+[services.development]
+run = "pnpm --filter @workspace/tradify-admin run dev"
+
+[services.production]
+serve = "static"
+publicDir = "artifacts/tradify-admin/dist/public"
+
+[services.production.build]
+args = [ "pnpm", "--filter", "@workspace/tradify-admin", "run", "build" ]
+
+[services.production.build.env]
+NODE_ENV = "production"
+APP_ENV = "production"
+PORT = "23486"
+BASE_PATH = "/tradify-admin/"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23486"
+BASE_PATH = "/tradify-admin/"

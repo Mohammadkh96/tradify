@@ -1,0 +1,7 @@
+{
+  "nowSeconds": 1800000060,
+  "closedCandleCount": 80,
+  "intervalSeconds": 900,
+  "basePrice": 100,
+  "priceStep": 0.1
+}

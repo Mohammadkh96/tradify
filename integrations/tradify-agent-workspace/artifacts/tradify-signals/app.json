@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "Tradify Signals",
+    "slug": "tradify-signals",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "tradify-signals",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tradify.signals"
+    },
+    "android": {
+      "package": "com.tradifysignals.app"
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png",
+      "name": "Tradify Signals",
+      "shortName": "Tradify",
+      "description": "A focused view of market opportunities, data status, price alerts, and risk planning.",
+      "themeColor": "#191F29"
+    },
+    "extra": {
+      "legal": {
+        "privacyPolicyUrl": "https://tradify-signals.replit.app/privacy-policy",
+        "termsOfServiceUrl": "https://tradify-signals.replit.app/terms-of-service"
+      },
+      "legalUrls": {
+        "privacyPolicy": "https://tradify-signals.replit.app/api/legal/privacy",
+        "terms": "https://tradify-signals.replit.app/api/legal/terms",
+        "accountDeletion": "https://tradify-signals.replit.app/api/legal/account-deletion",
+        "support": "https://tradify-signals.replit.app/api/legal/support"
+      }
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#191F29"
+        }
+      ],
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "signal-alerts"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "/app/",
+  "name": "Tradify Signals",
+  "short_name": "Tradify",
+  "description": "Market signals and decision support from Tradify Signals.",
+  "start_url": "/app/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#191F29",
+  "theme_color": "#191F29",
+  "categories": ["finance", "business"],
+  "icons": [
+    {
+      "src": "/icons/tradify-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/tradify-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/tradify-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

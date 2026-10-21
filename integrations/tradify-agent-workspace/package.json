@@ -1,0 +1,49 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "test": "node lib/db/run-test-suite.mjs",
+    "lint": "eslint \"artifacts/**/*.{ts,tsx}\" \"lib/*/src/**/*.{ts,tsx}\" \"scripts/src/**/*.ts\"",
+    "format": "prettier --write \"artifacts/**/*.{ts,tsx,js,jsx,json}\" \"lib/**/*.{ts,tsx,js,jsx,json}\" \"scripts/**/*.{ts,tsx,js,jsx,json}\" \"package.json\" \"tsconfig*.json\"",
+    "format:check": "prettier --check \"artifacts/**/*.{ts,tsx,js,jsx,json}\" \"lib/**/*.{ts,tsx,js,jsx,json}\" \"scripts/**/*.{ts,tsx,js,jsx,json}\" \"package.json\" \"tsconfig*.json\"",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+  },
+  "private": true,
+  "pnpm": {
+    "overrides": {
+      "brace-expansion@1.1.18": "1.1.21",
+      "brace-expansion@5.0.8": "5.0.12",
+      "decode-uri-component@0.2.2": "0.5.0",
+      "esbuild@0.18.20": "0.25.8",
+      "esbuild@0.27.3": "0.28.1",
+      "express@5.2.1>proxy-addr": "2.0.8",
+      "fast-uri@3.1.4": "3.1.8",
+      "js-yaml@4.3.0": "4.3.2",
+      "markdown-it@14.3.0": "14.3.1",
+      "nanoid@3.3.16": "3.3.19",
+      "postcss-selector-parser@6.0.10": "7.1.6",
+      "qs@6.15.3": "6.16.0",
+      "uuid@3.4.0": "11.1.1",
+      "uuid@7.0.3": "11.1.1"
+    },
+    "patchedDependencies": {
+      "node-forge@1.4.0": "patches/node-forge@1.4.0.patch",
+      "braces@3.0.3": "patches/braces@3.0.3.patch",
+      "sprintf-js@1.0.3": "patches/sprintf-js@1.0.3.patch"
+    }
+  },
+  "dependencies": {
+    "@replit/connectors-sdk": "^0.4.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.6",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.1"
+  }
+}
