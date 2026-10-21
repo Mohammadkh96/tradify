@@ -1,0 +1,18 @@
+{
+  "name": "@workspace/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello": "tsx ./src/hello.ts",
+    "check:live-quotes": "tsx ./src/check-live-quotes.ts",
+    "test:live-quotes": "tsx ./src/check-live-quotes.test.ts",
+    "test": "tsx --test ./src/*.test.ts",
+    "test:dependency-security": "node --test ./security-dependencies.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:"
+  }
+}

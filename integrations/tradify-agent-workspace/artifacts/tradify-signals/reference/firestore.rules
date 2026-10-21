@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Explicit allowlist of safe profile and preference fields that a client user is permitted to write.
+    // NOTE: `profile`, `preferences`, `tradingPreferences`, and `strategyPreferences` are arbitrary nested maps.
+    // They are strictly NON-AUTHORITATIVE and NEVER used for `role`, `tier`, `membership`, `entitlements`, 
+    // `billing`, `ban/suspension`, or `admin privileges`. The backend logic strictly ignores these 
+    // nested keys for any access-control decisions.
+    function isAllowedUserCreateKeys() {
+      return request.resource.data.keys().hasOnly([
+        'displayName', 'photoURL', 'phoneNumber', 'createdAt', 'preferences',
+        'tradingPreferences', 'strategyPreferences', 'theme', 'updatedAt', 'fcmTokens', 'profile'
+      ]);
+    }
+
+    function isAllowedUserUpdateKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'displayName', 'photoURL', 'phoneNumber', 'preferences',
+        'tradingPreferences', 'strategyPreferences', 'theme', 'updatedAt', 'fcmTokens', 'profile'
+      ]);
+    }
+
+    match /users/{userId} {
+      // Users can only read their own record
+      allow read: if isOwner(userId);
+      
+      // Client creation: strictly restricted to non-privileged fields
+      allow create: if isOwner(userId) && isAllowedUserCreateKeys() && (!('createdAt' in request.resource.data) || request.resource.data.createdAt == request.time);
+
+      // Client updates: strictly restricted to non-privileged safe fields
+      allow update: if isOwner(userId) && isAllowedUserUpdateKeys();
+
+      allow delete: if false;
+
+      match /notifications/{notifId} {
+        allow read: if isOwner(userId);
+        allow update: if isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
+        allow create, delete: if false;
+      }
+    }
+
+    // Billing & Provider Authority collections - strictly server-side Admin SDK only
+    match /billingRecords/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /paypalSubscriptions/{subId} {
+      allow read, write: if false;
+    }
+
+    match /billingEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    // Privileged collections - strictly server-side Admin SDK only
+    match /adminAuditLogs/{logId} {
+      allow read, write: if false;
+    }
+
+    match /processedStripeEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /operationalConfig/{configId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+

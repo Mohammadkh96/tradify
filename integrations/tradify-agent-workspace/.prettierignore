@@ -1,0 +1,8 @@
+**/dist/
+**/node_modules/
+lib/api-zod/src/generated/
+lib/api-client-react/src/generated/
+artifacts/mockup-sandbox/src/.generated/
+artifacts/tradify-signals/.expo/
+artifacts/tradify-signals/web-build/
+artifacts/tradify-signals/static-build/

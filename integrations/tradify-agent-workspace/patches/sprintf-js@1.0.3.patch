@@ -1,0 +1,33 @@
+diff --git a/src/sprintf.js b/src/sprintf.js
+index c0fc7c08b2e6fe38de2883034b8d28c8f34e9866..e8633b118c488f06ba214d7201d5b1ca2778a57a 100644
+--- a/src/sprintf.js
++++ b/src/sprintf.js
+@@ -58,6 +58,11 @@
+                     is_positive = arg >= 0
+                 }
+ 
++                // Bound floating precision before calling ECMAScript methods.
++                // Saturating out-of-range input avoids native RangeErrors from
++                // attacker-controlled format strings (CVE-2026-97058).
++                var precision = match[7] === undefined ? undefined :
++                    Math.min(100, Math.max(match[8] === "g" ? 1 : 0, Number(match[7])))
+                 switch (match[8]) {
+                     case "b":
+                         arg = arg.toString(2)
+@@ -73,13 +78,13 @@
+                         arg = JSON.stringify(arg, null, match[6] ? parseInt(match[6]) : 0)
+                     break
+                     case "e":
+-                        arg = match[7] ? arg.toExponential(match[7]) : arg.toExponential()
++                        arg = match[7] ? arg.toExponential(precision) : arg.toExponential()
+                     break
+                     case "f":
+-                        arg = match[7] ? parseFloat(arg).toFixed(match[7]) : parseFloat(arg)
++                        arg = match[7] ? parseFloat(arg).toFixed(precision) : parseFloat(arg)
+                     break
+                     case "g":
+-                        arg = match[7] ? parseFloat(arg).toPrecision(match[7]) : parseFloat(arg)
++                        arg = match[7] ? parseFloat(arg).toPrecision(precision) : parseFloat(arg)
+                     break
+                     case "o":
+                         arg = arg.toString(8)
